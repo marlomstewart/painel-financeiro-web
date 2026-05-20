@@ -183,14 +183,13 @@ function App() {
       const alternar = window.confirm("Deseja alternar o status PAGO/PENDENTE?"); 
       const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status; 
       
-      let novaDataISO = t.dataCompra; // Mantém a data original por padrão
+      let novaDataISO = t.dataCompra; 
       
-      // Se for Renda, permite editar a data de recebimento
+      // Abre ajuste de data apenas se for do tipo renda
       if (t.tipo === 'renda') {
         const dataAtualBR = new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         const novaDataStr = window.prompt("Nova Data de Recebimento (DD/MM/AAAA) - Deixe igual se não mudou:", dataAtualBR);
         
-        // Verifica se o usuário digitou uma data válida no formato DD/MM/AAAA
         if (novaDataStr && novaDataStr.includes('/')) {
           const partes = novaDataStr.split('/');
           if (partes.length === 3) {
@@ -496,46 +495,46 @@ function App() {
             )}
 
             <div className="w-full">
-              <table className="w-full text-left text-[9px] sm:text-[10px] md:text-sm text-slate-600 table-auto">
+              <table className="w-full text-left text-[9px] sm:text-[10px] md:text-sm text-slate-600 table-fixed">
                 <thead className="bg-white text-[8px] sm:text-[9px] md:text-xs uppercase font-semibold border-b select-none">
                   <tr>
-                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('descricao')}>Desc. {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('categoria')}>Categ. {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 text-center">Ações</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[28%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('descricao')}>Desc. {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[15%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('categoria')}>Categ. {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[13%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[14%] cursor-pointer hover:bg-slate-50 transition-colors text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[8%] text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {dadosTabela.length === 0 && (<tr><td colSpan="7" className="p-4 md:p-8 text-center text-slate-400 font-medium text-xs">Nenhum lançamento encontrado.</td></tr>)}
                   {dadosTabela.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words whitespace-normal min-w-[60px] md:min-w-[200px] leading-tight">{t.descricao}</td>
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight">{t.descricao}</td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded w-fit block truncate max-w-[50px] md:max-w-[120px]">{t.categoria}</span>
+                        <span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full" title={t.categoria}>{t.categoria}</span>
                       </td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <span className="text-[8px] md:text-xs text-slate-400 font-medium whitespace-nowrap">
+                        <span className="text-[8px] md:text-xs text-slate-400 font-medium break-words">
                           {new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
                         </span>
                       </td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`} title={t.status}>
                           {t.status}
                         </button>
                       </td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-fit">
+                        <span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center" title={t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}>
                           {t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}
                         </span>
                       </td>
-                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right whitespace-nowrap text-[9px] md:text-sm">{formatarMoeda(t.valorParcela)}</td>
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right text-[9px] md:text-sm break-words">{formatarMoeda(t.valorParcela)}</td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <div className="flex flex-col xl:flex-row justify-center gap-1">
-                          <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors">✏️</button>
-                          <button onClick={() => deletarTransacao(t.id)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors">🗑️</button>
+                        <div className="flex flex-col lg:flex-row justify-center items-center gap-1">
+                          <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">✏️</button>
+                          <button onClick={() => deletarTransacao(t.id)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">🗑️</button>
                         </div>
                       </td>
                     </tr>
