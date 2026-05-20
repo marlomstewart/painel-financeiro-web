@@ -27,7 +27,7 @@ function App() {
   const [buscaTexto, setBuscaTexto] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   
-  // NOVA INTELIGÊNCIA: Ordenação e Filtros Avançados
+  // Ordenação e Filtros Avançados
   const [ordenacao, setOrdenacao] = useState({ coluna: 'data', direcao: 'desc' });
   const [mostrarFiltrosAvancados, setMostrarFiltrosAvancados] = useState(false);
   const [filtrosAvancados, setFiltrosAvancados] = useState({
@@ -204,12 +204,13 @@ function App() {
     return atendeStatus && atendeBusca && atendeAvancado;
   });
 
-  // Aplicação da Ordenação
+  // Aplicação da Ordenação (Suporta a nova ordenação isolada de Categoria)
   if (ordenacao.coluna) {
     dadosTabela.sort((a, b) => {
       let valorA, valorB;
       switch (ordenacao.coluna) {
         case 'descricao': valorA = a.descricao.toLowerCase(); valorB = b.descricao.toLowerCase(); break;
+        case 'categoria': valorA = a.categoria.toLowerCase(); valorB = b.categoria.toLowerCase(); break;
         case 'data': valorA = new Date(a.dataCompra).getTime(); valorB = new Date(b.dataCompra).getTime(); break;
         case 'status': valorA = a.status; valorB = b.status; break;
         case 'pagamento': valorA = a.formaPagamento; valorB = b.formaPagamento; break;
@@ -253,7 +254,7 @@ function App() {
   // RENDERIZAÇÃO DAS TELAS
   // =========================================================================
   
-  // TELA 1: LOGIN (Omitida para manter limpo, igual ao original)
+  // TELA 1: LOGIN
   if (!token && !precisaTrocarSenha) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -468,7 +469,9 @@ function App() {
                 <thead className="bg-white text-xs uppercase font-semibold border-b select-none">
                   <tr>
                     <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('descricao')}>Descrição {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Categoria / Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    {/* COLUNAS AGORA SEPARADAS E AMBAS CLICÁVEIS PARA ORDENAÇÃO */}
+                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('categoria')}>Categoria {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
                     <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
                     <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('pagamento')}>Pagamento {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
                     <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
@@ -476,12 +479,19 @@ function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {dadosTabela.length === 0 && (<tr><td colSpan="6" className="p-8 text-center text-slate-400 font-medium">Nenhum lançamento encontrado.</td></tr>)}
+                  {dadosTabela.length === 0 && (<tr><td colSpan="7" className="p-8 text-center text-slate-400 font-medium">Nenhum lançamento encontrado.</td></tr>)}
                   {dadosTabela.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      {/* O Segredo do Texto Longo resolvido aqui embaixo (break-words min-w-[200px]) */}
                       <td className="p-4 font-bold text-slate-800 break-words whitespace-normal min-w-[200px]">{t.descricao}</td>
-                      <td className="p-4"><div className="flex flex-col"><span className="text-xs bg-slate-100 px-2 py-0.5 rounded w-fit mb-1 truncate max-w-[120px]">{t.categoria}</span><span className="text-xs text-slate-400">{new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span></div></td>
+                      {/* CÉLULAS DA TABELA SEPARADAS INDEPENDENTES */}
+                      <td className="p-4">
+                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded w-fit block truncate max-w-[120px]">{t.categoria}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+                          {new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
+                        </span>
+                      </td>
                       <td className="p-4">
                         <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela)} className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-transform hover:scale-105 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                           {t.status}
