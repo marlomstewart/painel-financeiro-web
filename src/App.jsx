@@ -166,8 +166,48 @@ function App() {
   };
 
   const deletarTransacao = async (id) => { if(window.confirm("Excluir?")) { await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${id}`, { method: 'DELETE', headers: headersAuth }); setTransacoes(transacoes.filter(t => t.id !== id)); } };
-  const alternarStatusTransacao = async (id, statusAtual, valor) => { const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago'; await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${id}`, { method: 'PUT', headers: headersAuth, body: JSON.stringify({ status: novoStatus, valorParcela: valor }) }); setTransacoes(transacoes.map(tr => tr.id === id ? { ...tr, status: novoStatus } : tr)); };
-  const editarValor = async (t) => { const nV = window.prompt("Novo Valor:", t.valorParcela); if(nV !== null) { const valorAjustado = parseFloat(nV); const alternar = window.confirm("Deseja alternar o status PAGO/PENDENTE?"); const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status; await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${t.id}`, { method: 'PUT', headers: headersAuth, body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado }) }); setTransacoes(transacoes.map(tr => tr.id === t.id ? { ...tr, valorParcela: valorAjustado, status: novoStatus } : tr)); } };
+  
+  const alternarStatusTransacao = async (id, statusAtual, valor, dataCompraOriginal) => { 
+    const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago'; 
+    await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${id}`, { method: 'PUT', headers: headersAuth, body: JSON.stringify({ status: novoStatus, valorParcela: valor, dataCompra: dataCompraOriginal }) }); 
+    setTransacoes(transacoes.map(tr => tr.id === id ? { ...tr, status: novoStatus } : tr)); 
+  };
+  
+  // =========================================================================
+  // EDIÇÃO INTELIGENTE (VALOR, STATUS E DATA PARA RENDA)
+  // =========================================================================
+  const editarValor = async (t) => { 
+    const nV = window.prompt("Novo Valor (R$):", t.valorParcela); 
+    if (nV !== null) { 
+      const valorAjustado = parseFloat(nV); 
+      const alternar = window.confirm("Deseja alternar o status PAGO/PENDENTE?"); 
+      const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status; 
+      
+      let novaDataISO = t.dataCompra; // Mantém a data original por padrão
+      
+      // Se for Renda, permite editar a data de recebimento
+      if (t.tipo === 'renda') {
+        const dataAtualBR = new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+        const novaDataStr = window.prompt("Nova Data de Recebimento (DD/MM/AAAA) - Deixe igual se não mudou:", dataAtualBR);
+        
+        // Verifica se o usuário digitou uma data válida no formato DD/MM/AAAA
+        if (novaDataStr && novaDataStr.includes('/')) {
+          const partes = novaDataStr.split('/');
+          if (partes.length === 3) {
+            novaDataISO = new Date(`${partes[2]}-${partes[1]}-${partes[0]}T00:00:00`).toISOString();
+          }
+        }
+      }
+
+      await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${t.id}`, { 
+        method: 'PUT', 
+        headers: headersAuth, 
+        body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) 
+      }); 
+      
+      setTransacoes(transacoes.map(tr => tr.id === t.id ? { ...tr, valorParcela: valorAjustado, status: novoStatus, dataCompra: novaDataISO } : tr)); 
+    } 
+  };
 
   // =========================================================================
   // CÁLCULOS, FILTROS E ORDENAÇÃO DO DASHBOARD E TABELA
@@ -177,7 +217,6 @@ function App() {
   
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
 
-  // Lógica de Ordenação dos Cabeçalhos
   const mudarOrdenacao = (coluna) => {
     if (ordenacao.coluna === coluna) {
       setOrdenacao({ coluna, direcao: ordenacao.direcao === 'asc' ? 'desc' : 'asc' });
@@ -186,7 +225,6 @@ function App() {
     }
   };
 
-  // Aplicação dos Filtros Regulares + Avançados
   let dadosTabela = transacoesMes.filter(t => {
     const atendeStatus = filtroStatus === 'todos' || t.status === filtroStatus;
     const atendeBusca = t.descricao.toLowerCase().includes(buscaTexto.toLowerCase());
@@ -204,7 +242,6 @@ function App() {
     return atendeStatus && atendeBusca && atendeAvancado;
   });
 
-  // Aplicação da Ordenação (Suporta a nova ordenação isolada de Categoria)
   if (ordenacao.coluna) {
     dadosTabela.sort((a, b) => {
       let valorA, valorB;
@@ -223,7 +260,6 @@ function App() {
     });
   }
 
-  // Cálculos do Painel Superior
   let totRendaTotal = 0, totRendaPaga = 0, totGastoReal = 0, totInvestido = 0, totGastoPago = 0, totFaturaCreditoAberto = 0;
   let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
   let gastoSemCategoria = 0, gastoContasFixas = 0;
@@ -254,7 +290,6 @@ function App() {
   // RENDERIZAÇÃO DAS TELAS
   // =========================================================================
   
-  // TELA 1: LOGIN
   if (!token && !precisaTrocarSenha) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -271,7 +306,6 @@ function App() {
     );
   }
 
-  // TELA 2: TROCA DE SENHA
   if (precisaTrocarSenha) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -289,7 +323,6 @@ function App() {
     );
   }
 
-  // TELA 3: SETUP
   if (telaAtiva === 'setup') {
     return (
       <div className="min-h-screen bg-slate-50 p-6 text-slate-800">
@@ -346,47 +379,46 @@ function App() {
     );
   }
 
-  // TELA 4: DASHBOARD PRINCIPAL
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 text-slate-800">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 overflow-x-hidden">
+      <div className="mx-auto max-w-6xl space-y-4 md:space-y-6">
         
         <header className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
-          <div><h1 className="text-2xl font-bold text-slate-900">Painel Financeiro</h1><p className="text-sm text-slate-500 font-medium capitalize">Olá, {nomeUsuario}! 👋</p></div>
-          <div className="flex items-center gap-4 mt-4 md:mt-0 bg-slate-50 px-4 py-2 rounded-lg border">
-            <button onClick={mesAnterior} className="text-slate-400 hover:text-slate-700 text-xl font-bold">◀</button>
-            <span className="font-semibold text-slate-700 uppercase min-w-30 text-center">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-            <button onClick={mesProximo} className="text-slate-400 hover:text-slate-700 text-xl font-bold">▶</button>
+          <div><h1 className="text-xl md:text-2xl font-bold text-slate-900">Painel Financeiro</h1><p className="text-xs md:text-sm text-slate-500 font-medium capitalize">Olá, {nomeUsuario}! 👋</p></div>
+          <div className="flex items-center gap-2 md:gap-4 mt-4 md:mt-0 bg-slate-50 px-4 py-2 rounded-lg border">
+            <button onClick={mesAnterior} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold">◀</button>
+            <span className="font-semibold text-slate-700 uppercase min-w-24 md:min-w-30 text-center text-xs md:text-base">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
+            <button onClick={mesProximo} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold">▶</button>
           </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
-            <button onClick={() => setTelaAtiva('setup')} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium border transition-colors">⚙ Config</button>
-            <button onClick={fazerLogout} className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium border border-red-100 transition-colors">Sair</button>
+          <div className="flex gap-2 mt-4 md:mt-0 w-full md:w-auto">
+            <button onClick={() => setTelaAtiva('setup')} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border transition-colors flex-1 md:flex-none">⚙ Config</button>
+            <button onClick={fazerLogout} className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-red-100 transition-colors flex-1 md:flex-none">Sair</button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
-          <div className="bg-slate-800 p-4 rounded-xl shadow-sm border-l-4 border-slate-400"><h3 className="text-xs font-semibold text-slate-300 uppercase">Saldo Pago</h3><p className="text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p></div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4">
+          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
+          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
+          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
+          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
+          <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400"><h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo Pago</h3><p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p></div>
+          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
         </div>
 
         {categorias.length > 0 && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
-            <h2 className="text-sm font-bold text-slate-600 uppercase mb-4">Progresso das Metas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
+            <h2 className="text-xs md:text-sm font-bold text-slate-600 uppercase mb-4">Progresso das Metas</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {categorias.map(c => {
                 const gas = gCat[c.nome] || 0; let por = Math.min((gas / c.meta) * 100, 100);
                 let corBarra = 'bg-emerald-500'; 
                 if (c.tipo === 'despesa') { if (por >= 90) corBarra = 'bg-red-500'; else if (por >= 70) corBarra = 'bg-amber-400'; } 
                 else { corBarra = 'bg-blue-500'; }
                 return (
-                  <div key={c.id} className="border p-4 rounded-lg bg-slate-50">
-                    <h4 className="text-sm font-medium mb-2 truncate" title={c.nome}>{c.nome}</h4>
+                  <div key={c.id} className="border p-3 md:p-4 rounded-lg bg-slate-50">
+                    <h4 className="text-xs md:text-sm font-medium mb-2 truncate" title={c.nome}>{c.nome}</h4>
                     <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2 overflow-hidden"><div className={`${corBarra} h-1.5 rounded-full transition-all duration-700 ease-out`} style={{ width: `${por}%` }}></div></div>
-                    <div className="flex justify-between text-xs text-slate-500 font-medium"><span>{formatarMoeda(gas)}</span><span>{formatarMoeda(c.meta)}</span></div>
+                    <div className="flex justify-between text-[10px] md:text-xs text-slate-500 font-medium"><span>{formatarMoeda(gas)}</span><span>{formatarMoeda(c.meta)}</span></div>
                   </div>
                 );
               })}
@@ -394,119 +426,116 @@ function App() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border lg:col-span-1 h-fit">
-            <h2 className="text-sm font-bold text-slate-600 uppercase mb-4">Novo Lançamento</h2>
-            <form onSubmit={addTransacao} className="space-y-4">
-              <input name="descricao" placeholder="Descrição" required className="w-full border p-2.5 rounded-lg text-sm outline-none focus:border-blue-500" />
-              <input name="valor" type="number" step="0.01" placeholder="Valor (R$)" required className="w-full border p-2.5 rounded-lg text-sm outline-none focus:border-blue-500" />
-              <input name="dataCompra" type="date" required className="w-full border p-2.5 rounded-lg text-sm text-slate-600 outline-none focus:border-blue-500" />
-              <div className="grid grid-cols-2 gap-2"><select name="tipo" required className="border p-2.5 rounded-lg text-sm bg-white outline-none focus:border-blue-500"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Invest. / Meta</option></select><select name="status" className="border p-2.5 rounded-lg text-sm bg-white outline-none focus:border-blue-500"><option value="pendente">Pendente</option><option value="pago">Pago</option></select></div>
-              <select name="categoria" required className="w-full border p-2.5 rounded-lg text-sm bg-white outline-none focus:border-blue-500"><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option><option value="Renda Fixa">Renda Fixa</option><option value="Renda">Renda Variável</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
-              <select name="formaPagamento" required className="w-full border p-2.5 rounded-lg text-sm bg-white outline-none focus:border-blue-500"><option value="pix">PIX / Dinheiro</option><option value="debito">Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito - {c.nome}</option>)}</select>
-              <input name="parcelas" type="number" min="1" placeholder="Qtd. Parcelas (Apenas Crédito)" className="w-full border p-2.5 rounded-lg text-sm outline-none focus:border-blue-500" />
-              <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors shadow-sm">Adicionar</button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border lg:col-span-1 h-fit">
+            <h2 className="text-xs md:text-sm font-bold text-slate-600 uppercase mb-4">Novo Lançamento</h2>
+            <form onSubmit={addTransacao} className="space-y-3 md:space-y-4">
+              <input name="descricao" placeholder="Descrição" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
+              <input name="valor" type="number" step="0.01" placeholder="Valor (R$)" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
+              <input name="dataCompra" type="date" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm text-slate-600 outline-none focus:border-blue-500" />
+              <div className="grid grid-cols-2 gap-2"><select name="tipo" required className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Invest. / Meta</option></select><select name="status" className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pendente">Pendente</option><option value="pago">Pago</option></select></div>
+              <select name="categoria" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option><option value="Renda Fixa">Renda Fixa</option><option value="Renda">Renda Variável</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
+              <select name="formaPagamento" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pix">PIX / Dinheiro</option><option value="debito">Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito - {c.nome}</option>)}</select>
+              <input name="parcelas" type="number" min="1" placeholder="Qtd. Parcelas (Apenas Crédito)" className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
+              <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 md:py-3 rounded-lg text-xs md:text-sm transition-colors shadow-sm">Adicionar</button>
             </form>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border lg:col-span-2 flex flex-col">
-            <div className="p-4 border-b flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 rounded-t-xl">
+          <div className="bg-white rounded-xl shadow-sm border lg:col-span-2 flex flex-col overflow-hidden w-full">
+            <div className="p-3 md:p-4 border-b flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 bg-slate-50 rounded-t-xl">
               
               <div className="flex bg-white rounded-lg border p-1 w-full md:w-auto">
-                <button onClick={() => setFiltroStatus('todos')} className={`px-4 py-1.5 text-xs font-bold rounded-md flex-1 ${filtroStatus === 'todos' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>Todos</button>
-                <button onClick={() => setFiltroStatus('pendente')} className={`px-4 py-1.5 text-xs font-bold rounded-md flex-1 ${filtroStatus === 'pendente' ? 'bg-amber-100 text-amber-700' : 'text-slate-500 hover:bg-slate-100'}`}>Pendentes</button>
-                <button onClick={() => setFiltroStatus('pago')} className={`px-4 py-1.5 text-xs font-bold rounded-md flex-1 ${filtroStatus === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-100'}`}>Pagos</button>
+                <button onClick={() => setFiltroStatus('todos')} className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md flex-1 ${filtroStatus === 'todos' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>Todos</button>
+                <button onClick={() => setFiltroStatus('pendente')} className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md flex-1 ${filtroStatus === 'pendente' ? 'bg-amber-100 text-amber-700' : 'text-slate-500 hover:bg-slate-100'}`}>Pendentes</button>
+                <button onClick={() => setFiltroStatus('pago')} className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md flex-1 ${filtroStatus === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-100'}`}>Pagos</button>
               </div>
               
               <div className="flex gap-2 w-full md:w-auto">
-                <input type="text" placeholder="🔍 Buscar por descrição..." value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)} className="w-full md:w-64 border border-slate-300 p-2 rounded-lg text-sm outline-none focus:border-blue-500" />
-                <button onClick={() => setMostrarFiltrosAvancados(!mostrarFiltrosAvancados)} className={`px-3 py-2 rounded-lg border text-sm font-bold transition-colors ${mostrarFiltrosAvancados ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+                <input type="text" placeholder="🔍 Buscar..." value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)} className="w-full md:w-48 lg:w-64 border border-slate-300 p-1.5 md:p-2 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
+                <button onClick={() => setMostrarFiltrosAvancados(!mostrarFiltrosAvancados)} className={`px-2 md:px-3 py-1.5 md:py-2 rounded-lg border text-[10px] md:text-sm font-bold transition-colors ${mostrarFiltrosAvancados ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
                   Filtros {mostrarFiltrosAvancados ? '▲' : '▼'}
                 </button>
               </div>
             </div>
 
-            {/* PAINEL DE FILTROS AVANÇADOS */}
             {mostrarFiltrosAvancados && (
-              <div className="p-4 border-b bg-blue-50/50 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-3 md:p-4 border-b bg-blue-50/50 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Período de Data</label>
+                  <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Período de Data</label>
                   <div className="flex gap-2">
-                    <input type="date" value={filtrosAvancados.dataInicio} onChange={e => setFiltrosAvancados({...filtrosAvancados, dataInicio: e.target.value})} className="w-full border p-1.5 rounded text-xs" title="Data Inicial" />
-                    <input type="date" value={filtrosAvancados.dataFim} onChange={e => setFiltrosAvancados({...filtrosAvancados, dataFim: e.target.value})} className="w-full border p-1.5 rounded text-xs" title="Data Final" />
+                    <input type="date" value={filtrosAvancados.dataInicio} onChange={e => setFiltrosAvancados({...filtrosAvancados, dataInicio: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" title="Data Inicial" />
+                    <input type="date" value={filtrosAvancados.dataFim} onChange={e => setFiltrosAvancados({...filtrosAvancados, dataFim: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" title="Data Final" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Faixa de Valor (R$)</label>
+                  <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Faixa de Valor (R$)</label>
                   <div className="flex gap-2">
-                    <input type="number" placeholder="Mínimo" value={filtrosAvancados.valorMin} onChange={e => setFiltrosAvancados({...filtrosAvancados, valorMin: e.target.value})} className="w-full border p-1.5 rounded text-xs" />
-                    <input type="number" placeholder="Máximo" value={filtrosAvancados.valorMax} onChange={e => setFiltrosAvancados({...filtrosAvancados, valorMax: e.target.value})} className="w-full border p-1.5 rounded text-xs" />
+                    <input type="number" placeholder="Mín." value={filtrosAvancados.valorMin} onChange={e => setFiltrosAvancados({...filtrosAvancados, valorMin: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
+                    <input type="number" placeholder="Máx." value={filtrosAvancados.valorMax} onChange={e => setFiltrosAvancados({...filtrosAvancados, valorMax: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Pagamento e Categoria</label>
+                  <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Pagamento e Categoria</label>
                   <div className="flex gap-2">
-                    <select value={filtrosAvancados.formaPagamento} onChange={e => setFiltrosAvancados({...filtrosAvancados, formaPagamento: e.target.value})} className="w-full border p-1.5 rounded text-xs bg-white">
-                      <option value="">Qualquer Pagto</option>
-                      <option value="pix">PIX / Dinheiro</option>
+                    <select value={filtrosAvancados.formaPagamento} onChange={e => setFiltrosAvancados({...filtrosAvancados, formaPagamento: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
+                      <option value="">Qualquer</option>
+                      <option value="pix">PIX/Dinheiro</option>
                       <option value="debito">Débito</option>
                       <option value="credito">Crédito</option>
                     </select>
-                    <select value={filtrosAvancados.categoria} onChange={e => setFiltrosAvancados({...filtrosAvancados, categoria: e.target.value})} className="w-full border p-1.5 rounded text-xs bg-white">
-                      <option value="">Qualquer Cat.</option>
+                    <select value={filtrosAvancados.categoria} onChange={e => setFiltrosAvancados({...filtrosAvancados, categoria: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
+                      <option value="">Qualquer</option>
                       {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="md:col-span-3 flex justify-end">
-                  <button onClick={() => setFiltrosAvancados({dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: ''})} className="text-xs text-red-500 hover:underline font-bold">Limpar Filtros Avançados</button>
+                  <button onClick={() => setFiltrosAvancados({dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: ''})} className="text-[10px] md:text-xs text-red-500 hover:underline font-bold">Limpar Filtros</button>
                 </div>
               </div>
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="bg-white text-xs uppercase font-semibold border-b select-none">
+            <div className="w-full">
+              <table className="w-full text-left text-[9px] sm:text-[10px] md:text-sm text-slate-600 table-auto">
+                <thead className="bg-white text-[8px] sm:text-[9px] md:text-xs uppercase font-semibold border-b select-none">
                   <tr>
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('descricao')}>Descrição {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    {/* COLUNAS AGORA SEPARADAS E AMBAS CLICÁVEIS PARA ORDENAÇÃO */}
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('categoria')}>Categoria {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('pagamento')}>Pagamento {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-4 cursor-pointer hover:bg-slate-50 transition-colors text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-4 text-center">Ações</th>
+                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('descricao')}>Desc. {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('categoria')}>Categ. {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 cursor-pointer hover:bg-slate-50 transition-colors text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {dadosTabela.length === 0 && (<tr><td colSpan="7" className="p-8 text-center text-slate-400 font-medium">Nenhum lançamento encontrado.</td></tr>)}
+                  {dadosTabela.length === 0 && (<tr><td colSpan="7" className="p-4 md:p-8 text-center text-slate-400 font-medium text-xs">Nenhum lançamento encontrado.</td></tr>)}
                   {dadosTabela.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-bold text-slate-800 break-words whitespace-normal min-w-[200px]">{t.descricao}</td>
-                      {/* CÉLULAS DA TABELA SEPARADAS INDEPENDENTES */}
-                      <td className="p-4">
-                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded w-fit block truncate max-w-[120px]">{t.categoria}</span>
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words whitespace-normal min-w-[60px] md:min-w-[200px] leading-tight">{t.descricao}</td>
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded w-fit block truncate max-w-[50px] md:max-w-[120px]">{t.categoria}</span>
                       </td>
-                      <td className="p-4">
-                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <span className="text-[8px] md:text-xs text-slate-400 font-medium whitespace-nowrap">
                           {new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
                         </span>
                       </td>
-                      <td className="p-4">
-                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela)} className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-transform hover:scale-105 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                           {t.status}
                         </button>
                       </td>
-                      <td className="p-4">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-2 py-1 rounded">
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-fit">
                           {t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}
                         </span>
                       </td>
-                      <td className="p-4 font-bold text-slate-800 text-right whitespace-nowrap">{formatarMoeda(t.valorParcela)}</td>
-                      <td className="p-4">
-                        <div className="flex justify-center gap-1">
-                          <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-2 py-1 rounded text-xs transition-colors">✏️</button>
-                          <button onClick={() => deletarTransacao(t.id)} className="bg-red-50 text-red-500 hover:bg-red-100 px-2 py-1 rounded text-xs transition-colors">🗑️</button>
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right whitespace-nowrap text-[9px] md:text-sm">{formatarMoeda(t.valorParcela)}</td>
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <div className="flex flex-col xl:flex-row justify-center gap-1">
+                          <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors">✏️</button>
+                          <button onClick={() => deletarTransacao(t.id)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors">🗑️</button>
                         </div>
                       </td>
                     </tr>
