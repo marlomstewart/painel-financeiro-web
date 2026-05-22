@@ -400,7 +400,7 @@ function App() {
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
-          <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400"><h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo Pago</h3><p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p></div>
+          <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400"><h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3><p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
         </div>
 
