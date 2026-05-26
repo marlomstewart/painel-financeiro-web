@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const API = 'https://painel-gestao-financeira-api.onrender.com/api';
 
 function App() {
   // =========================================================================
@@ -11,7 +12,7 @@ function App() {
   const [tokenTemp, setTokenTemp] = useState(null);
   const [precisaTrocarSenha, setPrecisaTrocarSenha] = useState(false);
   const [nomeUsuario, setNomeUsuario] = useState(localStorage.getItem('nomeUsuario') || '');
-  
+
   const [usuarioLogin, setUsuarioLogin] = useState('');
   const [senhaLogin, setSenhaLogin] = useState('');
   const [erroLogin, setErroLogin] = useState('');
@@ -23,11 +24,9 @@ function App() {
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
   const [dataVis, setDataVis] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
 
-  // Estados de Filtros e Ordenação da Tabela
+  // Filtros e Ordenação
   const [buscaTexto, setBuscaTexto] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
-  
-  // Ordenação e Filtros Avançados
   const [ordenacao, setOrdenacao] = useState({ coluna: 'data', direcao: 'desc' });
   const [mostrarFiltrosAvancados, setMostrarFiltrosAvancados] = useState(false);
   const [filtrosAvancados, setFiltrosAvancados] = useState({
@@ -43,26 +42,29 @@ function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
 
-  const headersAuth = { 'Authorization': `Bearer ${token || tokenTemp}`, 'Content-Type': 'application/json' };
+  // ✅ FIX: headersAuth como função para sempre usar o token mais atualizado
+  const getHeaders = useCallback(() => ({
+    'Authorization': `Bearer ${token || tokenTemp}`,
+    'Content-Type': 'application/json'
+  }), [token, tokenTemp]);
 
   // =========================================================================
-  // EFEITOS (Sincronização com a API)
+  // EFEITOS
   // =========================================================================
   useEffect(() => {
     if (!token) return;
-    const carregarDadosDoBanco = async () => {
+    const headers = getHeaders();
+    const carregar = async () => {
       try {
         const [resT, resC, resCat, resR, resF, resRF] = await Promise.all([
-          fetch('https://painel-gestao-financeira-api.onrender.com/api/transacoes', { headers: headersAuth }),
-          fetch('https://painel-gestao-financeira-api.onrender.com/api/cartoes', { headers: headersAuth }),
-          fetch('https://painel-gestao-financeira-api.onrender.com/api/categorias', { headers: headersAuth }),
-          fetch('https://painel-gestao-financeira-api.onrender.com/api/metas-renda', { headers: headersAuth }),
-          fetch('https://painel-gestao-financeira-api.onrender.com/api/contas-fixas', { headers: headersAuth }),
-          fetch('https://painel-gestao-financeira-api.onrender.com/api/rendas-fixas', { headers: headersAuth })
+          fetch(`${API}/transacoes`, { headers }),
+          fetch(`${API}/cartoes`, { headers }),
+          fetch(`${API}/categorias`, { headers }),
+          fetch(`${API}/metas-renda`, { headers }),
+          fetch(`${API}/contas-fixas`, { headers }),
+          fetch(`${API}/rendas-fixas`, { headers })
         ]);
-
         if (!resT.ok) { fazerLogout(); return; }
-
         setTransacoes(await resT.json());
         setCartoes(await resC.json());
         setCategorias(await resCat.json());
@@ -72,21 +74,20 @@ function App() {
         setCarregouAPI(true);
       } catch (err) { console.error("Erro ao sincronizar:", err); }
     };
-    carregarDadosDoBanco();
+    carregar();
   }, [token]);
 
   // =========================================================================
-  // FUNÇÕES DE LOGIN E CSV
+  // LOGIN / LOGOUT / CSV
   // =========================================================================
   const fazerLogin = async (e) => {
     e.preventDefault(); setErroLogin('');
     try {
-      const res = await fetch('https://painel-gestao-financeira-api.onrender.com/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: usuarioLogin, senha: senhaLogin }) });
+      const res = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: usuarioLogin, senha: senhaLogin }) });
       const data = await res.json();
-      
       if (data.auth) {
         localStorage.setItem('nomeUsuario', usuarioLogin); setNomeUsuario(usuarioLogin);
-        if (data.precisaTrocar) { setTokenTemp(data.token); setPrecisaTrocarSenha(true); } 
+        if (data.precisaTrocar) { setTokenTemp(data.token); setPrecisaTrocarSenha(true); }
         else { localStorage.setItem('tokenPainel', data.token); setToken(data.token); }
       } else { setErroLogin(data.message); }
     } catch (err) { setErroLogin("Erro ao conectar no servidor."); }
@@ -102,10 +103,9 @@ function App() {
     const regexSenhaForte = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/;
     if (novaSenha !== confirmarSenha) return setErroTrocaSenha("As senhas não coincidem.");
     if (!regexSenhaForte.test(novaSenha)) return setErroTrocaSenha("Mínimo 12 caracteres, 1 Maiúscula, 1 Minúscula, 1 Número, 1 Especial.");
-
     try {
-      const res = await fetch('https://painel-gestao-financeira-api.onrender.com/api/mudar-senha', { method: 'POST', headers: headersAuth, body: JSON.stringify({ novaSenha }) });
-      if (res.ok) { localStorage.setItem('tokenPainel', tokenTemp); setToken(tokenTemp); setTokenTemp(null); setPrecisaTrocarSenha(false); } 
+      const res = await fetch(`${API}/mudar-senha`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ novaSenha }) });
+      if (res.ok) { localStorage.setItem('tokenPainel', tokenTemp); setToken(tokenTemp); setTokenTemp(null); setPrecisaTrocarSenha(false); }
       else { setErroTrocaSenha("Erro ao atualizar a senha no servidor."); }
     } catch (err) { setErroTrocaSenha("Erro de conexão."); }
   };
@@ -125,109 +125,165 @@ function App() {
   };
 
   // =========================================================================
-  // CRUD DO SISTEMA (Setup e Lançamentos)
+  // CRUD SETUP
   // =========================================================================
-  const salvarConfig = async (rota, dados, setState, stateAtual) => { await fetch(`https://painel-gestao-financeira-api.onrender.com/api/${rota}`, { method: 'POST', headers: headersAuth, body: JSON.stringify(dados) }); setState([...stateAtual, dados]); };
-  
+  const salvarConfig = async (rota, dados, setState, stateAtual) => {
+    try {
+      const res = await fetch(`${API}/${rota}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+      if (res.ok) setState([...stateAtual, dados]);
+    } catch (err) { console.error("Erro ao salvar:", err); }
+  };
+
   const addCartao = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); e.target.reset(); };
   const addCategoria = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); e.target.reset(); };
   const addRendaMeta = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('metas-renda', { id: Date.now().toString(), nome: fd.get('nome'), valor: Number(fd.get('valor')) }, setMetasRenda, metasRenda); e.target.reset(); };
   const addContaFixa = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valor')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); e.target.reset(); };
   const addRendaFixa = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valor')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); e.target.reset(); };
-  
-  const removerSetup = async (banco, id) => { 
-    let rota = banco === 'metasRenda' ? 'metas-renda' : banco === 'contasFixas' ? 'contas-fixas' : banco === 'rendasFixas' ? 'rendas-fixas' : banco; 
-    await fetch(`https://painel-gestao-financeira-api.onrender.com/api/${rota}/${id}`, { method: 'DELETE', headers: headersAuth }); 
-    if (banco === 'cartoes') setCartoes(cartoes.filter(c => c.id !== id)); 
-    if (banco === 'categorias') setCategorias(categorias.filter(c => c.id !== id)); 
-    if (banco === 'metasRenda') setMetasRenda(metasRenda.filter(r => r.id !== id)); 
-    if (banco === 'contasFixas') setContasFixas(contasFixas.filter(f => f.id !== id)); 
-    if (banco === 'rendasFixas') setRendasFixas(rendasFixas.filter(f => f.id !== id));
+
+  const removerSetup = async (banco, id) => {
+    const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas' };
+    await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'DELETE', headers: getHeaders() });
+    const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas] };
+    const [setter, state] = setters[banco];
+    setter(state.filter(i => i.id !== id));
   };
 
+  // =========================================================================
+  // LANÇAMENTOS
+  // =========================================================================
   const addTransacao = async (e) => {
-    e.preventDefault(); const fd = new FormData(e.target);
-    const d = fd.get('descricao'); const v = Number(fd.get('valor')); const dt = new Date(fd.get('dataCompra') + 'T00:00:00');
-    let t = fd.get('tipo'); const c = fd.get('categoria'); const p = fd.get('formaPagamento'); const parc = Number(fd.get('parcelas')) || 1; const s = fd.get('status');
-    if(c === 'Renda' || c === 'Renda Fixa') t = 'renda'; if(c === 'Contas Fixas') t = 'despesa';
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const d = fd.get('descricao'), v = Number(fd.get('valor')), dt = new Date(fd.get('dataCompra') + 'T00:00:00');
+    let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
+    if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
+    if (c === 'Contas Fixas') t = 'despesa';
+
+    // ✅ grupo_id para vincular parcelas
+    const grupoId = parc > 1 ? Date.now().toString() : null;
 
     let novasT = [];
     if (p.startsWith('credito_')) {
       const cart = cartoes.find(card => card.id === p.split('_')[1]);
       let mI = (dt.getDate() >= cart.melhorDia) ? dt.getMonth() + 1 : dt.getMonth();
       for (let i = 0; i < parc; i++) {
-        let mP = mI + i, aP = dt.getFullYear(); if(mP > 11) { aP += Math.floor(mP / 12); mP %= 12; }
-        novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i+1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP });
+        let mP = mI + i, aP = dt.getFullYear();
+        if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; }
+        novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId });
       }
-    } else { novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear() }); }
+    } else {
+      novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId });
+    }
 
-    for (const nova of novasT) await fetch('https://painel-gestao-financeira-api.onrender.com/api/transacoes', { method: 'POST', headers: headersAuth, body: JSON.stringify(nova) });
-    setTransacoes([...transacoes, ...novasT]); e.target.reset();
+    for (const nova of novasT) {
+      await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
+    }
+    setTransacoes([...transacoes, ...novasT]);
+    e.target.reset();
   };
 
-  const deletarTransacao = async (id) => { if(window.confirm("Excluir?")) { await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${id}`, { method: 'DELETE', headers: headersAuth }); setTransacoes(transacoes.filter(t => t.id !== id)); } };
-  
-  const alternarStatusTransacao = async (id, statusAtual, valor, dataCompraOriginal) => { 
-    const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago'; 
-    await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${id}`, { method: 'PUT', headers: headersAuth, body: JSON.stringify({ status: novoStatus, valorParcela: valor, dataCompra: dataCompraOriginal }) }); 
-    setTransacoes(transacoes.map(tr => tr.id === id ? { ...tr, status: novoStatus } : tr)); 
-  };
-  
-  // =========================================================================
-  // EDIÇÃO INTELIGENTE (VALOR, STATUS E DATA PARA RENDA)
-  // =========================================================================
-  const editarValor = async (t) => { 
-    const nV = window.prompt("Novo Valor (R$):", t.valorParcela); 
-    if (nV !== null) { 
-      const valorAjustado = parseFloat(nV); 
-      const alternar = window.confirm("Deseja alternar o status PAGO/PENDENTE?"); 
-      const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status; 
-      
-      let novaDataISO = t.dataCompra; 
-      
-      // Abre ajuste de data apenas se for do tipo renda
-      if (t.tipo === 'renda') {
-        const dataAtualBR = new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
-        const novaDataStr = window.prompt("Nova Data de Recebimento (DD/MM/AAAA) - Deixe igual se não mudou:", dataAtualBR);
-        
-        if (novaDataStr && novaDataStr.includes('/')) {
-          const partes = novaDataStr.split('/');
-          if (partes.length === 3) {
-            novaDataISO = new Date(`${partes[2]}-${partes[1]}-${partes[0]}T00:00:00`).toISOString();
-          }
-        }
+  const deletarTransacao = async (t) => {
+    // Se tem grupo_id (é parcelado), pergunta se quer deletar só esta ou todas as futuras
+    if (t.grupo_id) {
+      const opcao = window.confirm(`Esta compra é parcelada.\n\nOK = Excluir TODAS as parcelas futuras a partir desta\nCancelar = Excluir SOMENTE esta parcela`);
+      if (opcao) {
+        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}`, { method: 'DELETE', headers: getHeaders() });
+        setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))));
+        return;
       }
+    } else {
+      if (!window.confirm("Excluir esta transação?")) return;
+    }
+    await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
+    setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
+  };
 
-      await fetch(`https://painel-gestao-financeira-api.onrender.com/api/transacoes/${t.id}`, { 
-        method: 'PUT', 
-        headers: headersAuth, 
-        body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) 
-      }); 
-      
-      setTransacoes(transacoes.map(tr => tr.id === t.id ? { ...tr, valorParcela: valorAjustado, status: novoStatus, dataCompra: novaDataISO } : tr)); 
-    } 
+  const alternarStatusTransacao = async (id, statusAtual, valor, dataCompraOriginal) => {
+    const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
+    await fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valor, dataCompra: dataCompraOriginal }) });
+    setTransacoes(prev => prev.map(tr => tr.id === id ? { ...tr, status: novoStatus } : tr));
   };
 
   // =========================================================================
-  // CÁLCULOS, FILTROS E ORDENAÇÃO DO DASHBOARD E TABELA
+  // EDIÇÃO INTELIGENTE
+  // =========================================================================
+  const editarValor = async (t) => {
+    const nV = window.prompt("Novo Valor (R$):", t.valorParcela);
+    if (nV === null) return;
+    const valorAjustado = parseFloat(nV);
+    const alternar = window.confirm("Deseja alternar o status PAGO/PENDENTE?");
+    const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status;
+    let novaDataISO = t.dataCompra;
+
+    if (t.tipo === 'renda') {
+      const dataAtualBR = new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+      const novaDataStr = window.prompt("Nova Data de Recebimento (DD/MM/AAAA):", dataAtualBR);
+      if (novaDataStr && novaDataStr.includes('/')) {
+        const partes = novaDataStr.split('/');
+        if (partes.length === 3) novaDataISO = new Date(`${partes[2]}-${partes[1]}-${partes[0]}T00:00:00`).toISOString();
+      }
+    }
+
+    // ✅ Se é parcelado, pergunta se edita só esta ou todas as futuras
+    if (t.grupo_id) {
+      const cascata = window.confirm("Esta compra é parcelada.\n\nOK = Editar TODAS as parcelas futuras a partir desta\nCancelar = Editar SOMENTE esta parcela");
+      if (cascata) {
+        await fetch(`${API}/transacoes/grupo/${t.grupo_id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify({ valorParcela: valorAjustado, mes: t.mesReferencia, ano: t.anoReferencia })
+        });
+        setTransacoes(prev => prev.map(tr =>
+          (tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))
+            ? { ...tr, valorParcela: valorAjustado }
+            : tr
+        ));
+        // Ainda atualiza status e data da parcela clicada individualmente
+        await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) });
+        setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, status: novoStatus, dataCompra: novaDataISO } : tr));
+        return;
+      }
+    }
+
+    await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) });
+    setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: valorAjustado, status: novoStatus, dataCompra: novaDataISO } : tr));
+  };
+
+  // =========================================================================
+  // CÁLCULOS DO DASHBOARD
   // =========================================================================
   const mesAnterior = () => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 });
   const mesProximo = () => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 });
-  
+
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
 
+  // ✅ TRANSPORTE DE SALDO: soma o resultado líquido de todos os meses anteriores
+  const saldoTransportado = React.useMemo(() => {
+    // Pega todas as transações de meses anteriores ao visualizado
+    const anteriores = transacoes.filter(t =>
+      t.anoReferencia < dataVis.ano ||
+      (t.anoReferencia === dataVis.ano && t.mesReferencia < dataVis.mes)
+    );
+    let rendaPaga = 0, gastoPago = 0;
+    anteriores.forEach(t => {
+      const v = Number(t.valorParcela);
+      if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
+        if (t.status === 'pago') rendaPaga += v;
+      } else {
+        if (t.status === 'pago') gastoPago += v;
+      }
+    });
+    return rendaPaga - gastoPago;
+  }, [transacoes, dataVis]);
+
   const mudarOrdenacao = (coluna) => {
-    if (ordenacao.coluna === coluna) {
-      setOrdenacao({ coluna, direcao: ordenacao.direcao === 'asc' ? 'desc' : 'asc' });
-    } else {
-      setOrdenacao({ coluna, direcao: 'asc' });
-    }
+    if (ordenacao.coluna === coluna) setOrdenacao({ coluna, direcao: ordenacao.direcao === 'asc' ? 'desc' : 'asc' });
+    else setOrdenacao({ coluna, direcao: 'asc' });
   };
 
   let dadosTabela = transacoesMes.filter(t => {
     const atendeStatus = filtroStatus === 'todos' || t.status === filtroStatus;
     const atendeBusca = t.descricao.toLowerCase().includes(buscaTexto.toLowerCase());
-    
     let atendeAvancado = true;
     if (mostrarFiltrosAvancados) {
       if (filtrosAvancados.categoria && t.categoria !== filtrosAvancados.categoria) atendeAvancado = false;
@@ -237,24 +293,23 @@ function App() {
       if (filtrosAvancados.dataInicio && new Date(t.dataCompra) < new Date(filtrosAvancados.dataInicio + 'T00:00:00')) atendeAvancado = false;
       if (filtrosAvancados.dataFim && new Date(t.dataCompra) > new Date(filtrosAvancados.dataFim + 'T23:59:59')) atendeAvancado = false;
     }
-
     return atendeStatus && atendeBusca && atendeAvancado;
   });
 
   if (ordenacao.coluna) {
     dadosTabela.sort((a, b) => {
-      let valorA, valorB;
+      let vA, vB;
       switch (ordenacao.coluna) {
-        case 'descricao': valorA = a.descricao.toLowerCase(); valorB = b.descricao.toLowerCase(); break;
-        case 'categoria': valorA = a.categoria.toLowerCase(); valorB = b.categoria.toLowerCase(); break;
-        case 'data': valorA = new Date(a.dataCompra).getTime(); valorB = new Date(b.dataCompra).getTime(); break;
-        case 'status': valorA = a.status; valorB = b.status; break;
-        case 'pagamento': valorA = a.formaPagamento; valorB = b.formaPagamento; break;
-        case 'valor': valorA = Number(a.valorParcela); valorB = Number(b.valorParcela); break;
+        case 'descricao': vA = a.descricao.toLowerCase(); vB = b.descricao.toLowerCase(); break;
+        case 'categoria': vA = a.categoria.toLowerCase(); vB = b.categoria.toLowerCase(); break;
+        case 'data': vA = new Date(a.dataCompra).getTime(); vB = new Date(b.dataCompra).getTime(); break;
+        case 'status': vA = a.status; vB = b.status; break;
+        case 'pagamento': vA = a.formaPagamento; vB = b.formaPagamento; break;
+        case 'valor': vA = Number(a.valorParcela); vB = Number(b.valorParcela); break;
         default: return 0;
       }
-      if (valorA < valorB) return ordenacao.direcao === 'asc' ? -1 : 1;
-      if (valorA > valorB) return ordenacao.direcao === 'asc' ? 1 : -1;
+      if (vA < vB) return ordenacao.direcao === 'asc' ? -1 : 1;
+      if (vA > vB) return ordenacao.direcao === 'asc' ? 1 : -1;
       return 0;
     });
   }
@@ -268,27 +323,28 @@ function App() {
     if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
       totRendaTotal += v;
       if (t.status === 'pago') totRendaPaga += v;
-    }
-    else {
+    } else {
       if (t.tipo === 'despesa') totGastoReal += v;
       if (t.tipo === 'investimento') totInvestido += v;
       if (t.status === 'pago') totGastoPago += v;
-      if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') { totFaturaCreditoAberto += v; }
+      if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') totFaturaCreditoAberto += v;
       if (t.categoria === 'Contas Fixas') gastoContasFixas += v;
       else if (t.categoria === 'Sem Categoria') gastoSemCategoria += v;
       else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += v;
     }
   });
 
-  let custoPrevisto = (gastoSemCategoria + gastoContasFixas);
-  categorias.forEach(c => custoPrevisto += Math.max(c.meta, (gCat[c.nome] || 0)));
-  const saldoAtual = totRendaPaga - totGastoPago;
+  let custoPrevisto = gastoSemCategoria + gastoContasFixas;
+  categorias.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
+
+  // ✅ Saldo atual do mês + transporte dos meses anteriores
+  const saldoMesAtual = totRendaPaga - totGastoPago;
+  const saldoAtual = saldoMesAtual + saldoTransportado;
   const previstoFimMes = totRendaTotal - custoPrevisto;
 
   // =========================================================================
-  // RENDERIZAÇÃO DAS TELAS
+  // TELAS
   // =========================================================================
-  
   if (!token && !precisaTrocarSenha) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -333,26 +389,22 @@ function App() {
               <button onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 text-white font-medium py-2 px-6 rounded-lg hover:bg-slate-800">Voltar</button>
             </div>
           </header>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section className="bg-white p-6 rounded-xl shadow-sm border">
               <h2 className="text-sm font-bold uppercase text-slate-600 mb-4">1. Cartões de Crédito</h2>
               <form onSubmit={addCartao} className="space-y-3"><input name="nome" placeholder="Nome" required className="w-full border p-2 rounded text-sm outline-none focus:border-blue-500" /><div className="flex gap-2"><input name="melhorDia" type="number" placeholder="Melhor dia" required className="w-1/2 border p-2 rounded text-sm outline-none focus:border-blue-500" /><input name="vencimento" type="number" placeholder="Vencimento" required className="w-1/2 border p-2 rounded text-sm outline-none focus:border-blue-500" /></div><button type="submit" className="w-full bg-blue-500 text-white py-2 rounded text-sm hover:bg-blue-600">Salvar Cartão</button></form>
               <ul className="mt-4 space-y-2">{cartoes.map(c => (<li key={c.id} className="flex justify-between bg-slate-50 p-2 rounded border text-sm items-center"><span>💳 {c.nome}</span><button onClick={() => removerSetup('cartoes', c.id)} className="text-red-500 bg-red-50 px-2 py-1 rounded">X</button></li>))}</ul>
             </section>
-            
             <section className="bg-white p-6 rounded-xl shadow-sm border">
               <h2 className="text-sm font-bold uppercase text-slate-600 mb-4">2. Metas (Categorias)</h2>
               <form onSubmit={addCategoria} className="space-y-3"><input name="nome" placeholder="Nome" required className="w-full border p-2 rounded text-sm outline-none focus:border-blue-500" /><input name="meta" type="number" step="0.01" placeholder="Meta" required className="w-full border p-2 rounded text-sm outline-none focus:border-blue-500" /><select name="tipo" className="w-full border p-2 rounded text-sm bg-white outline-none focus:border-blue-500"><option value="despesa">Gasto</option><option value="investimento">Investimento</option></select><button type="submit" className="w-full bg-blue-500 text-white py-2 rounded text-sm hover:bg-blue-600">Salvar Categoria</button></form>
               <ul className="mt-4 space-y-2">{categorias.map(c => (<li key={c.id} className="flex justify-between bg-slate-50 p-2 rounded border text-sm items-center"><span>🏷️ {c.nome}</span><button onClick={() => removerSetup('categorias', c.id)} className="text-red-500 bg-red-50 px-2 py-1 rounded">X</button></li>))}</ul>
             </section>
-            
             <section className="bg-white p-6 rounded-xl shadow-sm border">
               <h2 className="text-sm font-bold uppercase text-slate-600 mb-4">3. Contas Fixas</h2>
               <form onSubmit={addContaFixa} className="space-y-3"><input name="nome" placeholder="Nome" required className="w-full border p-2 rounded text-sm outline-none focus:border-blue-500" /><div className="flex gap-2"><input name="valor" type="number" step="0.01" placeholder="Valor" required className="w-1/2 border p-2 rounded text-sm outline-none focus:border-blue-500" /><input name="vencimento" type="number" placeholder="Dia" required className="w-1/2 border p-2 rounded text-sm outline-none focus:border-blue-500" /></div><button type="submit" className="w-full bg-blue-500 text-white py-2 rounded text-sm hover:bg-blue-600">Salvar Conta Fixa</button></form>
               <ul className="mt-4 space-y-2">{contasFixas.map(f => (<li key={f.id} className="flex justify-between bg-slate-50 p-2 rounded border text-sm items-center"><span>📅 {f.nome}</span><button onClick={() => removerSetup('contasFixas', f.id)} className="text-red-500 bg-red-50 px-2 py-1 rounded">X</button></li>))}</ul>
             </section>
-
             <section className="bg-white p-6 rounded-xl shadow-sm border">
               <h2 className="text-sm font-bold uppercase text-slate-600 mb-4">4. Rendas Fixas</h2>
               <form onSubmit={addRendaFixa} className="space-y-3">
@@ -363,14 +415,7 @@ function App() {
                 </div>
                 <button type="submit" className="w-full bg-emerald-500 text-white py-2 rounded text-sm hover:bg-emerald-600">Salvar Renda Fixa</button>
               </form>
-              <ul className="mt-4 space-y-2">
-                {rendasFixas.map(r => (
-                  <li key={r.id} className="flex justify-between bg-slate-50 p-2 rounded border text-sm items-center">
-                    <span>💰 {r.nome}</span>
-                    <button onClick={() => removerSetup('rendasFixas', r.id)} className="text-red-500 bg-red-50 px-2 py-1 rounded">X</button>
-                  </li>
-                ))}
-              </ul>
+              <ul className="mt-4 space-y-2">{rendasFixas.map(r => (<li key={r.id} className="flex justify-between bg-slate-50 p-2 rounded border text-sm items-center"><span>💰 {r.nome}</span><button onClick={() => removerSetup('rendasFixas', r.id)} className="text-red-500 bg-red-50 px-2 py-1 rounded">X</button></li>))}</ul>
             </section>
           </div>
         </div>
@@ -381,7 +426,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 overflow-x-hidden">
       <div className="mx-auto max-w-6xl space-y-4 md:space-y-6">
-        
+
         <header className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
           <div><h1 className="text-xl md:text-2xl font-bold text-slate-900">Painel Financeiro</h1><p className="text-xs md:text-sm text-slate-500 font-medium capitalize">Olá, {nomeUsuario}! 👋</p></div>
           <div className="flex items-center gap-2 md:gap-4 mt-4 md:mt-0 bg-slate-50 px-4 py-2 rounded-lg border">
@@ -395,12 +440,22 @@ function App() {
           </div>
         </header>
 
+        {/* ✅ Cards com Saldo transportado exibido abaixo do saldo atual */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4">
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
-          <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400"><h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3><p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p></div>
+          <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400">
+            <h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3>
+            <p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p>
+            {/* ✅ Mostra o detalhamento do transporte se houver saldo anterior */}
+            {saldoTransportado !== 0 && (
+              <p className="text-[9px] text-slate-400 mt-0.5" title="Inclui saldo acumulado de meses anteriores">
+                Mês: {formatarMoeda(saldoMesAtual)} + Anterior: {formatarMoeda(saldoTransportado)}
+              </p>
+            )}
+          </div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
         </div>
 
@@ -410,8 +465,8 @@ function App() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {categorias.map(c => {
                 const gas = gCat[c.nome] || 0; let por = Math.min((gas / c.meta) * 100, 100);
-                let corBarra = 'bg-emerald-500'; 
-                if (c.tipo === 'despesa') { if (por >= 90) corBarra = 'bg-red-500'; else if (por >= 70) corBarra = 'bg-amber-400'; } 
+                let corBarra = 'bg-emerald-500';
+                if (c.tipo === 'despesa') { if (por >= 90) corBarra = 'bg-red-500'; else if (por >= 70) corBarra = 'bg-amber-400'; }
                 else { corBarra = 'bg-blue-500'; }
                 return (
                   <div key={c.id} className="border p-3 md:p-4 rounded-lg bg-slate-50">
@@ -432,7 +487,10 @@ function App() {
               <input name="descricao" placeholder="Descrição" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
               <input name="valor" type="number" step="0.01" placeholder="Valor (R$)" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
               <input name="dataCompra" type="date" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm text-slate-600 outline-none focus:border-blue-500" />
-              <div className="grid grid-cols-2 gap-2"><select name="tipo" required className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Invest. / Meta</option></select><select name="status" className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pendente">Pendente</option><option value="pago">Pago</option></select></div>
+              <div className="grid grid-cols-2 gap-2">
+                <select name="tipo" required className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Invest. / Meta</option></select>
+                <select name="status" className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pendente">Pendente</option><option value="pago">Pago</option></select>
+              </div>
               <select name="categoria" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option><option value="Renda Fixa">Renda Fixa</option><option value="Renda">Renda Variável</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
               <select name="formaPagamento" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pix">PIX / Dinheiro</option><option value="debito">Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito - {c.nome}</option>)}</select>
               <input name="parcelas" type="number" min="1" placeholder="Qtd. Parcelas (Apenas Crédito)" className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
@@ -442,13 +500,11 @@ function App() {
 
           <div className="bg-white rounded-xl shadow-sm border lg:col-span-2 flex flex-col overflow-hidden w-full">
             <div className="p-3 md:p-4 border-b flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 bg-slate-50 rounded-t-xl">
-              
               <div className="flex bg-white rounded-lg border p-1 w-full md:w-auto">
                 <button onClick={() => setFiltroStatus('todos')} className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md flex-1 ${filtroStatus === 'todos' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>Todos</button>
                 <button onClick={() => setFiltroStatus('pendente')} className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md flex-1 ${filtroStatus === 'pendente' ? 'bg-amber-100 text-amber-700' : 'text-slate-500 hover:bg-slate-100'}`}>Pendentes</button>
                 <button onClick={() => setFiltroStatus('pago')} className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md flex-1 ${filtroStatus === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-100'}`}>Pagos</button>
               </div>
-              
               <div className="flex gap-2 w-full md:w-auto">
                 <input type="text" placeholder="🔍 Buscar..." value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)} className="w-full md:w-48 lg:w-64 border border-slate-300 p-1.5 md:p-2 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
                 <button onClick={() => setMostrarFiltrosAvancados(!mostrarFiltrosAvancados)} className={`px-2 md:px-3 py-1.5 md:py-2 rounded-lg border text-[10px] md:text-sm font-bold transition-colors ${mostrarFiltrosAvancados ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
@@ -462,34 +518,31 @@ function App() {
                 <div>
                   <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Período de Data</label>
                   <div className="flex gap-2">
-                    <input type="date" value={filtrosAvancados.dataInicio} onChange={e => setFiltrosAvancados({...filtrosAvancados, dataInicio: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" title="Data Inicial" />
-                    <input type="date" value={filtrosAvancados.dataFim} onChange={e => setFiltrosAvancados({...filtrosAvancados, dataFim: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" title="Data Final" />
+                    <input type="date" value={filtrosAvancados.dataInicio} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, dataInicio: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
+                    <input type="date" value={filtrosAvancados.dataFim} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, dataFim: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Faixa de Valor (R$)</label>
                   <div className="flex gap-2">
-                    <input type="number" placeholder="Mín." value={filtrosAvancados.valorMin} onChange={e => setFiltrosAvancados({...filtrosAvancados, valorMin: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
-                    <input type="number" placeholder="Máx." value={filtrosAvancados.valorMax} onChange={e => setFiltrosAvancados({...filtrosAvancados, valorMax: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
+                    <input type="number" placeholder="Mín." value={filtrosAvancados.valorMin} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, valorMin: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
+                    <input type="number" placeholder="Máx." value={filtrosAvancados.valorMax} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, valorMax: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Pagamento e Categoria</label>
                   <div className="flex gap-2">
-                    <select value={filtrosAvancados.formaPagamento} onChange={e => setFiltrosAvancados({...filtrosAvancados, formaPagamento: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
-                      <option value="">Qualquer</option>
-                      <option value="pix">PIX/Dinheiro</option>
-                      <option value="debito">Débito</option>
-                      <option value="credito">Crédito</option>
+                    <select value={filtrosAvancados.formaPagamento} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, formaPagamento: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
+                      <option value="">Qualquer</option><option value="pix">PIX/Dinheiro</option><option value="debito">Débito</option><option value="credito">Crédito</option>
                     </select>
-                    <select value={filtrosAvancados.categoria} onChange={e => setFiltrosAvancados({...filtrosAvancados, categoria: e.target.value})} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
+                    <select value={filtrosAvancados.categoria} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, categoria: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
                       <option value="">Qualquer</option>
                       {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="md:col-span-3 flex justify-end">
-                  <button onClick={() => setFiltrosAvancados({dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: ''})} className="text-[10px] md:text-xs text-red-500 hover:underline font-bold">Limpar Filtros</button>
+                  <button onClick={() => setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' })} className="text-[10px] md:text-xs text-red-500 hover:underline font-bold">Limpar Filtros</button>
                 </div>
               </div>
             )}
@@ -498,12 +551,12 @@ function App() {
               <table className="w-full text-left text-[9px] sm:text-[10px] md:text-sm text-slate-600 table-fixed">
                 <thead className="bg-white text-[8px] sm:text-[9px] md:text-xs uppercase font-semibold border-b select-none">
                   <tr>
-                    <th className="p-1 sm:p-2 md:p-4 w-[28%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('descricao')}>Desc. {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 w-[15%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('categoria')}>Categ. {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 w-[13%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th className="p-1 sm:p-2 md:p-4 w-[14%] cursor-pointer hover:bg-slate-50 transition-colors text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[28%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('descricao')}>Desc. {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[15%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('categoria')}>Categ. {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[13%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="p-1 sm:p-2 md:p-4 w-[14%] cursor-pointer hover:bg-slate-50 text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
                     <th className="p-1 sm:p-2 md:p-4 w-[8%] text-center">Ações</th>
                   </tr>
                 </thead>
@@ -511,30 +564,22 @@ function App() {
                   {dadosTabela.length === 0 && (<tr><td colSpan="7" className="p-4 md:p-8 text-center text-slate-400 font-medium text-xs">Nenhum lançamento encontrado.</td></tr>)}
                   {dadosTabela.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight">{t.descricao}</td>
-                      <td className="p-1 sm:p-2 md:p-4">
-                        <span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full" title={t.categoria}>{t.categoria}</span>
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight">
+                        {t.descricao}
+                        {/* ✅ Indicador visual de compra parcelada */}
+                        {t.grupo_id && <span className="ml-1 text-[7px] text-blue-400 font-normal" title="Compra parcelada">🔗</span>}
                       </td>
+                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full" title={t.categoria}>{t.categoria}</span></td>
+                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[8px] md:text-xs text-slate-400 font-medium break-words">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span></td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <span className="text-[8px] md:text-xs text-slate-400 font-medium break-words">
-                          {new Date(t.dataCompra).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
-                        </span>
+                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`} title={t.status}>{t.status}</button>
                       </td>
-                      <td className="p-1 sm:p-2 md:p-4">
-                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`} title={t.status}>
-                          {t.status}
-                        </button>
-                      </td>
-                      <td className="p-1 sm:p-2 md:p-4">
-                        <span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center" title={t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}>
-                          {t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}
-                        </span>
-                      </td>
+                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center" title={t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}>{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span></td>
                       <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right text-[9px] md:text-sm break-words">{formatarMoeda(t.valorParcela)}</td>
                       <td className="p-1 sm:p-2 md:p-4">
                         <div className="flex flex-col lg:flex-row justify-center items-center gap-1">
                           <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">✏️</button>
-                          <button onClick={() => deletarTransacao(t.id)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">🗑️</button>
+                          <button onClick={() => deletarTransacao(t)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">🗑️</button>
                         </div>
                       </td>
                     </tr>
