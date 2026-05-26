@@ -42,6 +42,9 @@ function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
 
+  // Toggle: somar saldo mês anterior ao saldo em conta (desativado por padrão)
+  const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(false);
+
   // ✅ FIX: headersAuth como função para sempre usar o token mais atualizado
   const getHeaders = useCallback(() => ({
     'Authorization': `Bearer ${token || tokenTemp}`,
@@ -353,9 +356,9 @@ function App() {
   let custoPrevisto = gastoSemCategoria + gastoContasFixas;
   categorias.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
 
-  // ✅ Saldo atual do mês + transporte dos meses anteriores
   const saldoMesAtual = totRendaPaga - totGastoPago;
-  const saldoAtual = saldoMesAtual + saldoTransportado;
+  // Saldo em conta: inclui mês anterior apenas se o toggle estiver ativado
+  const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
   const previstoFimMes = totRendaTotal - custoPrevisto;
 
   // =========================================================================
@@ -461,15 +464,24 @@ function App() {
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
-          <div className={`p-3 md:p-4 rounded-xl shadow-sm border-l-4 ${saldoMesAnterior >= 0 ? 'bg-teal-50 border-teal-500' : 'bg-rose-50 border-rose-400'}`}>
+          <div className={`p-3 md:p-4 rounded-xl shadow-sm border-l-4 transition-colors ${saldoMesAnterior >= 0 ? 'bg-teal-50 border-teal-500' : 'bg-rose-50 border-rose-400'}`}>
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Saldo Mês Anterior</h3>
             <p className={`text-sm md:text-lg font-bold mt-1 ${saldoMesAnterior >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>{formatarMoeda(saldoMesAnterior)}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{nomesMeses[mesAntRef.mes - 1]} {mesAntRef.ano}</p>
+            <p className="text-[9px] text-slate-400 mb-2">{nomesMeses[mesAntRef.mes - 1]} {mesAntRef.ano}</p>
+            <button
+              onClick={() => setSomarSaldoAnterior(v => !v)}
+              className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border ${somarSaldoAnterior ? 'bg-teal-500 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'}`}
+            >
+              {somarSaldoAnterior ? '✔ Somando ao Saldo' : '+ Somar ao Saldo'}
+            </button>
           </div>
           <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400">
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3>
             <p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p>
+            {somarSaldoAnterior
+              ? <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p>
+              : <p className="text-[9px] text-slate-500 mt-0.5">Apenas mês atual</p>
+            }
           </div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
         </div>
