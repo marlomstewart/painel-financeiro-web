@@ -257,15 +257,16 @@ function App() {
 
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
 
-  // ✅ TRANSPORTE DE SALDO: soma o resultado líquido de todos os meses anteriores
-  const saldoTransportado = React.useMemo(() => {
-    // Pega todas as transações de meses anteriores ao visualizado
-    const anteriores = transacoes.filter(t =>
-      t.anoReferencia < dataVis.ano ||
-      (t.anoReferencia === dataVis.ano && t.mesReferencia < dataVis.mes)
+  // ✅ Função auxiliar: calcula o saldo líquido acumulado até o fim de um determinado mês (recursivo)
+  // É o "Saldo em Conta" daquele mês, já incluindo o saldo transportado dos meses anteriores a ele.
+  const calcularSaldoAcumuladoAte = React.useCallback((mes, ano) => {
+    // Pega todas as transações pagas até esse mês/ano (inclusive)
+    const todasAteOMes = transacoes.filter(t =>
+      t.anoReferencia < ano ||
+      (t.anoReferencia === ano && t.mesReferencia <= mes)
     );
     let rendaPaga = 0, gastoPago = 0;
-    anteriores.forEach(t => {
+    todasAteOMes.forEach(t => {
       const v = Number(t.valorParcela);
       if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
         if (t.status === 'pago') rendaPaga += v;
@@ -274,7 +275,22 @@ function App() {
       }
     });
     return rendaPaga - gastoPago;
-  }, [transacoes, dataVis]);
+  }, [transacoes]);
+
+  // Mês anterior ao visualizado
+  const mesAntRef = React.useMemo(() => {
+    if (dataVis.mes === 1) return { mes: 12, ano: dataVis.ano - 1 };
+    return { mes: dataVis.mes - 1, ano: dataVis.ano };
+  }, [dataVis]);
+
+  // "Saldo Mês Anterior" = saldo acumulado até o último dia do mês anterior
+  const saldoMesAnterior = React.useMemo(() =>
+    calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano),
+    [calcularSaldoAcumuladoAte, mesAntRef]
+  );
+
+  // Alias para uso no card "Saldo em Conta"
+  const saldoTransportado = saldoMesAnterior;
 
   const mudarOrdenacao = (coluna) => {
     if (ordenacao.coluna === coluna) setOrdenacao({ coluna, direcao: ordenacao.direcao === 'asc' ? 'desc' : 'asc' });
@@ -440,21 +456,20 @@ function App() {
           </div>
         </header>
 
-        {/* ✅ Cards com Saldo transportado exibido abaixo do saldo atual */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-4">
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
+          <div className={`p-3 md:p-4 rounded-xl shadow-sm border-l-4 ${saldoMesAnterior >= 0 ? 'bg-teal-50 border-teal-500' : 'bg-rose-50 border-rose-400'}`}>
+            <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Saldo Mês Anterior</h3>
+            <p className={`text-sm md:text-lg font-bold mt-1 ${saldoMesAnterior >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>{formatarMoeda(saldoMesAnterior)}</p>
+            <p className="text-[9px] text-slate-400 mt-0.5">{nomesMeses[mesAntRef.mes - 1]} {mesAntRef.ano}</p>
+          </div>
           <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400">
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3>
             <p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p>
-            {/* ✅ Mostra o detalhamento do transporte se houver saldo anterior */}
-            {saldoTransportado !== 0 && (
-              <p className="text-[9px] text-slate-400 mt-0.5" title="Inclui saldo acumulado de meses anteriores">
-                Mês: {formatarMoeda(saldoMesAtual)} + Anterior: {formatarMoeda(saldoTransportado)}
-              </p>
-            )}
+            <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p>
           </div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
         </div>
