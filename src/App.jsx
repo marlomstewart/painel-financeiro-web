@@ -103,17 +103,23 @@ function Modal({ config, onClose }) {
           {type === 'faturas' && (
             <div className="space-y-2 mt-1">
               {config.itens.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">Nenhuma fatura aberta neste mês.</p>
+                <p className="text-sm text-slate-400 text-center py-4">Nenhum gasto no crédito neste mês.</p>
               ) : (
                 <>
                   {config.itens.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-slate-50 rounded-lg border">
-                      <span className="text-sm font-medium text-slate-700">💳 {item.nome}</span>
-                      <span className="text-sm font-bold text-purple-700">{formatarMoeda(item.total)}</span>
+                    <div key={i} className="px-3 py-2.5 bg-slate-50 rounded-lg border">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
+                        <span className="text-sm font-bold text-purple-700">{formatarMoeda(item.total)}</span>
+                      </div>
+                      <div className="flex gap-3 text-xs text-slate-500">
+                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">✔ Pago: {formatarMoeda(item.pago)}</span>
+                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">⏳ Pendente: {formatarMoeda(item.pendente)}</span>
+                      </div>
                     </div>
                   ))}
                   <div className="flex justify-between items-center px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-200 mt-1">
-                    <span className="text-sm font-bold text-slate-700">Total</span>
+                    <span className="text-sm font-bold text-slate-700">Total Geral</span>
                     <span className="text-sm font-bold text-purple-700">{formatarMoeda(config.itens.reduce((s, i) => s + i.total, 0))}</span>
                   </div>
                 </>
@@ -445,24 +451,25 @@ function App() {
   // FATURAS POR CARTÃO
   // =========================================================================
   const verFaturasPorCartao = () => {
-    // Agrupa as faturas pendentes do mês por cartão
     const porCartao = {};
     transacoesMes.forEach(t => {
-      if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+      if (t.formaPagamento && t.formaPagamento.startsWith('credito_')) {
         const cartaoId = t.formaPagamento.split('_')[1];
         const cartao = cartoes.find(c => c.id === cartaoId);
         const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
-        if (!porCartao[nome]) porCartao[nome] = 0;
-        porCartao[nome] += Number(t.valorParcela);
+        if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
+        porCartao[nome].total += Number(t.valorParcela);
+        if (t.status === 'pago') porCartao[nome].pago += Number(t.valorParcela);
+        else porCartao[nome].pendente += Number(t.valorParcela);
       }
     });
     const itens = Object.entries(porCartao)
-      .map(([nome, total]) => ({ nome, total }))
+      .map(([nome, v]) => ({ nome, ...v }))
       .sort((a, b) => b.total - a.total);
 
     modal.setConfig({
       type: 'faturas',
-      title: `💳 Faturas Abertas — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
+      title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
       itens,
       onCancel: modal.close,
       onClose: modal.close,
@@ -767,7 +774,7 @@ function App() {
           <div onClick={verFaturasPorCartao} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50 transition-colors">
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3>
             <p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">Clique para detalhar</p>
+            <p className="text-[9px] text-slate-400 mt-0.5">Clique para ver por cartão</p>
           </div>
           <div className={`p-3 md:p-4 rounded-xl shadow-sm border-l-4 transition-colors ${saldoMesAnterior >= 0 ? 'bg-teal-50 border-teal-500' : 'bg-rose-50 border-rose-400'}`}>
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Saldo Mês Anterior</h3>
