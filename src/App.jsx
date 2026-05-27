@@ -217,17 +217,56 @@ function App() {
   };
 
   const deletarTransacao = async (t) => {
-    // Se tem grupo_id (é parcelado), pergunta se quer deletar só esta ou todas as futuras
     if (t.grupo_id) {
-      const opcao = window.confirm(`Esta compra é parcelada.\n\nOK = Excluir TODAS as parcelas futuras a partir desta\nCancelar = Excluir SOMENTE esta parcela`);
-      if (opcao) {
-        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))));
-        return;
+      // Monta menu de opções para parcelas
+      const opcao = window.prompt(
+        `Esta compra é parcelada. O que deseja excluir?\n\n` +
+        `1 - Somente esta parcela\n` +
+        `2 - Esta e todas as futuras\n` +
+        `3 - Esta e todas as anteriores\n` +
+        `4 - Todas as parcelas\n\n` +
+        `Digite o número da opção:`
+      );
+      if (!opcao) return; // cancelou
+
+      if (opcao === '1') {
+        // Só esta
+        if (!window.confirm("Excluir somente esta parcela?")) return;
+        await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
+        setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
+
+      } else if (opcao === '2') {
+        // Esta e futuras
+        if (!window.confirm("Excluir esta e todas as parcelas futuras?")) return;
+        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=futuras`, { method: 'DELETE', headers: getHeaders() });
+        setTransacoes(prev => prev.filter(tr => !(
+          tr.grupo_id === t.grupo_id &&
+          (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia))
+        )));
+
+      } else if (opcao === '3') {
+        // Esta e anteriores
+        if (!window.confirm("Excluir esta e todas as parcelas anteriores?")) return;
+        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=anteriores`, { method: 'DELETE', headers: getHeaders() });
+        setTransacoes(prev => prev.filter(tr => !(
+          tr.grupo_id === t.grupo_id &&
+          (tr.anoReferencia < t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia <= t.mesReferencia))
+        )));
+
+      } else if (opcao === '4') {
+        // Todas
+        if (!window.confirm("Excluir TODAS as parcelas desta compra?")) return;
+        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?modo=todas`, { method: 'DELETE', headers: getHeaders() });
+        setTransacoes(prev => prev.filter(tr => tr.grupo_id !== t.grupo_id));
+
+      } else {
+        alert('Opção inválida. Digite 1, 2, 3 ou 4.');
       }
-    } else {
-      if (!window.confirm("Excluir esta transação?")) return;
+      return;
     }
+
+    // Transação simples (sem grupo)
+    if (!window.confirm("Excluir esta transação?")) return;
     await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
     setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
   };
