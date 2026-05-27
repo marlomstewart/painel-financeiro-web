@@ -98,6 +98,29 @@ function Modal({ config, onClose }) {
               </button>
             </div>
           )}
+
+          {/* TIPO: faturas (detalhamento por cartão) */}
+          {type === 'faturas' && (
+            <div className="space-y-2 mt-1">
+              {config.itens.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">Nenhuma fatura aberta neste mês.</p>
+              ) : (
+                <>
+                  {config.itens.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-slate-50 rounded-lg border">
+                      <span className="text-sm font-medium text-slate-700">💳 {item.nome}</span>
+                      <span className="text-sm font-bold text-purple-700">{formatarMoeda(item.total)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-200 mt-1">
+                    <span className="text-sm font-bold text-slate-700">Total</span>
+                    <span className="text-sm font-bold text-purple-700">{formatarMoeda(config.itens.reduce((s, i) => s + i.total, 0))}</span>
+                  </div>
+                </>
+              )}
+              <button onClick={handleCancel} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition-colors mt-2">Fechar</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -128,7 +151,7 @@ function useModal() {
     new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
   []);
 
-  return { config, close, alert, confirm, prompt, options };
+  return { config, close, setConfig, alert, confirm, prompt, options };
 }
 
 function App() {
@@ -416,6 +439,34 @@ function App() {
 
     await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) });
     setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: valorAjustado, status: novoStatus, dataCompra: novaDataISO } : tr));
+  };
+
+  // =========================================================================
+  // FATURAS POR CARTÃO
+  // =========================================================================
+  const verFaturasPorCartao = () => {
+    // Agrupa as faturas pendentes do mês por cartão
+    const porCartao = {};
+    transacoesMes.forEach(t => {
+      if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+        const cartaoId = t.formaPagamento.split('_')[1];
+        const cartao = cartoes.find(c => c.id === cartaoId);
+        const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
+        if (!porCartao[nome]) porCartao[nome] = 0;
+        porCartao[nome] += Number(t.valorParcela);
+      }
+    });
+    const itens = Object.entries(porCartao)
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total);
+
+    modal.setConfig({
+      type: 'faturas',
+      title: `💳 Faturas Abertas — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
+      itens,
+      onCancel: modal.close,
+      onClose: modal.close,
+    });
   };
 
   // =========================================================================
@@ -713,7 +764,11 @@ function App() {
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3><p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p></div>
+          <div onClick={verFaturasPorCartao} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50 transition-colors">
+            <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3>
+            <p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p>
+            <p className="text-[9px] text-slate-400 mt-0.5">Clique para detalhar</p>
+          </div>
           <div className={`p-3 md:p-4 rounded-xl shadow-sm border-l-4 transition-colors ${saldoMesAnterior >= 0 ? 'bg-teal-50 border-teal-500' : 'bg-rose-50 border-rose-400'}`}>
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Saldo Mês Anterior</h3>
             <p className={`text-sm md:text-lg font-bold mt-1 ${saldoMesAnterior >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>{formatarMoeda(saldoMesAnterior)}</p>
