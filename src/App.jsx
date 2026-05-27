@@ -1,8 +1,135 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const API = 'https://painel-gestao-financeira-api.onrender.com/api';
+
+// =========================================================================
+// COMPONENTE DE MODAL CUSTOMIZADO
+// =========================================================================
+function Modal({ config, onClose }) {
+  const [inputValue, setInputValue] = useState(config?.defaultValue || '');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (config) {
+      setInputValue(config.defaultValue || '');
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [config]);
+
+  if (!config) return null;
+
+  const { type, title, message, options, onConfirm, onCancel, confirmLabel, cancelLabel, confirmColor } = config;
+
+  const handleConfirm = () => { onConfirm(type === 'prompt' ? inputValue : true); onClose(); };
+  const handleCancel = () => { if (onCancel) onCancel(); onClose(); };
+  const handleKeyDown = (e) => { if (e.key === 'Enter') handleConfirm(); if (e.key === 'Escape') handleCancel(); };
+
+  const btnConfirm = confirmColor || 'bg-slate-800 hover:bg-slate-700';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={handleCancel}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="p-6">
+          {title && <h3 className="text-base font-bold text-slate-800 mb-2">{title}</h3>}
+          {message && <p className="text-sm text-slate-600 mb-4 whitespace-pre-line">{message}</p>}
+
+          {/* TIPO: alert */}
+          {type === 'alert' && (
+            <button onClick={handleConfirm} className={`w-full ${btnConfirm} text-white font-bold py-2.5 rounded-lg text-sm transition-colors`}>
+              {confirmLabel || 'OK'}
+            </button>
+          )}
+
+          {/* TIPO: confirm */}
+          {type === 'confirm' && (
+            <div className="flex gap-3 mt-2">
+              <button onClick={handleCancel} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-lg text-sm transition-colors">
+                {cancelLabel || 'Cancelar'}
+              </button>
+              <button onClick={handleConfirm} className={`flex-1 ${btnConfirm} text-white font-bold py-2.5 rounded-lg text-sm transition-colors`}>
+                {confirmLabel || 'Confirmar'}
+              </button>
+            </div>
+          )}
+
+          {/* TIPO: prompt */}
+          {type === 'prompt' && (
+            <>
+              <input
+                ref={inputRef}
+                type={config.inputType || 'text'}
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-blue-500 mb-4"
+                placeholder={config.placeholder || ''}
+              />
+              <div className="flex gap-3">
+                <button onClick={handleCancel} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-lg text-sm transition-colors">
+                  {cancelLabel || 'Cancelar'}
+                </button>
+                <button onClick={handleConfirm} className={`flex-1 ${btnConfirm} text-white font-bold py-2.5 rounded-lg text-sm transition-colors`}>
+                  {confirmLabel || 'Confirmar'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* TIPO: options (menu de escolha) */}
+          {type === 'options' && (
+            <div className="space-y-2 mt-2">
+              {options.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { onConfirm(opt.value); onClose(); }}
+                  className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-sm font-medium text-slate-700 flex items-center gap-3"
+                >
+                  <span className="text-lg">{opt.icon}</span>
+                  <div>
+                    <p className="font-semibold text-slate-800">{opt.label}</p>
+                    {opt.desc && <p className="text-xs text-slate-400 font-normal">{opt.desc}</p>}
+                  </div>
+                </button>
+              ))}
+              <button onClick={handleCancel} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition-colors mt-1">
+                {cancelLabel || 'Cancelar'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// HOOK useModal — substitui window.alert, confirm e prompt
+// =========================================================================
+function useModal() {
+  const [config, setConfig] = useState(null);
+
+  const close = useCallback(() => setConfig(null), []);
+
+  const alert = useCallback((message, title, opts = {}) =>
+    new Promise(resolve => setConfig({ type: 'alert', title, message, onConfirm: resolve, onClose: () => { setConfig(null); resolve(); }, ...opts })),
+  []);
+
+  const confirm = useCallback((message, title, opts = {}) =>
+    new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => resolve(true), onCancel: () => resolve(false), onClose: () => { setConfig(null); resolve(false); }, ...opts })),
+  []);
+
+  const prompt = useCallback((message, defaultValue = '', title, opts = {}) =>
+    new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
+  []);
+
+  const options = useCallback((message, opts_list, title, opts = {}) =>
+    new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
+  []);
+
+  return { config, close, alert, confirm, prompt, options };
+}
 
 function App() {
   // =========================================================================
@@ -31,9 +158,7 @@ function App() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [ordenacao, setOrdenacao] = useState({ coluna: 'data', direcao: 'desc' });
   const [mostrarFiltrosAvancados, setMostrarFiltrosAvancados] = useState(false);
-  const [filtrosAvancados, setFiltrosAvancados] = useState({
-    dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: ''
-  });
+  const [filtrosAvancados, setFiltrosAvancados] = useState({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
 
   // Bancos de Dados
   const [cartoes, setCartoes] = useState([]);
@@ -44,13 +169,12 @@ function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
 
-  // Toggle: somar saldo mês anterior ao saldo em conta (desativado por padrão)
   const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(false);
-
-  // Estado do botão de geração manual
   const [gerandoMes, setGerandoMes] = useState(false);
 
-  // ✅ FIX: headersAuth como função para sempre usar o token mais atualizado
+  // Modal
+  const modal = useModal();
+
   const getHeaders = useCallback(() => ({
     'Authorization': `Bearer ${token || tokenTemp}`,
     'Content-Type': 'application/json'
@@ -124,7 +248,7 @@ function App() {
   };
 
   const exportarCSV = () => {
-    if (transacoes.length === 0) return alert("Nenhum dado para exportar.");
+    if (transacoes.length === 0) return modal.alert("Nenhum dado para exportar.", "Exportar CSV");
     let csvContent = "DataCompra,Descricao,Categoria,Valor,Tipo,Status,FormaPagamento,MesReferencia,AnoReferencia\n";
     transacoes.forEach(t => {
       let dataFormatada = new Date(t.dataCompra).toLocaleDateString('pt-BR');
@@ -149,7 +273,6 @@ function App() {
 
   const addCartao = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); e.target.reset(); };
   const addCategoria = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); e.target.reset(); };
-  const addRendaMeta = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('metas-renda', { id: Date.now().toString(), nome: fd.get('nome'), valor: Number(fd.get('valor')) }, setMetasRenda, metasRenda); e.target.reset(); };
   const addContaFixa = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valor')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); e.target.reset(); };
   const addRendaFixa = (e) => { e.preventDefault(); const fd = new FormData(e.target); salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valor')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); e.target.reset(); };
 
@@ -159,19 +282,16 @@ function App() {
       const res = await fetch(`${API}/gerar-mes`, { method: 'POST', headers: getHeaders() });
       const data = await res.json();
       if (data.gerados.length === 0) {
-        alert(`✅ Tudo já estava gerado para ${data.mes}/${data.ano}. Nenhum lançamento novo.`);
+        await modal.alert(`Tudo já estava gerado para ${data.mes}/${data.ano}.\nNenhum lançamento novo.`, '✅ Nenhum lançamento novo');
       } else {
-        const nomes = data.gerados.map(g => `• ${g.nome} (${g.tipo})`).join('\n');
-        alert(`✅ ${data.gerados.length} lançamento(s) gerado(s):\n\n${nomes}`);
-        // Recarrega as transações para refletir os novos lançamentos
+        const lista = data.gerados.map(g => `• ${g.nome} (${g.tipo})`).join('\n');
+        await modal.alert(`${data.gerados.length} lançamento(s) gerado(s):\n\n${lista}`, '✅ Lançamentos gerados');
         const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
         if (resT.ok) setTransacoes(await resT.json());
       }
     } catch (err) {
-      alert('Erro ao gerar lançamentos. Tente novamente.');
-    } finally {
-      setGerandoMes(false);
-    }
+      await modal.alert('Erro ao gerar lançamentos. Tente novamente.', '❌ Erro');
+    } finally { setGerandoMes(false); }
   };
 
   const removerSetup = async (banco, id) => {
@@ -192,10 +312,7 @@ function App() {
     let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
     if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
     if (c === 'Contas Fixas') t = 'despesa';
-
-    // ✅ grupo_id para vincular parcelas
     const grupoId = parc > 1 ? Date.now().toString() : null;
-
     let novasT = [];
     if (p.startsWith('credito_')) {
       const cart = cartoes.find(card => card.id === p.split('_')[1]);
@@ -208,65 +325,43 @@ function App() {
     } else {
       novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId });
     }
-
-    for (const nova of novasT) {
-      await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
-    }
+    for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
     setTransacoes([...transacoes, ...novasT]);
     e.target.reset();
   };
 
   const deletarTransacao = async (t) => {
     if (t.grupo_id) {
-      // Monta menu de opções para parcelas
-      const opcao = window.prompt(
-        `Esta compra é parcelada. O que deseja excluir?\n\n` +
-        `1 - Somente esta parcela\n` +
-        `2 - Esta e todas as futuras\n` +
-        `3 - Esta e todas as anteriores\n` +
-        `4 - Todas as parcelas\n\n` +
-        `Digite o número da opção:`
+      const opcao = await modal.options(
+        `"${t.descricao}" é uma compra parcelada.\nO que deseja excluir?`,
+        [
+          { value: '1', icon: '1️⃣', label: 'Somente esta parcela', desc: `Apenas ${t.mesReferencia}/${t.anoReferencia}` },
+          { value: '2', icon: '2️⃣', label: 'Esta e todas as futuras', desc: `A partir de ${t.mesReferencia}/${t.anoReferencia}` },
+          { value: '3', icon: '3️⃣', label: 'Esta e todas as anteriores', desc: `Até ${t.mesReferencia}/${t.anoReferencia}` },
+          { value: '4', icon: '4️⃣', label: 'Todas as parcelas', desc: 'Remove a compra inteira' },
+        ],
+        '🗑️ Excluir Parcela'
       );
-      if (!opcao) return; // cancelou
+      if (!opcao) return;
 
       if (opcao === '1') {
-        // Só esta
-        if (!window.confirm("Excluir somente esta parcela?")) return;
         await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
         setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
-
       } else if (opcao === '2') {
-        // Esta e futuras
-        if (!window.confirm("Excluir esta e todas as parcelas futuras?")) return;
         await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=futuras`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => !(
-          tr.grupo_id === t.grupo_id &&
-          (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia))
-        )));
-
+        setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))));
       } else if (opcao === '3') {
-        // Esta e anteriores
-        if (!window.confirm("Excluir esta e todas as parcelas anteriores?")) return;
         await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=anteriores`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => !(
-          tr.grupo_id === t.grupo_id &&
-          (tr.anoReferencia < t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia <= t.mesReferencia))
-        )));
-
+        setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia < t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia <= t.mesReferencia)))));
       } else if (opcao === '4') {
-        // Todas
-        if (!window.confirm("Excluir TODAS as parcelas desta compra?")) return;
         await fetch(`${API}/transacoes/grupo/${t.grupo_id}?modo=todas`, { method: 'DELETE', headers: getHeaders() });
         setTransacoes(prev => prev.filter(tr => tr.grupo_id !== t.grupo_id));
-
-      } else {
-        alert('Opção inválida. Digite 1, 2, 3 ou 4.');
       }
       return;
     }
 
-    // Transação simples (sem grupo)
-    if (!window.confirm("Excluir esta transação?")) return;
+    const ok = await modal.confirm('Deseja excluir esta transação?', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
+    if (!ok) return;
     await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
     setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
   };
@@ -281,37 +376,38 @@ function App() {
   // EDIÇÃO INTELIGENTE
   // =========================================================================
   const editarValor = async (t) => {
-    const nV = window.prompt("Novo Valor (R$):", t.valorParcela);
+    const nV = await modal.prompt('Qual o novo valor?', String(t.valorParcela), '✏️ Editar Valor', { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' });
     if (nV === null) return;
     const valorAjustado = parseFloat(nV);
-    const alternar = window.confirm("Deseja alternar o status PAGO/PENDENTE?");
+
+    const alternar = await modal.confirm(
+      `Status atual: ${t.status.toUpperCase()}\nDeseja alternar para ${t.status === 'pago' ? 'PENDENTE' : 'PAGO'}?`,
+      '🔄 Alterar Status?'
+    );
     const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status;
     let novaDataISO = t.dataCompra;
 
     if (t.tipo === 'renda') {
       const dataAtualBR = new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-      const novaDataStr = window.prompt("Nova Data de Recebimento (DD/MM/AAAA):", dataAtualBR);
+      const novaDataStr = await modal.prompt('Nova data de recebimento:', dataAtualBR, '📅 Alterar Data', { placeholder: 'DD/MM/AAAA', confirmLabel: 'Próximo' });
       if (novaDataStr && novaDataStr.includes('/')) {
         const partes = novaDataStr.split('/');
         if (partes.length === 3) novaDataISO = new Date(`${partes[2]}-${partes[1]}-${partes[0]}T00:00:00`).toISOString();
       }
     }
 
-    // ✅ Se é parcelado, pergunta se edita só esta ou todas as futuras
     if (t.grupo_id) {
-      const cascata = window.confirm("Esta compra é parcelada.\n\nOK = Editar TODAS as parcelas futuras a partir desta\nCancelar = Editar SOMENTE esta parcela");
+      const cascata = await modal.confirm(
+        'Esta é uma compra parcelada.\nDeseja aplicar o novo valor a todas as parcelas futuras também?',
+        '📦 Editar Parcelas',
+        { confirmLabel: 'Todas as futuras', cancelLabel: 'Só esta' }
+      );
       if (cascata) {
-        await fetch(`${API}/transacoes/grupo/${t.grupo_id}`, {
-          method: 'PUT',
-          headers: getHeaders(),
-          body: JSON.stringify({ valorParcela: valorAjustado, mes: t.mesReferencia, ano: t.anoReferencia })
-        });
+        await fetch(`${API}/transacoes/grupo/${t.grupo_id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ valorParcela: valorAjustado, mes: t.mesReferencia, ano: t.anoReferencia }) });
         setTransacoes(prev => prev.map(tr =>
           (tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))
-            ? { ...tr, valorParcela: valorAjustado }
-            : tr
+            ? { ...tr, valorParcela: valorAjustado } : tr
         ));
-        // Ainda atualiza status e data da parcela clicada individualmente
         await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) });
         setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, status: novoStatus, dataCompra: novaDataISO } : tr));
         return;
@@ -330,40 +426,23 @@ function App() {
 
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
 
-  // ✅ Função auxiliar: calcula o saldo líquido acumulado até o fim de um determinado mês (recursivo)
-  // É o "Saldo em Conta" daquele mês, já incluindo o saldo transportado dos meses anteriores a ele.
   const calcularSaldoAcumuladoAte = React.useCallback((mes, ano) => {
-    // Pega todas as transações pagas até esse mês/ano (inclusive)
-    const todasAteOMes = transacoes.filter(t =>
-      t.anoReferencia < ano ||
-      (t.anoReferencia === ano && t.mesReferencia <= mes)
-    );
+    const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
     let rendaPaga = 0, gastoPago = 0;
     todasAteOMes.forEach(t => {
       const v = Number(t.valorParcela);
-      if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-        if (t.status === 'pago') rendaPaga += v;
-      } else {
-        if (t.status === 'pago') gastoPago += v;
-      }
+      if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { if (t.status === 'pago') rendaPaga += v; }
+      else { if (t.status === 'pago') gastoPago += v; }
     });
     return rendaPaga - gastoPago;
   }, [transacoes]);
 
-  // Mês anterior ao visualizado
   const mesAntRef = React.useMemo(() => {
     if (dataVis.mes === 1) return { mes: 12, ano: dataVis.ano - 1 };
     return { mes: dataVis.mes - 1, ano: dataVis.ano };
   }, [dataVis]);
 
-  // "Saldo Mês Anterior" = saldo acumulado até o último dia do mês anterior
-  const saldoMesAnterior = React.useMemo(() =>
-    calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano),
-    [calcularSaldoAcumuladoAte, mesAntRef]
-  );
-
-  // Alias para uso no card "Saldo em Conta"
-  const saldoTransportado = saldoMesAnterior;
+  const saldoMesAnterior = React.useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
 
   const mudarOrdenacao = (coluna) => {
     if (ordenacao.coluna === coluna) setOrdenacao({ coluna, direcao: ordenacao.direcao === 'asc' ? 'desc' : 'asc' });
@@ -409,10 +488,8 @@ function App() {
 
   transacoesMes.forEach(t => {
     const v = Number(t.valorParcela);
-    if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-      totRendaTotal += v;
-      if (t.status === 'pago') totRendaPaga += v;
-    } else {
+    if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { totRendaTotal += v; if (t.status === 'pago') totRendaPaga += v; }
+    else {
       if (t.tipo === 'despesa') totGastoReal += v;
       if (t.tipo === 'investimento') totInvestido += v;
       if (t.status === 'pago') totGastoPago += v;
@@ -425,9 +502,7 @@ function App() {
 
   let custoPrevisto = gastoSemCategoria + gastoContasFixas;
   categorias.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
-
   const saldoMesAtual = totRendaPaga - totGastoPago;
-  // Saldo em conta: inclui mês anterior apenas se o toggle estiver ativado
   const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
   const previstoFimMes = totRendaTotal - custoPrevisto;
 
@@ -446,32 +521,35 @@ function App() {
     const is_admin = fd.get('is_admin') === 'on';
     const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) });
     const data = await res.json();
-    if (res.ok) { alert(`✅ ${data.message}`); e.target.reset(); carregarUsuarios(); }
-    else alert(`❌ ${data.message}`);
+    if (res.ok) { await modal.alert(data.message, '✅ Usuário criado'); e.target.reset(); carregarUsuarios(); }
+    else await modal.alert(data.message, '❌ Erro');
   };
 
   const deletarUsuario = async (id, nome) => {
-    if (!window.confirm(`Deletar o usuário "${nome}" e todos os seus dados?`)) return;
+    const ok = await modal.confirm(`Deletar o usuário "${nome}" e todos os seus dados?\n\nEsta ação não pode ser desfeita.`, '🗑️ Deletar Usuário', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' });
+    if (!ok) return;
     const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() });
     const data = await res.json();
-    if (res.ok) { alert(`✅ ${data.message}`); carregarUsuarios(); }
-    else alert(`❌ ${data.message}`);
+    if (res.ok) { await modal.alert(data.message, '✅ Deletado'); carregarUsuarios(); }
+    else await modal.alert(data.message, '❌ Erro');
   };
 
   const resetarSenha = async (id, nome) => {
-    if (!window.confirm(`Resetar a senha de "${nome}" para 'admin123'?`)) return;
+    const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?\n\nEle será obrigado a trocar no próximo login.`, '🔑 Resetar Senha', { confirmLabel: 'Resetar' });
+    if (!ok) return;
     const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() });
     const data = await res.json();
-    alert(res.ok ? `✅ ${data.message}` : `❌ ${data.message}`);
+    await modal.alert(data.message, res.ok ? '✅ Senha resetada' : '❌ Erro');
   };
 
   const toggleAdmin = async (id, nomeU, atualIsAdmin) => {
-    const acao = atualIsAdmin ? 'rebaixar' : 'promover a Super Admin';
-    if (!window.confirm(`Deseja ${acao} o usuário "${nomeU}"?`)) return;
+    const acao = atualIsAdmin ? 'remover o Super Admin' : 'promover a Super Admin';
+    const ok = await modal.confirm(`Deseja ${acao} o usuário "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: atualIsAdmin ? 'Remover Admin' : 'Tornar Admin' });
+    if (!ok) return;
     const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() });
     const data = await res.json();
     if (res.ok) carregarUsuarios();
-    else alert(`❌ ${data.message}`);
+    else await modal.alert(data.message, '❌ Erro');
   };
 
   // =========================================================================
@@ -480,6 +558,7 @@ function App() {
   if (!token && !precisaTrocarSenha) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <Modal config={modal.config} onClose={modal.close} />
         <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
           <div className="text-center mb-8"><h1 className="text-2xl font-bold text-slate-800">Painel Financeiro</h1><p className="text-sm text-slate-500 mt-1">Acesso Restrito</p></div>
           <form onSubmit={fazerLogin} className="space-y-4">
@@ -513,77 +592,44 @@ function App() {
   if (telaAtiva === 'admin') {
     return (
       <div className="min-h-screen bg-slate-50 p-6 text-slate-800">
+        <Modal config={modal.config} onClose={modal.close} />
         <div className="mx-auto max-w-3xl space-y-6">
           <header className="border-b border-slate-200 pb-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">👥 Gerenciamento de Usuários</h1>
-              <p className="text-sm text-slate-500 mt-1">Super Admin — acesso restrito</p>
-            </div>
+            <div><h1 className="text-2xl font-bold text-slate-900">👥 Gerenciamento de Usuários</h1><p className="text-sm text-slate-500 mt-1">Super Admin — acesso restrito</p></div>
             <button onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 text-white font-medium py-2 px-6 rounded-lg hover:bg-slate-800">Voltar</button>
           </header>
-
-          {/* Criar novo usuário */}
           <section className="bg-white p-6 rounded-xl shadow-sm border">
             <h2 className="text-sm font-bold uppercase text-slate-600 mb-4">Criar Novo Usuário</h2>
             <form onSubmit={criarUsuario} className="flex flex-col md:flex-row gap-3 items-end">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-600 mb-1">Nome de usuário</label>
-                <input name="usuario" placeholder="Ex: joao" required className="w-full border p-2.5 rounded-lg text-sm outline-none focus:border-blue-500" />
-              </div>
-              <div className="flex items-center gap-2 pb-2.5">
-                <input type="checkbox" name="is_admin" id="is_admin_check" className="w-4 h-4" />
-                <label htmlFor="is_admin_check" className="text-sm text-slate-600">Super Admin?</label>
-              </div>
+              <div className="flex-1"><label className="block text-xs font-medium text-slate-600 mb-1">Nome de usuário</label><input name="usuario" placeholder="Ex: joao" required className="w-full border p-2.5 rounded-lg text-sm outline-none focus:border-blue-500" /></div>
+              <div className="flex items-center gap-2 pb-2.5"><input type="checkbox" name="is_admin" id="is_admin_check" className="w-4 h-4" /><label htmlFor="is_admin_check" className="text-sm text-slate-600">Super Admin?</label></div>
               <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-colors">Criar Usuário</button>
             </form>
             <p className="text-xs text-slate-400 mt-2">A senha padrão será <strong>admin123</strong>. O usuário será obrigado a trocar no primeiro acesso.</p>
           </section>
-
-          {/* Lista de usuários */}
           <section className="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div className="p-4 border-b bg-slate-50 flex justify-between items-center">
               <h2 className="text-sm font-bold uppercase text-slate-600">Usuários Cadastrados</h2>
               <button onClick={carregarUsuarios} className="text-xs text-blue-600 hover:underline font-medium">🔄 Atualizar lista</button>
             </div>
             {usuarios.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-sm">
-                <p>Clique em "Atualizar lista" para carregar os usuários.</p>
-              </div>
+              <div className="p-8 text-center text-slate-400 text-sm"><p>Clique em "Atualizar lista" para carregar os usuários.</p></div>
             ) : (
               <table className="w-full text-sm text-left">
                 <thead className="bg-white border-b text-xs uppercase text-slate-500 font-semibold">
-                  <tr>
-                    <th className="p-4">Usuário</th>
-                    <th className="p-4">Permissão</th>
-                    <th className="p-4">Status Senha</th>
-                    <th className="p-4 text-center">Ações</th>
-                  </tr>
+                  <tr><th className="p-4">Usuário</th><th className="p-4">Permissão</th><th className="p-4">Status Senha</th><th className="p-4 text-center">Ações</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {usuarios.map(u => (
                     <tr key={u.id} className="hover:bg-slate-50">
                       <td className="p-4 font-bold text-slate-800">{u.usuario}</td>
-                      <td className="p-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded ${u.is_admin === 1 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
-                          {u.is_admin === 1 ? '⭐ Super Admin' : 'Usuário'}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded ${u.precisa_trocar === 1 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {u.precisa_trocar === 1 ? '⚠ Senha Padrão' : '✔ Senha Própria'}
-                        </span>
-                      </td>
+                      <td className="p-4"><span className={`text-xs font-bold px-2 py-1 rounded ${u.is_admin === 1 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>{u.is_admin === 1 ? '⭐ Super Admin' : 'Usuário'}</span></td>
+                      <td className="p-4"><span className={`text-xs font-bold px-2 py-1 rounded ${u.precisa_trocar === 1 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{u.precisa_trocar === 1 ? '⚠ Senha Padrão' : '✔ Senha Própria'}</span></td>
                       <td className="p-4">
                         <div className="flex gap-2 justify-center">
-                          <button onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} className="text-xs bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded font-medium transition-colors" title={u.is_admin === 1 ? 'Remover Admin' : 'Tornar Admin'}>
-                            {u.is_admin === 1 ? '⭐ Remover Admin' : '⭐ Tornar Admin'}
-                          </button>
-                          <button onClick={() => resetarSenha(u.id, u.usuario)} className="text-xs bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded font-medium transition-colors">
-                            🔑 Resetar Senha
-                          </button>
-                          <button onClick={() => deletarUsuario(u.id, u.usuario)} className="text-xs bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2 py-1 rounded font-medium transition-colors">
-                            🗑️ Deletar
-                          </button>
+                          <button onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} className="text-xs bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded font-medium">{u.is_admin === 1 ? '⭐ Remover Admin' : '⭐ Tornar Admin'}</button>
+                          <button onClick={() => resetarSenha(u.id, u.usuario)} className="text-xs bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded font-medium">🔑 Resetar Senha</button>
+                          <button onClick={() => deletarUsuario(u.id, u.usuario)} className="text-xs bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2 py-1 rounded font-medium">🗑️ Deletar</button>
                         </div>
                       </td>
                     </tr>
@@ -600,13 +646,12 @@ function App() {
   if (telaAtiva === 'setup') {
     return (
       <div className="min-h-screen bg-slate-50 p-6 text-slate-800">
+        <Modal config={modal.config} onClose={modal.close} />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="border-b border-slate-200 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div><h1 className="text-2xl font-bold text-slate-900">Configuração Inicial</h1></div>
             <div className="flex gap-2">
-              <button onClick={gerarMesManual} disabled={gerandoMes} className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-medium py-2 px-4 rounded-lg flex items-center gap-2 border border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                {gerandoMes ? '⏳ Gerando...' : '🤖 Gerar Mês Atual'}
-              </button>
+              <button onClick={gerarMesManual} disabled={gerandoMes} className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-medium py-2 px-4 rounded-lg flex items-center gap-2 border border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{gerandoMes ? '⏳ Gerando...' : '🤖 Gerar Mês Atual'}</button>
               <button onClick={exportarCSV} className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-medium py-2 px-4 rounded-lg flex items-center gap-2 border border-emerald-200 transition-colors">⬇️ Exportar Backup CSV</button>
               <button onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 text-white font-medium py-2 px-6 rounded-lg hover:bg-slate-800">Voltar</button>
             </div>
@@ -647,6 +692,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 overflow-x-hidden">
+      <Modal config={modal.config} onClose={modal.close} />
       <div className="mx-auto max-w-6xl space-y-4 md:space-y-6">
 
         <header className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
@@ -657,9 +703,7 @@ function App() {
             <button onClick={mesProximo} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold">▶</button>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0 w-full md:w-auto">
-            {isAdmin && (
-              <button onClick={() => { setTelaAtiva('admin'); carregarUsuarios(); }} className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-purple-200 transition-colors flex-1 md:flex-none">👥 Usuários</button>
-            )}
+            {isAdmin && (<button onClick={() => { setTelaAtiva('admin'); carregarUsuarios(); }} className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-purple-200 transition-colors flex-1 md:flex-none">👥 Usuários</button>)}
             <button onClick={() => setTelaAtiva('setup')} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border transition-colors flex-1 md:flex-none">⚙ Config</button>
             <button onClick={fazerLogout} className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-red-100 transition-colors flex-1 md:flex-none">Sair</button>
           </div>
@@ -674,20 +718,14 @@ function App() {
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Saldo Mês Anterior</h3>
             <p className={`text-sm md:text-lg font-bold mt-1 ${saldoMesAnterior >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>{formatarMoeda(saldoMesAnterior)}</p>
             <p className="text-[9px] text-slate-400 mb-2">{nomesMeses[mesAntRef.mes - 1]} {mesAntRef.ano}</p>
-            <button
-              onClick={() => setSomarSaldoAnterior(v => !v)}
-              className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border ${somarSaldoAnterior ? 'bg-teal-500 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'}`}
-            >
+            <button onClick={() => setSomarSaldoAnterior(v => !v)} className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border ${somarSaldoAnterior ? 'bg-teal-500 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'}`}>
               {somarSaldoAnterior ? '✔ Somando ao Saldo' : '+ Somar ao Saldo'}
             </button>
           </div>
           <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400">
             <h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3>
             <p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p>
-            {somarSaldoAnterior
-              ? <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p>
-              : <p className="text-[9px] text-slate-500 mt-0.5">Apenas mês atual</p>
-            }
+            {somarSaldoAnterior ? <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p> : <p className="text-[9px] text-slate-500 mt-0.5">Apenas mês atual</p>}
           </div>
           <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
         </div>
@@ -699,8 +737,7 @@ function App() {
               {categorias.map(c => {
                 const gas = gCat[c.nome] || 0; let por = Math.min((gas / c.meta) * 100, 100);
                 let corBarra = 'bg-emerald-500';
-                if (c.tipo === 'despesa') { if (por >= 90) corBarra = 'bg-red-500'; else if (por >= 70) corBarra = 'bg-amber-400'; }
-                else { corBarra = 'bg-blue-500'; }
+                if (c.tipo === 'despesa') { if (por >= 90) corBarra = 'bg-red-500'; else if (por >= 70) corBarra = 'bg-amber-400'; } else { corBarra = 'bg-blue-500'; }
                 return (
                   <div key={c.id} className="border p-3 md:p-4 rounded-lg bg-slate-50">
                     <h4 className="text-xs md:text-sm font-medium mb-2 truncate" title={c.nome}>{c.nome}</h4>
@@ -799,15 +836,14 @@ function App() {
                     <tr key={t.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight">
                         {t.descricao}
-                        {/* ✅ Indicador visual de compra parcelada */}
                         {t.grupo_id && <span className="ml-1 text-[7px] text-blue-400 font-normal" title="Compra parcelada">🔗</span>}
                       </td>
                       <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full" title={t.categoria}>{t.categoria}</span></td>
                       <td className="p-1 sm:p-2 md:p-4"><span className="text-[8px] md:text-xs text-slate-400 font-medium break-words">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span></td>
                       <td className="p-1 sm:p-2 md:p-4">
-                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`} title={t.status}>{t.status}</button>
+                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{t.status}</button>
                       </td>
-                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center" title={t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}>{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span></td>
+                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center">{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span></td>
                       <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right text-[9px] md:text-sm break-words">{formatarMoeda(t.valorParcela)}</td>
                       <td className="p-1 sm:p-2 md:p-4">
                         <div className="flex flex-col lg:flex-row justify-center items-center gap-1">
