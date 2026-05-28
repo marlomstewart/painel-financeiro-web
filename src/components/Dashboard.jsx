@@ -142,7 +142,13 @@ export function Dashboard({
                   <label className="block text-[10px] md:text-xs font-bold text-slate-500 mb-1">Pagamento e Categoria</label>
                   <div className="flex gap-2">
                     <select value={filtrosAvancados.formaPagamento} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, formaPagamento: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
-                      <option value="">Qualquer</option><option value="pix">PIX/Dinheiro</option><option value="debito">Débito</option><option value="credito">Crédito</option>
+                      <option value="">Qualquer</option>
+                      <option value="pix">PIX / Dinheiro</option>
+                      <option value="debito">Débito</option>
+                      <option value="credito" className="font-bold">💳 Todos do Crédito</option>
+                      {cartoes.map(c => (
+                        <option key={c.id} value={`credito_${c.id}`}>&nbsp;&nbsp;↳ Só {c.nome}</option>
+                      ))}
                     </select>
                     <select value={filtrosAvancados.categoria} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, categoria: e.target.value })} className="w-full border p-1 md:p-1.5 rounded text-[10px] md:text-xs bg-white">
                       <option value="">Qualquer</option>
