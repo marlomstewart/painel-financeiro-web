@@ -475,7 +475,7 @@ function App() {
   categorias.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
   const saldoMesAtual = totRendaPaga - totGastoPago;
   const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
-  const previstoFimMes = totRendaTotal - custoPrevisto;
+  const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
 
   // =========================================================================
   // FUNÇÕES DE ADMIN

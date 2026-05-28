@@ -83,7 +83,11 @@ export function Dashboard({
                         <p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p>
                         {somarSaldoAnterior ? <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p> : <p className="text-[9px] text-slate-500 mt-0.5">Apenas mês atual</p>}
                     </div>
-                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p></div>
+                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+                        <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3>
+                        <p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p>
+                        {somarSaldoAnterior && <p className="text-[9px] text-amber-600 font-medium mt-0.5">+ Inclui Saldo Ant.</p>}
+                    </div>
                 </div>
 
                 {categorias.length > 0 && (
