@@ -13,6 +13,18 @@ export function Dashboard({
   mudarOrdenacao, ordenacao, dadosTabela, alternarStatusTransacao, editarValor, deletarTransacao,
   ModalComponent, modalConfig, modalClose
 }) {
+
+  const obterNomePagamento = (forma) => {
+    if (!forma || forma === 'pix') return 'PIX / Dinheiro';
+    if (forma === 'debito') return 'Cartão de Débito';
+    if (forma.startsWith('credito_')) {
+      const id = forma.split('_')[1];
+      const cartao = cartoes.find(c => c.id === id);
+      return cartao ? `Crédito: ${cartao.nome}` : 'Cartão de Crédito';
+    }
+    return forma;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 overflow-x-hidden">
       <ModalComponent config={modalConfig} onClose={modalClose} />
@@ -161,23 +173,47 @@ export function Dashboard({
                   {dadosTabela.length === 0 && (<tr><td colSpan="7" className="p-4 md:p-8 text-center text-slate-400 font-medium text-xs">Nenhum lançamento encontrado.</td></tr>)}
                   {dadosTabela.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight">
+                      
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight" title={t.descricao}>
                         {t.descricao}
-                        {t.grupo_id && <span className="ml-1 text-[7px] text-blue-400 font-normal" title="Compra parcelada">🔗</span>}
+                        {t.grupo_id && <span className="ml-1 text-[7px] text-blue-400 font-normal cursor-help" title="Compra parcelada. Alterações podem afetar outras parcelas.">🔗</span>}
                       </td>
-                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full" title={t.categoria}>{t.categoria}</span></td>
-                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[8px] md:text-xs text-slate-400 font-medium break-words">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span></td>
+                      
                       <td className="p-1 sm:p-2 md:p-4">
-                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{t.status}</button>
+                        <span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full cursor-help" title={`Categoria: ${t.categoria}`}>
+                          {t.categoria}
+                        </span>
                       </td>
-                      <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center">{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span></td>
-                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right text-[9px] md:text-sm break-words">{formatarMoeda(t.valorParcela)}</td>
+                      
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <span className="text-[8px] md:text-xs text-slate-400 font-medium break-words cursor-help" title={`Lançado no dia: ${new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`}>
+                          {new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                        </span>
+                      </td>
+                      
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`} title={t.status === 'pago' ? 'Status: PAGO (Clique para marcar como pendente)' : 'Status: PENDENTE (Clique para pagar)'}>
+                          {t.status}
+                        </button>
+                      </td>
+                      
+                      <td className="p-1 sm:p-2 md:p-4">
+                        <span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center cursor-help" title={obterNomePagamento(t.formaPagamento)}>
+                          {t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}
+                        </span>
+                      </td>
+                      
+                      <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right text-[9px] md:text-sm break-words" title={`Valor: ${formatarMoeda(t.valorParcela)}`}>
+                        {formatarMoeda(t.valorParcela)}
+                      </td>
+                      
                       <td className="p-1 sm:p-2 md:p-4">
                         <div className="flex flex-col lg:flex-row justify-center items-center gap-1">
-                          <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">✏️</button>
-                          <button onClick={() => deletarTransacao(t)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto">🗑️</button>
+                          <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Editar valor, data ou status">✏️</button>
+                          <button onClick={() => deletarTransacao(t)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Excluir lançamento">🗑️</button>
                         </div>
                       </td>
+                      
                     </tr>
                   ))}
                 </tbody>
