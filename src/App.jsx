@@ -236,6 +236,42 @@ function App() {
     e.target.reset();
   };
 
+  // =========================================================================
+  // AÇÕES EM MASSA (BULK EDIT)
+  // =========================================================================
+  const executarAcaoEmMassa = async (acao, ids) => {
+    const confirmacao = await modal.confirm(
+      `Tem certeza que deseja ${acao === 'excluir' ? 'excluir' : `marcar como ${acao.toUpperCase()}`} ${ids.length} lançamento(s)?`, 
+      '⚠️ Ação em Massa'
+    );
+    if (!confirmacao) return false;
+
+    try {
+      // Faz todas as requisições ao servidor de uma vez só em paralelo
+      const promessas = ids.map(id => {
+        if (acao === 'excluir') {
+          return fetch(`${API}/transacoes/${id}`, { method: 'DELETE', headers: getHeaders() });
+        } else {
+          const t = transacoes.find(tr => tr.id === id);
+          return fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: acao, valorParcela: t.valorParcela }) });
+        }
+      });
+      
+      await Promise.all(promessas);
+
+      // Atualiza o visual da tabela na hora
+      if (acao === 'excluir') {
+        setTransacoes(prev => prev.filter(tr => !ids.includes(tr.id)));
+      } else {
+        setTransacoes(prev => prev.map(tr => ids.includes(tr.id) ? { ...tr, status: acao } : tr));
+      }
+      return true; // Sucesso
+    } catch (err) {
+      modal.alert('Ocorreu um erro de conexão ao tentar processar as alterações.', '❌ Erro');
+      return false;
+    }
+  };
+
   const deletarTransacao = async (t) => {
     if (t.grupo_id) {
       const opcao = await modal.options(
@@ -520,7 +556,7 @@ function App() {
       filtrosAvancados={filtrosAvancados} setFiltrosAvancados={setFiltrosAvancados}
       mudarOrdenacao={mudarOrdenacao} ordenacao={ordenacao} dadosTabela={dadosTabela}
       alternarStatusTransacao={alternarStatusTransacao} editarValor={editarValor} deletarTransacao={deletarTransacao}
-      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close}
+      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa}
     />
   );
 }
