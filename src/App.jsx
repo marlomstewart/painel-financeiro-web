@@ -20,19 +20,19 @@ function useModal() {
 
   const alert = useCallback((message, title, opts = {}) =>
     new Promise(resolve => setConfig({ type: 'alert', title, message, onConfirm: resolve, onClose: () => { setConfig(null); resolve(); }, ...opts })),
-  []);
+    []);
 
   const confirm = useCallback((message, title, opts = {}) =>
     new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => resolve(true), onCancel: () => resolve(false), onClose: () => { setConfig(null); resolve(false); }, ...opts })),
-  []);
+    []);
 
   const prompt = useCallback((message, defaultValue = '', title, opts = {}) =>
     new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
-  []);
+    []);
 
   const options = useCallback((message, opts_list, title, opts = {}) =>
     new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
-  []);
+    []);
 
   return { config, close, setConfig, alert, confirm, prompt, options };
 }
@@ -241,7 +241,7 @@ function App() {
   // =========================================================================
   const executarAcaoEmMassa = async (acao, ids) => {
     const confirmacao = await modal.confirm(
-      `Tem certeza que deseja ${acao === 'excluir' ? 'excluir' : `marcar como ${acao.toUpperCase()}`} ${ids.length} lançamento(s)?`, 
+      `Tem certeza que deseja ${acao === 'excluir' ? 'excluir' : `marcar como ${acao.toUpperCase()}`} ${ids.length} lançamento(s)?`,
       '⚠️ Ação em Massa'
     );
     if (!confirmacao) return false;
@@ -256,7 +256,7 @@ function App() {
           return fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: acao, valorParcela: t.valorParcela }) });
         }
       });
-      
+
       await Promise.all(promessas);
 
       // Atualiza o visual da tabela na hora
@@ -471,8 +471,31 @@ function App() {
     }
   });
 
+  // =========================================================================
+  // METAS DINÂMICAS (Gasolina)
+  // =========================================================================
+  const calcularMetaGasolina = (mes, ano) => {
+    let diasDeAbastecimento = 0;
+    const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
+    for (let dia = 1; dia <= ultimoDiaDoMes; dia++) {
+      const dataAtual = new Date(ano, mes - 1, dia);
+      const diaDaSemana = dataAtual.getDay();
+      if (diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) {
+        diasDeAbastecimento++;
+      }
+    }
+    return diasDeAbastecimento * 23;
+  };
+
+  const categoriasDinamicas = categorias.map(c => {
+    if (c.nome === 'Gasolina' && nomeUsuario.toLowerCase() === 'stewart') {
+      return { ...c, meta: calcularMetaGasolina(dataVis.mes, dataVis.ano) };
+    }
+    return c;
+  });
+
   let custoPrevisto = gastoSemCategoria + gastoContasFixas;
-  categorias.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
+  categoriasDinamicas.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
   const saldoMesAtual = totRendaPaga - totGastoPago;
   const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
   const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
@@ -550,7 +573,7 @@ function App() {
       verFaturasPorCartao={verFaturasPorCartao} totFaturaCreditoAberto={totFaturaCreditoAberto}
       saldoMesAnterior={saldoMesAnterior} somarSaldoAnterior={somarSaldoAnterior} setSomarSaldoAnterior={setSomarSaldoAnterior}
       saldoAtual={saldoAtual} saldoMesAtual={saldoMesAtual} mesAntRef={mesAntRef} previstoFimMes={previstoFimMes}
-      categorias={categorias} gCat={gCat} addTransacao={addTransacao} cartoes={cartoes}
+      categorias={categoriasDinamicas} gCat={gCat} addTransacao={addTransacao} cartoes={cartoes}
       filtroStatus={filtroStatus} setFiltroStatus={setFiltroStatus} buscaTexto={buscaTexto} setBuscaTexto={setBuscaTexto}
       mostrarFiltrosAvancados={mostrarFiltrosAvancados} setMostrarFiltrosAvancados={setMostrarFiltrosAvancados}
       filtrosAvancados={filtrosAvancados} setFiltrosAvancados={setFiltrosAvancados}
