@@ -308,56 +308,64 @@ function App() {
     setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
   };
 
-  const alternarStatusTransacao = async (id, statusAtual, valor, dataCompraOriginal) => {
-    const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
-    await fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valor, dataCompra: dataCompraOriginal }) });
-    setTransacoes(prev => prev.map(tr => tr.id === id ? { ...tr, status: novoStatus } : tr));
+  const alternarStatusTransacao = async (id, statusAtual, valorParcela, dataCompra) => {
+    // Abre o modal de opções com os dois botões explícitos
+    const opcaoEscolhida = await modal.options(
+      `Status atual: ${statusAtual.toUpperCase()}\n\nEscolha o status correto para este lançamento:`,
+      [
+        { value: 'pago', icon: '✔', label: 'Marcar como PAGO' },
+        { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }
+      ],
+      '🔄 Alterar Status'
+    );
+
+    // Se o usuário clicar fora (cancelar) ou escolher o mesmo status que já estava
+    if (!opcaoEscolhida || opcaoEscolhida === statusAtual) return;
+
+    try {
+      await fetch(`${API}/transacoes/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ status: opcaoEscolhida, valorParcela, dataCompra })
+      });
+
+      // Atualiza a tela instantaneamente
+      setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: opcaoEscolhida } : t));
+    } catch (err) {
+      modal.alert('Erro de conexão ao tentar alterar o status.', '❌ Erro');
+    }
   };
 
   // =========================================================================
   // EDIÇÃO INTELIGENTE
   // =========================================================================
   const editarValor = async (t) => {
-    const nV = await modal.prompt('Qual o novo valor?', String(t.valorParcela), '✏️ Editar Valor', { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' });
-    if (nV === null) return;
-    const valorAjustado = parseFloat(nV);
+    // 1️⃣ Pede o Novo Valor
+    const novoValorStr = window.prompt(`Editando: ${t.descricao}\n\n1️⃣ Digite o novo VALOR:`, t.valorParcela);
+    if (novoValorStr === null) return; // Clicou em cancelar
 
-    const alternar = await modal.confirm(
-      `Status atual: ${t.status.toUpperCase()}\nDeseja alternar para ${t.status === 'pago' ? 'PENDENTE' : 'PAGO'}?`,
-      '🔄 Alterar Status?'
-    );
-    const novoStatus = alternar ? (t.status === 'pago' ? 'pendente' : 'pago') : t.status;
-    let novaDataISO = t.dataCompra;
+    const novoValor = Number(novoValorStr.replace(',', '.'));
+    if (isNaN(novoValor)) return modal.alert('Valor inválido digitado.', '❌ Erro');
 
-    if (t.tipo === 'renda') {
-      const dataAtualBR = new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-      const novaDataStr = await modal.prompt('Nova data de recebimento:', dataAtualBR, '📅 Alterar Data', { placeholder: 'DD/MM/AAAA', confirmLabel: 'Próximo' });
-      if (novaDataStr && novaDataStr.includes('/')) {
-        const partes = novaDataStr.split('/');
-        if (partes.length === 3) novaDataISO = new Date(`${partes[2]}-${partes[1]}-${partes[0]}T00:00:00`).toISOString();
-      }
+    // Extrai a data antiga no formato padrão (Ano-Mês-Dia) para facilitar a edição
+    const dataAntiga = new Date(t.dataCompra).toISOString().split('T')[0];
+
+    // 2️⃣ Pede a Nova Data
+    const novaDataStr = window.prompt(`2️⃣ Digite a nova DATA (Formato: AAAA-MM-DD):`, dataAntiga);
+    if (novaDataStr === null) return; // Clicou em cancelar
+
+    try {
+      await fetch(`${API}/transacoes/${t.id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ status: t.status, valorParcela: novoValor, dataCompra: novaDataStr })
+      });
+
+      // Atualiza a tela instantaneamente com o novo valor e nova data
+      setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr } : tr));
+    } catch (err) {
+      modal.alert('Ocorreu um erro ao atualizar os dados.', '❌ Erro');
     }
-
-    if (t.grupo_id) {
-      const cascata = await modal.confirm(
-        'Esta é uma compra parcelada.\nDeseja aplicar o novo valor a todas as parcelas futuras também?',
-        '📦 Editar Parcelas',
-        { confirmLabel: 'Todas as futuras', cancelLabel: 'Só esta' }
-      );
-      if (cascata) {
-        await fetch(`${API}/transacoes/grupo/${t.grupo_id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ valorParcela: valorAjustado, mes: t.mesReferencia, ano: t.anoReferencia }) });
-        setTransacoes(prev => prev.map(tr =>
-          (tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))
-            ? { ...tr, valorParcela: valorAjustado } : tr
-        ));
-        await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) });
-        setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, status: novoStatus, dataCompra: novaDataISO } : tr));
-        return;
-      }
-    }
-
-    await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, valorParcela: valorAjustado, dataCompra: novaDataISO }) });
-    setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: valorAjustado, status: novoStatus, dataCompra: novaDataISO } : tr));
   };
 
   // =========================================================================
