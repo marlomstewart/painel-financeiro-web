@@ -340,29 +340,56 @@ function App() {
   // EDIÇÃO INTELIGENTE
   // =========================================================================
   const editarValor = async (t) => {
-    // 1️⃣ Pede o Novo Valor
-    const novoValorStr = window.prompt(`Editando: ${t.descricao}\n\n1️⃣ Digite o novo VALOR:`, t.valorParcela);
-    if (novoValorStr === null) return; // Clicou em cancelar
-
-    const novoValor = Number(novoValorStr.replace(',', '.'));
+    // 1️⃣ Pede o Novo Valor usando o seu Modal customizado
+    const nV = await modal.prompt(
+      `Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`, 
+      String(t.valorParcela), 
+      '✏️ Editar Valor', 
+      { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' }
+    );
+    if (nV === null) return; // Se clicar em cancelar, aborta
+    const novoValor = Number(String(nV).replace(',', '.'));
     if (isNaN(novoValor)) return modal.alert('Valor inválido digitado.', '❌ Erro');
 
-    // Extrai a data antiga no formato padrão (Ano-Mês-Dia) para facilitar a edição
-    const dataAntiga = new Date(t.dataCompra).toISOString().split('T')[0];
+    // Prepara a data antiga no formato DD/MM/AAAA para exibir na tela
+    const dataString = String(t.dataCompra).split('T')[0];
+    const [ano, mes, dia] = dataString.split('-');
+    const dataFormatadaBR = `${dia}/${mes}/${ano}`;
 
-    // 2️⃣ Pede a Nova Data
-    const novaDataStr = window.prompt(`2️⃣ Digite a nova DATA (Formato: AAAA-MM-DD):`, dataAntiga);
-    if (novaDataStr === null) return; // Clicou em cancelar
+    // 2️⃣ Pede a Nova Data (Formato Brasileiro)
+    const nD = await modal.prompt(
+      `2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`, 
+      dataFormatadaBR, 
+      '📅 Editar Data', 
+      { confirmLabel: 'Próximo' }
+    );
+    if (nD === null) return;
+    
+    // Converte de volta para YYYY-MM-DD para o banco de dados não quebrar
+    const partesData = nD.split('/');
+    if (partesData.length !== 3) return modal.alert('Formato de data inválido. Use DD/MM/AAAA.', '❌ Erro');
+    const novaDataStr = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
 
+    // 3️⃣ Pergunta o Status final usando os botões personalizados
+    const nS = await modal.options(
+      `3️⃣ Qual o status atualizado deste lançamento?\n\nStatus atual: ${t.status.toUpperCase()}`,
+      [
+        { value: 'pago', icon: '✔', label: 'Marcar como PAGO' },
+        { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }
+      ],
+      '🔄 Editar Status'
+    );
+    if (!nS) return; // Se fechar o modal, cancela a edição
+
+    // 4️⃣ Salva tudo no banco de dados e atualiza a tela
     try {
       await fetch(`${API}/transacoes/${t.id}`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ status: t.status, valorParcela: novoValor, dataCompra: novaDataStr })
+        body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr })
       });
-
-      // Atualiza a tela instantaneamente com o novo valor e nova data
-      setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr } : tr));
+      
+      setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS } : tr));
     } catch (err) {
       modal.alert('Ocorreu um erro ao atualizar os dados.', '❌ Erro');
     }
