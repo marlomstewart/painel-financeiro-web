@@ -552,7 +552,7 @@ function App() {
 
     if (transacoesComKm.length > 0) {
       const kmAtual = Number(transacoesComKm[0].kmMoto);
-      const ultimaTroca = transacoesComKm.find(t => t.categoria === 'Oficina' && t.descricao.toLowerCase().includes('leo'));
+      const ultimaTroca = transacoesComKm.find(t => t.categoria === 'Manutenção da moto' && t.descricao.toLowerCase().includes('leo'));
       const kmUltimaTroca = ultimaTroca ? Number(ultimaTroca.kmMoto) : kmAtual;
 
       const kmRodados = kmAtual - kmUltimaTroca;

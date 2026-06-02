@@ -145,8 +145,8 @@ export function Dashboard({
                                 {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
                             </select>
 
-                            {/* Campo de KM (Aparece apenas para o stewart se for Oficina ou Gasolina) */}
-                            {nomeUsuario.toLowerCase() === 'stewart' && (catFormulario === 'Gasolina' || catFormulario === 'Oficina') && (
+                            {/* Campo de KM (Aparece apenas para o stewart se for Manutenção da moto ou Gasolina) */}
+                            {nomeUsuario.toLowerCase() === 'stewart' && (catFormulario === 'Gasolina' || catFormulario === 'Manutenção da moto') && (
                                 <input name="kmMoto" type="number" placeholder="Km atual do painel da Biz" required className="w-full border-2 border-amber-400 bg-amber-50 p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-amber-600" />
                             )}
 
