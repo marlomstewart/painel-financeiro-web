@@ -4,7 +4,7 @@ const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export function Dashboard({
-    nomeUsuario, dataVis, mesAnterior, mesProximo, isAdmin, setTelaAtiva, carregarUsuarios, fazerLogout,
+    nomeUsuario, alertaMoto, dataVis, mesAnterior, mesProximo, isAdmin, setTelaAtiva, carregarUsuarios, fazerLogout,
     totRendaPaga, totGastoReal, totInvestido, verFaturasPorCartao, totFaturaCreditoAberto,
     saldoMesAnterior, somarSaldoAnterior, setSomarSaldoAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
     categorias, gCat, addTransacao, cartoes,
@@ -15,7 +15,14 @@ export function Dashboard({
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
+    const [catFormulario, setCatFormulario] = useState('Sem Categoria'); // Rastreia a categoria escolhida
     const todosSelecionados = dadosTabela.length > 0 && selecionados.length === dadosTabela.length;
+
+    // Intercepta o envio para limpar o campo visual da categoria após salvar
+    const handleAdicionar = (e) => {
+        addTransacao(e);
+        setCatFormulario('Sem Categoria');
+    };
 
     const toggleSelectAll = () => {
         if (todosSelecionados) setSelecionados([]);
@@ -61,7 +68,7 @@ export function Dashboard({
                     </div>
                 </header>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-4">
+                <div className={`grid grid-cols-2 md:grid-cols-4 ${alertaMoto ? 'lg:grid-cols-8' : 'lg:grid-cols-7'} gap-2 md:gap-4`}>
                     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
                     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
                     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
@@ -88,6 +95,16 @@ export function Dashboard({
                         <p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p>
                         {somarSaldoAnterior && <p className="text-[9px] text-amber-600 font-medium mt-0.5">+ Inclui Saldo Ant.</p>}
                     </div>
+                    {/* CARD EXCLUSIVO DA MOTO */}
+                    {alertaMoto && (
+                        <div className={`p-3 md:p-4 rounded-xl shadow-sm border-l-4 transition-colors ${alertaMoto.alertaCritico ? 'bg-red-50 border-red-500' : 'bg-slate-800 border-yellow-500'}`}>
+                            <h3 className={`text-[10px] md:text-xs font-semibold uppercase ${alertaMoto.alertaCritico ? 'text-red-700' : 'text-slate-300'}`}>Óleo da Biz 125</h3>
+                            <p className={`text-sm md:text-lg font-bold mt-1 ${alertaMoto.alertaCritico ? 'text-red-600' : 'text-white'}`}>{alertaMoto.kmFaltantes} km</p>
+                            <p className={`text-[9px] mt-0.5 ${alertaMoto.alertaCritico ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
+                                {alertaMoto.alertaCritico ? '⚠️ Troca Urgente!' : 'Para a próxima troca'}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {categorias.length > 0 && (
@@ -113,7 +130,7 @@ export function Dashboard({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                     <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border lg:col-span-1 h-fit">
                         <h2 className="text-xs md:text-sm font-bold text-slate-600 uppercase mb-4">Novo Lançamento</h2>
-                        <form onSubmit={addTransacao} className="space-y-3 md:space-y-4">
+                        <form onSubmit={handleAdicionar} className="space-y-3 md:space-y-4">
                             <input name="descricao" placeholder="Descrição" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
                             <input name="valor" type="number" step="0.01" placeholder="Valor (R$)" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
                             <input name="dataCompra" type="date" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm text-slate-600 outline-none focus:border-blue-500" />
@@ -121,7 +138,18 @@ export function Dashboard({
                                 <select name="tipo" required className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Invest. / Meta</option></select>
                                 <select name="status" className="border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pendente">Pendente</option><option value="pago">Pago</option></select>
                             </div>
-                            <select name="categoria" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option><option value="Renda Fixa">Renda Fixa</option><option value="Renda">Renda Variável</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
+
+                            {/* Categoria Inteligente */}
+                            <select name="categoria" value={catFormulario} onChange={e => setCatFormulario(e.target.value)} required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500">
+                                <option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option><option value="Renda Fixa">Renda Fixa</option><option value="Renda">Renda Variável</option>
+                                {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
+                            </select>
+
+                            {/* Campo de KM (Aparece apenas para o stewart se for Oficina ou Gasolina) */}
+                            {nomeUsuario.toLowerCase() === 'stewart' && (catFormulario === 'Gasolina' || catFormulario === 'Oficina') && (
+                                <input name="kmMoto" type="number" placeholder="Km atual do painel da Biz" required className="w-full border-2 border-amber-400 bg-amber-50 p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-amber-600" />
+                            )}
+
                             <select name="formaPagamento" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pix">PIX / Dinheiro</option><option value="debito">Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito - {c.nome}</option>)}</select>
                             <input name="parcelas" type="number" min="1" placeholder="Qtd. Parcelas (Apenas Crédito)" className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-blue-500" />
                             <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 md:py-3 rounded-lg text-xs md:text-sm transition-colors shadow-sm">Adicionar</button>

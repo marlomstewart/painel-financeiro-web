@@ -216,21 +216,29 @@ function App() {
     const fd = new FormData(e.target);
     const d = fd.get('descricao'), v = Number(fd.get('valor')), dt = new Date(fd.get('dataCompra') + 'T00:00:00');
     let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
+
+    // Captura o KM se ele existir no formulário
+    const kmMoto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
+
     if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
     if (c === 'Contas Fixas') t = 'despesa';
     const grupoId = parc > 1 ? Date.now().toString() : null;
     let novasT = [];
+
     if (p.startsWith('credito_')) {
       const cart = cartoes.find(card => card.id === p.split('_')[1]);
       let mI = (dt.getDate() >= cart.melhorDia) ? dt.getMonth() + 1 : dt.getMonth();
       for (let i = 0; i < parc; i++) {
         let mP = mI + i, aP = dt.getFullYear();
         if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; }
-        novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId });
+        // Adicionado o kmMoto no envio
+        novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, kmMoto });
       }
     } else {
-      novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId });
+      // Adicionado o kmMoto no envio
+      novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, kmMoto });
     }
+
     for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
     setTransacoes([...transacoes, ...novasT]);
     e.target.reset();
@@ -342,9 +350,9 @@ function App() {
   const editarValor = async (t) => {
     // 1️⃣ Pede o Novo Valor usando o seu Modal customizado
     const nV = await modal.prompt(
-      `Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`, 
-      String(t.valorParcela), 
-      '✏️ Editar Valor', 
+      `Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`,
+      String(t.valorParcela),
+      '✏️ Editar Valor',
       { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' }
     );
     if (nV === null) return; // Se clicar em cancelar, aborta
@@ -358,13 +366,13 @@ function App() {
 
     // 2️⃣ Pede a Nova Data (Formato Brasileiro)
     const nD = await modal.prompt(
-      `2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`, 
-      dataFormatadaBR, 
-      '📅 Editar Data', 
+      `2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`,
+      dataFormatadaBR,
+      '📅 Editar Data',
       { confirmLabel: 'Próximo' }
     );
     if (nD === null) return;
-    
+
     // Converte de volta para YYYY-MM-DD para o banco de dados não quebrar
     const partesData = nD.split('/');
     if (partesData.length !== 3) return modal.alert('Formato de data inválido. Use DD/MM/AAAA.', '❌ Erro');
@@ -388,7 +396,7 @@ function App() {
         headers: getHeaders(),
         body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr })
       });
-      
+
       setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS } : tr));
     } catch (err) {
       modal.alert('Ocorreu um erro ao atualizar os dados.', '❌ Erro');
@@ -536,6 +544,30 @@ function App() {
   const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
 
   // =========================================================================
+  // MÓDULO AUTOMOTIVO (Moto Biz 125) - Apenas para 'stewart'
+  // =========================================================================
+  let alertaMoto = null;
+  if (nomeUsuario.toLowerCase() === 'stewart') {
+    const transacoesComKm = transacoes.filter(t => t.kmMoto).sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra));
+
+    if (transacoesComKm.length > 0) {
+      const kmAtual = Number(transacoesComKm[0].kmMoto);
+      const ultimaTroca = transacoesComKm.find(t => t.categoria === 'Oficina' && t.descricao.toLowerCase().includes('leo'));
+      const kmUltimaTroca = ultimaTroca ? Number(ultimaTroca.kmMoto) : kmAtual;
+
+      const kmRodados = kmAtual - kmUltimaTroca;
+      const limiteTrocaOleo = 1000;
+      const kmFaltantes = limiteTrocaOleo - kmRodados;
+
+      alertaMoto = {
+        kmAtual,
+        kmFaltantes,
+        alertaCritico: kmFaltantes <= 150
+      };
+    }
+  }
+
+  // =========================================================================
   // FUNÇÕES DE ADMIN
   // =========================================================================
   const carregarUsuarios = async () => {
@@ -602,7 +634,7 @@ function App() {
 
   return (
     <Dashboard
-      nomeUsuario={nomeUsuario} dataVis={dataVis} mesAnterior={mesAnterior} mesProximo={mesProximo}
+      nomeUsuario={nomeUsuario} alertaMoto={alertaMoto} dataVis={dataVis} mesAnterior={mesAnterior} mesProximo={mesProximo}
       isAdmin={isAdmin} setTelaAtiva={setTelaAtiva} carregarUsuarios={carregarUsuarios} fazerLogout={fazerLogout}
       totRendaPaga={totRendaPaga} totGastoReal={totGastoReal} totInvestido={totInvestido}
       verFaturasPorCartao={verFaturasPorCartao} totFaturaCreditoAberto={totFaturaCreditoAberto}
