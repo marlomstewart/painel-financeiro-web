@@ -567,24 +567,30 @@ function App() {
     }
   }
 
-  // =========================================================================
+// =========================================================================
   // INTELIGÊNCIA PREDITIVA E RAIO-X DE CATEGORIA
   // =========================================================================
   const abrirDetalhesCategoria = (nomeCategoria, valorGasto, valorMeta) => {
-    // 1. Filtra as transações do mês exato que estamos visualizando
-    const transacoesMes = transacoes.filter(t =>
-      t.categoria === nomeCategoria &&
-      t.mesReferencia === dataVis.mes &&
-      t.anoReferencia === dataVis.ano &&
-      t.tipo === 'despesa'
+    console.log(`🔍 Iniciando Raio-X para: ${nomeCategoria}`);
+
+    // 1. Filtra as transações (Removida a trava do 'despesa' para evitar erros de maiúscula)
+    const transacoesMes = transacoes.filter(t => 
+      t.categoria === nomeCategoria && 
+      t.mesReferencia === dataVis.mes && 
+      t.anoReferencia === dataVis.ano
     );
 
-    if (transacoesMes.length === 0) return;
+    console.log(`📦 Transações encontradas para o cálculo: ${transacoesMes.length}`);
+
+    if (transacoesMes.length === 0) {
+      console.warn("⚠️ Nenhuma transação encontrada! Abortando Raio-X.");
+      return;
+    }
 
     // 2. Cálculos Básicos
     const qtdLancamentos = transacoesMes.length;
     const mediaGasto = valorGasto / qtdLancamentos;
-
+    
     // 3. Encontra Maior e Menor Gasto
     const maiorGasto = transacoesMes.reduce((max, t) => t.valorParcela > max.valorParcela ? t : max, transacoesMes[0]);
     const menorGasto = transacoesMes.reduce((min, t) => t.valorParcela < min.valorParcela ? t : min, transacoesMes[0]);
@@ -592,11 +598,10 @@ function App() {
     // 4. Inteligência Preditiva (Projeção de Fim de Mês)
     const dataAtual = new Date();
     const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
-
+    
     let previsaoFimMes = valorGasto;
     let analiseIA = "";
 
-    // Só faz projeção se estivermos olhando para o mês atual
     if (dataVis.mes === dataAtual.getMonth() + 1 && dataVis.ano === dataAtual.getFullYear()) {
       const diaHoje = dataAtual.getDate();
       previsaoFimMes = (valorGasto / diaHoje) * diasNoMes;
@@ -644,15 +649,22 @@ function App() {
       </div>
     );
 
-    // Manda abrir o Modal
-    setModal({
-      isOpen: true,
-      config: {
-        titulo: `Raio-X: ${nomeCategoria}`,
-        conteudo: conteudoModal,
-        tamanho: 'max-w-md'
-      }
-    });
+    console.log("🚀 Tentando exibir a interface do modal...");
+    
+    // 6. Tenta abrir o Modal adaptando-se ao seu projeto
+    try {
+        if (typeof modal !== 'undefined' && modal.show) {
+            // Se você usar o hook 'modal'
+            modal.show({ titulo: `Raio-X: ${nomeCategoria}`, conteudo: conteudoModal, tamanho: 'max-w-md' });
+        } else if (typeof setModal === 'function') {
+            // Se você usar o estado 'setModal'
+            setModal({ isOpen: true, config: { titulo: `Raio-X: ${nomeCategoria}`, conteudo: conteudoModal, tamanho: 'max-w-md' } });
+        } else {
+            console.error("❌ O formato do seu Modal é diferente. Por favor, mostre como você costuma usar o Modal no App.jsx.");
+        }
+    } catch (erro) {
+        console.error("❌ Erro grave ao abrir o modal:", erro);
+    }
   };
 
   // =========================================================================
