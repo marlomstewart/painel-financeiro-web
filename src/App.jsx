@@ -568,26 +568,33 @@ function App() {
   }
 
   // =========================================================================
-  // RASTREIO E ROLAGEM DE PENDÊNCIAS ANTERIORES
+  // RASTREIO E ROLAGEM DE PENDÊNCIAS ANTERIORES (CORRIGIDO: TEMPO REAL)
   // =========================================================================
+  // Agora o sistema olha para o relógio real do mundo (Hoje)
+  const dataHoje = new Date();
+  const mesReal = dataHoje.getMonth() + 1; 
+  const anoReal = dataHoje.getFullYear();
+
   const pendenciasPassadas = transacoes.filter(t => {
-    if (t.status !== 'pendente') return false; // Só queremos o que não foi pago
-    if (t.anoReferencia < dataVis.ano) return true; // Ano passado inteiro
-    if (t.anoReferencia === dataVis.ano && t.mesReferencia < dataVis.mes) return true; // Meses passados deste ano
+    if (t.status !== 'pendente') return false; 
+    
+    // Compara com o TEMPO REAL, não com a tela que está aberta
+    if (t.anoReferencia < anoReal) return true; 
+    if (t.anoReferencia === anoReal && t.mesReferencia < mesReal) return true; 
     return false;
   });
 
   const processarRolagemPendencias = async () => {
     try {
       const promessas = pendenciasPassadas.flatMap((t, index) => {
-        // 1. Marca a antiga como 'transferido' para não gerar loop infinito
+        // 1. Marca a antiga como 'transferido'
         const reqUpdate = fetch(`${API}/transacoes/${t.id}`, {
           method: 'PUT',
           headers: getHeaders(),
           body: JSON.stringify({ status: 'transferido', valorParcela: t.valorParcela })
         });
 
-        // 2. Clona a transação para o mês atual com a OBS na descrição
+        // 2. Clona a transação para o MÊS REAL ATUAL, independente da tela
         const reqCreate = fetch(`${API}/transacoes`, {
           method: 'POST',
           headers: getHeaders(),
@@ -596,12 +603,12 @@ function App() {
             descricao: `[Pendência de ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`,
             categoria: t.categoria,
             valorParcela: t.valorParcela,
-            dataCompra: new Date(dataVis.ano, dataVis.mes - 1, new Date().getDate()).toISOString(),
+            dataCompra: new Date(anoReal, mesReal - 1, dataHoje.getDate()).toISOString(),
             tipo: t.tipo,
             formaPagamento: t.formaPagamento,
             status: 'pendente',
-            mesReferencia: dataVis.mes,
-            anoReferencia: dataVis.ano,
+            mesReferencia: mesReal, // Força a ida para o mês atual real
+            anoReferencia: anoReal,
             kmMoto: t.kmMoto || null,
             grupo_id: null // Quebra o vínculo se era uma compra parcelada
           })
@@ -612,11 +619,12 @@ function App() {
 
       await Promise.all(promessas);
 
-      // Recarrega o banco de dados para a tela piscar já atualizada
+      // Recarrega o banco e JOGA a tela para o mês atual para você ver a mágica
       const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
       if (resT.ok) {
         setTransacoes(await resT.json());
-        modal.alert('Todas as pendências foram importadas com sucesso para o mês atual!', '✅ Rolagem Concluída');
+        setDataVis({ mes: mesReal, ano: anoReal }); // Muda o painel para Junho
+        modal.alert(`As pendências foram movidas para ${nomesMeses[mesReal - 1]} com sucesso!`, '✅ Rolagem Concluída');
       }
     } catch (err) {
       modal.alert('Erro de conexão ao tentar importar pendências.', '❌ Erro');
@@ -627,7 +635,7 @@ function App() {
     const conteudoModal = (
       <div className="space-y-3">
         <p className="text-sm text-slate-600 mb-4">
-          Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) que ficaram esquecidos nos meses anteriores. Deseja trazê-los para o mês atual?
+          Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) que ficaram pendentes nos meses anteriores. Deseja trazê-los para o mês atual ({nomesMeses[mesReal - 1]})?
         </p>
         <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
           {pendenciasPassadas.map(t => (
@@ -644,7 +652,7 @@ function App() {
           onClick={() => { modal.close(); processarRolagemPendencias(); }}
           className="w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg shadow transition-colors"
         >
-          Importar para {nomesMeses[dataVis.mes - 1]}
+          Importar para {nomesMeses[mesReal - 1]}
         </button>
       </div>
     );
