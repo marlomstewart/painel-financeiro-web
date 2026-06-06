@@ -112,21 +112,28 @@ export function Dashboard({
                         <h2 className="text-xs md:text-sm font-bold text-slate-600 uppercase mb-4">Progresso das Metas</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             {categorias.map(c => {
-                                const gas = gCat[c.nome] || 0; let por = Math.min((gas / c.meta) * 100, 100);
-                                    let corBarra = 'bg-emerald-500';
+                                const gas = gCat[c.nome] || 0; 
+                                    let por = Math.min((gas / c.meta) * 100, 100);
+                                    let corBarra = '';
                                     
-                                    // 1. CORREÇÃO DA COR: Agora procura por 'Gasto' para ficar vermelho/amarelo
+                                    // LÓGICA DE CORES BIFURCADA (Psicologia Financeira)
                                     if (c.tipo === 'Gasto' || c.tipo === 'gasto') { 
-                                        if (por >= 90) corBarra = 'bg-red-500'; 
-                                        else if (por >= 70) corBarra = 'bg-amber-400'; 
+                                        // Lógica para GASTOS
+                                        if (por >= 95) corBarra = 'bg-red-500';         // >= 95%: Estourando (Vermelho)
+                                        else if (por >= 80) corBarra = 'bg-amber-400';  // 80% a 94%: Alerta (Laranja)
+                                        else if (por >= 50) corBarra = 'bg-blue-500';   // 50% a 79%: Metade (Azul)
+                                        else corBarra = 'bg-emerald-500';               // < 50%: Seguro (Verde)
                                     } else { 
-                                        corBarra = 'bg-blue-500'; 
+                                        // Lógica para INVESTIMENTOS E SONHOS (Inversa)
+                                        if (por >= 95) corBarra = 'bg-emerald-500';     // >= 95%: Meta batida! (Verde)
+                                        else if (por >= 80) corBarra = 'bg-blue-500';   // 80% a 94%: Quase lá (Azul)
+                                        else if (por >= 50) corBarra = 'bg-amber-400';  // 50% a 79%: Progredindo (Laranja)
+                                        else corBarra = 'bg-red-500';                   // < 50%: Começo lento (Vermelho)
                                     }
                                     
                                     return (
                                         <div 
                                             key={c.id} 
-                                            // 2. CORREÇÃO DO CLIQUE: Adicionado o "c.tipo" no final desta linha
                                             onClick={() => abrirDetalhesCategoria(c.nome, gas, c.meta, c.tipo)}
                                             className="border p-3 md:p-4 rounded-lg bg-slate-50 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200"
                                         >
