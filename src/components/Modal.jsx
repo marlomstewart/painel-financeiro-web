@@ -70,12 +70,35 @@ export function Modal({ config, onClose }) {
               ) : (
                 <>
                   {config.itens.map((item, i) => (
-                    <div key={i} className="px-3 py-2.5 bg-slate-50 rounded-lg border">
-                      <div className="flex justify-between items-center mb-1.5"><span className="text-sm font-bold text-slate-800">💳 {item.nome}</span><span className="text-sm font-bold text-purple-700">{formatarMoeda(item.total)}</span></div>
-                      <div className="flex gap-3 text-xs text-slate-500"><span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">✔ Pago: {formatarMoeda(item.pago)}</span><span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">⏳ Pendente: {formatarMoeda(item.pendente)}</span></div>
+                    <div key={i} className="px-3 py-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
+                        {/* BOTÃO DE PAGAR FATURA */}
+                        {item.pendente > 0 && (
+                          <button 
+                            onClick={() => {
+                              // Busca o ID do cartão pelo nome para passar para a função
+                              // Como o seu objeto 'item' tem o nome, precisamos do ID. 
+                              // Se o 'config.pagarFatura' espera o ID, usaremos o nome como chave ou ajustaremos o App.jsx
+                              config.pagarFatura(config.cartaoIds[item.nome]); 
+                              onClose(); 
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors"
+                          >
+                            Pagar Fatura
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex gap-2 text-xs text-slate-500">
+                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium flex-1 text-center">✔ {formatarMoeda(item.pago)}</span>
+                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium flex-1 text-center">⏳ {formatarMoeda(item.pendente)}</span>
+                      </div>
                     </div>
                   ))}
-                  <div className="flex justify-between items-center px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-200 mt-1"><span className="text-sm font-bold text-slate-700">Total Geral</span><span className="text-sm font-bold text-purple-700">{formatarMoeda(config.itens.reduce((s, i) => s + i.total, 0))}</span></div>
+                  <div className="flex justify-between items-center px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-200 mt-1">
+                    <span className="text-sm font-bold text-slate-700">Total Geral</span>
+                    <span className="text-sm font-bold text-purple-700">{formatarMoeda(config.itens.reduce((s, i) => s + i.total, 0))}</span>
+                  </div>
                 </>
               )}
               <button onClick={handleCancel} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition-colors mt-2">Fechar</button>

@@ -280,6 +280,46 @@ function App() {
     }
   };
 
+  const pagarFaturaCartao = async (cartaoId) => {
+    const cartao = cartoes.find(c => c.id === cartaoId);
+    if (!cartao) return;
+
+    const confirmacao = await modal.confirm(
+      `Deseja marcar TODOS os lançamentos pendentes no cartão "${cartao.nome}" como PAGO?`,
+      '💳 Pagar Fatura'
+    );
+    if (!confirmacao) return;
+
+    // Filtra apenas o que é pendente e daquele cartão
+    const pendentes = transacoes.filter(t =>
+      t.status === 'pendente' &&
+      t.formaPagamento === `credito_${cartaoId}` &&
+      t.mesReferencia === dataVis.mes &&
+      t.anoReferencia === dataVis.ano
+    );
+
+    try {
+      const promessas = pendentes.map(t =>
+        fetch(`${API}/transacoes/${t.id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify({ status: 'pago', valorParcela: t.valorParcela, dataCompra: t.dataCompra })
+        })
+      );
+
+      await Promise.all(promessas);
+
+      // Atualiza o estado global
+      setTransacoes(prev => prev.map(t =>
+        pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago' } : t
+      ));
+
+      modal.alert('Fatura marcada como paga com sucesso!', '✅ Concluído');
+    } catch (err) {
+      modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro');
+    }
+  };
+
   const deletarTransacao = async (t) => {
     if (t.grupo_id) {
       const opcao = await modal.options(
@@ -423,10 +463,17 @@ function App() {
       .map(([nome, v]) => ({ nome, ...v }))
       .sort((a, b) => b.total - a.total);
 
+    const verFaturasPorCartao = () => {
+    // ... (seu código atual) ...
+    const cartaoIds = {}; // Nova variável para mapear nome -> ID
+    cartoes.forEach(c => cartaoIds[c.nome] = c.id);
+
     modal.setConfig({
       type: 'faturas',
       title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
       itens,
+      cartaoIds, // Passamos o mapeamento para o Modal
+      pagarFatura: pagarFaturaCartao,
       onCancel: modal.close,
       onClose: modal.close,
     });
@@ -572,15 +619,15 @@ function App() {
   // =========================================================================
   // Agora o sistema olha para o relógio real do mundo (Hoje)
   const dataHoje = new Date();
-  const mesReal = dataHoje.getMonth() + 1; 
+  const mesReal = dataHoje.getMonth() + 1;
   const anoReal = dataHoje.getFullYear();
 
   const pendenciasPassadas = transacoes.filter(t => {
-    if (t.status !== 'pendente') return false; 
-    
+    if (t.status !== 'pendente') return false;
+
     // Compara com o TEMPO REAL, não com a tela que está aberta
-    if (t.anoReferencia < anoReal) return true; 
-    if (t.anoReferencia === anoReal && t.mesReferencia < mesReal) return true; 
+    if (t.anoReferencia < anoReal) return true;
+    if (t.anoReferencia === anoReal && t.mesReferencia < mesReal) return true;
     return false;
   });
 
@@ -828,7 +875,7 @@ function App() {
       filtrosAvancados={filtrosAvancados} setFiltrosAvancados={setFiltrosAvancados}
       mudarOrdenacao={mudarOrdenacao} ordenacao={ordenacao} dadosTabela={dadosTabela}
       alternarStatusTransacao={alternarStatusTransacao} editarValor={editarValor} deletarTransacao={deletarTransacao}
-      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa} pendenciasPassadas={pendenciasPassadas} abrirModalPendencias={abrirModalPendencias}
+      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa} pendenciasPassadas={pendenciasPassadas} abrirModalPendencias={abrirModalPendencias} pagarFaturaCartao={pagarFaturaCartao}
     />
   );
 }
