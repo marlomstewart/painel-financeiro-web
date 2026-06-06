@@ -4,7 +4,7 @@ const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export function Dashboard({
-    nomeUsuario, alertaMoto, dataVis, mesAnterior, mesProximo, isAdmin, setTelaAtiva, carregarUsuarios, fazerLogout,
+    nomeUsuario, alertaMoto, abrirDetalhesCategoria, dataVis, mesAnterior, mesProximo, isAdmin, setTelaAtiva, carregarUsuarios, fazerLogout,
     totRendaPaga, totGastoReal, totInvestido, verFaturasPorCartao, totFaturaCreditoAberto,
     saldoMesAnterior, somarSaldoAnterior, setSomarSaldoAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
     categorias, gCat, addTransacao, cartoes,
@@ -116,7 +116,11 @@ export function Dashboard({
                                 let corBarra = 'bg-emerald-500';
                                 if (c.tipo === 'despesa') { if (por >= 90) corBarra = 'bg-red-500'; else if (por >= 70) corBarra = 'bg-amber-400'; } else { corBarra = 'bg-blue-500'; }
                                 return (
-                                    <div key={c.id} className="border p-3 md:p-4 rounded-lg bg-slate-50">
+                                    <div 
+                                        key={c.id} 
+                                        onClick={() => abrirDetalhesCategoria(c.nome, gas, c.meta)}
+                                        className="border p-3 md:p-4 rounded-lg bg-slate-50 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+                                    >
                                         <h4 className="text-xs md:text-sm font-medium mb-2 truncate" title={c.nome}>{c.nome}</h4>
                                         <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2 overflow-hidden"><div className={`${corBarra} h-1.5 rounded-full transition-all duration-700 ease-out`} style={{ width: `${por}%` }}></div></div>
                                         <div className="flex justify-between text-[10px] md:text-xs text-slate-500 font-medium"><span>{formatarMoeda(gas)}</span><span>{formatarMoeda(c.meta)}</span></div>
