@@ -448,29 +448,32 @@ function App() {
   // =========================================================================
   const verFaturasPorCartao = () => {
     const porCartao = {};
+    const cartaoIds = {}; // <--- ADICIONE ESTA LINHA
+
     transacoesMes.forEach(t => {
       if (t.formaPagamento && t.formaPagamento.startsWith('credito_')) {
         const cartaoId = t.formaPagamento.split('_')[1];
         const cartao = cartoes.find(c => c.id === cartaoId);
         const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
+        
+        if (cartao) cartaoIds[nome] = cartao.id; // <--- ADICIONE ESTA LINHA
+
         if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
         porCartao[nome].total += Number(t.valorParcela);
         if (t.status === 'pago') porCartao[nome].pago += Number(t.valorParcela);
         else porCartao[nome].pendente += Number(t.valorParcela);
       }
     });
+
     const itens = Object.entries(porCartao)
       .map(([nome, v]) => ({ nome, ...v }))
       .sort((a, b) => b.total - a.total);
-
-    const cartaoIds = {}; // Nova variável para mapear nome -> ID
-    cartoes.forEach(c => cartaoIds[c.nome] = c.id);
 
     modal.setConfig({
       type: 'faturas',
       title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
       itens,
-      cartaoIds, // Passamos o mapeamento para o Modal
+      cartaoIds, // <--- GARANTA QUE ESTA LINHA ESTÁ AQUI
       pagarFatura: pagarFaturaCartao,
       onCancel: modal.close,
       onClose: modal.close,

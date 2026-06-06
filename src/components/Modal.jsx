@@ -73,11 +73,11 @@ export function Modal({ config, onClose }) {
                     <div key={i} className="px-3 py-3 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
-                        {/* BOTÃO MÁGICO DE PAGAR */}
+                        
+                        {/* NOVO BOTÃO COM MAPA DE IDS */}
                         {item.pendente > 0 && (
                           <button 
                             onClick={() => {
-                              // Aqui ele chama a função que passamos lá no App.jsx
                               config.pagarFatura(config.cartaoIds[item.nome]);
                               onClose();
                             }}
