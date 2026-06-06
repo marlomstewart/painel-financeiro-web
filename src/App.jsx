@@ -570,32 +570,24 @@ function App() {
 // =========================================================================
   // INTELIGÊNCIA PREDITIVA E RAIO-X DE CATEGORIA
   // =========================================================================
-  const abrirDetalhesCategoria = (nomeCategoria, valorGasto, valorMeta) => {
-    console.log(`🔍 Iniciando Raio-X para: ${nomeCategoria}`);
-
-    // 1. Filtra as transações (Removida a trava do 'despesa' para evitar erros de maiúscula)
+  // Adicionamos o "tipoCategoria" aqui na primeira linha!
+  const abrirDetalhesCategoria = (nomeCategoria, valorGasto, valorMeta, tipoCategoria) => {
+    
     const transacoesMes = transacoes.filter(t => 
       t.categoria === nomeCategoria && 
       t.mesReferencia === dataVis.mes && 
       t.anoReferencia === dataVis.ano
     );
 
-    console.log(`📦 Transações encontradas para o cálculo: ${transacoesMes.length}`);
+    if (transacoesMes.length === 0) return;
 
-    if (transacoesMes.length === 0) {
-      console.warn("⚠️ Nenhuma transação encontrada! Abortando Raio-X.");
-      return;
-    }
-
-    // 2. Cálculos Básicos
     const qtdLancamentos = transacoesMes.length;
     const mediaGasto = valorGasto / qtdLancamentos;
     
-    // 3. Encontra Maior e Menor Gasto
     const maiorGasto = transacoesMes.reduce((max, t) => t.valorParcela > max.valorParcela ? t : max, transacoesMes[0]);
     const menorGasto = transacoesMes.reduce((min, t) => t.valorParcela < min.valorParcela ? t : min, transacoesMes[0]);
 
-    // 4. Inteligência Preditiva (Projeção de Fim de Mês)
+    // 4. Inteligência Preditiva BIFURCADA (Despesa vs Investimento)
     const dataAtual = new Date();
     const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
     
@@ -606,21 +598,32 @@ function App() {
       const diaHoje = dataAtual.getDate();
       previsaoFimMes = (valorGasto / diaHoje) * diasNoMes;
 
-      if (previsaoFimMes > valorMeta) {
-        analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, você deve fechar o mês em ${formatarMoeda(previsaoFimMes)}, estourando a meta em ${formatarMoeda(previsaoFimMes - valorMeta)}.`;
+      // O Sistema agora pergunta: É uma despesa ou é um investimento?
+      if (tipoCategoria === 'Gasto' || tipoCategoria === 'gasto') {
+        // LÓGICA DE DESPESA (Gastar menos é bom)
+        if (previsaoFimMes > valorMeta) {
+          analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, você deve fechar o mês em ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - valorMeta)}.`;
+        } else {
+          analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês em ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(valorMeta - previsaoFimMes)}.`;
+        }
       } else {
-        analiseIA = `✅ Ritmo excelente! A previsão é fechar o mês em ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(valorMeta - previsaoFimMes)}.`;
+        // LÓGICA DE INVESTIMENTO / SONHO (Investir mais é bom)
+        if (previsaoFimMes < valorMeta) {
+          analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(valorMeta - previsaoFimMes)} para bater a sua meta.`;
+        } else {
+          analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta em ${formatarMoeda(previsaoFimMes - valorMeta)}!`;
+        }
       }
     } else {
       analiseIA = "Análise preditiva disponível apenas para o mês atual.";
     }
 
-    // 5. Monta a tela do Modal
+    // 5. Monta a tela do Modal (Continua igual)
     const conteudoModal = (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-slate-50 p-3 rounded-lg border">
-            <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Gasto Atual vs Meta</p>
+            <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Atual vs Meta</p>
             <p className="text-lg font-bold text-slate-800">{formatarMoeda(valorGasto)} <span className="text-xs text-slate-400 font-normal">/ {formatarMoeda(valorMeta)}</span></p>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border">
@@ -636,12 +639,12 @@ function App() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-rose-50 p-3 rounded-lg border border-rose-100">
-            <p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Gasto</p>
+            <p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p>
             <p className="text-sm font-bold text-rose-700">{formatarMoeda(maiorGasto.valorParcela)}</p>
             <p className="text-[9px] text-rose-500 mt-1 truncate" title={maiorGasto.descricao}>{new Date(maiorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maiorGasto.descricao}</p>
           </div>
           <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-            <p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Gasto</p>
+            <p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p>
             <p className="text-sm font-bold text-emerald-700">{formatarMoeda(menorGasto.valorParcela)}</p>
             <p className="text-[9px] text-emerald-500 mt-1 truncate" title={menorGasto.descricao}>{new Date(menorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menorGasto.descricao}</p>
           </div>
@@ -649,9 +652,7 @@ function App() {
       </div>
     );
 
-    console.log("🚀 Tentando exibir a interface do modal...");
-    
-    // 6. Abre o Modal usando o sistema nativo do seu painel
+    // 6. Abre o Modal
     modal.alert(conteudoModal, `Raio-X: ${nomeCategoria}`);
   };
 
