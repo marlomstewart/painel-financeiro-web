@@ -567,15 +567,100 @@ function App() {
     }
   }
 
-// =========================================================================
+  // =========================================================================
+  // RASTREIO E ROLAGEM DE PENDÊNCIAS ANTERIORES
+  // =========================================================================
+  const pendenciasPassadas = transacoes.filter(t => {
+    if (t.status !== 'pendente') return false; // Só queremos o que não foi pago
+    if (t.anoReferencia < dataVis.ano) return true; // Ano passado inteiro
+    if (t.anoReferencia === dataVis.ano && t.mesReferencia < dataVis.mes) return true; // Meses passados deste ano
+    return false;
+  });
+
+  const processarRolagemPendencias = async () => {
+    try {
+      const promessas = pendenciasPassadas.flatMap((t, index) => {
+        // 1. Marca a antiga como 'transferido' para não gerar loop infinito
+        const reqUpdate = fetch(`${API}/transacoes/${t.id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify({ status: 'transferido', valorParcela: t.valorParcela })
+        });
+
+        // 2. Clona a transação para o mês atual com a OBS na descrição
+        const reqCreate = fetch(`${API}/transacoes`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            id: (Date.now() + index).toString(),
+            descricao: `[Pendência de ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`,
+            categoria: t.categoria,
+            valorParcela: t.valorParcela,
+            dataCompra: new Date(dataVis.ano, dataVis.mes - 1, new Date().getDate()).toISOString(),
+            tipo: t.tipo,
+            formaPagamento: t.formaPagamento,
+            status: 'pendente',
+            mesReferencia: dataVis.mes,
+            anoReferencia: dataVis.ano,
+            kmMoto: t.kmMoto || null,
+            grupo_id: null // Quebra o vínculo se era uma compra parcelada
+          })
+        });
+
+        return [reqUpdate, reqCreate];
+      });
+
+      await Promise.all(promessas);
+
+      // Recarrega o banco de dados para a tela piscar já atualizada
+      const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
+      if (resT.ok) {
+        setTransacoes(await resT.json());
+        modal.alert('Todas as pendências foram importadas com sucesso para o mês atual!', '✅ Rolagem Concluída');
+      }
+    } catch (err) {
+      modal.alert('Erro de conexão ao tentar importar pendências.', '❌ Erro');
+    }
+  };
+
+  const abrirModalPendencias = () => {
+    const conteudoModal = (
+      <div className="space-y-3">
+        <p className="text-sm text-slate-600 mb-4">
+          Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) que ficaram esquecidos nos meses anteriores. Deseja trazê-los para o mês atual?
+        </p>
+        <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+          {pendenciasPassadas.map(t => (
+            <div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between items-center shadow-sm">
+              <div className="truncate pr-2">
+                <p className="text-xs font-bold text-rose-800 truncate">{t.descricao}</p>
+                <p className="text-[10px] text-rose-500 uppercase font-medium mt-1">{nomesMeses[t.mesReferencia - 1]} • {t.categoria}</p>
+              </div>
+              <span className="font-bold text-rose-700 text-sm whitespace-nowrap">{formatarMoeda(t.valorParcela)}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => { modal.close(); processarRolagemPendencias(); }}
+          className="w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg shadow transition-colors"
+        >
+          Importar para {nomesMeses[dataVis.mes - 1]}
+        </button>
+      </div>
+    );
+
+    modal.alert(conteudoModal, '⚠️ Notificação de Pendências');
+  };
+
+  // =========================================================================
   // INTELIGÊNCIA PREDITIVA E RAIO-X DE CATEGORIA
   // =========================================================================
   // Adicionamos o "tipoCategoria" aqui na primeira linha!
   const abrirDetalhesCategoria = (nomeCategoria, valorGasto, valorMeta, tipoCategoria) => {
-    
-    const transacoesMes = transacoes.filter(t => 
-      t.categoria === nomeCategoria && 
-      t.mesReferencia === dataVis.mes && 
+
+    const transacoesMes = transacoes.filter(t =>
+      t.categoria === nomeCategoria &&
+      t.mesReferencia === dataVis.mes &&
       t.anoReferencia === dataVis.ano
     );
 
@@ -583,14 +668,14 @@ function App() {
 
     const qtdLancamentos = transacoesMes.length;
     const mediaGasto = valorGasto / qtdLancamentos;
-    
+
     const maiorGasto = transacoesMes.reduce((max, t) => t.valorParcela > max.valorParcela ? t : max, transacoesMes[0]);
     const menorGasto = transacoesMes.reduce((min, t) => t.valorParcela < min.valorParcela ? t : min, transacoesMes[0]);
 
     // 4. Inteligência Preditiva BIFURCADA (Despesa vs Investimento)
     const dataAtual = new Date();
     const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
-    
+
     let previsaoFimMes = valorGasto;
     let analiseIA = "";
 
@@ -735,7 +820,7 @@ function App() {
       filtrosAvancados={filtrosAvancados} setFiltrosAvancados={setFiltrosAvancados}
       mudarOrdenacao={mudarOrdenacao} ordenacao={ordenacao} dadosTabela={dadosTabela}
       alternarStatusTransacao={alternarStatusTransacao} editarValor={editarValor} deletarTransacao={deletarTransacao}
-      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa}
+      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa} pendenciasPassadas={pendenciasPassadas} abrirModalPendencias={abrirModalPendencias}
     />
   );
 }

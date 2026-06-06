@@ -11,7 +11,7 @@ export function Dashboard({
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela, alternarStatusTransacao, editarValor, deletarTransacao,
-    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa
+    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
@@ -68,6 +68,30 @@ export function Dashboard({
                     </div>
                 </header>
 
+                {/* ================================================================= */}
+                {/* CARD INTELIGENTE DE PENDÊNCIAS */}
+                {/* ================================================================= */}
+                {pendenciasPassadas && pendenciasPassadas.length > 0 && (
+                    <div
+                        onClick={abrirModalPendencias}
+                        className="bg-gradient-to-r from-rose-500 to-red-600 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row items-center justify-between border border-rose-400 gap-4"
+                    >
+                        <div className="flex items-center gap-4 w-full">
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0">
+                                <span className="text-2xl text-white">⚠️</span>
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-base md:text-lg leading-tight">Atenção! Você tem pendências antigas.</h3>
+                                <p className="text-rose-100 text-xs md:text-sm mt-1">Existem {pendenciasPassadas.length} lançamento(s) de meses anteriores aguardando resolução.</p>
+                            </div>
+                        </div>
+                        <div className="w-full md:w-auto text-center md:text-left text-white font-semibold bg-black/10 px-4 py-2 rounded-lg backdrop-blur-sm whitespace-nowrap">
+                            Resolver Agora ➔
+                        </div>
+                    </div>
+                )}
+                {/* ================================================================= */}
+
                 <div className={`grid grid-cols-2 md:grid-cols-4 ${alertaMoto ? 'lg:grid-cols-8' : 'lg:grid-cols-7'} gap-2 md:gap-4`}>
                     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
                     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
@@ -112,36 +136,36 @@ export function Dashboard({
                         <h2 className="text-xs md:text-sm font-bold text-slate-600 uppercase mb-4">Progresso das Metas</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             {categorias.map(c => {
-                                const gas = gCat[c.nome] || 0; 
-                                    let por = Math.min((gas / c.meta) * 100, 100);
-                                    let corBarra = '';
-                                    
-                                    // CORREÇÃO: O banco pode salvar como 'despesa', 'Gasto' ou 'gasto'
-                                    if (c.tipo === 'despesa' || c.tipo === 'Gasto' || c.tipo === 'gasto') { 
-                                        // Lógica para GASTOS
-                                        if (por >= 95) corBarra = 'bg-red-500';         
-                                        else if (por >= 80) corBarra = 'bg-amber-400';  
-                                        else if (por >= 50) corBarra = 'bg-blue-500';   
-                                        else corBarra = 'bg-emerald-500';               
-                                    } else { 
-                                        // Lógica para INVESTIMENTOS E SONHOS (Inversa)
-                                        if (por >= 95) corBarra = 'bg-emerald-500';     
-                                        else if (por >= 80) corBarra = 'bg-blue-500';   
-                                        else if (por >= 50) corBarra = 'bg-amber-400';  
-                                        else corBarra = 'bg-red-500';                   
-                                    }
-                                    
-                                    return (
-                                        <div 
-                                            key={c.id} 
-                                            onClick={() => abrirDetalhesCategoria(c.nome, gas, c.meta, c.tipo)}
-                                            className="border p-3 md:p-4 rounded-lg bg-slate-50 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200"
-                                        >
-                                            <h4 className="text-xs md:text-sm font-medium mb-2 truncate" title={c.nome}>{c.nome}</h4>
-                                            <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2 overflow-hidden"><div className={`${corBarra} h-1.5 rounded-full transition-all duration-700 ease-out`} style={{ width: `${por}%` }}></div></div>
-                                            <div className="flex justify-between text-[10px] md:text-xs text-slate-500 font-medium"><span>{formatarMoeda(gas)}</span><span>{formatarMoeda(c.meta)}</span></div>
-                                        </div>
-                                    );
+                                const gas = gCat[c.nome] || 0;
+                                let por = Math.min((gas / c.meta) * 100, 100);
+                                let corBarra = '';
+
+                                // CORREÇÃO: O banco pode salvar como 'despesa', 'Gasto' ou 'gasto'
+                                if (c.tipo === 'despesa' || c.tipo === 'Gasto' || c.tipo === 'gasto') {
+                                    // Lógica para GASTOS
+                                    if (por >= 95) corBarra = 'bg-red-500';
+                                    else if (por >= 80) corBarra = 'bg-amber-400';
+                                    else if (por >= 50) corBarra = 'bg-blue-500';
+                                    else corBarra = 'bg-emerald-500';
+                                } else {
+                                    // Lógica para INVESTIMENTOS E SONHOS (Inversa)
+                                    if (por >= 95) corBarra = 'bg-emerald-500';
+                                    else if (por >= 80) corBarra = 'bg-blue-500';
+                                    else if (por >= 50) corBarra = 'bg-amber-400';
+                                    else corBarra = 'bg-red-500';
+                                }
+
+                                return (
+                                    <div
+                                        key={c.id}
+                                        onClick={() => abrirDetalhesCategoria(c.nome, gas, c.meta, c.tipo)}
+                                        className="border p-3 md:p-4 rounded-lg bg-slate-50 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+                                    >
+                                        <h4 className="text-xs md:text-sm font-medium mb-2 truncate" title={c.nome}>{c.nome}</h4>
+                                        <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2 overflow-hidden"><div className={`${corBarra} h-1.5 rounded-full transition-all duration-700 ease-out`} style={{ width: `${por}%` }}></div></div>
+                                        <div className="flex justify-between text-[10px] md:text-xs text-slate-500 font-medium"><span>{formatarMoeda(gas)}</span><span>{formatarMoeda(c.meta)}</span></div>
+                                    </div>
+                                );
                             })}
                         </div>
                     </div>
