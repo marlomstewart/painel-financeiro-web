@@ -448,7 +448,7 @@ function App() {
   // =========================================================================
   const verFaturasPorCartao = () => {
     const porCartao = {};
-    const cartaoIds = {}; // <--- ADICIONE ESTA LINHA
+    const cartaoIds = {}; // Mapeamento necessário para o botão funcionar
 
     transacoesMes.forEach(t => {
       if (t.formaPagamento && t.formaPagamento.startsWith('credito_')) {
@@ -456,7 +456,7 @@ function App() {
         const cartao = cartoes.find(c => c.id === cartaoId);
         const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
         
-        if (cartao) cartaoIds[nome] = cartao.id; // <--- ADICIONE ESTA LINHA
+        if (cartao) cartaoIds[nome] = cartao.id; // Vincula o nome ao ID
 
         if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
         porCartao[nome].total += Number(t.valorParcela);
@@ -465,16 +465,15 @@ function App() {
       }
     });
 
-    const itens = Object.entries(porCartao)
-      .map(([nome, v]) => ({ nome, ...v }))
-      .sort((a, b) => b.total - a.total);
+    const itens = Object.entries(porCartao).map(([nome, v]) => ({ nome, ...v }));
 
     modal.setConfig({
       type: 'faturas',
       title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
       itens,
-      cartaoIds, // <--- GARANTA QUE ESTA LINHA ESTÁ AQUI
-      pagarFatura: pagarFaturaCartao,
+      cartaoIds, // Enviando o mapa de IDs para o Modal
+      pagarFatura: pagarFaturaCartao, // Enviando a função de pagamento
+      reverterFatura: reverterFaturaCartao,
       onCancel: modal.close,
       onClose: modal.close,
     });
