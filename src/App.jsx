@@ -598,8 +598,8 @@ function App() {
       const diaHoje = dataAtual.getDate();
       previsaoFimMes = (valorGasto / diaHoje) * diasNoMes;
 
-      // O Sistema agora pergunta: É uma despesa ou é um investimento?
-      if (tipoCategoria === 'Gasto' || tipoCategoria === 'gasto') {
+      // O Sistema agora pergunta: É uma despesa (Gasto) ou é um investimento?
+      if (tipoCategoria === 'despesa' || tipoCategoria === 'Gasto' || tipoCategoria === 'gasto') {
         // LÓGICA DE DESPESA (Gastar menos é bom)
         if (previsaoFimMes > valorMeta) {
           analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, você deve fechar o mês em ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - valorMeta)}.`;

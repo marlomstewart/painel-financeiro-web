@@ -116,19 +116,19 @@ export function Dashboard({
                                     let por = Math.min((gas / c.meta) * 100, 100);
                                     let corBarra = '';
                                     
-                                    // LÓGICA DE CORES BIFURCADA (Psicologia Financeira)
-                                    if (c.tipo === 'Gasto' || c.tipo === 'gasto') { 
+                                    // CORREÇÃO: O banco pode salvar como 'despesa', 'Gasto' ou 'gasto'
+                                    if (c.tipo === 'despesa' || c.tipo === 'Gasto' || c.tipo === 'gasto') { 
                                         // Lógica para GASTOS
-                                        if (por >= 95) corBarra = 'bg-red-500';         // >= 95%: Estourando (Vermelho)
-                                        else if (por >= 80) corBarra = 'bg-amber-400';  // 80% a 94%: Alerta (Laranja)
-                                        else if (por >= 50) corBarra = 'bg-blue-500';   // 50% a 79%: Metade (Azul)
-                                        else corBarra = 'bg-emerald-500';               // < 50%: Seguro (Verde)
+                                        if (por >= 95) corBarra = 'bg-red-500';         
+                                        else if (por >= 80) corBarra = 'bg-amber-400';  
+                                        else if (por >= 50) corBarra = 'bg-blue-500';   
+                                        else corBarra = 'bg-emerald-500';               
                                     } else { 
                                         // Lógica para INVESTIMENTOS E SONHOS (Inversa)
-                                        if (por >= 95) corBarra = 'bg-emerald-500';     // >= 95%: Meta batida! (Verde)
-                                        else if (por >= 80) corBarra = 'bg-blue-500';   // 80% a 94%: Quase lá (Azul)
-                                        else if (por >= 50) corBarra = 'bg-amber-400';  // 50% a 79%: Progredindo (Laranja)
-                                        else corBarra = 'bg-red-500';                   // < 50%: Começo lento (Vermelho)
+                                        if (por >= 95) corBarra = 'bg-emerald-500';     
+                                        else if (por >= 80) corBarra = 'bg-blue-500';   
+                                        else if (por >= 50) corBarra = 'bg-amber-400';  
+                                        else corBarra = 'bg-red-500';                   
                                     }
                                     
                                     return (
