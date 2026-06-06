@@ -651,20 +651,8 @@ function App() {
 
     console.log("🚀 Tentando exibir a interface do modal...");
     
-    // 6. Tenta abrir o Modal adaptando-se ao seu projeto
-    try {
-        if (typeof modal !== 'undefined' && modal.show) {
-            // Se você usar o hook 'modal'
-            modal.show({ titulo: `Raio-X: ${nomeCategoria}`, conteudo: conteudoModal, tamanho: 'max-w-md' });
-        } else if (typeof setModal === 'function') {
-            // Se você usar o estado 'setModal'
-            setModal({ isOpen: true, config: { titulo: `Raio-X: ${nomeCategoria}`, conteudo: conteudoModal, tamanho: 'max-w-md' } });
-        } else {
-            console.error("❌ O formato do seu Modal é diferente. Por favor, mostre como você costuma usar o Modal no App.jsx.");
-        }
-    } catch (erro) {
-        console.error("❌ Erro grave ao abrir o modal:", erro);
-    }
+    // 6. Abre o Modal usando o sistema nativo do seu painel
+    modal.alert(conteudoModal, `Raio-X: ${nomeCategoria}`);
   };
 
   // =========================================================================
