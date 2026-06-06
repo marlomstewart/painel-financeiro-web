@@ -722,7 +722,7 @@ function App() {
 
   return (
     <Dashboard
-      nomeUsuario={nomeUsuario} alertaMoto={alertaMoto} dataVis={dataVis} mesAnterior={mesAnterior} mesProximo={mesProximo}
+      nomeUsuario={nomeUsuario} alertaMoto={alertaMoto} abrirDetalhesCategoria={abrirDetalhesCategoria} dataVis={dataVis} mesAnterior={mesAnterior} mesProximo={mesProximo}
       isAdmin={isAdmin} setTelaAtiva={setTelaAtiva} carregarUsuarios={carregarUsuarios} fazerLogout={fazerLogout}
       totRendaPaga={totRendaPaga} totGastoReal={totGastoReal} totInvestido={totInvestido}
       verFaturasPorCartao={verFaturasPorCartao} totFaturaCreditoAberto={totFaturaCreditoAberto}
@@ -734,7 +734,7 @@ function App() {
       filtrosAvancados={filtrosAvancados} setFiltrosAvancados={setFiltrosAvancados}
       mudarOrdenacao={mudarOrdenacao} ordenacao={ordenacao} dadosTabela={dadosTabela}
       alternarStatusTransacao={alternarStatusTransacao} editarValor={editarValor} deletarTransacao={deletarTransacao}
-      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa} abrirDetalhesCategoria={abrirDetalhesCategoria}
+      ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa}
     />
   );
 }
