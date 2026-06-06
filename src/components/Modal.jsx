@@ -73,15 +73,13 @@ export function Modal({ config, onClose }) {
                     <div key={i} className="px-3 py-3 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
-                        {/* BOTÃO DE PAGAR FATURA */}
+                        {/* BOTÃO MÁGICO DE PAGAR */}
                         {item.pendente > 0 && (
                           <button 
                             onClick={() => {
-                              // Busca o ID do cartão pelo nome para passar para a função
-                              // Como o seu objeto 'item' tem o nome, precisamos do ID. 
-                              // Se o 'config.pagarFatura' espera o ID, usaremos o nome como chave ou ajustaremos o App.jsx
-                              config.pagarFatura(config.cartaoIds[item.nome]); 
-                              onClose(); 
+                              // Aqui ele chama a função que passamos lá no App.jsx
+                              config.pagarFatura(config.cartaoIds[item.nome]);
+                              onClose();
                             }}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors"
                           >

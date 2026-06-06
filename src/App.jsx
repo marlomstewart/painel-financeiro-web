@@ -463,8 +463,6 @@ function App() {
       .map(([nome, v]) => ({ nome, ...v }))
       .sort((a, b) => b.total - a.total);
 
-    const verFaturasPorCartao = () => {
-    // ... (seu código atual) ...
     const cartaoIds = {}; // Nova variável para mapear nome -> ID
     cartoes.forEach(c => cartaoIds[c.nome] = c.id);
 
