@@ -320,6 +320,22 @@ function App() {
     }
   };
 
+  const reverterFaturaCartao = async (cartaoId) => {
+    const cartao = cartoes.find(c => c.id === cartaoId);
+    if (!cartao) return;
+    const confirmacao = await modal.confirm(`Deseja REVERTER os pagamentos do cartão "${cartao.nome}" para PENDENTE?`, '↩️ Reverter Fatura');
+    if (!confirmacao) return;
+
+    const pagos = transacoes.filter(t => t.status === 'pago' && t.formaPagamento === `credito_${cartaoId}` && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
+
+    try {
+      const promessas = pagos.map(t => fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente', valorParcela: t.valorParcela, dataCompra: t.dataCompra }) }));
+      await Promise.all(promessas);
+      setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente' } : t));
+      modal.alert('Fatura revertida com sucesso!', '✅ Concluído');
+    } catch (err) { modal.alert('Erro na reversão.', '❌ Erro'); }
+  };
+
   const deletarTransacao = async (t) => {
     if (t.grupo_id) {
       const opcao = await modal.options(
@@ -446,6 +462,8 @@ function App() {
   // =========================================================================
   // FATURAS POR CARTÃO
   // =========================================================================
+
+
   const verFaturasPorCartao = () => {
     const porCartao = {};
     const cartaoIds = {}; // Mapeamento necessário para o botão funcionar
@@ -455,7 +473,7 @@ function App() {
         const cartaoId = t.formaPagamento.split('_')[1];
         const cartao = cartoes.find(c => c.id === cartaoId);
         const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
-        
+
         if (cartao) cartaoIds[nome] = cartao.id; // Vincula o nome ao ID
 
         if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };

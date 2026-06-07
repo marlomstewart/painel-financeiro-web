@@ -73,17 +73,18 @@ export function Modal({ config, onClose }) {
                     <div key={i} className="px-3 py-3 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
-                        {item.pendente > 0 && (
-                          <button 
-                            onClick={() => {
-                              config.pagarFatura(config.cartaoIds[item.nome]);
-                              onClose();
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors"
-                          >
-                            Pagar Fatura
-                          </button>
-                        )}
+                        <div className="flex gap-2">
+                          {item.pendente > 0 && (
+                            <button onClick={() => { config.pagarFatura(config.cartaoIds[item.nome]); onClose(); }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors">
+                              Pagar Fatura
+                            </button>
+                          )}
+                          {item.pago > 0 && (
+                            <button onClick={() => { config.reverterFatura(config.cartaoIds[item.nome]); onClose(); }} className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors">
+                              Reverter
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2 text-xs text-slate-500">
                         <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium flex-1 text-center">✔ {formatarMoeda(item.pago)}</span>
