@@ -63,6 +63,26 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
+          {type === 'comprovante' && (
+            <div className="mt-1">
+              {config.isPDF ? (
+                <a href={config.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 px-4 py-6 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors">
+                  <span className="text-3xl">📄</span>
+                  <div><p className="font-bold text-slate-700 text-sm">Abrir PDF</p><p className="text-xs text-slate-400">Clique para visualizar em nova aba</p></div>
+                </a>
+              ) : (
+                <a href={config.url} target="_blank" rel="noopener noreferrer">
+                  <img src={config.url} alt="Comprovante" className="w-full rounded-lg border object-contain max-h-80 hover:opacity-90 transition-opacity" />
+                  <p className="text-xs text-slate-400 text-center mt-1">Clique para abrir em tamanho completo</p>
+                </a>
+              )}
+              <div className="flex gap-2 mt-4">
+                <button onClick={config.onRemover} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-lg text-sm border border-red-200 transition-colors">🗑️ Remover</button>
+                <button onClick={handleCancel} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition-colors">Fechar</button>
+              </div>
+            </div>
+          )}
+
           {type === 'faturas' && (
             <div className="space-y-2 mt-1">
               {config.itens.length === 0 ? (

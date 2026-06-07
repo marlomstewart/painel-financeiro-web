@@ -815,6 +815,56 @@ function App() {
   };
 
   // =========================================================================
+  // COMPROVANTES (apenas stewart)
+  // =========================================================================
+  const anexarComprovante = async (t) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,application/pdf';
+    input.onchange = async (e) => {
+      const arquivo = e.target.files[0];
+      if (!arquivo) return;
+      if (arquivo.size > 10 * 1024 * 1024) { await modal.alert('Arquivo muito grande. Máximo: 10MB.', '❌ Erro'); return; }
+      const formData = new FormData();
+      formData.append('arquivo', arquivo);
+      try {
+        const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id } : tr));
+          await modal.alert('Comprovante anexado com sucesso!', '✅ Sucesso');
+        } else { await modal.alert(data.message || 'Erro ao fazer upload.', '❌ Erro'); }
+      } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
+    };
+    input.click();
+  };
+
+  const removerComprovante = async (t) => {
+    const ok = await modal.confirm('Deseja remover o comprovante deste lançamento?', '🗑️ Remover Comprovante', { confirmLabel: 'Remover', confirmColor: 'bg-red-600 hover:bg-red-700' });
+    if (!ok) return;
+    try {
+      const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'DELETE', headers: getHeaders() });
+      if (res.ok) {
+        setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: null, comprovante_public_id: null } : tr));
+        await modal.alert('Comprovante removido.', '✅ Removido');
+      }
+    } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
+  };
+
+  const verComprovante = (t) => {
+    const isPDF = t.comprovante_url && t.comprovante_url.includes('/raw/');
+    modal.setConfig({
+      type: 'comprovante',
+      title: `📎 Comprovante — ${t.descricao}`,
+      url: t.comprovante_url,
+      isPDF,
+      onCancel: modal.close,
+      onClose: modal.close,
+      onRemover: () => { modal.close(); removerComprovante(t); }
+    });
+  };
+
+  // =========================================================================
   // FUNÇÕES DE ADMIN
   // =========================================================================
   const carregarUsuarios = async () => {
@@ -894,6 +944,7 @@ function App() {
       mudarOrdenacao={mudarOrdenacao} ordenacao={ordenacao} dadosTabela={dadosTabela}
       alternarStatusTransacao={alternarStatusTransacao} editarValor={editarValor} deletarTransacao={deletarTransacao}
       ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa} pendenciasPassadas={pendenciasPassadas} abrirModalPendencias={abrirModalPendencias} pagarFaturaCartao={pagarFaturaCartao}
+      anexarComprovante={anexarComprovante} removerComprovante={removerComprovante} verComprovante={verComprovante}
     />
   );
 }

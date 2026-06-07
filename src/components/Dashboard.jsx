@@ -11,7 +11,8 @@ export function Dashboard({
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela, alternarStatusTransacao, editarValor, deletarTransacao,
-    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao
+    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao,
+    anexarComprovante, removerComprovante, verComprovante
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
@@ -308,6 +309,11 @@ export function Dashboard({
                                             <td className="p-1 sm:p-2 md:p-4">
                                                 <div className="flex flex-col lg:flex-row justify-center items-center gap-1">
                                                     <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Editar">✏️</button>
+                                                    {nomeUsuario === 'stewart' && (
+                                                        t.comprovante_url
+                                                            ? <button onClick={() => verComprovante(t)} className="bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Ver comprovante">📎</button>
+                                                            : <button onClick={() => anexarComprovante(t)} className="bg-slate-50 border text-slate-400 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Anexar comprovante">📎</button>
+                                                    )}
                                                     <button onClick={() => deletarTransacao(t)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Excluir">🗑️</button>
                                                 </div>
                                             </td>
