@@ -75,12 +75,12 @@ export function Modal({ config, onClose }) {
                         <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
                         <div className="flex gap-2">
                           {item.pendente > 0 && (
-                            <button onClick={() => { config.pagarFatura(config.cartaoIds[item.nome]); onClose(); }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors">
+                            <button onClick={() => { config.pagarFatura(config.cartaoIds[item.nome]); }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors">
                               Pagar Fatura
                             </button>
                           )}
                           {item.pago > 0 && (
-                            <button onClick={() => { config.reverterFatura(config.cartaoIds[item.nome]); onClose(); }} className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors">
+                            <button onClick={() => { config.reverterFatura(config.cartaoIds[item.nome]); }} className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors">
                               Reverter
                             </button>
                           )}
