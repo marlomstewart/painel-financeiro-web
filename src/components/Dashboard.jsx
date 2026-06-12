@@ -11,8 +11,7 @@ export function Dashboard({
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela, alternarStatusTransacao, editarValor, deletarTransacao,
-    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao,
-    anexarComprovante, removerComprovante, verComprovante
+    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
@@ -258,12 +257,9 @@ export function Dashboard({
 
                         <div className="w-full">
 
-                            {/* BARRA DE FERRAMENTAS FLUTUANTE (Aparece ao selecionar) */}
                             {selecionados.length > 0 && (
                                 <div className="bg-indigo-50 border-t border-b border-indigo-100 p-2 md:p-3 flex flex-col md:flex-row justify-between items-center gap-3 transition-all">
-                                    <span className="text-xs md:text-sm font-bold text-indigo-700">
-                                        ☑ {selecionados.length} lançamento(s) selecionado(s)
-                                    </span>
+                                    <span className="text-xs md:text-sm font-bold text-indigo-700">☑ {selecionados.length} lançamento(s) selecionado(s)</span>
                                     <div className="flex gap-2">
                                         <button onClick={() => handleAcaoMassa('pago')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">✔ Marcar Pagos</button>
                                         <button onClick={() => handleAcaoMassa('pendente')} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">⏳ Marcar Pendentes</button>
@@ -272,55 +268,112 @@ export function Dashboard({
                                 </div>
                             )}
 
-                            <table className="w-full text-left text-[9px] sm:text-[10px] md:text-sm text-slate-600 table-fixed">
-                                <thead className="bg-white text-[8px] sm:text-[9px] md:text-xs uppercase font-semibold border-b select-none">
-                                    <tr>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[5%] text-center">
-                                            <input type="checkbox" checked={todosSelecionados} onChange={toggleSelectAll} className="w-3 h-3 md:w-4 md:h-4 accent-indigo-600 cursor-pointer" />
-                                        </th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[25%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('descricao')}>Desc. {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[15%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('categoria')}>Categ. {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[10%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[12%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[11%] cursor-pointer hover:bg-slate-50" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[13%] cursor-pointer hover:bg-slate-50 text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                        <th className="p-1 sm:p-2 md:p-4 w-[9%] text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {dadosTabela.length === 0 && (<tr><td colSpan="8" className="p-4 md:p-8 text-center text-slate-400 font-medium text-xs">Nenhum lançamento encontrado.</td></tr>)}
-                                    {dadosTabela.map(t => (
-                                        <tr key={t.id} className={`hover:bg-indigo-50/30 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50/50' : ''}`}>
-
-                                            <td className="p-1 sm:p-2 md:p-4 text-center">
-                                                <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-3 h-3 md:w-4 md:h-4 accent-indigo-600 cursor-pointer" />
-                                            </td>
-
-                                            <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 break-words leading-tight" title={t.descricao}>
-                                                {t.descricao}
-                                                {t.grupo_id && <span className="ml-1 text-[7px] text-blue-400 font-normal cursor-help" title="Compra parcelada.">🔗</span>}
-                                            </td>
-
-                                            <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] sm:text-[9px] md:text-xs bg-slate-100 px-1 py-0.5 md:px-2 md:py-1 rounded block truncate w-full cursor-help" title={`Categoria: ${t.categoria}`}>{t.categoria}</span></td>
-                                            <td className="p-1 sm:p-2 md:p-4"><span className="text-[8px] md:text-xs text-slate-400 font-medium break-words cursor-help" title={`Lançado no dia: ${new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`}>{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span></td>
-                                            <td className="p-1 sm:p-2 md:p-4"><button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-1 py-0.5 md:px-2 md:py-1 rounded text-[7px] md:text-[10px] font-bold uppercase transition-transform hover:scale-105 w-full truncate ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`} title={t.status === 'pago' ? 'Status: PAGO' : 'Status: PENDENTE'}>{t.status}</button></td>
-                                            <td className="p-1 sm:p-2 md:p-4"><span className="text-[7px] md:text-[10px] uppercase text-slate-500 font-bold bg-slate-100 border px-1 py-0.5 md:px-2 md:py-1 rounded block w-full truncate text-center cursor-help" title={obterNomePagamento(t.formaPagamento)}>{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span></td>
-                                            <td className="p-1 sm:p-2 md:p-4 font-bold text-slate-800 text-right text-[9px] md:text-sm break-words" title={`Valor: ${formatarMoeda(t.valorParcela)}`}>{formatarMoeda(t.valorParcela)}</td>
-                                            <td className="p-1 sm:p-2 md:p-4">
-                                                <div className="flex flex-col lg:flex-row justify-center items-center gap-1">
-                                                    <button onClick={() => editarValor(t)} className="bg-white border text-slate-500 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Editar">✏️</button>
-                                                    {nomeUsuario === 'stewart' && (
-                                                        t.comprovante_url
-                                                            ? <button onClick={() => verComprovante(t)} className="bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Ver comprovante">📎</button>
-                                                            : <button onClick={() => anexarComprovante(t)} className="bg-slate-50 border text-slate-400 hover:bg-slate-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Anexar comprovante">📎</button>
-                                                    )}
-                                                    <button onClick={() => deletarTransacao(t)} className="bg-red-50 text-red-500 hover:bg-red-100 px-1.5 py-1 md:px-2 md:py-1 rounded text-[8px] md:text-xs transition-colors w-full md:w-auto" title="Excluir">🗑️</button>
-                                                </div>
-                                            </td>
+                            {/* TABELA — DESKTOP */}
+                            <div className="hidden md:block w-full overflow-x-auto">
+                                <table className="w-full text-left text-sm text-slate-600 min-w-[720px]">
+                                    <thead className="bg-slate-50 text-xs uppercase font-semibold border-b select-none">
+                                        <tr>
+                                            <th className="px-3 py-3 w-10 text-center">
+                                                <input type="checkbox" checked={todosSelecionados} onChange={toggleSelectAll} className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                                            </th>
+                                            <th className="px-3 py-3 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('descricao')}>Descrição {ordenacao.coluna === 'descricao' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                                            <th className="px-3 py-3 w-32 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('categoria')}>Categoria {ordenacao.coluna === 'categoria' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                                            <th className="px-3 py-3 w-24 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                                            <th className="px-3 py-3 w-24 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                                            <th className="px-3 py-3 w-20 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                                            <th className="px-3 py-3 w-28 text-right cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
+                                            <th className="px-3 py-3 w-28 text-center">Ações</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {dadosTabela.length === 0 && (
+                                            <tr><td colSpan="8" className="py-12 text-center text-slate-400 text-sm">Nenhum lançamento encontrado.</td></tr>
+                                        )}
+                                        {dadosTabela.map(t => (
+                                            <tr key={t.id} className={`hover:bg-indigo-50/30 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50/50' : ''}`}>
+                                                <td className="px-3 py-4 text-center">
+                                                    <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                                                </td>
+                                                <td className="px-3 py-4 font-semibold text-slate-800" title={t.descricao}>
+                                                    <span className="block truncate max-w-xs">{t.descricao}</span>
+                                                    {t.grupo_id && <span className="text-[10px] text-blue-400 font-normal">🔗 parcelado</span>}
+                                                </td>
+                                                <td className="px-3 py-4">
+                                                    <span className="text-xs bg-slate-100 px-2 py-1 rounded-full block truncate text-center" title={t.categoria}>{t.categoria}</span>
+                                                </td>
+                                                <td className="px-3 py-4 text-xs text-slate-500 whitespace-nowrap">
+                                                    {new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                                </td>
+                                                <td className="px-3 py-4">
+                                                    <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-2 py-1 rounded-full text-xs font-bold uppercase w-full transition-transform hover:scale-105 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                        {t.status}
+                                                    </button>
+                                                </td>
+                                                <td className="px-3 py-4">
+                                                    <span className="text-xs font-bold bg-slate-100 border px-2 py-1 rounded block text-center truncate" title={obterNomePagamento(t.formaPagamento)}>
+                                                        {t.formaPagamento ? t.formaPagamento.split('_')[0].toUpperCase() : 'PIX'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-4 font-bold text-slate-800 text-right whitespace-nowrap">
+                                                    {formatarMoeda(t.valorParcela)}
+                                                </td>
+                                                <td className="px-3 py-4">
+                                                    <div className="flex justify-center items-center gap-1.5">
+                                                        <button onClick={() => editarValor(t)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-lg transition-colors" title="Editar">✏️</button>
+                                                        {nomeUsuario === 'stewart' && (
+                                                            t.comprovante_url
+                                                                ? <button onClick={() => verComprovante(t)} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 p-1.5 rounded-lg border border-emerald-300 transition-colors" title="Ver comprovante">📎</button>
+                                                                : <button onClick={() => anexarComprovante(t)} className="bg-slate-100 hover:bg-blue-100 hover:text-blue-600 text-slate-400 p-1.5 rounded-lg border border-dashed border-slate-300 hover:border-blue-400 transition-colors" title="Anexar comprovante">📎</button>
+                                                        )}
+                                                        <button onClick={() => deletarTransacao(t)} className="bg-red-50 hover:bg-red-100 text-red-500 p-1.5 rounded-lg transition-colors" title="Excluir">🗑️</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* CARDS — MOBILE */}
+                            <div className="md:hidden divide-y divide-slate-100">
+                                {dadosTabela.length === 0 && (
+                                    <p className="py-10 text-center text-slate-400 text-sm">Nenhum lançamento encontrado.</p>
+                                )}
+                                {dadosTabela.map(t => (
+                                    <div key={t.id} className={`p-3 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div className="flex items-start gap-2 flex-1 min-w-0">
+                                                <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 cursor-pointer mt-0.5 flex-shrink-0" />
+                                                <div className="min-w-0">
+                                                    <p className="font-bold text-slate-800 text-sm leading-tight">{t.descricao}</p>
+                                                    {t.grupo_id && <span className="text-[10px] text-blue-400">🔗 parcelado</span>}
+                                                </div>
+                                            </div>
+                                            <p className="font-bold text-slate-800 text-sm whitespace-nowrap">{formatarMoeda(t.valorParcela)}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2 ml-6 flex-wrap">
+                                            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500">{t.categoria}</span>
+                                            <span className="text-[10px] text-slate-400">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                            <span className="text-[10px] font-bold bg-slate-100 border px-2 py-0.5 rounded text-slate-500 uppercase">{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between ml-6">
+                                            <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {t.status}
+                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => editarValor(t)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-lg text-xs transition-colors">✏️</button>
+                                                {nomeUsuario === 'stewart' && (
+                                                    t.comprovante_url
+                                                        ? <button onClick={() => verComprovante(t)} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-2.5 py-1.5 rounded-lg text-xs border border-emerald-300 transition-colors">📎</button>
+                                                        : <button onClick={() => anexarComprovante(t)} className="bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-600 px-2.5 py-1.5 rounded-lg text-xs border border-dashed border-slate-300 hover:border-blue-400 transition-colors">📎</button>
+                                                )}
+                                                <button onClick={() => deletarTransacao(t)} className="bg-red-50 hover:bg-red-100 text-red-500 px-2.5 py-1.5 rounded-lg text-xs transition-colors">🗑️</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
                         </div>
                     </div>
                 </div>
