@@ -1039,7 +1039,7 @@ function App() {
   }
 
   if (telaAtiva === 'setup') {
-    return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} addContaFixa={addContaFixa} contasFixas={contasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} />;
+    return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} setCartoes={setCartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} setCategorias={setCategorias} addContaFixa={addContaFixa} contasFixas={contasFixas} setContasFixas={setContasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} setRendasFixas={setRendasFixas} getHeaders={getHeaders} />;
   }
 
   return (
