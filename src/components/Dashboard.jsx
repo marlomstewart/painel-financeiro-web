@@ -15,8 +15,26 @@ export function Dashboard({
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
-    const [catFormulario, setCatFormulario] = useState('Sem Categoria'); // Rastreia a categoria escolhida
+    const [detalhesTransacao, setDetalhesTransacao] = useState(null);
+    const [catFormulario, setCatFormulario] = useState('Sem Categoria');
     const todosSelecionados = dadosTabela.length > 0 && selecionados.length === dadosTabela.length;
+
+    const abrirDetalhes = (t) => {
+        setDetalhesTransacao({
+            type: 'detalhes',
+            title: t.descricao + (t.grupo_id ? ' 🔗' : ''),
+            transacao: t,
+            nomePagamento: obterNomePagamento(t.formaPagamento),
+            isStewart: nomeUsuario === 'stewart',
+            onAlternarStatus: () => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra),
+            onEditar: () => editarValor(t),
+            onVerComprovante: () => verComprovante(t),
+            onAnexarComprovante: () => anexarComprovante(t),
+            onDeletar: () => deletarTransacao(t),
+            onCancel: () => setDetalhesTransacao(null),
+            onClose: () => setDetalhesTransacao(null),
+        });
+    };
 
     // Intercepta o envio para limpar o campo visual da categoria após salvar
     const handleAdicionar = (e) => {
@@ -52,7 +70,8 @@ export function Dashboard({
     return (
         <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 overflow-x-hidden">
             <ModalComponent config={modalConfig} onClose={modalClose} />
-            <div className="mx-auto max-w-6xl space-y-4 md:space-y-6">
+            <ModalComponent config={detalhesTransacao} onClose={() => setDetalhesTransacao(null)} />
+            <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
 
                 <header className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
                     <div><h1 className="text-xl md:text-2xl font-bold text-slate-900">Painel Financeiro</h1><p className="text-xs md:text-sm text-slate-500 font-medium capitalize">Olá, {nomeUsuario}! 👋</p></div>
@@ -269,8 +288,8 @@ export function Dashboard({
                             )}
 
                             {/* TABELA — DESKTOP */}
-                            <div className="hidden md:block w-full overflow-x-auto">
-                                <table className="w-full text-left text-sm text-slate-600 min-w-[720px]">
+                            <div className="hidden md:block w-full">
+                                <table className="w-full text-left text-slate-600 table-fixed">
                                     <thead className="bg-slate-50 text-xs uppercase font-semibold border-b select-none">
                                         <tr>
                                             <th className="px-3 py-3 w-10 text-center">
