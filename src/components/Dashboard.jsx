@@ -11,7 +11,7 @@ export function Dashboard({
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela, alternarStatusTransacao, editarValor, deletarTransacao,
-    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao, abrirResumoCard
+    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao, anexarComprovante, removerComprovante, verComprovante, abrirResumoCard
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
