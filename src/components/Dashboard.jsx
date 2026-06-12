@@ -11,7 +11,7 @@ export function Dashboard({
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela, alternarStatusTransacao, editarValor, deletarTransacao,
-    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao
+    ModalComponent, modalConfig, modalClose, executarAcaoEmMassa, pendenciasPassadas, abrirModalPendencias, pagarFaturaCartao, abrirResumoCard
 }) {
 
     const [selecionados, setSelecionados] = useState([]);
@@ -112,9 +112,21 @@ export function Dashboard({
                 {/* ================================================================= */}
 
                 <div className={`grid grid-cols-2 md:grid-cols-4 ${alertaMoto ? 'lg:grid-cols-8' : 'lg:grid-cols-7'} gap-2 md:gap-4`}>
-                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p></div>
-                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p></div>
-                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500"><h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3><p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p></div>
+                    <div onClick={() => abrirResumoCard('rendas')} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-emerald-500 cursor-pointer hover:bg-emerald-50 transition-colors">
+                        <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Rendas</h3>
+                        <p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totRendaPaga)}</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Clique para detalhes</p>
+                    </div>
+                    <div onClick={() => abrirResumoCard('gastos')} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-red-500 cursor-pointer hover:bg-red-50 transition-colors">
+                        <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Gastos</h3>
+                        <p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totGastoReal)}</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Clique para detalhes</p>
+                    </div>
+                    <div onClick={() => abrirResumoCard('investimentos')} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-blue-500 cursor-pointer hover:bg-blue-50 transition-colors">
+                        <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Investimentos</h3>
+                        <p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(totInvestido)}</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Clique para detalhes</p>
+                    </div>
                     <div onClick={verFaturasPorCartao} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50 transition-colors">
                         <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Faturas Abertas</h3>
                         <p className="text-sm md:text-lg font-bold text-purple-700 mt-1">{formatarMoeda(totFaturaCreditoAberto)}</p>
@@ -124,19 +136,19 @@ export function Dashboard({
                         <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Saldo Mês Anterior</h3>
                         <p className={`text-sm md:text-lg font-bold mt-1 ${saldoMesAnterior >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>{formatarMoeda(saldoMesAnterior)}</p>
                         <p className="text-[9px] text-slate-400 mb-2">{nomesMeses[mesAntRef.mes - 1]} {mesAntRef.ano}</p>
-                        <button onClick={() => setSomarSaldoAnterior(v => !v)} className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border ${somarSaldoAnterior ? 'bg-teal-500 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'}`}>
+                        <button onClick={(e) => { e.stopPropagation(); setSomarSaldoAnterior(v => !v); }} className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border ${somarSaldoAnterior ? 'bg-teal-500 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'}`}>
                             {somarSaldoAnterior ? '✔ Somando ao Saldo' : '+ Somar ao Saldo'}
                         </button>
                     </div>
-                    <div className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400">
+                    <div onClick={() => abrirResumoCard('saldo')} className="bg-slate-800 p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-slate-400 cursor-pointer hover:bg-slate-700 transition-colors">
                         <h3 className="text-[10px] md:text-xs font-semibold text-slate-300 uppercase">Saldo em Conta</h3>
                         <p className="text-sm md:text-lg font-bold text-white mt-1">{formatarMoeda(saldoAtual)}</p>
-                        {somarSaldoAnterior ? <p className="text-[9px] text-slate-400 mt-0.5">Mês: {formatarMoeda(saldoMesAtual)} + Ant.: {formatarMoeda(saldoMesAnterior)}</p> : <p className="text-[9px] text-slate-500 mt-0.5">Apenas mês atual</p>}
+                        <p className="text-[9px] text-slate-400 mt-0.5">Clique para ver o cálculo</p>
                     </div>
-                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+                    <div onClick={() => abrirResumoCard('previsao')} className="bg-white p-3 md:p-4 rounded-xl shadow-sm border-l-4 border-amber-500 cursor-pointer hover:bg-amber-50 transition-colors">
                         <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase">Previsão Fim Mês</h3>
                         <p className="text-sm md:text-lg font-bold mt-1">{formatarMoeda(previstoFimMes)}</p>
-                        {somarSaldoAnterior && <p className="text-[9px] text-amber-600 font-medium mt-0.5">+ Inclui Saldo Ant.</p>}
+                        <p className="text-[9px] text-slate-400 mt-0.5">Clique para ver o cálculo</p>
                     </div>
                     {/* CARD EXCLUSIVO DA MOTO */}
                     {alertaMoto && (

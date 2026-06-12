@@ -75,7 +75,7 @@ function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
 
-  const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(false);
+  const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
   const [gerandoMes, setGerandoMes] = useState(false);
 
   // Modal
@@ -505,6 +505,109 @@ function App() {
       onCancel: modal.close,
       onClose: modal.close,
     });
+  };
+
+  // =========================================================================
+  // RESUMO INTELIGENTE DOS CARDS
+  // =========================================================================
+  const abrirResumoCard = (tipo) => {
+    let titulo = '';
+    let conteudo = null;
+
+    if (tipo === 'rendas') {
+      titulo = '💰 Detalhamento de Rendas';
+      const rendasMes = transacoesMes.filter(t => t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa');
+      conteudo = (
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+          {rendasMes.length === 0 ? <p className="text-sm text-slate-500">Nenhuma renda neste mês.</p> : rendasMes.map(t => (
+            <div key={t.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+              <span className="text-sm font-bold text-slate-700">{t.descricao}</span>
+              <div className="text-right">
+                <span className="text-sm font-bold text-emerald-700 block">{formatarMoeda(t.valorParcela)}</span>
+                <span className={`text-[10px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else if (tipo === 'gastos') {
+      titulo = '💸 Gastos por Categoria';
+      const gastosPorCat = {};
+      transacoesMes.forEach(t => {
+        if (t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento') {
+          const cat = t.categoria || 'Sem Categoria';
+          if (!gastosPorCat[cat]) gastosPorCat[cat] = { total: 0, itens: [] };
+          gastosPorCat[cat].total += Number(t.valorParcela);
+          gastosPorCat[cat].itens.push(t);
+        }
+      });
+
+      const listaGastos = Object.entries(gastosPorCat).sort((a, b) => b[1].total - a[1].total);
+
+      conteudo = (
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+          <p className="text-[10px] text-slate-400 mb-2">Clique na categoria para ver os lançamentos.</p>
+          {listaGastos.length === 0 ? <p className="text-sm text-slate-500">Nenhum gasto neste mês.</p> : listaGastos.map(([cat, dados], i) => (
+            <details key={i} className="bg-slate-50 rounded-lg border group">
+              <summary className="flex justify-between items-center p-3 cursor-pointer list-none hover:bg-slate-100 transition-colors">
+                <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><span className="text-xs transition-transform group-open:rotate-90">▶</span> {cat}</span>
+                <span className="text-sm font-bold text-red-600">{formatarMoeda(dados.total)}</span>
+              </summary>
+              <div className="p-3 pt-0 space-y-2 border-t border-slate-200 mt-1">
+                {dados.itens.map(t => (
+                  <div key={t.id} className="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100 shadow-sm">
+                    <span className="text-xs font-medium text-slate-600 truncate pr-2">{t.descricao}</span>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-slate-800 block">{formatarMoeda(t.valorParcela)}</span>
+                      <span className={`text-[9px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ))}
+        </div>
+      );
+    } else if (tipo === 'investimentos') {
+      titulo = '📈 Detalhamento de Investimentos';
+      const invMes = transacoesMes.filter(t => t.tipo === 'investimento');
+      conteudo = (
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+          {invMes.length === 0 ? <p className="text-sm text-slate-500">Nenhum investimento neste mês.</p> : invMes.map(t => (
+            <div key={t.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+              <span className="text-sm font-bold text-slate-700">{t.descricao}</span>
+              <div className="text-right">
+                <span className="text-sm font-bold text-blue-700 block">{formatarMoeda(t.valorParcela)}</span>
+                <span className={`text-[10px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else if (tipo === 'saldo') {
+      titulo = '⚖️ Matemática do Saldo';
+      conteudo = (
+        <div className="space-y-3">
+          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 flex justify-between"><span className="text-sm">Rendas Pagas no Mês:</span><span className="font-bold">+{formatarMoeda(totRendaPaga)}</span></div>
+          <div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 flex justify-between"><span className="text-sm">Gastos Pagos no Mês:</span><span className="font-bold">-{formatarMoeda(totGastoPago)}</span></div>
+          <div className="bg-slate-100 text-slate-700 p-3 rounded-lg border flex justify-between"><span className="text-sm font-bold">Resultado do Mês:</span><span className="font-bold">{formatarMoeda(saldoMesAtual)}</span></div>
+          {somarSaldoAnterior && <div className="bg-indigo-50 text-indigo-700 p-3 rounded-lg border border-indigo-200 flex justify-between"><span className="text-sm">Saldo Rolado Anterior:</span><span className="font-bold">{saldoMesAnterior >= 0 ? '+' : ''}{formatarMoeda(saldoMesAnterior)}</span></div>}
+          <div className="bg-slate-800 text-white p-4 rounded-lg shadow-md flex justify-between text-base"><span>Saldo Final em Conta:</span><span className="font-bold">{formatarMoeda(saldoAtual)}</span></div>
+        </div>
+      );
+    } else if (tipo === 'previsao') {
+      titulo = '🔮 Matemática da Previsão';
+      conteudo = (
+        <div className="space-y-3">
+          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 flex justify-between items-center"><span className="text-sm">Total de Rendas (Pagas + Pendentes):</span><span className="font-bold">+{formatarMoeda(totRendaTotal)}</span></div>
+          <div className="bg-amber-50 text-amber-700 p-3 rounded-lg border border-amber-200 flex justify-between items-center"><span className="text-sm">Custo Previsto (Metas + Fixas):</span><span className="font-bold">-{formatarMoeda(custoPrevisto)}</span></div>
+          <p className="text-[10px] text-slate-500 mt-1 mb-2 leading-tight">O custo previsto soma suas Contas Fixas, Gastos sem Categoria e o <b>maior valor</b> entre o que você já gastou ou a Meta de cada categoria.</p>
+          {somarSaldoAnterior && <div className="bg-indigo-50 text-indigo-700 p-3 rounded-lg border border-indigo-200 flex justify-between"><span className="text-sm">Saldo Rolado Anterior:</span><span className="font-bold">{saldoMesAnterior >= 0 ? '+' : ''}{formatarMoeda(saldoMesAnterior)}</span></div>}
+          <div className="bg-white border-2 border-amber-400 p-4 rounded-lg shadow-sm flex justify-between text-base"><span className="font-bold text-slate-700">Previsão de Sobra Final:</span><span className="font-bold text-amber-600">{formatarMoeda(previstoFimMes)}</span></div>
+        </div>
+      );
+    }
+    modal.alert(conteudo, titulo);
   };
 
   // =========================================================================
@@ -954,7 +1057,7 @@ function App() {
       mudarOrdenacao={mudarOrdenacao} ordenacao={ordenacao} dadosTabela={dadosTabela}
       alternarStatusTransacao={alternarStatusTransacao} editarValor={editarValor} deletarTransacao={deletarTransacao}
       ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} executarAcaoEmMassa={executarAcaoEmMassa} pendenciasPassadas={pendenciasPassadas} abrirModalPendencias={abrirModalPendencias} pagarFaturaCartao={pagarFaturaCartao}
-      anexarComprovante={anexarComprovante} removerComprovante={removerComprovante} verComprovante={verComprovante}
+      anexarComprovante={anexarComprovante} removerComprovante={removerComprovante} verComprovante={verComprovante} abrirResumoCard={abrirResumoCard}
     />
   );
 }
