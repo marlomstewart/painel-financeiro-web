@@ -301,51 +301,42 @@ export function Dashboard({
                                             <th className="px-3 py-3 w-24 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
                                             <th className="px-3 py-3 w-20 cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('pagamento')}>Pgto. {ordenacao.coluna === 'pagamento' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
                                             <th className="px-3 py-3 w-28 text-right cursor-pointer hover:bg-slate-100" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}</th>
-                                            <th className="px-3 py-3 w-28 text-center">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {dadosTabela.length === 0 && (
-                                            <tr><td colSpan="8" className="py-12 text-center text-slate-400 text-sm">Nenhum lançamento encontrado.</td></tr>
+                                            <tr><td colSpan="7" className="py-12 text-center text-slate-400 text-sm">Nenhum lançamento encontrado.</td></tr>
                                         )}
                                         {dadosTabela.map(t => (
                                             <tr key={t.id} className={`hover:bg-indigo-50/30 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50/50' : ''}`}>
-                                                <td className="px-3 py-4 text-center">
+                                                <td className="px-3 py-3 text-center">
                                                     <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 cursor-pointer" />
                                                 </td>
-                                                <td className="px-3 py-4 font-semibold text-slate-800" title={t.descricao}>
-                                                    <span className="block truncate max-w-xs">{t.descricao}</span>
-                                                    {t.grupo_id && <span className="text-[10px] text-blue-400 font-normal">🔗 parcelado</span>}
+                                                <td className="px-3 py-3">
+                                                    <button onClick={() => abrirDetalhes(t)} className="text-left w-full group">
+                                                        <span className="block font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors truncate text-sm">{t.descricao}</span>
+                                                        {t.grupo_id && <span className="text-[10px] text-blue-400 font-normal">🔗 parcelado</span>}
+                                                        {t.comprovante_url && nomeUsuario === 'stewart' && <span className="text-[10px] text-emerald-500 font-normal ml-1">📎</span>}
+                                                    </button>
                                                 </td>
-                                                <td className="px-3 py-4">
+                                                <td className="px-3 py-3">
                                                     <span className="text-xs bg-slate-100 px-2 py-1 rounded-full block truncate text-center" title={t.categoria}>{t.categoria}</span>
                                                 </td>
-                                                <td className="px-3 py-4 text-xs text-slate-500 whitespace-nowrap">
+                                                <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap">
                                                     {new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                                                 </td>
-                                                <td className="px-3 py-4">
+                                                <td className="px-3 py-3">
                                                     <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-2 py-1 rounded-full text-xs font-bold uppercase w-full transition-transform hover:scale-105 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                                         {t.status}
                                                     </button>
                                                 </td>
-                                                <td className="px-3 py-4">
+                                                <td className="px-3 py-3">
                                                     <span className="text-xs font-bold bg-slate-100 border px-2 py-1 rounded block text-center truncate" title={obterNomePagamento(t.formaPagamento)}>
                                                         {t.formaPagamento ? t.formaPagamento.split('_')[0].toUpperCase() : 'PIX'}
                                                     </span>
                                                 </td>
-                                                <td className="px-3 py-4 font-bold text-slate-800 text-right whitespace-nowrap">
+                                                <td className="px-3 py-3 font-bold text-slate-800 text-right whitespace-nowrap text-sm">
                                                     {formatarMoeda(t.valorParcela)}
-                                                </td>
-                                                <td className="px-3 py-4">
-                                                    <div className="flex justify-center items-center gap-1.5">
-                                                        <button onClick={() => editarValor(t)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-lg transition-colors" title="Editar">✏️</button>
-                                                        {nomeUsuario === 'stewart' && (
-                                                            t.comprovante_url
-                                                                ? <button onClick={() => verComprovante(t)} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 p-1.5 rounded-lg border border-emerald-300 transition-colors" title="Ver comprovante">📎</button>
-                                                                : <button onClick={() => anexarComprovante(t)} className="bg-slate-100 hover:bg-blue-100 hover:text-blue-600 text-slate-400 p-1.5 rounded-lg border border-dashed border-slate-300 hover:border-blue-400 transition-colors" title="Anexar comprovante">📎</button>
-                                                        )}
-                                                        <button onClick={() => deletarTransacao(t)} className="bg-red-50 hover:bg-red-100 text-red-500 p-1.5 rounded-lg transition-colors" title="Excluir">🗑️</button>
-                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -360,34 +351,27 @@ export function Dashboard({
                                 )}
                                 {dadosTabela.map(t => (
                                     <div key={t.id} className={`p-3 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="flex items-start justify-between gap-2 mb-1.5">
                                             <div className="flex items-start gap-2 flex-1 min-w-0">
                                                 <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 cursor-pointer mt-0.5 flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <p className="font-bold text-slate-800 text-sm leading-tight">{t.descricao}</p>
-                                                    {t.grupo_id && <span className="text-[10px] text-blue-400">🔗 parcelado</span>}
-                                                </div>
+                                                <button onClick={() => abrirDetalhes(t)} className="text-left min-w-0 group">
+                                                    <p className="font-bold text-slate-800 text-sm leading-tight group-hover:text-indigo-600 transition-colors">{t.descricao}</p>
+                                                    <div className="flex items-center gap-1 mt-0.5">
+                                                        {t.grupo_id && <span className="text-[10px] text-blue-400">🔗 parcelado</span>}
+                                                        {t.comprovante_url && nomeUsuario === 'stewart' && <span className="text-[10px] text-emerald-500">📎</span>}
+                                                    </div>
+                                                </button>
                                             </div>
                                             <p className="font-bold text-slate-800 text-sm whitespace-nowrap">{formatarMoeda(t.valorParcela)}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 mb-2 ml-6 flex-wrap">
-                                            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500">{t.categoria}</span>
-                                            <span className="text-[10px] text-slate-400">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
-                                            <span className="text-[10px] font-bold bg-slate-100 border px-2 py-0.5 rounded text-slate-500 uppercase">{t.formaPagamento ? t.formaPagamento.split('_')[0] : 'PIX'}</span>
-                                        </div>
                                         <div className="flex items-center justify-between ml-6">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500">{t.categoria}</span>
+                                                <span className="text-[10px] text-slate-400">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                            </div>
                                             <button onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                                 {t.status}
                                             </button>
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={() => editarValor(t)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-lg text-xs transition-colors">✏️</button>
-                                                {nomeUsuario === 'stewart' && (
-                                                    t.comprovante_url
-                                                        ? <button onClick={() => verComprovante(t)} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-2.5 py-1.5 rounded-lg text-xs border border-emerald-300 transition-colors">📎</button>
-                                                        : <button onClick={() => anexarComprovante(t)} className="bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-600 px-2.5 py-1.5 rounded-lg text-xs border border-dashed border-slate-300 hover:border-blue-400 transition-colors">📎</button>
-                                                )}
-                                                <button onClick={() => deletarTransacao(t)} className="bg-red-50 hover:bg-red-100 text-red-500 px-2.5 py-1.5 rounded-lg text-xs transition-colors">🗑️</button>
-                                            </div>
                                         </div>
                                     </div>
                                 ))}

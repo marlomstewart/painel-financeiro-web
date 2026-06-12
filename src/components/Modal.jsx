@@ -137,6 +137,51 @@ export function Modal({ config, onClose }) {
               <button type="button" onClick={handleCancel} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition-colors mt-2">Fechar</button>
             </div>
           )}
+          {/* TIPO: detalhes (lançamento completo com ações) */}
+          {type === 'detalhes' && (
+            <div className="mt-1 space-y-3">
+              {/* Infos do lançamento */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Categoria</p>
+                  <p className="text-sm font-medium text-slate-700">{config.transacao.categoria}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Data</p>
+                  <p className="text-sm font-medium text-slate-700">{new Date(config.transacao.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Pagamento</p>
+                  <p className="text-sm font-medium text-slate-700">{config.nomePagamento}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Valor</p>
+                  <p className="text-sm font-bold text-slate-800">{formatarMoeda(config.transacao.valorParcela)}</p>
+                </div>
+              </div>
+
+              {/* Status — clicável */}
+              <button
+                onClick={() => { config.onAlternarStatus(); onClose(); }}
+                className={`w-full py-2.5 rounded-lg text-sm font-bold uppercase transition-colors ${config.transacao.status === 'pago' ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-700'}`}
+              >
+                {config.transacao.status === 'pago' ? '✔ PAGO — clique para marcar como Pendente' : '⏳ PENDENTE — clique para marcar como Pago'}
+              </button>
+
+              {/* Ações */}
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => { config.onEditar(); onClose(); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-lg text-sm transition-colors">✏️ Editar</button>
+                {config.isStewart && (
+                  config.transacao.comprovante_url
+                    ? <button onClick={() => { config.onVerComprovante(); onClose(); }} className="flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold py-2.5 rounded-lg text-sm border border-emerald-300 transition-colors">📎 Comprovante</button>
+                    : <button onClick={() => { config.onAnexarComprovante(); onClose(); }} className="flex-1 bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-600 font-bold py-2.5 rounded-lg text-sm border border-dashed border-slate-300 hover:border-blue-400 transition-colors">📎 Anexar</button>
+                )}
+                <button onClick={() => { config.onDeletar(); onClose(); }} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-lg text-sm transition-colors">🗑️ Excluir</button>
+              </div>
+
+              <button onClick={handleCancel} className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 font-medium py-2 rounded-lg text-sm transition-colors">Fechar</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
