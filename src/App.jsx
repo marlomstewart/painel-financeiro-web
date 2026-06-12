@@ -404,23 +404,21 @@ function App() {
   // EDIÇÃO INTELIGENTE
   // =========================================================================
   const editarValor = async (t) => {
-    // 1️⃣ Pede o Novo Valor usando o seu Modal customizado
+    // 1️⃣ Novo Valor
     const nV = await modal.prompt(
       `Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`,
       String(t.valorParcela),
       '✏️ Editar Valor',
       { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' }
     );
-    if (nV === null) return; // Se clicar em cancelar, aborta
+    if (nV === null) return;
     const novoValor = Number(String(nV).replace(',', '.'));
     if (isNaN(novoValor)) return modal.alert('Valor inválido digitado.', '❌ Erro');
 
-    // Prepara a data antiga no formato DD/MM/AAAA para exibir na tela
+    // 2️⃣ Nova Data
     const dataString = String(t.dataCompra).split('T')[0];
     const [ano, mes, dia] = dataString.split('-');
     const dataFormatadaBR = `${dia}/${mes}/${ano}`;
-
-    // 2️⃣ Pede a Nova Data (Formato Brasileiro)
     const nD = await modal.prompt(
       `2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`,
       dataFormatadaBR,
@@ -428,32 +426,44 @@ function App() {
       { confirmLabel: 'Próximo' }
     );
     if (nD === null) return;
-
-    // Converte de volta para YYYY-MM-DD para o banco de dados não quebrar
     const partesData = nD.split('/');
     if (partesData.length !== 3) return modal.alert('Formato de data inválido. Use DD/MM/AAAA.', '❌ Erro');
     const novaDataStr = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
 
-    // 3️⃣ Pergunta o Status final usando os botões personalizados
+    // 3️⃣ Nova Categoria
+    const opcoesCategoria = [
+      { value: 'Sem Categoria', icon: '🏷️', label: 'Sem Categoria' },
+      { value: 'Contas Fixas', icon: '📅', label: 'Contas Fixas' },
+      { value: 'Renda Fixa', icon: '💰', label: 'Renda Fixa' },
+      { value: 'Renda', icon: '💵', label: 'Renda Variável' },
+      ...categorias.map(c => ({ value: c.nome, icon: c.tipo === 'investimento' ? '📈' : '💸', label: c.nome }))
+    ];
+    const nCat = await modal.options(
+      `3️⃣ Qual a CATEGORIA?\n\nAtual: ${t.categoria}`,
+      opcoesCategoria,
+      '🏷️ Editar Categoria'
+    );
+    if (!nCat) return;
+
+    // 4️⃣ Status
     const nS = await modal.options(
-      `3️⃣ Qual o status atualizado deste lançamento?\n\nStatus atual: ${t.status.toUpperCase()}`,
+      `4️⃣ Qual o STATUS atualizado?\n\nAtual: ${t.status.toUpperCase()}`,
       [
         { value: 'pago', icon: '✔', label: 'Marcar como PAGO' },
         { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }
       ],
       '🔄 Editar Status'
     );
-    if (!nS) return; // Se fechar o modal, cancela a edição
+    if (!nS) return;
 
-    // 4️⃣ Salva tudo no banco de dados e atualiza a tela
+    // 5️⃣ Salva no banco
     try {
       await fetch(`${API}/transacoes/${t.id}`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr })
+        body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr, categoria: nCat })
       });
-
-      setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS } : tr));
+      setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS, categoria: nCat } : tr));
     } catch (err) {
       modal.alert('Ocorreu um erro ao atualizar os dados.', '❌ Erro');
     }
