@@ -5,6 +5,7 @@ import { TrocaSenha } from './components/TrocaSenha';
 import { Admin } from './components/Admin';
 import { Setup } from './components/Setup';
 import { Dashboard } from './components/Dashboard';
+import { Garagem } from './components/Garagem';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -74,6 +75,7 @@ function App() {
   const [rendasFixas, setRendasFixas] = useState([]);
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
+  const [veiculosGaragem, setVeiculosGaragem] = useState([]);
 
   const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
   const [gerandoMes, setGerandoMes] = useState(false);
@@ -110,6 +112,12 @@ function App() {
         setContasFixas(await resF.json());
         setRendasFixas(await resRF.json());
         setCarregouAPI(true);
+
+        // Carrega veículos da Garagem somente para stewart
+        if (nomeUsuario === 'stewart') {
+          const resGar = await fetch(`${API}/garagem/veiculos`, { headers });
+          if (resGar.ok) setVeiculosGaragem(await resGar.json());
+        }
       } catch (err) { console.error("Erro ao sincronizar:", err); }
     };
     carregar();
@@ -218,7 +226,25 @@ function App() {
     let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
 
     // Captura o KM se ele existir no formulário
-    const kmMoto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
+    const km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
+    let veiculo_id = null;
+    let veiculo_emprestado = null;
+
+    // Se for categoria relacionada a veículo, pergunta qual veículo
+    if (km_moto && (c === 'Gasolina' || c === 'Manutenção da moto')) {
+      const opcoesVeiculo = [
+        ...veiculosGaragem.map(vc => ({ value: vc.id, icon: '🚗', label: vc.modelo, desc: `${vc.ano_fabricacao}/${vc.ano_modelo}` })),
+        { value: 'emprestado', icon: '🤝', label: 'Veículo Emprestado', desc: 'Carro/moto de outra pessoa' }
+      ];
+      const escolha = await modal.options('Qual veículo recebeu esse lançamento?', opcoesVeiculo, '🏍️ Selecionar Veículo');
+      if (escolha === 'emprestado') {
+        const nomeEmprestado = await modal.prompt('Qual veículo foi emprestado?', '', '🤝 Veículo Emprestado', { placeholder: 'Ex: Carro do meu pai' });
+        if (!nomeEmprestado) return; // cancelou
+        veiculo_emprestado = nomeEmprestado;
+      } else if (escolha) {
+        veiculo_id = escolha;
+      }
+    }
 
     if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
     if (c === 'Contas Fixas') t = 'despesa';
@@ -231,12 +257,10 @@ function App() {
       for (let i = 0; i < parc; i++) {
         let mP = mI + i, aP = dt.getFullYear();
         if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; }
-        // Adicionado o kmMoto no envio
-        novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, kmMoto });
+        novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado });
       }
     } else {
-      // Adicionado o kmMoto no envio
-      novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, kmMoto });
+      novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado });
     }
 
     for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
@@ -1040,6 +1064,10 @@ function App() {
 
   if (telaAtiva === 'setup') {
     return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} setCartoes={setCartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} setCategorias={setCategorias} addContaFixa={addContaFixa} contasFixas={contasFixas} setContasFixas={setContasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} setRendasFixas={setRendasFixas} getHeaders={getHeaders} />;
+  }
+
+  if (telaAtiva === 'garagem') {
+    return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={getHeaders} transacoes={transacoes} />;
   }
 
   return (
