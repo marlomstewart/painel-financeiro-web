@@ -282,6 +282,43 @@ function App() {
     for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
     setTransacoes([...transacoes, ...novasT]);
     e.target.reset();
+
+    // ✅ Verifica desgaste dos itens do veículo após lançar km (só veículos próprios)
+    if (km_moto && veiculo_id && !veiculo_emprestado) {
+      await verificarDesgasteVeiculo(veiculo_id, km_moto);
+    }
+  };
+
+  // =========================================================================
+  // VERIFICAÇÃO DE DESGASTE DO ODÔMETRO (após lançamento com KM)
+  // =========================================================================
+  const verificarDesgasteVeiculo = async (veiculoId, kmAtual) => {
+    try {
+      const res = await fetch(`${API}/garagem/veiculos/${veiculoId}/itens`, { headers: getHeaders() });
+      if (!res.ok) return;
+      const itens = await res.json();
+
+      const alertas = itens.map(item => {
+        const kmDesdeUltima = kmAtual - Number(item.km_ultima_troca);
+        const intervalo = Number(item.intervalo_km);
+        const pct = (kmDesdeUltima / intervalo) * 100;
+        const kmFaltando = Math.max(intervalo - kmDesdeUltima, 0);
+        return { nome: item.nome, pct, kmFaltando };
+      }).filter(a => a.pct >= 60); // só considera itens com 60%+ de uso
+
+      if (alertas.length === 0) return; // nada relevante pra mostrar
+
+      // Ordena do mais crítico para o menos crítico
+      alertas.sort((a, b) => b.pct - a.pct);
+
+      const linhas = alertas.map(a => {
+        if (a.pct >= 100) return `🔴 ${a.nome}: JÁ PASSOU do intervalo! (${Math.round(a.pct)}%)`;
+        if (a.pct >= 70) return `🟠 ${a.nome}: faltam ${a.kmFaltando.toLocaleString('pt-BR')} km (${Math.round(a.pct)}% usado)`;
+        return `🟡 ${a.nome}: chegando perto, ${a.kmFaltando.toLocaleString('pt-BR')} km restantes (${Math.round(a.pct)}% usado)`;
+      }).join('\n');
+
+      await modal.alert(linhas, '⚙️ Alerta de Manutenção');
+    } catch (err) { console.error('Erro ao verificar desgaste:', err); }
   };
 
   // =========================================================================
