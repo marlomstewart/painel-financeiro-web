@@ -226,23 +226,29 @@ function App() {
     let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
 
     // Captura o KM se ele existir no formulário
-    const km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
+    let km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
     let veiculo_id = null;
     let veiculo_emprestado = null;
 
-    // Se for categoria relacionada a veículo, pergunta qual veículo
-    if (km_moto && (c === 'Gasolina' || c === 'Manutenção da moto')) {
-      const opcoesVeiculo = [
-        ...veiculosGaragem.map(vc => ({ value: vc.id, icon: '🚗', label: vc.modelo, desc: `${vc.ano_fabricacao}/${vc.ano_modelo}` })),
-        { value: 'emprestado', icon: '🤝', label: 'Veículo Emprestado', desc: 'Carro/moto de outra pessoa' }
-      ];
-      const escolha = await modal.options('Qual veículo recebeu esse lançamento?', opcoesVeiculo, '🏍️ Selecionar Veículo');
-      if (escolha === 'emprestado') {
-        const nomeEmprestado = await modal.prompt('Qual veículo foi emprestado?', '', '🤝 Veículo Emprestado', { placeholder: 'Ex: Carro do meu pai' });
-        if (!nomeEmprestado) return; // cancelou
-        veiculo_emprestado = nomeEmprestado;
-      } else if (escolha) {
-        veiculo_id = escolha;
+    // Se for categoria relacionada a veículo, pergunta qual veículo (próprios + convidados já cadastrados)
+    if (nomeUsuario.toLowerCase() === 'stewart' && (c === 'Gasolina' || c === 'Manutenção da moto')) {
+      const opcoesVeiculo = veiculosGaragem.map(vc => ({
+        value: vc.id,
+        icon: vc.tipo === 'convidado' ? '🤝' : '🚗',
+        label: vc.modelo,
+        desc: vc.tipo === 'convidado' ? 'Convidado' : `${vc.ano_fabricacao}/${vc.ano_modelo}`
+      }));
+      if (opcoesVeiculo.length === 0) {
+        await modal.alert('Nenhum veículo cadastrado ainda. Cadastre na Garagem antes de lançar.', '🏍️ Sem veículos');
+        return;
+      }
+      const idEscolhido = await modal.options('Qual veículo recebeu esse lançamento?', opcoesVeiculo, '🏍️ Selecionar Veículo');
+      if (!idEscolhido) return; // cancelou
+      const veiculoEscolhido = veiculosGaragem.find(vc => vc.id === idEscolhido);
+      veiculo_id = veiculoEscolhido.id;
+      if (veiculoEscolhido.tipo === 'convidado') {
+        veiculo_emprestado = veiculoEscolhido.modelo;
+        km_moto = null; // veículo convidado não rastreia km
       }
     }
 

@@ -20,6 +20,9 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     // Toggle de visualização das barras: 'pct' ou 'km'
     const [modoBarras, setModoBarras] = useState('pct');
 
+    // Controla o tipo selecionado no formulário de veículo (proprio | convidado)
+    const [tipoVeiculoForm, setTipoVeiculoForm] = useState('proprio');
+
     // =========================================================================
     // CARREGAR VEÍCULOS
     // =========================================================================
@@ -31,8 +34,18 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
         setCarregando(true);
         try {
             const res = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() });
-            if (res.ok) setVeiculos(await res.json());
-        } catch (err) { console.error(err); }
+            if (res.ok) {
+                const dados = await res.json();
+                setVeiculos(dados);
+            } else {
+                const erro = await res.json().catch(() => ({}));
+                console.error('Erro ao carregar veículos:', res.status, erro);
+                alert(`Erro ao carregar veículos (${res.status}): ${erro.error || erro.message || 'desconhecido'}`);
+            }
+        } catch (err) {
+            console.error('Erro de conexão ao carregar veículos:', err);
+            alert('Erro de conexão ao carregar veículos. Verifique sua internet.');
+        }
         setCarregando(false);
     };
 
@@ -54,12 +67,29 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     const salvarVeiculo = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const body = { modelo: fd.get('modelo'), ano_fabricacao: Number(fd.get('ano_fabricacao')), ano_modelo: Number(fd.get('ano_modelo')), km_atual: Number(fd.get('km_atual')) };
+        const tipo = fd.get('tipo') || 'proprio';
+        const body = {
+            modelo: fd.get('modelo'),
+            tipo,
+            ano_fabricacao: tipo === 'proprio' ? Number(fd.get('ano_fabricacao')) : null,
+            ano_modelo: tipo === 'proprio' ? Number(fd.get('ano_modelo')) : null,
+            km_atual: tipo === 'proprio' ? Number(fd.get('km_atual')) : 0
+        };
 
         if (modalVeiculo === 'novo') {
             body.id = Date.now().toString();
-            const res = await fetch(`${API}/garagem/veiculos`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
-            if (res.ok) { setVeiculos(prev => [...prev, body]); setModalVeiculo(null); }
+            try {
+                const res = await fetch(`${API}/garagem/veiculos`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
+                if (res.ok) {
+                    setVeiculos(prev => [...prev, body]);
+                    setModalVeiculo(null);
+                } else {
+                    const erro = await res.json().catch(() => ({}));
+                    alert(`Erro ao salvar veículo: ${erro.error || erro.message || 'erro desconhecido'}`);
+                }
+            } catch (err) {
+                alert('Erro de conexão ao salvar veículo.');
+            }
         } else {
             const res = await fetch(`${API}/garagem/veiculos/${modalVeiculo.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(body) });
             if (res.ok) {
@@ -163,12 +193,33 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                 {modalVeiculo && (
                     <ModalInterno titulo={modalVeiculo === 'novo' ? '🚗 Cadastrar Veículo' : '✏️ Editar Veículo'} onFechar={() => setModalVeiculo(null)}>
                         <form onSubmit={salvarVeiculo} className="space-y-3">
-                            <div><label className="text-xs font-medium text-slate-600 mb-1 block">Modelo</label><input name="modelo" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.modelo : ''} placeholder="Ex: Honda Biz 125" required className={inputCls} /></div>
-                            <div className="flex gap-2">
-                                <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Fab.</label><input name="ano_fabricacao" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.ano_fabricacao : ''} placeholder="2020" required className={inputCls} /></div>
-                                <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Modelo</label><input name="ano_modelo" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.ano_modelo : ''} placeholder="2021" required className={inputCls} /></div>
+                            <div>
+                                <label className="text-xs font-medium text-slate-600 mb-1 block">Tipo de Veículo</label>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => setTipoVeiculoForm('proprio')} className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${tipoVeiculoForm === 'proprio' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-400'}`}>🚗 Próprio</button>
+                                    <button type="button" onClick={() => setTipoVeiculoForm('convidado')} className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${tipoVeiculoForm === 'convidado' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-400'}`}>🤝 Convidado</button>
+                                </div>
+                                <input type="hidden" name="tipo" value={tipoVeiculoForm} />
                             </div>
-                            <div><label className="text-xs font-medium text-slate-600 mb-1 block">KM Atual</label><input name="km_atual" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.km_atual : '0'} required className={inputCls} /></div>
+
+                            <div><label className="text-xs font-medium text-slate-600 mb-1 block">{tipoVeiculoForm === 'convidado' ? 'Nome/Descrição' : 'Modelo'}</label><input name="modelo" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.modelo : ''} placeholder={tipoVeiculoForm === 'convidado' ? 'Ex: Carro do meu pai' : 'Ex: Honda Biz 125'} required className={inputCls} /></div>
+
+                            {tipoVeiculoForm === 'proprio' && (
+                                <>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Fab.</label><input name="ano_fabricacao" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.ano_fabricacao : ''} placeholder="2020" required={tipoVeiculoForm === 'proprio'} className={inputCls} /></div>
+                                        <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Modelo</label><input name="ano_modelo" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.ano_modelo : ''} placeholder="2021" required={tipoVeiculoForm === 'proprio'} className={inputCls} /></div>
+                                    </div>
+                                    <div><label className="text-xs font-medium text-slate-600 mb-1 block">KM Atual</label><input name="km_atual" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.km_atual : '0'} required={tipoVeiculoForm === 'proprio'} className={inputCls} /></div>
+                                </>
+                            )}
+
+                            {tipoVeiculoForm === 'convidado' && (
+                                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                                    💡 Veículos convidados não pedem KM nem itens de manutenção — servem apenas para vincular gastos (ex: gasolina) quando você usa um veículo de outra pessoa.
+                                </p>
+                            )}
+
                             <div className="flex gap-2 pt-1"><button type="button" onClick={() => setModalVeiculo(null)} className={btnCancelar}>Cancelar</button><button type="submit" className={btnSalvar}>Salvar</button></div>
                         </form>
                     </ModalInterno>
@@ -188,25 +239,33 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {/* Card de adicionar */}
-                            <button onClick={() => setModalVeiculo('novo')} className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-blue-400 hover:bg-blue-50 transition-all group">
+                            <button onClick={() => { setTipoVeiculoForm('proprio'); setModalVeiculo('novo'); }} className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-blue-400 hover:bg-blue-50 transition-all group">
                                 <span className="text-4xl">➕</span>
                                 <span className="text-sm font-semibold text-slate-500 group-hover:text-blue-600">Cadastrar Veículo</span>
                             </button>
 
                             {/* Cards dos veículos */}
                             {veiculos.map(v => (
-                                <div key={v.id} className="bg-white rounded-xl shadow-sm border hover:shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden">
+                                <div key={v.id} className={`bg-white rounded-xl shadow-sm border hover:shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden ${v.tipo === 'convidado' ? 'border-amber-200' : ''}`}>
                                     <div onClick={() => carregarDashboard(v)} className="p-5 cursor-pointer">
                                         <div className="flex items-start justify-between mb-3">
-                                            <span className="text-3xl">🚗</span>
-                                            <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Ativo</span>
+                                            <span className="text-3xl">{v.tipo === 'convidado' ? '🤝' : '🚗'}</span>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${v.tipo === 'convidado' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                {v.tipo === 'convidado' ? 'Convidado' : 'Próprio'}
+                                            </span>
                                         </div>
                                         <h3 className="font-bold text-slate-800 text-base leading-tight">{v.modelo}</h3>
-                                        <p className="text-xs text-slate-400 mt-0.5">{v.ano_fabricacao}/{v.ano_modelo}</p>
-                                        <p className="text-lg font-bold text-indigo-600 mt-3">{Number(v.km_atual).toLocaleString('pt-BR')} km</p>
+                                        {v.tipo === 'convidado' ? (
+                                            <p className="text-xs text-slate-400 mt-0.5">Veículo de terceiros</p>
+                                        ) : (
+                                            <>
+                                                <p className="text-xs text-slate-400 mt-0.5">{v.ano_fabricacao}/{v.ano_modelo}</p>
+                                                <p className="text-lg font-bold text-indigo-600 mt-3">{Number(v.km_atual).toLocaleString('pt-BR')} km</p>
+                                            </>
+                                        )}
                                     </div>
                                     <div className="border-t flex">
-                                        <button onClick={() => setModalVeiculo(v)} className="flex-1 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">✏️ Editar</button>
+                                        <button onClick={() => { setTipoVeiculoForm(v.tipo || 'proprio'); setModalVeiculo(v); }} className="flex-1 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">✏️ Editar</button>
                                         <button onClick={() => excluirVeiculo(v.id)} className="flex-1 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors border-l">🗑️ Excluir</button>
                                     </div>
                                 </div>
@@ -231,12 +290,24 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
             {modalVeiculo && (
                 <ModalInterno titulo="✏️ Editar Veículo" onFechar={() => setModalVeiculo(null)}>
                     <form onSubmit={salvarVeiculo} className="space-y-3">
-                        <div><label className="text-xs font-medium text-slate-600 mb-1 block">Modelo</label><input name="modelo" defaultValue={modalVeiculo.modelo} required className={inputCls} /></div>
-                        <div className="flex gap-2">
-                            <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Fab.</label><input name="ano_fabricacao" type="number" defaultValue={modalVeiculo.ano_fabricacao} required className={inputCls} /></div>
-                            <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Modelo</label><input name="ano_modelo" type="number" defaultValue={modalVeiculo.ano_modelo} required className={inputCls} /></div>
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 mb-1 block">Tipo de Veículo</label>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => setTipoVeiculoForm('proprio')} className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${tipoVeiculoForm === 'proprio' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-400'}`}>🚗 Próprio</button>
+                                <button type="button" onClick={() => setTipoVeiculoForm('convidado')} className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${tipoVeiculoForm === 'convidado' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-400'}`}>🤝 Convidado</button>
+                            </div>
+                            <input type="hidden" name="tipo" value={tipoVeiculoForm} />
                         </div>
-                        <div><label className="text-xs font-medium text-slate-600 mb-1 block">KM Atual</label><input name="km_atual" type="number" defaultValue={modalVeiculo.km_atual} required className={inputCls} /></div>
+                        <div><label className="text-xs font-medium text-slate-600 mb-1 block">{tipoVeiculoForm === 'convidado' ? 'Nome/Descrição' : 'Modelo'}</label><input name="modelo" defaultValue={modalVeiculo.modelo} required className={inputCls} /></div>
+                        {tipoVeiculoForm === 'proprio' && (
+                            <>
+                                <div className="flex gap-2">
+                                    <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Fab.</label><input name="ano_fabricacao" type="number" defaultValue={modalVeiculo.ano_fabricacao} required className={inputCls} /></div>
+                                    <div className="flex-1"><label className="text-xs font-medium text-slate-600 mb-1 block">Ano Modelo</label><input name="ano_modelo" type="number" defaultValue={modalVeiculo.ano_modelo} required className={inputCls} /></div>
+                                </div>
+                                <div><label className="text-xs font-medium text-slate-600 mb-1 block">KM Atual</label><input name="km_atual" type="number" defaultValue={modalVeiculo.km_atual} required className={inputCls} /></div>
+                            </>
+                        )}
                         <div className="flex gap-2 pt-1"><button type="button" onClick={() => setModalVeiculo(null)} className={btnCancelar}>Cancelar</button><button type="submit" className={btnSalvar}>Salvar</button></div>
                     </form>
                 </ModalInterno>
@@ -281,12 +352,13 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={() => setModalVeiculo(veiculoSelecionado)} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200">✏️ Editar</button>
+                        <button onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200">✏️ Editar</button>
                         <button onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 text-white font-medium py-2 px-4 rounded-lg hover:bg-slate-800 text-sm">← Painel</button>
                     </div>
                 </header>
 
-                {/* BARRAS DE DESGASTE */}
+                {/* BARRAS DE DESGASTE — só para veículos próprios */}
+                {veiculoSelecionado.tipo !== 'convidado' && (
                 <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-sm font-bold text-slate-600 uppercase">⚙️ Odômetro de Desgaste</h2>
@@ -341,9 +413,10 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
                     <button onClick={() => setModalItem('novo')} className="mt-4 w-full border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-400 hover:text-blue-600 font-medium py-2 rounded-lg text-sm transition-all">+ Adicionar Item</button>
                 </div>
+                )}
 
                 {/* DIÁRIO DE BORDO */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                <div className={`grid grid-cols-1 ${veiculoSelecionado.tipo !== 'convidado' ? 'lg:grid-cols-2' : ''} gap-4 md:gap-6`}>
 
                     {/* MANUTENÇÕES FINANCEIRAS */}
                     <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
@@ -368,7 +441,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                         )}
                     </div>
 
-                    {/* MANUTENÇÕES MANUAIS */}
+                    {/* MANUTENÇÕES MANUAIS — só para veículos próprios */}
+                    {veiculoSelecionado.tipo !== 'convidado' && (
                     <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-sm font-bold text-slate-600 uppercase">🔧 Manutenções Manuais</h2>
@@ -397,6 +471,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                             </div>
                         )}
                     </div>
+                    )}
                 </div>
             </div>
         </div>

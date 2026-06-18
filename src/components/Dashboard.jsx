@@ -223,7 +223,7 @@ export function Dashboard({
 
                             {/* Campo de KM (Aparece apenas para o stewart se for Manutenção da moto ou Gasolina) */}
                             {nomeUsuario.toLowerCase() === 'stewart' && (catFormulario === 'Gasolina' || catFormulario === 'Manutenção da moto') && (
-                                <input name="kmMoto" type="number" placeholder="Km atual do painel da Biz" required className="w-full border-2 border-amber-400 bg-amber-50 p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-amber-600" />
+                                <input name="kmMoto" type="number" placeholder="Km atual (deixe vazio se for veículo convidado)" className="w-full border-2 border-amber-400 bg-amber-50 p-2 md:p-2.5 rounded-lg text-xs md:text-sm outline-none focus:border-amber-600" />
                             )}
 
                             <select name="formaPagamento" required className="w-full border p-2 md:p-2.5 rounded-lg text-xs md:text-sm bg-white outline-none focus:border-blue-500"><option value="pix">PIX / Dinheiro</option><option value="debito">Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito - {c.nome}</option>)}</select>
