@@ -232,7 +232,17 @@ function App() {
 
     // Se for categoria relacionada a veículo, pergunta qual veículo (próprios + convidados já cadastrados)
     if (nomeUsuario.toLowerCase() === 'stewart' && (c === 'Gasolina' || c === 'Manutenção da moto')) {
-      const opcoesVeiculo = veiculosGaragem.map(vc => ({
+      // Busca a lista mais atual de veículos direto do servidor (evita duplicados/sumidos por cache local)
+      let listaAtual = veiculosGaragem;
+      try {
+        const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() });
+        if (resGar.ok) {
+          listaAtual = await resGar.json();
+          setVeiculosGaragem(listaAtual);
+        }
+      } catch (err) { console.error('Erro ao atualizar lista de veículos:', err); }
+
+      const opcoesVeiculo = listaAtual.map(vc => ({
         value: vc.id,
         icon: vc.tipo === 'convidado' ? '🤝' : '🚗',
         label: vc.modelo,
@@ -244,7 +254,7 @@ function App() {
       }
       const idEscolhido = await modal.options('Qual veículo recebeu esse lançamento?', opcoesVeiculo, '🏍️ Selecionar Veículo');
       if (!idEscolhido) return; // cancelou
-      const veiculoEscolhido = veiculosGaragem.find(vc => vc.id === idEscolhido);
+      const veiculoEscolhido = listaAtual.find(vc => vc.id === idEscolhido);
       veiculo_id = veiculoEscolhido.id;
       if (veiculoEscolhido.tipo === 'convidado') {
         veiculo_emprestado = veiculoEscolhido.modelo;
