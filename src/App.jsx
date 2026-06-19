@@ -76,6 +76,7 @@ function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
   const [veiculosGaragem, setVeiculosGaragem] = useState([]);
+  const [diasNaoRodados, setDiasNaoRodados] = useState([]);
 
   const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
   const [gerandoMes, setGerandoMes] = useState(false);
@@ -113,10 +114,13 @@ function App() {
         setRendasFixas(await resRF.json());
         setCarregouAPI(true);
 
-        // Carrega veículos da Garagem somente para stewart
+        // Carrega veículos e dias não rodados da Garagem somente para stewart
         if (nomeUsuario === 'stewart') {
           const resGar = await fetch(`${API}/garagem/veiculos`, { headers });
           if (resGar.ok) setVeiculosGaragem(await resGar.json());
+
+          const resDias = await fetch(`${API}/garagem/dias-nao-rodados`, { headers });
+          if (resDias.ok) setDiasNaoRodados(await resDias.json());
         }
       } catch (err) { console.error("Erro ao sincronizar:", err); }
     };
@@ -778,7 +782,12 @@ function App() {
     for (let dia = 1; dia <= ultimoDiaDoMes; dia++) {
       const dataAtual = new Date(ano, mes - 1, dia);
       const diaDaSemana = dataAtual.getDay();
-      if (diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) {
+
+      // Formata a data para YYYY-MM-DD para comparar com o banco
+      const dataString = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
+      // Conta o dia APENAS se for Seg/Qua/Sex E não estiver marcado como falta
+      if ((diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) && !diasNaoRodados.includes(dataString)) {
         diasDeAbastecimento++;
       }
     }
@@ -997,6 +1006,19 @@ function App() {
             <p className="text-[9px] text-emerald-500 mt-1 truncate" title={menorGasto.descricao}>{new Date(menorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menorGasto.descricao}</p>
           </div>
         </div>
+
+        {/* 🚀 BOTÃO DO CALENDÁRIO DA GARAGEM */}
+        {nomeCategoria === 'Gasolina' && nomeUsuario === 'stewart' && (
+          <button
+            onClick={() => {
+              modal.close();
+              setTimeout(() => abrirModalCalendarioGasolina(), 300);
+            }}
+            className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2"
+          >
+            <span className="text-xl">📅</span> Ajustar Dias Não Rodados (Reduzir Meta)
+          </button>
+        )}
       </div>
     );
 
