@@ -7,12 +7,15 @@ import { Setup } from './components/Setup';
 import { Dashboard } from './components/Dashboard';
 import { Garagem } from './components/Garagem';
 
+// Importação da nossa nova arquitetura de Hooks Limpos
+import { useCartoesFaturas } from './hooks/useCartoesFaturas';
+
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const API = 'https://painel-gestao-financeira-api.onrender.com/api';
 
 /**
- * HOOK useModal — centraliza a chamada de janelas e alertas do sistema.
+ * HOOK useModal — substitui window.alert, confirm e prompt
  */
 function useModal() {
   const [config, setConfig] = useState(null);
@@ -21,13 +24,12 @@ function useModal() {
   const confirm = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => resolve(true), onCancel: () => resolve(false), onClose: () => { setConfig(null); resolve(false); }, ...opts })), []);
   const prompt = useCallback((message, defaultValue = '', title, opts = {}) => new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
   const options = useCallback((message, opts_list, title, opts = {}) => new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
-
   return { config, close, setConfig, alert, confirm, prompt, options };
 }
 
 function App() {
   // =========================================================================
-  // ESTADOS DO SISTEMA E SEGURANÇA
+  // ESTADOS GLOBAIS E SEGURANÇA
   // =========================================================================
   const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
   const [tokenTemp, setTokenTemp] = useState(null);
@@ -54,7 +56,7 @@ function App() {
   const [mostrarFiltrosAvancados, setMostrarFiltrosAvancados] = useState(false);
   const [filtrosAvancados, setFiltrosAvancados] = useState({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
 
-  // Bancos de Dados
+  // Bancos de Dados Base
   const [cartoes, setCartoes] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [metasRenda, setMetasRenda] = useState([]);
@@ -63,23 +65,30 @@ function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
 
-  // Estados Módulo Garagem
+  // Módulo Garagem
   const [veiculosGaragem, setVeiculosGaragem] = useState([]);
-  /** @estado diasNaoRodados: Controla as datas marcadas no calendário para reduzir a meta dinamicamente */
   const [diasNaoRodados, setDiasNaoRodados] = useState([]);
 
+  // Controladores de Fluxo
   const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
   const [gerandoMes, setGerandoMes] = useState(false);
 
   const modal = useModal();
-
-  const getHeaders = useCallback(() => ({
-    'Authorization': `Bearer ${token || tokenTemp}`,
-    'Content-Type': 'application/json'
-  }), [token, tokenTemp]);
+  const getHeaders = useCallback(() => ({ 'Authorization': `Bearer ${token || tokenTemp}`, 'Content-Type': 'application/json' }), [token, tokenTemp]);
 
   // =========================================================================
-  // EFEITOS E SINCRONIZAÇÃO DA API
+  // INTEGRAÇÃO DA NOVA ARQUITETURA DE HOOKS
+  // =========================================================================
+  /** Variável transacoesMes calculada cedo para abastecer os sub-hooks */
+  const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
+
+  /** Hook injetado encapsulando lógicas complexas de faturamento */
+  const { verFaturasPorCartao, pagarFaturaCartao, reverterFaturaCartao } = useCartoesFaturas({
+    transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal
+  });
+
+  // =========================================================================
+  // EFEITOS E SINCRONIZAÇÃO
   // =========================================================================
   useEffect(() => {
     if (!token) return;
@@ -87,23 +96,11 @@ function App() {
     const carregar = async () => {
       try {
         const [resT, resC, resCat, resR, resF, resRF] = await Promise.all([
-          fetch(`${API}/transacoes`, { headers }),
-          fetch(`${API}/cartoes`, { headers }),
-          fetch(`${API}/categorias`, { headers }),
-          fetch(`${API}/metas-renda`, { headers }),
-          fetch(`${API}/contas-fixas`, { headers }),
-          fetch(`${API}/rendas-fixas`, { headers })
+          fetch(`${API}/transacoes`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers })
         ]);
         if (!resT.ok) { fazerLogout(); return; }
-        setTransacoes(await resT.json());
-        setCartoes(await resC.json());
-        setCategorias(await resCat.json());
-        setMetasRenda(await resR.json());
-        setContasFixas(await resF.json());
-        setRendasFixas(await resRF.json());
-        setCarregouAPI(true);
+        setTransacoes(await resT.json()); setCartoes(await resC.json()); setCategorias(await resCat.json()); setMetasRenda(await resR.json()); setContasFixas(await resF.json()); setRendasFixas(await resRF.json()); setCarregouAPI(true);
 
-        // Carrega veículos e os dias não rodados da Garagem somente para stewart
         if (nomeUsuario === 'stewart') {
           const resGar = await fetch(`${API}/garagem/veiculos`, { headers });
           if (resGar.ok) setVeiculosGaragem(await resGar.json());
@@ -117,7 +114,7 @@ function App() {
   }, [token]);
 
   // =========================================================================
-  // LOGIN / LOGOUT / CSV
+  // LOGIN / LOGOUT / EXPORTAÇÃO
   // =========================================================================
   const fazerLogin = async (e) => {
     e.preventDefault(); setErroLogin('');
@@ -128,10 +125,7 @@ function App() {
         localStorage.setItem('nomeUsuario', usuarioLogin); setNomeUsuario(usuarioLogin);
         if (data.precisaTrocar) { setTokenTemp(data.token); setPrecisaTrocarSenha(true); }
         else {
-          localStorage.setItem('tokenPainel', data.token);
-          localStorage.setItem('isAdmin', data.is_admin ? 'true' : 'false');
-          setToken(data.token);
-          setIsAdmin(data.is_admin === true);
+          localStorage.setItem('tokenPainel', data.token); localStorage.setItem('isAdmin', data.is_admin ? 'true' : 'false'); setToken(data.token); setIsAdmin(data.is_admin === true);
         }
       } else { setErroLogin(data.message); }
     } catch (err) { setErroLogin("Erro ao conectar no servidor."); }
@@ -163,8 +157,7 @@ function App() {
     });
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url; link.setAttribute("download", `Backup_Financeiro_${nomeUsuario}_${new Date().toISOString().split('T')[0]}.csv`);
+    const link = document.createElement("a"); link.href = url; link.setAttribute("download", `Backup_Financeiro_${nomeUsuario}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
@@ -188,17 +181,14 @@ function App() {
     try {
       const res = await fetch(`${API}/gerar-mes`, { method: 'POST', headers: getHeaders() });
       const data = await res.json();
-      if (data.gerados.length === 0) {
-        await modal.alert(`Tudo já estava gerado para ${data.mes}/${data.ano}.\nNenhum lançamento novo.`, '✅ Nenhum lançamento novo');
-      } else {
+      if (data.gerados.length === 0) { await modal.alert(`Tudo já estava gerado para ${data.mes}/${data.ano}.\nNenhum lançamento novo.`, '✅ Nenhum lançamento novo'); }
+      else {
         const lista = data.gerados.map(g => `• ${g.nome} (${g.tipo})`).join('\n');
         await modal.alert(`${data.gerados.length} lançamento(s) gerado(s):\n\n${lista}`, '✅ Lançamentos gerados');
         const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
         if (resT.ok) setTransacoes(await resT.json());
       }
-    } catch (err) {
-      await modal.alert('Erro ao gerar lançamentos. Tente novamente.', '❌ Erro');
-    } finally { setGerandoMes(false); }
+    } catch (err) { await modal.alert('Erro ao gerar lançamentos. Tente novamente.', '❌ Erro'); } finally { setGerandoMes(false); }
   };
 
   const removerSetup = async (banco, id) => {
@@ -210,7 +200,7 @@ function App() {
   };
 
   // =========================================================================
-  // LANÇAMENTOS E INTERCEPTAÇÃO DE GARAGEM
+  // LANÇAMENTOS
   // =========================================================================
   const addTransacao = async (e) => {
     e.preventDefault();
@@ -219,37 +209,22 @@ function App() {
     let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
 
     let km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
-    let veiculo_id = null;
-    let veiculo_emprestado = null;
+    let veiculo_id = null; let veiculo_emprestado = null;
 
     if (nomeUsuario.toLowerCase() === 'stewart' && (c === 'Gasolina' || c === 'Manutenção da moto')) {
       let listaAtual = veiculosGaragem;
       try {
         const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() });
-        if (resGar.ok) {
-          listaAtual = await resGar.json();
-          setVeiculosGaragem(listaAtual);
-        }
+        if (resGar.ok) { listaAtual = await resGar.json(); setVeiculosGaragem(listaAtual); }
       } catch (err) { console.error('Erro ao atualizar lista de veículos:', err); }
 
-      const opcoesVeiculo = listaAtual.map(vc => ({
-        value: vc.id,
-        icon: vc.tipo === 'convidado' ? '🤝' : '🚗',
-        label: vc.modelo,
-        desc: vc.tipo === 'convidado' ? 'Convidado' : `${vc.ano_fabricacao}/${vc.ano_modelo}`
-      }));
-      if (opcoesVeiculo.length === 0) {
-        await modal.alert('Nenhum veículo cadastrado ainda. Cadastre na Garagem antes de lançar.', '🏍️ Sem veículos');
-        return;
-      }
+      const opcoesVeiculo = listaAtual.map(vc => ({ value: vc.id, icon: vc.tipo === 'convidado' ? '🤝' : '🚗', label: vc.modelo, desc: vc.tipo === 'convidado' ? 'Convidado' : `${vc.ano_fabricacao}/${vc.ano_modelo}` }));
+      if (opcoesVeiculo.length === 0) { await modal.alert('Nenhum veículo cadastrado ainda. Cadastre na Garagem antes de lançar.', '🏍️ Sem veículos'); return; }
       const idEscolhido = await modal.options('Qual veículo recebeu esse lançamento?', opcoesVeiculo, '🏍️ Selecionar Veículo');
       if (!idEscolhido) return;
       const veiculoEscolhido = listaAtual.find(vc => vc.id === idEscolhido);
       veiculo_id = veiculoEscolhido.id;
-      if (veiculoEscolhido.tipo === 'convidado') {
-        veiculo_emprestado = veiculoEscolhido.modelo;
-        km_moto = null;
-      }
+      if (veiculoEscolhido.tipo === 'convidado') { veiculo_emprestado = veiculoEscolhido.modelo; km_moto = null; }
     }
 
     if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
@@ -273,9 +248,7 @@ function App() {
     setTransacoes([...transacoes, ...novasT]);
     e.target.reset();
 
-    if (km_moto && veiculo_id && !veiculo_emprestado) {
-      await verificarDesgasteVeiculo(veiculo_id, km_moto);
-    }
+    if (km_moto && veiculo_id && !veiculo_emprestado) await verificarDesgasteVeiculo(veiculo_id, km_moto);
   };
 
   const verificarDesgasteVeiculo = async (veiculoId, kmAtual) => {
@@ -283,7 +256,6 @@ function App() {
       const res = await fetch(`${API}/garagem/veiculos/${veiculoId}/itens`, { headers: getHeaders() });
       if (!res.ok) return;
       const itens = await res.json();
-
       const alertas = itens.map(item => {
         const kmDesdeUltima = kmAtual - Number(item.km_ultima_troca);
         const intervalo = Number(item.intervalo_km);
@@ -293,113 +265,45 @@ function App() {
       }).filter(a => a.pct >= 60);
 
       if (alertas.length === 0) return;
-
       alertas.sort((a, b) => b.pct - a.pct);
-
       const linhas = alertas.map(a => {
         if (a.pct >= 100) return `🔴 ${a.nome}: JÁ PASSOU do intervalo! (${Math.round(a.pct)}%)`;
         if (a.pct >= 70) return `🟠 ${a.nome}: faltam ${a.kmFaltando.toLocaleString('pt-BR')} km (${Math.round(a.pct)}% usado)`;
         return `🟡 ${a.nome}: chegando perto, ${a.kmFaltando.toLocaleString('pt-BR')} km restantes (${Math.round(a.pct)}% usado)`;
       }).join('\n');
-
       await modal.alert(linhas, '⚙️ Alerta de Manutenção');
     } catch (err) { console.error('Erro ao verificar desgaste:', err); }
   };
 
   const executarAcaoEmMassa = async (acao, ids) => {
-    const confirmacao = await modal.confirm(
-      `Tem certeza que deseja ${acao === 'excluir' ? 'excluir' : `marcar como ${acao.toUpperCase()}`} ${ids.length} lançamento(s)?`,
-      '⚠️ Ação em Massa'
-    );
+    const confirmacao = await modal.confirm(`Tem certeza que deseja ${acao === 'excluir' ? 'excluir' : `marcar como ${acao.toUpperCase()}`} ${ids.length} lançamento(s)?`, '⚠️ Ação em Massa');
     if (!confirmacao) return false;
-
     try {
       const promessas = ids.map(id => {
-        if (acao === 'excluir') {
-          return fetch(`${API}/transacoes/${id}`, { method: 'DELETE', headers: getHeaders() });
-        } else {
-          const t = transacoes.find(tr => tr.id === id);
-          return fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: acao, valorParcela: t.valorParcela }) });
-        }
+        if (acao === 'excluir') return fetch(`${API}/transacoes/${id}`, { method: 'DELETE', headers: getHeaders() });
+        const t = transacoes.find(tr => tr.id === id);
+        return fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: acao, valorParcela: t.valorParcela }) });
       });
-
       await Promise.all(promessas);
-
-      if (acao === 'excluir') {
-        setTransacoes(prev => prev.filter(tr => !ids.includes(tr.id)));
-      } else {
-        setTransacoes(prev => prev.map(tr => ids.includes(tr.id) ? { ...tr, status: acao } : tr));
-      }
+      if (acao === 'excluir') setTransacoes(prev => prev.filter(tr => !ids.includes(tr.id)));
+      else setTransacoes(prev => prev.map(tr => ids.includes(tr.id) ? { ...tr, status: acao } : tr));
       return true;
-    } catch (err) {
-      modal.alert('Ocorreu um erro de conexão ao tentar processar as alterações.', '❌ Erro');
-      return false;
-    }
-  };
-
-  const pagarFaturaCartao = async (cartaoId) => {
-    const cartao = cartoes.find(c => c.id === cartaoId);
-    if (!cartao) return;
-
-    const confirmacao = await modal.confirm(`Deseja marcar TODOS os lançamentos pendentes no cartão "${cartao.nome}" como PAGO?`, '💳 Pagar Fatura');
-    if (!confirmacao) return;
-
-    const pendentes = transacoes.filter(t => t.status === 'pendente' && t.formaPagamento === `credito_${cartaoId}` && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
-
-    try {
-      const promessas = pendentes.map(t => fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago', valorParcela: t.valorParcela, dataCompra: t.dataCompra }) }));
-      await Promise.all(promessas);
-      setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago' } : t));
-      modal.alert('Fatura marcada como paga com sucesso!', '✅ Concluído');
-    } catch (err) { modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro'); }
-  };
-
-  const reverterFaturaCartao = async (cartaoId) => {
-    const cartao = cartoes.find(c => c.id === cartaoId);
-    if (!cartao) return;
-    const confirmacao = await modal.confirm(`Deseja REVERTER os pagamentos do cartão "${cartao.nome}" para PENDENTE?`, '↩️ Reverter Fatura');
-    if (!confirmacao) return;
-
-    const pagos = transacoes.filter(t => t.status === 'pago' && t.formaPagamento === `credito_${cartaoId}` && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
-
-    try {
-      const promessas = pagos.map(t => fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente', valorParcela: t.valorParcela, dataCompra: t.dataCompra }) }));
-      await Promise.all(promessas);
-      setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente' } : t));
-      modal.alert('Fatura revertida com sucesso!', '✅ Concluído');
-    } catch (err) { modal.alert('Erro na reversão.', '❌ Erro'); }
+    } catch (err) { modal.alert('Ocorreu um erro de conexão.', '❌ Erro'); return false; }
   };
 
   const deletarTransacao = async (t) => {
     if (t.grupo_id) {
-      const opcao = await modal.options(
-        `"${t.descricao}" é uma compra parcelada.\nO que deseja excluir?`,
-        [
-          { value: '1', icon: '1️⃣', label: 'Somente esta parcela', desc: `Apenas ${t.mesReferencia}/${t.anoReferencia}` },
-          { value: '2', icon: '2️⃣', label: 'Esta e todas as futuras', desc: `A partir de ${t.mesReferencia}/${t.anoReferencia}` },
-          { value: '3', icon: '3️⃣', label: 'Esta e todas as anteriores', desc: `Até ${t.mesReferencia}/${t.anoReferencia}` },
-          { value: '4', icon: '4️⃣', label: 'Todas as parcelas', desc: 'Remove a compra inteira' },
-        ],
-        '🗑️ Excluir Parcela'
+      const opcao = await modal.options(`"${t.descricao}" é uma compra parcelada.\nO que deseja excluir?`, [
+        { value: '1', icon: '1️⃣', label: 'Somente esta parcela', desc: `Apenas ${t.mesReferencia}/${t.anoReferencia}` }, { value: '2', icon: '2️⃣', label: 'Esta e todas as futuras', desc: `A partir de ${t.mesReferencia}/${t.anoReferencia}` }, { value: '3', icon: '3️⃣', label: 'Esta e todas as anteriores', desc: `Até ${t.mesReferencia}/${t.anoReferencia}` }, { value: '4', icon: '4️⃣', label: 'Todas as parcelas', desc: 'Remove a compra inteira' },
+      ], '🗑️ Excluir Parcela'
       );
       if (!opcao) return;
-
-      if (opcao === '1') {
-        await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => tr.id !== t.id));
-      } else if (opcao === '2') {
-        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=futuras`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia)))));
-      } else if (opcao === '3') {
-        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=anteriores`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia < t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia <= t.mesReferencia)))));
-      } else if (opcao === '4') {
-        await fetch(`${API}/transacoes/grupo/${t.grupo_id}?modo=todas`, { method: 'DELETE', headers: getHeaders() });
-        setTransacoes(prev => prev.filter(tr => tr.grupo_id !== t.grupo_id));
-      }
+      if (opcao === '1') { await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() }); setTransacoes(prev => prev.filter(tr => tr.id !== t.id)); }
+      else if (opcao === '2') { await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=futuras`, { method: 'DELETE', headers: getHeaders() }); setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia > t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia >= t.mesReferencia))))); }
+      else if (opcao === '3') { await fetch(`${API}/transacoes/grupo/${t.grupo_id}?mes=${t.mesReferencia}&ano=${t.anoReferencia}&modo=anteriores`, { method: 'DELETE', headers: getHeaders() }); setTransacoes(prev => prev.filter(tr => !(tr.grupo_id === t.grupo_id && (tr.anoReferencia < t.anoReferencia || (tr.anoReferencia === t.anoReferencia && tr.mesReferencia <= t.mesReferencia))))); }
+      else if (opcao === '4') { await fetch(`${API}/transacoes/grupo/${t.grupo_id}?modo=todas`, { method: 'DELETE', headers: getHeaders() }); setTransacoes(prev => prev.filter(tr => tr.grupo_id !== t.grupo_id)); }
       return;
     }
-
     const ok = await modal.confirm('Deseja excluir esta transação?', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
     if (!ok) return;
     await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
@@ -407,40 +311,28 @@ function App() {
   };
 
   const alternarStatusTransacao = async (id, statusAtual, valorParcela, dataCompra) => {
-    const opcaoEscolhida = await modal.options(
-      `Status atual: ${statusAtual.toUpperCase()}\n\nEscolha o status correto para este lançamento:`,
-      [{ value: 'pago', icon: '✔', label: 'Marcar como PAGO' }, { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }],
-      '🔄 Alterar Status'
-    );
-
+    const opcaoEscolhida = await modal.options(`Status atual: ${statusAtual.toUpperCase()}\n\nEscolha o status correto para este lançamento:`, [{ value: 'pago', icon: '✔', label: 'Marcar como PAGO' }, { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }], '🔄 Alterar Status');
     if (!opcaoEscolhida || opcaoEscolhida === statusAtual) return;
-
     try {
-      await fetch(`${API}/transacoes/${id}`, {
-        method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: opcaoEscolhida, valorParcela, dataCompra })
-      });
+      await fetch(`${API}/transacoes/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: opcaoEscolhida, valorParcela, dataCompra }) });
       setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: opcaoEscolhida } : t));
-    } catch (err) { modal.alert('Erro de conexão ao tentar alterar o status.', '❌ Erro'); }
+    } catch (err) { modal.alert('Erro de conexão.', '❌ Erro'); }
   };
 
   const editarValor = async (t) => {
     const nV = await modal.prompt(`Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`, String(t.valorParcela), '✏️ Editar Valor', { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' });
     if (nV === null) return;
     const novoValor = Number(String(nV).replace(',', '.'));
-    if (isNaN(novoValor)) return modal.alert('Valor inválido digitado.', '❌ Erro');
+    if (isNaN(novoValor)) return modal.alert('Valor inválido.', '❌ Erro');
 
-    const dataString = String(t.dataCompra).split('T')[0];
-    const [ano, mes, dia] = dataString.split('-');
+    const [ano, mes, dia] = String(t.dataCompra).split('T')[0].split('-');
     const nD = await modal.prompt(`2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`, `${dia}/${mes}/${ano}`, '📅 Editar Data', { confirmLabel: 'Próximo' });
     if (nD === null) return;
     const partesData = nD.split('/');
-    if (partesData.length !== 3) return modal.alert('Formato de data inválido. Use DD/MM/AAAA.', '❌ Erro');
+    if (partesData.length !== 3) return modal.alert('Formato inválido.', '❌ Erro');
     const novaDataStr = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
 
-    const opcoesCategoria = [
-      { value: 'Sem Categoria', icon: '🏷️', label: 'Sem Categoria' }, { value: 'Contas Fixas', icon: '📅', label: 'Contas Fixas' }, { value: 'Renda Fixa', icon: '💰', label: 'Renda Fixa' }, { value: 'Renda', icon: '💵', label: 'Renda Variável' },
-      ...categorias.map(c => ({ value: c.nome, icon: c.tipo === 'investimento' ? '📈' : '💸', label: c.nome }))
-    ];
+    const opcoesCategoria = [{ value: 'Sem Categoria', icon: '🏷️', label: 'Sem Categoria' }, { value: 'Contas Fixas', icon: '📅', label: 'Contas Fixas' }, { value: 'Renda Fixa', icon: '💰', label: 'Renda Fixa' }, { value: 'Renda', icon: '💵', label: 'Renda Variável' }, ...categorias.map(c => ({ value: c.nome, icon: c.tipo === 'investimento' ? '📈' : '💸', label: c.nome }))];
     const nCat = await modal.options(`3️⃣ Qual a CATEGORIA?\n\nAtual: ${t.categoria}`, opcoesCategoria, '🏷️ Editar Categoria');
     if (!nCat) return;
 
@@ -450,31 +342,12 @@ function App() {
     try {
       await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr, categoria: nCat }) });
       setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS, categoria: nCat } : tr));
-    } catch (err) { modal.alert('Ocorreu um erro ao atualizar.', '❌ Erro'); }
+    } catch (err) { modal.alert('Erro ao atualizar.', '❌ Erro'); }
   };
 
-  const verFaturasPorCartao = () => {
-    const porCartao = {};
-    const cartaoIds = {};
-
-    transacoesMes.forEach(t => {
-      if (t.formaPagamento && t.formaPagamento.startsWith('credito_')) {
-        const cartaoId = t.formaPagamento.split('_')[1];
-        const cartao = cartoes.find(c => c.id === cartaoId);
-        const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
-        if (cartao) cartaoIds[nome] = cartao.id;
-
-        if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
-        porCartao[nome].total += Number(t.valorParcela);
-        if (t.status === 'pago') porCartao[nome].pago += Number(t.valorParcela);
-        else porCartao[nome].pendente += Number(t.valorParcela);
-      }
-    });
-
-    const itens = Object.entries(porCartao).map(([nome, v]) => ({ nome, ...v }));
-    modal.setConfig({ type: 'faturas', title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`, itens, cartaoIds, pagarFatura: pagarFaturaCartao, reverterFatura: reverterFaturaCartao, onCancel: modal.close, onClose: modal.close });
-  };
-
+  // =========================================================================
+  // MATEMÁTICAS, PREVISÕES E VISUALIZAÇÃO
+  // =========================================================================
   const abrirResumoCard = (tipo) => {
     let titulo = ''; let conteudo = null;
     if (tipo === 'rendas') {
@@ -503,8 +376,6 @@ function App() {
 
   const mesAnterior = () => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 });
   const mesProximo = () => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 });
-
-  const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
 
   const calcularSaldoAcumuladoAte = React.useCallback((mes, ano) => {
     const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
@@ -580,32 +451,20 @@ function App() {
     }
   });
 
-  /**
-   * 🤖 METAS DINÂMICAS: 
-   * Calcula a meta de gasolina baseada nos dias úteis rodados (Seg, Qua, Sex).
-   * Desconta os dias que constam no estado diasNaoRodados (Trazidos do banco)
-   */
   const calcularMetaGasolina = (mes, ano) => {
     let diasDeAbastecimento = 0;
     const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
     for (let dia = 1; dia <= ultimoDiaDoMes; dia++) {
       const dataAtual = new Date(ano, mes - 1, dia);
       const diaDaSemana = dataAtual.getDay();
-
       const dataString = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-
-      // Conta o dia APENAS se for Seg/Qua/Sex E não estiver marcado como "não rodado"
-      if ((diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) && !diasNaoRodados.includes(dataString)) {
-        diasDeAbastecimento++;
-      }
+      if ((diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) && !diasNaoRodados.includes(dataString)) diasDeAbastecimento++;
     }
     return diasDeAbastecimento * 23;
   };
 
   const categoriasDinamicas = categorias.map(c => {
-    if (c.nome === 'Gasolina' && nomeUsuario.toLowerCase() === 'stewart') {
-      return { ...c, meta: calcularMetaGasolina(dataVis.mes, dataVis.ano) };
-    }
+    if (c.nome === 'Gasolina' && nomeUsuario.toLowerCase() === 'stewart') return { ...c, meta: calcularMetaGasolina(dataVis.mes, dataVis.ano) };
     return c;
   });
 
@@ -625,7 +484,6 @@ function App() {
       const kmRodados = kmAtual - kmUltimaTroca;
       const limiteTrocaOleo = 1000;
       const kmFaltantes = limiteTrocaOleo - kmRodados;
-
       alertaMoto = { kmAtual, kmFaltantes, alertaCritico: kmFaltantes <= 150 };
     }
   }
@@ -645,29 +503,19 @@ function App() {
     try {
       const promessas = pendenciasPassadas.flatMap((t, index) => {
         const reqUpdate = fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'transferido', valorParcela: t.valorParcela }) });
-        const reqCreate = fetch(`${API}/transacoes`, {
-          method: 'POST', headers: getHeaders(),
-          body: JSON.stringify({
-            id: (Date.now() + index).toString(), descricao: `[Pendência de ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`, categoria: t.categoria, valorParcela: t.valorParcela, dataCompra: new Date(anoReal, mesReal - 1, dataHoje.getDate()).toISOString(), tipo: t.tipo, formaPagamento: t.formaPagamento, status: 'pendente', mesReferencia: mesReal, anoReferencia: anoReal, kmMoto: t.kmMoto || null, grupo_id: null
-          })
-        });
+        const reqCreate = fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ id: (Date.now() + index).toString(), descricao: `[Pendência de ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`, categoria: t.categoria, valorParcela: t.valorParcela, dataCompra: new Date(anoReal, mesReal - 1, dataHoje.getDate()).toISOString(), tipo: t.tipo, formaPagamento: t.formaPagamento, status: 'pendente', mesReferencia: mesReal, anoReferencia: anoReal, kmMoto: t.kmMoto || null, grupo_id: null }) });
         return [reqUpdate, reqCreate];
       });
-
       await Promise.all(promessas);
       const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
-      if (resT.ok) {
-        setTransacoes(await resT.json());
-        setDataVis({ mes: mesReal, ano: anoReal });
-        modal.alert(`As pendências foram movidas para ${nomesMeses[mesReal - 1]} com sucesso!`, '✅ Rolagem Concluída');
-      }
-    } catch (err) { modal.alert('Erro de conexão ao tentar importar pendências.', '❌ Erro'); }
+      if (resT.ok) { setTransacoes(await resT.json()); setDataVis({ mes: mesReal, ano: anoReal }); modal.alert(`As pendências foram movidas para ${nomesMeses[mesReal - 1]} com sucesso!`, '✅ Rolagem Concluída'); }
+    } catch (err) { modal.alert('Erro de conexão.', '❌ Erro'); }
   };
 
   const abrirModalPendencias = () => {
     const conteudoModal = (
       <div className="space-y-3">
-        <p className="text-sm text-slate-600 mb-4">Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) que ficaram pendentes nos meses anteriores. Deseja trazê-los para o mês atual ({nomesMeses[mesReal - 1]})?</p>
+        <p className="text-sm text-slate-600 mb-4">Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) pendente(s) antigos. Deseja trazê-los para o mês atual ({nomesMeses[mesReal - 1]})?</p>
         <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
           {pendenciasPassadas.map(t => (<div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between items-center shadow-sm"><div className="truncate pr-2"><p className="text-xs font-bold text-rose-800 truncate">{t.descricao}</p><p className="text-[10px] text-rose-500 uppercase font-medium mt-1">{nomesMeses[t.mesReferencia - 1]} • {t.categoria}</p></div><span className="font-bold text-rose-700 text-sm whitespace-nowrap">{formatarMoeda(t.valorParcela)}</span></div>))}
         </div>
@@ -677,156 +525,69 @@ function App() {
     modal.alert(conteudoModal, '⚠️ Notificação de Pendências');
   };
 
-  /**
-   * 🤖 INTELIGÊNCIA PREDITIVA E RAIO-X
-   */
   const abrirDetalhesCategoria = (nomeCategoria, valorGasto, valorMeta, tipoCategoria) => {
-    const transacoesMes = transacoes.filter(t => t.categoria === nomeCategoria && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
-    if (transacoesMes.length === 0) return;
-
-    const qtdLancamentos = transacoesMes.length;
+    const transacoesMesList = transacoes.filter(t => t.categoria === nomeCategoria && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
+    if (transacoesMesList.length === 0) return;
+    const qtdLancamentos = transacoesMesList.length;
     const mediaGasto = valorGasto / qtdLancamentos;
-    const maiorGasto = transacoesMes.reduce((max, t) => t.valorParcela > max.valorParcela ? t : max, transacoesMes[0]);
-    const menorGasto = transacoesMes.reduce((min, t) => t.valorParcela < min.valorParcela ? t : min, transacoesMes[0]);
-
+    const maiorGasto = transacoesMesList.reduce((max, t) => t.valorParcela > max.valorParcela ? t : max, transacoesMesList[0]);
+    const menorGasto = transacoesMesList.reduce((min, t) => t.valorParcela < min.valorParcela ? t : min, transacoesMesList[0]);
     const dataAtual = new Date();
     const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
-    let previsaoFimMes = valorGasto;
-    let analiseIA = "";
+    let previsaoFimMes = valorGasto; let analiseIA = "";
 
     if (dataVis.mes === dataAtual.getMonth() + 1 && dataVis.ano === dataAtual.getFullYear()) {
       const diaHoje = dataAtual.getDate();
       previsaoFimMes = (valorGasto / diaHoje) * diasNoMes;
-
       if (tipoCategoria === 'despesa' || tipoCategoria === 'Gasto' || tipoCategoria === 'gasto') {
         if (previsaoFimMes > valorMeta) analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, você deve fechar o mês em ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - valorMeta)}.`;
         else analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês em ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(valorMeta - previsaoFimMes)}.`;
       } else {
         if (previsaoFimMes < valorMeta) analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(valorMeta - previsaoFimMes)} para bater a sua meta.`;
-        else analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta em ${formatarMoeda(previsaoFimMes - valorMeta)}!`;
+        else analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a meta em ${formatarMoeda(previsaoFimMes - valorMeta)}!`;
       }
-    } else {
-      analiseIA = "Análise preditiva disponível apenas para o mês atual.";
-    }
+    } else { analiseIA = "Análise preditiva disponível apenas para o mês atual."; }
 
-    const conteudoModal = (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Atual vs Meta</p><p className="text-lg font-bold text-slate-800">{formatarMoeda(valorGasto)} <span className="text-xs text-slate-400 font-normal">/ {formatarMoeda(valorMeta)}</span></p></div>
-          <div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Média por Lançamento</p><p className="text-lg font-bold text-slate-800">{formatarMoeda(mediaGasto)} <span className="text-xs text-slate-400 font-normal">em {qtdLancamentos}x</span></p></div>
-        </div>
+    const handleAbrirCalendario = (e) => {
+      e.preventDefault(); e.stopPropagation(); modal.close();
+      setTimeout(() => {
+        modal.setConfig({ type: 'calendario', title: '📅 Ajuste de Uso da Biz 125', mes: dataVis.mes, ano: dataVis.ano, diasMarcados: diasNaoRodados, onToggle: async (dataStr) => { try { const res = await fetch(`${API}/garagem/dias-nao-rodados/toggle`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ data: dataStr }) }); if (res.ok) { const json = await res.json(); setDiasNaoRodados(prev => json.status === 'added' ? [...prev, dataStr] : prev.filter(d => d !== dataStr)); } } catch (err) { console.error('Erro ao salvar calendário', err); } }, onCancel: modal.close, onClose: modal.close });
+      }, 150);
+    };
 
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100"><p className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p><p className="text-sm text-blue-900 font-medium">{analiseIA}</p></div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-rose-50 p-3 rounded-lg border border-rose-100"><p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p><p className="text-sm font-bold text-rose-700">{formatarMoeda(maiorGasto.valorParcela)}</p><p className="text-[9px] text-rose-500 mt-1 truncate" title={maiorGasto.descricao}>{new Date(maiorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maiorGasto.descricao}</p></div>
-          <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100"><p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p><p className="text-sm font-bold text-emerald-700">{formatarMoeda(menorGasto.valorParcela)}</p><p className="text-[9px] text-emerald-500 mt-1 truncate" title={menorGasto.descricao}>{new Date(menorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menorGasto.descricao}</p></div>
-        </div>
-
-        {/* 🚀 BOTÃO DO CALENDÁRIO DA GARAGEM — FIX APLICADO! */}
-        {/* Usamos setConfig diretamente para não perder o escopo */}
-        {nomeCategoria === 'Gasolina' && nomeUsuario === 'stewart' && (
-          <button
-            onClick={() => {
-              modal.setConfig({
-                type: 'calendario',
-                title: '📅 Ajuste de Uso da Biz 125',
-                mes: dataVis.mes,
-                ano: dataVis.ano,
-                diasMarcados: diasNaoRodados,
-                onToggle: async (dataStr) => {
-                  try {
-                    const res = await fetch(`${API}/garagem/dias-nao-rodados/toggle`, {
-                      method: 'POST',
-                      headers: getHeaders(),
-                      body: JSON.stringify({ data: dataStr })
-                    });
-                    if (res.ok) {
-                      const json = await res.json();
-                      setDiasNaoRodados(prev => json.status === 'added' ? [...prev, dataStr] : prev.filter(d => d !== dataStr));
-                    }
-                  } catch (err) { console.error('Erro de conexão ao salvar calendário', err); }
-                },
-                onCancel: modal.close,
-                onClose: modal.close
-              });
-            }}
-            className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2"
-          >
-            <span className="text-xl">📅</span> Ajustar Dias Não Rodados (Reduzir Meta)
-          </button>
-        )}
-      </div>
-    );
+    const conteudoModal = (<div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Atual vs Meta</p><p className="text-lg font-bold text-slate-800">{formatarMoeda(valorGasto)} <span className="text-xs text-slate-400 font-normal">/ {formatarMoeda(valorMeta)}</span></p></div><div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Média por Lançamento</p><p className="text-lg font-bold text-slate-800">{formatarMoeda(mediaGasto)} <span className="text-xs text-slate-400 font-normal">em {qtdLancamentos}x</span></p></div></div><div className="bg-blue-50 p-4 rounded-lg border border-blue-100"><p className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p><p className="text-sm text-blue-900 font-medium">{analiseIA}</p></div><div className="grid grid-cols-2 gap-4"><div className="bg-rose-50 p-3 rounded-lg border border-rose-100"><p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p><p className="text-sm font-bold text-rose-700">{formatarMoeda(maiorGasto.valorParcela)}</p><p className="text-[9px] text-rose-500 mt-1 truncate" title={maiorGasto.descricao}>{new Date(maiorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maiorGasto.descricao}</p></div><div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100"><p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p><p className="text-sm font-bold text-emerald-700">{formatarMoeda(menorGasto.valorParcela)}</p><p className="text-[9px] text-emerald-500 mt-1 truncate" title={menorGasto.descricao}>{new Date(menorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menorGasto.descricao}</p></div></div>{nomeCategoria === 'Gasolina' && nomeUsuario === 'stewart' && (<button onClick={handleAbrirCalendario} className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2"><span className="text-xl">📅</span> Ajustar Dias Não Rodados (Reduzir Meta)</button>)}</div>);
     modal.alert(conteudoModal, `Raio-X: ${nomeCategoria}`);
   };
 
   const anexarComprovante = async (t) => {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*,application/pdf';
+    const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*,application/pdf';
     input.onchange = async (e) => {
-      const arquivo = e.target.files[0];
-      if (!arquivo) return;
-      if (arquivo.size > 10 * 1024 * 1024) { await modal.alert('Arquivo muito grande. Máximo: 10MB.', '❌ Erro'); return; }
+      const arquivo = e.target.files[0]; if (!arquivo) return;
+      if (arquivo.size > 10 * 1024 * 1024) { await modal.alert('Máximo: 10MB.', '❌ Erro'); return; }
       const formData = new FormData(); formData.append('arquivo', arquivo);
-      try {
-        const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-        const data = await res.json();
-        if (res.ok) { setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id } : tr)); await modal.alert('Comprovante anexado!', '✅ Sucesso'); }
-        else { await modal.alert(data.message || 'Erro.', '❌ Erro'); }
-      } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
+      try { const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData }); const data = await res.json(); if (res.ok) { setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id } : tr)); await modal.alert('Anexado com sucesso!', '✅ Sucesso'); } else { await modal.alert(data.message || 'Erro.', '❌ Erro'); } } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
     };
     input.click();
   };
 
   const removerComprovante = async (t) => {
-    const ok = await modal.confirm('Remover o comprovante?', '🗑️ Remover', { confirmLabel: 'Remover', confirmColor: 'bg-red-600 hover:bg-red-700' });
-    if (!ok) return;
-    try {
-      const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'DELETE', headers: getHeaders() });
-      if (res.ok) { setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: null, comprovante_public_id: null } : tr)); await modal.alert('Removido.', '✅ Removido'); }
-    } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
+    const ok = await modal.confirm('Remover o comprovante?', '🗑️ Remover', { confirmLabel: 'Remover', confirmColor: 'bg-red-600 hover:bg-red-700' }); if (!ok) return;
+    try { const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'DELETE', headers: getHeaders() }); if (res.ok) { setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: null, comprovante_public_id: null } : tr)); await modal.alert('Removido.', '✅ Removido'); } } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
   };
 
-  const verComprovante = (t) => {
-    const isPDF = t.comprovante_url && t.comprovante_url.includes('/raw/');
-    modal.setConfig({ type: 'comprovante', title: `📎 Comprovante — ${t.descricao}`, url: t.comprovante_url, isPDF, onCancel: modal.close, onClose: modal.close, onRemover: () => { modal.close(); removerComprovante(t); } });
-  };
+  const verComprovante = (t) => { const isPDF = t.comprovante_url && t.comprovante_url.includes('/raw/'); modal.setConfig({ type: 'comprovante', title: `📎 Comprovante — ${t.descricao}`, url: t.comprovante_url, isPDF, onCancel: modal.close, onClose: modal.close, onRemover: () => { modal.close(); removerComprovante(t); } }); };
 
-  const carregarUsuarios = async () => {
-    const res = await fetch(`${API}/admin/usuarios`, { headers: getHeaders() });
-    if (res.ok) setUsuarios(await res.json());
-  };
-  const criarUsuario = async (e) => {
-    e.preventDefault(); const fd = new FormData(e.target); const usuario = fd.get('usuario'); const is_admin = fd.get('is_admin') === 'on';
-    const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) });
-    const data = await res.json();
-    if (res.ok) { await modal.alert(data.message, '✅ Criado'); e.target.reset(); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro');
-  };
-  const deletarUsuario = async (id, nome) => {
-    const ok = await modal.confirm(`Deletar usuário "${nome}"?`, '🗑️ Deletar', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' });
-    if (!ok) return;
-    const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() });
-    if (res.ok) { await modal.alert(await res.json().message, '✅ Deletado'); carregarUsuarios(); }
-  };
-  const resetarSenha = async (id, nome) => {
-    const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' });
-    if (!ok) return;
-    const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() });
-    await modal.alert(await res.json().message, res.ok ? '✅ Resetada' : '❌ Erro');
-  };
-  const toggleAdmin = async (id, nomeU, atualIsAdmin) => {
-    const ok = await modal.confirm(`Alterar admin de "${nomeU}"?`, '⭐ Alterar', { confirmLabel: 'Confirmar' });
-    if (!ok) return;
-    const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() });
-    if (res.ok) carregarUsuarios(); else await modal.alert(await res.json().message, '❌ Erro');
-  };
+  const carregarUsuarios = async () => { const res = await fetch(`${API}/admin/usuarios`, { headers: getHeaders() }); if (res.ok) setUsuarios(await res.json()); };
+  const criarUsuario = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const usuario = fd.get('usuario'); const is_admin = fd.get('is_admin') === 'on'; const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) }); const data = await res.json(); if (res.ok) { await modal.alert(data.message, '✅ Criado'); e.target.reset(); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro'); };
+  const deletarUsuario = async (id, nome) => { const ok = await modal.confirm(`Deletar "${nome}"?`, '🗑️ Deletar', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() }); if (res.ok) { await modal.alert(await res.json().message, '✅ Deletado'); carregarUsuarios(); } };
+  const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar senha de "${nome}"?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); await modal.alert(await res.json().message, res.ok ? '✅ Resetada' : '❌ Erro'); };
+  const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const ok = await modal.confirm(`Alterar admin de "${nomeU}"?`, '⭐ Alterar', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); if (res.ok) carregarUsuarios(); else await modal.alert(await res.json().message, '❌ Erro'); };
 
-  if (!token && !precisaTrocarSenha) { return <Login fazerLogin={fazerLogin} usuarioLogin={usuarioLogin} setUsuarioLogin={setUsuarioLogin} senhaLogin={senhaLogin} setSenhaLogin={setSenhaLogin} erroLogin={erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} />; }
-  if (precisaTrocarSenha) { return <TrocaSenha enviarNovaSenha={enviarNovaSenha} novaSenha={novaSenha} setNovaSenha={setNovaSenha} confirmarSenha={confirmarSenha} setConfirmarSenha={setConfirmarSenha} erroTrocaSenha={erroTrocaSenha} fazerLogout={fazerLogout} />; }
-  if (telaAtiva === 'admin') { return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={criarUsuario} carregarUsuarios={carregarUsuarios} usuarios={usuarios} toggleAdmin={toggleAdmin} resetarSenha={resetarSenha} deletarUsuario={deletarUsuario} />; }
-  if (telaAtiva === 'setup') { return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} setCartoes={setCartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} setCategorias={setCategorias} addContaFixa={addContaFixa} contasFixas={contasFixas} setContasFixas={setContasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} setRendasFixas={setRendasFixas} getHeaders={getHeaders} />; }
-  if (telaAtiva === 'garagem') { return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={getHeaders} transacoes={transacoes} />; }
+  if (!token && !precisaTrocarSenha) return <Login fazerLogin={fazerLogin} usuarioLogin={usuarioLogin} setUsuarioLogin={setUsuarioLogin} senhaLogin={senhaLogin} setSenhaLogin={setSenhaLogin} erroLogin={erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} />;
+  if (precisaTrocarSenha) return <TrocaSenha enviarNovaSenha={enviarNovaSenha} novaSenha={novaSenha} setNovaSenha={setNovaSenha} confirmarSenha={confirmarSenha} setConfirmarSenha={setConfirmarSenha} erroTrocaSenha={erroTrocaSenha} fazerLogout={fazerLogout} />;
+  if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={criarUsuario} carregarUsuarios={carregarUsuarios} usuarios={usuarios} toggleAdmin={toggleAdmin} resetarSenha={resetarSenha} deletarUsuario={deletarUsuario} />;
+  if (telaAtiva === 'setup') return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} setCartoes={setCartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} setCategorias={setCategorias} addContaFixa={addContaFixa} contasFixas={contasFixas} setContasFixas={setContasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} setRendasFixas={setRendasFixas} getHeaders={getHeaders} />;
+  if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={getHeaders} transacoes={transacoes} />;
 
   return (
     <Dashboard
