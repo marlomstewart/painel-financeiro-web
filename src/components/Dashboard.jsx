@@ -73,18 +73,23 @@ export function Dashboard({
             <ModalComponent config={detalhesTransacao} onClose={() => setDetalhesTransacao(null)} />
             <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
 
-                <header className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
-                    <div><h1 className="text-xl md:text-2xl font-bold text-slate-900">Painel Financeiro</h1><p className="text-xs md:text-sm text-slate-500 font-medium capitalize">Olá, {nomeUsuario}! 👋</p></div>
-                    <div className="flex items-center gap-2 md:gap-4 mt-4 md:mt-0 bg-slate-50 px-4 py-2 rounded-lg border">
-                        <button onClick={mesAnterior} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold">◀</button>
-                        <span className="font-semibold text-slate-700 uppercase min-w-24 md:min-w-30 text-center text-xs md:text-base">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-                        <button onClick={mesProximo} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold">▶</button>
+                <header className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-xl shadow-sm border">
+                    <div className="flex-shrink-0">
+                        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Painel Financeiro</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 font-medium capitalize">Olá, {nomeUsuario}! 👋</p>
                     </div>
-                    <div className="flex gap-2 mt-4 md:mt-0 w-full md:w-auto">
-                        {isAdmin && (<button onClick={() => { setTelaAtiva('admin'); carregarUsuarios(); }} className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-purple-200 transition-colors flex-1 md:flex-none">👥 Usuários</button>)}
-                        {nomeUsuario === 'stewart' && (<button onClick={() => setTelaAtiva('garagem')} className="bg-orange-50 hover:bg-orange-100 text-orange-700 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-orange-200 transition-colors flex-1 md:flex-none">🏍️ Garagem</button>)}
-                        <button onClick={() => setTelaAtiva('setup')} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border transition-colors flex-1 md:flex-none">⚙ Config</button>
-                        <button onClick={fazerLogout} className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-xs md:text-sm font-medium border border-red-100 transition-colors flex-1 md:flex-none">Sair</button>
+
+                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 bg-slate-50 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg border order-3 lg:order-2 w-full lg:w-auto justify-center">
+                        <button onClick={mesAnterior} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold flex-shrink-0">◀</button>
+                        <span className="font-semibold text-slate-700 uppercase text-center text-[11px] sm:text-xs md:text-base whitespace-nowrap">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
+                        <button onClick={mesProximo} className="text-slate-400 hover:text-slate-700 text-lg md:text-xl font-bold flex-shrink-0">▶</button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 order-2 lg:order-3 justify-end flex-1 lg:flex-none">
+                        {isAdmin && (<button onClick={() => { setTelaAtiva('admin'); carregarUsuarios(); }} className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-purple-200 transition-colors whitespace-nowrap">👥 <span className="hidden sm:inline">Usuários</span></button>)}
+                        {nomeUsuario === 'stewart' && (<button onClick={() => setTelaAtiva('garagem')} className="bg-orange-50 hover:bg-orange-100 text-orange-700 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-orange-200 transition-colors whitespace-nowrap">🏍️ <span className="hidden sm:inline">Garagem</span></button>)}
+                        <button onClick={() => setTelaAtiva('setup')} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border transition-colors whitespace-nowrap">⚙ <span className="hidden sm:inline">Config</span></button>
+                        <button onClick={fazerLogout} className="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-red-100 transition-colors whitespace-nowrap">Sair</button>
                     </div>
                 </header>
 
