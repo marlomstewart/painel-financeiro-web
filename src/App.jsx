@@ -11,29 +11,16 @@ const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const API = 'https://painel-gestao-financeira-api.onrender.com/api';
 
-// =========================================================================
-// HOOK useModal — substitui window.alert, confirm e prompt
-// =========================================================================
+/**
+ * HOOK useModal — centraliza a chamada de janelas e alertas do sistema.
+ */
 function useModal() {
   const [config, setConfig] = useState(null);
-
   const close = useCallback(() => setConfig(null), []);
-
-  const alert = useCallback((message, title, opts = {}) =>
-    new Promise(resolve => setConfig({ type: 'alert', title, message, onConfirm: resolve, onClose: () => { setConfig(null); resolve(); }, ...opts })),
-    []);
-
-  const confirm = useCallback((message, title, opts = {}) =>
-    new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => resolve(true), onCancel: () => resolve(false), onClose: () => { setConfig(null); resolve(false); }, ...opts })),
-    []);
-
-  const prompt = useCallback((message, defaultValue = '', title, opts = {}) =>
-    new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
-    []);
-
-  const options = useCallback((message, opts_list, title, opts = {}) =>
-    new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })),
-    []);
+  const alert = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'alert', title, message, onConfirm: resolve, onClose: () => { setConfig(null); resolve(); }, ...opts })), []);
+  const confirm = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => resolve(true), onCancel: () => resolve(false), onClose: () => { setConfig(null); resolve(false); }, ...opts })), []);
+  const prompt = useCallback((message, defaultValue = '', title, opts = {}) => new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
+  const options = useCallback((message, opts_list, title, opts = {}) => new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
 
   return { config, close, setConfig, alert, confirm, prompt, options };
 }
@@ -75,13 +62,15 @@ function App() {
   const [rendasFixas, setRendasFixas] = useState([]);
   const [transacoes, setTransacoes] = useState([]);
   const [carregouAPI, setCarregouAPI] = useState(false);
+
+  // Estados Módulo Garagem
   const [veiculosGaragem, setVeiculosGaragem] = useState([]);
+  /** @estado diasNaoRodados: Controla as datas marcadas no calendário para reduzir a meta dinamicamente */
   const [diasNaoRodados, setDiasNaoRodados] = useState([]);
 
   const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
   const [gerandoMes, setGerandoMes] = useState(false);
 
-  // Modal
   const modal = useModal();
 
   const getHeaders = useCallback(() => ({
@@ -90,7 +79,7 @@ function App() {
   }), [token, tokenTemp]);
 
   // =========================================================================
-  // EFEITOS
+  // EFEITOS E SINCRONIZAÇÃO DA API
   // =========================================================================
   useEffect(() => {
     if (!token) return;
@@ -114,7 +103,7 @@ function App() {
         setRendasFixas(await resRF.json());
         setCarregouAPI(true);
 
-        // Carrega veículos e dias não rodados da Garagem somente para stewart
+        // Carrega veículos e os dias não rodados da Garagem somente para stewart
         if (nomeUsuario === 'stewart') {
           const resGar = await fetch(`${API}/garagem/veiculos`, { headers });
           if (resGar.ok) setVeiculosGaragem(await resGar.json());
@@ -221,7 +210,7 @@ function App() {
   };
 
   // =========================================================================
-  // LANÇAMENTOS
+  // LANÇAMENTOS E INTERCEPTAÇÃO DE GARAGEM
   // =========================================================================
   const addTransacao = async (e) => {
     e.preventDefault();
@@ -229,14 +218,11 @@ function App() {
     const d = fd.get('descricao'), v = Number(fd.get('valor')), dt = new Date(fd.get('dataCompra') + 'T00:00:00');
     let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
 
-    // Captura o KM se ele existir no formulário
     let km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
     let veiculo_id = null;
     let veiculo_emprestado = null;
 
-    // Se for categoria relacionada a veículo, pergunta qual veículo (próprios + convidados já cadastrados)
     if (nomeUsuario.toLowerCase() === 'stewart' && (c === 'Gasolina' || c === 'Manutenção da moto')) {
-      // Busca a lista mais atual de veículos direto do servidor (evita duplicados/sumidos por cache local)
       let listaAtual = veiculosGaragem;
       try {
         const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() });
@@ -257,12 +243,12 @@ function App() {
         return;
       }
       const idEscolhido = await modal.options('Qual veículo recebeu esse lançamento?', opcoesVeiculo, '🏍️ Selecionar Veículo');
-      if (!idEscolhido) return; // cancelou
+      if (!idEscolhido) return;
       const veiculoEscolhido = listaAtual.find(vc => vc.id === idEscolhido);
       veiculo_id = veiculoEscolhido.id;
       if (veiculoEscolhido.tipo === 'convidado') {
         veiculo_emprestado = veiculoEscolhido.modelo;
-        km_moto = null; // veículo convidado não rastreia km
+        km_moto = null;
       }
     }
 
@@ -287,15 +273,11 @@ function App() {
     setTransacoes([...transacoes, ...novasT]);
     e.target.reset();
 
-    // ✅ Verifica desgaste dos itens do veículo após lançar km (só veículos próprios)
     if (km_moto && veiculo_id && !veiculo_emprestado) {
       await verificarDesgasteVeiculo(veiculo_id, km_moto);
     }
   };
 
-  // =========================================================================
-  // VERIFICAÇÃO DE DESGASTE DO ODÔMETRO (após lançamento com KM)
-  // =========================================================================
   const verificarDesgasteVeiculo = async (veiculoId, kmAtual) => {
     try {
       const res = await fetch(`${API}/garagem/veiculos/${veiculoId}/itens`, { headers: getHeaders() });
@@ -308,11 +290,10 @@ function App() {
         const pct = (kmDesdeUltima / intervalo) * 100;
         const kmFaltando = Math.max(intervalo - kmDesdeUltima, 0);
         return { nome: item.nome, pct, kmFaltando };
-      }).filter(a => a.pct >= 60); // só considera itens com 60%+ de uso
+      }).filter(a => a.pct >= 60);
 
-      if (alertas.length === 0) return; // nada relevante pra mostrar
+      if (alertas.length === 0) return;
 
-      // Ordena do mais crítico para o menos crítico
       alertas.sort((a, b) => b.pct - a.pct);
 
       const linhas = alertas.map(a => {
@@ -325,9 +306,6 @@ function App() {
     } catch (err) { console.error('Erro ao verificar desgaste:', err); }
   };
 
-  // =========================================================================
-  // AÇÕES EM MASSA (BULK EDIT)
-  // =========================================================================
   const executarAcaoEmMassa = async (acao, ids) => {
     const confirmacao = await modal.confirm(
       `Tem certeza que deseja ${acao === 'excluir' ? 'excluir' : `marcar como ${acao.toUpperCase()}`} ${ids.length} lançamento(s)?`,
@@ -336,7 +314,6 @@ function App() {
     if (!confirmacao) return false;
 
     try {
-      // Faz todas as requisições ao servidor de uma vez só em paralelo
       const promessas = ids.map(id => {
         if (acao === 'excluir') {
           return fetch(`${API}/transacoes/${id}`, { method: 'DELETE', headers: getHeaders() });
@@ -348,13 +325,12 @@ function App() {
 
       await Promise.all(promessas);
 
-      // Atualiza o visual da tabela na hora
       if (acao === 'excluir') {
         setTransacoes(prev => prev.filter(tr => !ids.includes(tr.id)));
       } else {
         setTransacoes(prev => prev.map(tr => ids.includes(tr.id) ? { ...tr, status: acao } : tr));
       }
-      return true; // Sucesso
+      return true;
     } catch (err) {
       modal.alert('Ocorreu um erro de conexão ao tentar processar as alterações.', '❌ Erro');
       return false;
@@ -365,40 +341,17 @@ function App() {
     const cartao = cartoes.find(c => c.id === cartaoId);
     if (!cartao) return;
 
-    const confirmacao = await modal.confirm(
-      `Deseja marcar TODOS os lançamentos pendentes no cartão "${cartao.nome}" como PAGO?`,
-      '💳 Pagar Fatura'
-    );
+    const confirmacao = await modal.confirm(`Deseja marcar TODOS os lançamentos pendentes no cartão "${cartao.nome}" como PAGO?`, '💳 Pagar Fatura');
     if (!confirmacao) return;
 
-    // Filtra apenas o que é pendente e daquele cartão
-    const pendentes = transacoes.filter(t =>
-      t.status === 'pendente' &&
-      t.formaPagamento === `credito_${cartaoId}` &&
-      t.mesReferencia === dataVis.mes &&
-      t.anoReferencia === dataVis.ano
-    );
+    const pendentes = transacoes.filter(t => t.status === 'pendente' && t.formaPagamento === `credito_${cartaoId}` && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
 
     try {
-      const promessas = pendentes.map(t =>
-        fetch(`${API}/transacoes/${t.id}`, {
-          method: 'PUT',
-          headers: getHeaders(),
-          body: JSON.stringify({ status: 'pago', valorParcela: t.valorParcela, dataCompra: t.dataCompra })
-        })
-      );
-
+      const promessas = pendentes.map(t => fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago', valorParcela: t.valorParcela, dataCompra: t.dataCompra }) }));
       await Promise.all(promessas);
-
-      // Atualiza o estado global
-      setTransacoes(prev => prev.map(t =>
-        pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago' } : t
-      ));
-
+      setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago' } : t));
       modal.alert('Fatura marcada como paga com sucesso!', '✅ Concluído');
-    } catch (err) {
-      modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro');
-    }
+    } catch (err) { modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro'); }
   };
 
   const reverterFaturaCartao = async (cartaoId) => {
@@ -454,118 +407,62 @@ function App() {
   };
 
   const alternarStatusTransacao = async (id, statusAtual, valorParcela, dataCompra) => {
-    // Abre o modal de opções com os dois botões explícitos
     const opcaoEscolhida = await modal.options(
       `Status atual: ${statusAtual.toUpperCase()}\n\nEscolha o status correto para este lançamento:`,
-      [
-        { value: 'pago', icon: '✔', label: 'Marcar como PAGO' },
-        { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }
-      ],
+      [{ value: 'pago', icon: '✔', label: 'Marcar como PAGO' }, { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }],
       '🔄 Alterar Status'
     );
 
-    // Se o usuário clicar fora (cancelar) ou escolher o mesmo status que já estava
     if (!opcaoEscolhida || opcaoEscolhida === statusAtual) return;
 
     try {
       await fetch(`${API}/transacoes/${id}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify({ status: opcaoEscolhida, valorParcela, dataCompra })
+        method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: opcaoEscolhida, valorParcela, dataCompra })
       });
-
-      // Atualiza a tela instantaneamente
       setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: opcaoEscolhida } : t));
-    } catch (err) {
-      modal.alert('Erro de conexão ao tentar alterar o status.', '❌ Erro');
-    }
+    } catch (err) { modal.alert('Erro de conexão ao tentar alterar o status.', '❌ Erro'); }
   };
 
-  // =========================================================================
-  // EDIÇÃO INTELIGENTE
-  // =========================================================================
   const editarValor = async (t) => {
-    // 1️⃣ Novo Valor
-    const nV = await modal.prompt(
-      `Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`,
-      String(t.valorParcela),
-      '✏️ Editar Valor',
-      { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' }
-    );
+    const nV = await modal.prompt(`Editando: ${t.descricao}\n\n1️⃣ Qual o novo VALOR?`, String(t.valorParcela), '✏️ Editar Valor', { inputType: 'number', placeholder: '0.00', confirmLabel: 'Próximo' });
     if (nV === null) return;
     const novoValor = Number(String(nV).replace(',', '.'));
     if (isNaN(novoValor)) return modal.alert('Valor inválido digitado.', '❌ Erro');
 
-    // 2️⃣ Nova Data
     const dataString = String(t.dataCompra).split('T')[0];
     const [ano, mes, dia] = dataString.split('-');
-    const dataFormatadaBR = `${dia}/${mes}/${ano}`;
-    const nD = await modal.prompt(
-      `2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`,
-      dataFormatadaBR,
-      '📅 Editar Data',
-      { confirmLabel: 'Próximo' }
-    );
+    const nD = await modal.prompt(`2️⃣ Qual a nova DATA?\n(Formato: DD/MM/AAAA)`, `${dia}/${mes}/${ano}`, '📅 Editar Data', { confirmLabel: 'Próximo' });
     if (nD === null) return;
     const partesData = nD.split('/');
     if (partesData.length !== 3) return modal.alert('Formato de data inválido. Use DD/MM/AAAA.', '❌ Erro');
     const novaDataStr = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
 
-    // 3️⃣ Nova Categoria
     const opcoesCategoria = [
-      { value: 'Sem Categoria', icon: '🏷️', label: 'Sem Categoria' },
-      { value: 'Contas Fixas', icon: '📅', label: 'Contas Fixas' },
-      { value: 'Renda Fixa', icon: '💰', label: 'Renda Fixa' },
-      { value: 'Renda', icon: '💵', label: 'Renda Variável' },
+      { value: 'Sem Categoria', icon: '🏷️', label: 'Sem Categoria' }, { value: 'Contas Fixas', icon: '📅', label: 'Contas Fixas' }, { value: 'Renda Fixa', icon: '💰', label: 'Renda Fixa' }, { value: 'Renda', icon: '💵', label: 'Renda Variável' },
       ...categorias.map(c => ({ value: c.nome, icon: c.tipo === 'investimento' ? '📈' : '💸', label: c.nome }))
     ];
-    const nCat = await modal.options(
-      `3️⃣ Qual a CATEGORIA?\n\nAtual: ${t.categoria}`,
-      opcoesCategoria,
-      '🏷️ Editar Categoria'
-    );
+    const nCat = await modal.options(`3️⃣ Qual a CATEGORIA?\n\nAtual: ${t.categoria}`, opcoesCategoria, '🏷️ Editar Categoria');
     if (!nCat) return;
 
-    // 4️⃣ Status
-    const nS = await modal.options(
-      `4️⃣ Qual o STATUS atualizado?\n\nAtual: ${t.status.toUpperCase()}`,
-      [
-        { value: 'pago', icon: '✔', label: 'Marcar como PAGO' },
-        { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }
-      ],
-      '🔄 Editar Status'
-    );
+    const nS = await modal.options(`4️⃣ Qual o STATUS atualizado?\n\nAtual: ${t.status.toUpperCase()}`, [{ value: 'pago', icon: '✔', label: 'Marcar como PAGO' }, { value: 'pendente', icon: '⏳', label: 'Marcar como PENDENTE' }], '🔄 Editar Status');
     if (!nS) return;
 
-    // 5️⃣ Salva no banco
     try {
-      await fetch(`${API}/transacoes/${t.id}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr, categoria: nCat })
-      });
+      await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr, categoria: nCat }) });
       setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS, categoria: nCat } : tr));
-    } catch (err) {
-      modal.alert('Ocorreu um erro ao atualizar os dados.', '❌ Erro');
-    }
+    } catch (err) { modal.alert('Ocorreu um erro ao atualizar.', '❌ Erro'); }
   };
-
-  // =========================================================================
-  // FATURAS POR CARTÃO
-  // =========================================================================
-
 
   const verFaturasPorCartao = () => {
     const porCartao = {};
-    const cartaoIds = {}; // Mapeamento necessário para o botão funcionar
+    const cartaoIds = {};
 
     transacoesMes.forEach(t => {
       if (t.formaPagamento && t.formaPagamento.startsWith('credito_')) {
         const cartaoId = t.formaPagamento.split('_')[1];
         const cartao = cartoes.find(c => c.id === cartaoId);
         const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
-
-        if (cartao) cartaoIds[nome] = cartao.id; // Vincula o nome ao ID
+        if (cartao) cartaoIds[nome] = cartao.id;
 
         if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
         porCartao[nome].total += Number(t.valorParcela);
@@ -575,125 +472,35 @@ function App() {
     });
 
     const itens = Object.entries(porCartao).map(([nome, v]) => ({ nome, ...v }));
-
-    modal.setConfig({
-      type: 'faturas',
-      title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
-      itens,
-      cartaoIds, // Enviando o mapa de IDs para o Modal
-      pagarFatura: pagarFaturaCartao, // Enviando a função de pagamento
-      reverterFatura: reverterFaturaCartao,
-      onCancel: modal.close,
-      onClose: modal.close,
-    });
+    modal.setConfig({ type: 'faturas', title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`, itens, cartaoIds, pagarFatura: pagarFaturaCartao, reverterFatura: reverterFaturaCartao, onCancel: modal.close, onClose: modal.close });
   };
 
-  // =========================================================================
-  // RESUMO INTELIGENTE DOS CARDS
-  // =========================================================================
   const abrirResumoCard = (tipo) => {
-    let titulo = '';
-    let conteudo = null;
-
+    let titulo = ''; let conteudo = null;
     if (tipo === 'rendas') {
       titulo = '💰 Detalhamento de Rendas';
       const rendasMes = transacoesMes.filter(t => t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa');
-      conteudo = (
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-          {rendasMes.length === 0 ? <p className="text-sm text-slate-500">Nenhuma renda neste mês.</p> : rendasMes.map(t => (
-            <div key={t.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
-              <span className="text-sm font-bold text-slate-700">{t.descricao}</span>
-              <div className="text-right">
-                <span className="text-sm font-bold text-emerald-700 block">{formatarMoeda(t.valorParcela)}</span>
-                <span className={`text-[10px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+      conteudo = (<div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">{rendasMes.length === 0 ? <p className="text-sm text-slate-500">Nenhuma renda neste mês.</p> : rendasMes.map(t => (<div key={t.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border"><span className="text-sm font-bold text-slate-700">{t.descricao}</span><div className="text-right"><span className="text-sm font-bold text-emerald-700 block">{formatarMoeda(t.valorParcela)}</span><span className={`text-[10px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span></div></div>))}</div>);
     } else if (tipo === 'gastos') {
       titulo = '💸 Gastos por Categoria';
       const gastosPorCat = {};
-      transacoesMes.forEach(t => {
-        if (t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento') {
-          const cat = t.categoria || 'Sem Categoria';
-          if (!gastosPorCat[cat]) gastosPorCat[cat] = { total: 0, itens: [] };
-          gastosPorCat[cat].total += Number(t.valorParcela);
-          gastosPorCat[cat].itens.push(t);
-        }
-      });
-
+      transacoesMes.forEach(t => { if (t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento') { const cat = t.categoria || 'Sem Categoria'; if (!gastosPorCat[cat]) gastosPorCat[cat] = { total: 0, itens: [] }; gastosPorCat[cat].total += Number(t.valorParcela); gastosPorCat[cat].itens.push(t); } });
       const listaGastos = Object.entries(gastosPorCat).sort((a, b) => b[1].total - a[1].total);
-
-      conteudo = (
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-          <p className="text-[10px] text-slate-400 mb-2">Clique na categoria para ver os lançamentos.</p>
-          {listaGastos.length === 0 ? <p className="text-sm text-slate-500">Nenhum gasto neste mês.</p> : listaGastos.map(([cat, dados], i) => (
-            <details key={i} className="bg-slate-50 rounded-lg border group">
-              <summary className="flex justify-between items-center p-3 cursor-pointer list-none hover:bg-slate-100 transition-colors">
-                <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><span className="text-xs transition-transform group-open:rotate-90">▶</span> {cat}</span>
-                <span className="text-sm font-bold text-red-600">{formatarMoeda(dados.total)}</span>
-              </summary>
-              <div className="p-3 pt-0 space-y-2 border-t border-slate-200 mt-1">
-                {dados.itens.map(t => (
-                  <div key={t.id} className="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100 shadow-sm">
-                    <span className="text-xs font-medium text-slate-600 truncate pr-2">{t.descricao}</span>
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-slate-800 block">{formatarMoeda(t.valorParcela)}</span>
-                      <span className={`text-[9px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </details>
-          ))}
-        </div>
-      );
+      conteudo = (<div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2"><p className="text-[10px] text-slate-400 mb-2">Clique na categoria para ver os lançamentos.</p>{listaGastos.map(([cat, dados], i) => (<details key={i} className="bg-slate-50 rounded-lg border group"><summary className="flex justify-between items-center p-3 cursor-pointer list-none hover:bg-slate-100 transition-colors"><span className="text-sm font-bold text-slate-700 flex items-center gap-2"><span className="text-xs transition-transform group-open:rotate-90">▶</span> {cat}</span><span className="text-sm font-bold text-red-600">{formatarMoeda(dados.total)}</span></summary><div className="p-3 pt-0 space-y-2 border-t border-slate-200 mt-1">{dados.itens.map(t => (<div key={t.id} className="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100 shadow-sm"><span className="text-xs font-medium text-slate-600 truncate pr-2">{t.descricao}</span><div className="text-right"><span className="text-xs font-bold text-slate-800 block">{formatarMoeda(t.valorParcela)}</span><span className={`text-[9px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span></div></div>))}</div></details>))}</div>);
     } else if (tipo === 'investimentos') {
       titulo = '📈 Detalhamento de Investimentos';
       const invMes = transacoesMes.filter(t => t.tipo === 'investimento');
-      conteudo = (
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-          {invMes.length === 0 ? <p className="text-sm text-slate-500">Nenhum investimento neste mês.</p> : invMes.map(t => (
-            <div key={t.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
-              <span className="text-sm font-bold text-slate-700">{t.descricao}</span>
-              <div className="text-right">
-                <span className="text-sm font-bold text-blue-700 block">{formatarMoeda(t.valorParcela)}</span>
-                <span className={`text-[10px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+      conteudo = (<div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">{invMes.length === 0 ? <p className="text-sm text-slate-500">Nenhum investimento.</p> : invMes.map(t => (<div key={t.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border"><span className="text-sm font-bold text-slate-700">{t.descricao}</span><div className="text-right"><span className="text-sm font-bold text-blue-700 block">{formatarMoeda(t.valorParcela)}</span><span className={`text-[10px] uppercase font-bold ${t.status === 'pago' ? 'text-emerald-500' : 'text-amber-500'}`}>{t.status}</span></div></div>))}</div>);
     } else if (tipo === 'saldo') {
       titulo = '⚖️ Matemática do Saldo';
-      conteudo = (
-        <div className="space-y-3">
-          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 flex justify-between"><span className="text-sm">Rendas Pagas no Mês:</span><span className="font-bold">+{formatarMoeda(totRendaPaga)}</span></div>
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 flex justify-between"><span className="text-sm">Gastos Pagos no Mês:</span><span className="font-bold">-{formatarMoeda(totGastoPago)}</span></div>
-          <div className="bg-slate-100 text-slate-700 p-3 rounded-lg border flex justify-between"><span className="text-sm font-bold">Resultado do Mês:</span><span className="font-bold">{formatarMoeda(saldoMesAtual)}</span></div>
-          {somarSaldoAnterior && <div className="bg-indigo-50 text-indigo-700 p-3 rounded-lg border border-indigo-200 flex justify-between"><span className="text-sm">Saldo Rolado Anterior:</span><span className="font-bold">{saldoMesAnterior >= 0 ? '+' : ''}{formatarMoeda(saldoMesAnterior)}</span></div>}
-          <div className="bg-slate-800 text-white p-4 rounded-lg shadow-md flex justify-between text-base"><span>Saldo Final em Conta:</span><span className="font-bold">{formatarMoeda(saldoAtual)}</span></div>
-        </div>
-      );
+      conteudo = (<div className="space-y-3"><div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 flex justify-between"><span className="text-sm">Rendas Pagas no Mês:</span><span className="font-bold">+{formatarMoeda(totRendaPaga)}</span></div><div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 flex justify-between"><span className="text-sm">Gastos Pagos no Mês:</span><span className="font-bold">-{formatarMoeda(totGastoPago)}</span></div><div className="bg-slate-100 text-slate-700 p-3 rounded-lg border flex justify-between"><span className="text-sm font-bold">Resultado do Mês:</span><span className="font-bold">{formatarMoeda(saldoMesAtual)}</span></div>{somarSaldoAnterior && <div className="bg-indigo-50 text-indigo-700 p-3 rounded-lg border border-indigo-200 flex justify-between"><span className="text-sm">Saldo Rolado Anterior:</span><span className="font-bold">{saldoMesAnterior >= 0 ? '+' : ''}{formatarMoeda(saldoMesAnterior)}</span></div>}<div className="bg-slate-800 text-white p-4 rounded-lg shadow-md flex justify-between text-base"><span>Saldo Final em Conta:</span><span className="font-bold">{formatarMoeda(saldoAtual)}</span></div></div>);
     } else if (tipo === 'previsao') {
       titulo = '🔮 Matemática da Previsão';
-      conteudo = (
-        <div className="space-y-3">
-          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 flex justify-between items-center"><span className="text-sm">Total de Rendas (Pagas + Pendentes):</span><span className="font-bold">+{formatarMoeda(totRendaTotal)}</span></div>
-          <div className="bg-amber-50 text-amber-700 p-3 rounded-lg border border-amber-200 flex justify-between items-center"><span className="text-sm">Custo Previsto (Metas + Fixas):</span><span className="font-bold">-{formatarMoeda(custoPrevisto)}</span></div>
-          <p className="text-[10px] text-slate-500 mt-1 mb-2 leading-tight">O custo previsto soma suas Contas Fixas, Gastos sem Categoria e o <b>maior valor</b> entre o que você já gastou ou a Meta de cada categoria.</p>
-          {somarSaldoAnterior && <div className="bg-indigo-50 text-indigo-700 p-3 rounded-lg border border-indigo-200 flex justify-between"><span className="text-sm">Saldo Rolado Anterior:</span><span className="font-bold">{saldoMesAnterior >= 0 ? '+' : ''}{formatarMoeda(saldoMesAnterior)}</span></div>}
-          <div className="bg-white border-2 border-amber-400 p-4 rounded-lg shadow-sm flex justify-between text-base"><span className="font-bold text-slate-700">Previsão de Sobra Final:</span><span className="font-bold text-amber-600">{formatarMoeda(previstoFimMes)}</span></div>
-        </div>
-      );
+      conteudo = (<div className="space-y-3"><div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 flex justify-between items-center"><span className="text-sm">Total Rendas (Pagas+Pendentes):</span><span className="font-bold">+{formatarMoeda(totRendaTotal)}</span></div><div className="bg-amber-50 text-amber-700 p-3 rounded-lg border border-amber-200 flex justify-between items-center"><span className="text-sm">Custo Previsto (Metas + Fixas):</span><span className="font-bold">-{formatarMoeda(custoPrevisto)}</span></div><p className="text-[10px] text-slate-500 mt-1 mb-2 leading-tight">Custo previsto soma Contas Fixas, Gastos sem Categoria e o <b>maior valor</b> entre gasto ou a Meta de cada categoria.</p>{somarSaldoAnterior && <div className="bg-indigo-50 text-indigo-700 p-3 rounded-lg border border-indigo-200 flex justify-between"><span className="text-sm">Saldo Rolado Anterior:</span><span className="font-bold">{saldoMesAnterior >= 0 ? '+' : ''}{formatarMoeda(saldoMesAnterior)}</span></div>}<div className="bg-white border-2 border-amber-400 p-4 rounded-lg shadow-sm flex justify-between text-base"><span className="font-bold text-slate-700">Previsão de Sobra Final:</span><span className="font-bold text-amber-600">{formatarMoeda(previstoFimMes)}</span></div></div>);
     }
     modal.alert(conteudo, titulo);
   };
 
-  // =========================================================================
-  // CÁLCULOS DO DASHBOARD
-  // =========================================================================
   const mesAnterior = () => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 });
   const mesProximo = () => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 });
 
@@ -773,9 +580,11 @@ function App() {
     }
   });
 
-  // =========================================================================
-  // METAS DINÂMICAS (Gasolina)
-  // =========================================================================
+  /**
+   * 🤖 METAS DINÂMICAS: 
+   * Calcula a meta de gasolina baseada nos dias úteis rodados (Seg, Qua, Sex).
+   * Desconta os dias que constam no estado diasNaoRodados (Trazidos do banco)
+   */
   const calcularMetaGasolina = (mes, ano) => {
     let diasDeAbastecimento = 0;
     const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
@@ -783,10 +592,9 @@ function App() {
       const dataAtual = new Date(ano, mes - 1, dia);
       const diaDaSemana = dataAtual.getDay();
 
-      // Formata a data para YYYY-MM-DD para comparar com o banco
       const dataString = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 
-      // Conta o dia APENAS se for Seg/Qua/Sex E não estiver marcado como falta
+      // Conta o dia APENAS se for Seg/Qua/Sex E não estiver marcado como "não rodado"
       if ((diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) && !diasNaoRodados.includes(dataString)) {
         diasDeAbastecimento++;
       }
@@ -807,42 +615,27 @@ function App() {
   const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
   const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
 
-  // =========================================================================
-  // MÓDULO AUTOMOTIVO (Moto Biz 125) - Apenas para 'stewart'
-  // =========================================================================
   let alertaMoto = null;
   if (nomeUsuario.toLowerCase() === 'stewart') {
     const transacoesComKm = transacoes.filter(t => t.kmMoto).sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra));
-
     if (transacoesComKm.length > 0) {
       const kmAtual = Number(transacoesComKm[0].kmMoto);
       const ultimaTroca = transacoesComKm.find(t => t.categoria === 'Manutenção da moto' && t.descricao.toLowerCase().includes('leo'));
       const kmUltimaTroca = ultimaTroca ? Number(ultimaTroca.kmMoto) : kmAtual;
-
       const kmRodados = kmAtual - kmUltimaTroca;
       const limiteTrocaOleo = 1000;
       const kmFaltantes = limiteTrocaOleo - kmRodados;
 
-      alertaMoto = {
-        kmAtual,
-        kmFaltantes,
-        alertaCritico: kmFaltantes <= 150
-      };
+      alertaMoto = { kmAtual, kmFaltantes, alertaCritico: kmFaltantes <= 150 };
     }
   }
 
-  // =========================================================================
-  // RASTREIO E ROLAGEM DE PENDÊNCIAS ANTERIORES (CORRIGIDO: TEMPO REAL)
-  // =========================================================================
-  // Agora o sistema olha para o relógio real do mundo (Hoje)
   const dataHoje = new Date();
   const mesReal = dataHoje.getMonth() + 1;
   const anoReal = dataHoje.getFullYear();
 
   const pendenciasPassadas = transacoes.filter(t => {
     if (t.status !== 'pendente') return false;
-
-    // Compara com o TEMPO REAL, não com a tela que está aberta
     if (t.anoReferencia < anoReal) return true;
     if (t.anoReferencia === anoReal && t.mesReferencia < mesReal) return true;
     return false;
@@ -851,103 +644,53 @@ function App() {
   const processarRolagemPendencias = async () => {
     try {
       const promessas = pendenciasPassadas.flatMap((t, index) => {
-        // 1. Marca a antiga como 'transferido'
-        const reqUpdate = fetch(`${API}/transacoes/${t.id}`, {
-          method: 'PUT',
-          headers: getHeaders(),
-          body: JSON.stringify({ status: 'transferido', valorParcela: t.valorParcela })
-        });
-
-        // 2. Clona a transação para o MÊS REAL ATUAL, independente da tela
+        const reqUpdate = fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'transferido', valorParcela: t.valorParcela }) });
         const reqCreate = fetch(`${API}/transacoes`, {
-          method: 'POST',
-          headers: getHeaders(),
+          method: 'POST', headers: getHeaders(),
           body: JSON.stringify({
-            id: (Date.now() + index).toString(),
-            descricao: `[Pendência de ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`,
-            categoria: t.categoria,
-            valorParcela: t.valorParcela,
-            dataCompra: new Date(anoReal, mesReal - 1, dataHoje.getDate()).toISOString(),
-            tipo: t.tipo,
-            formaPagamento: t.formaPagamento,
-            status: 'pendente',
-            mesReferencia: mesReal, // Força a ida para o mês atual real
-            anoReferencia: anoReal,
-            kmMoto: t.kmMoto || null,
-            grupo_id: null // Quebra o vínculo se era uma compra parcelada
+            id: (Date.now() + index).toString(), descricao: `[Pendência de ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`, categoria: t.categoria, valorParcela: t.valorParcela, dataCompra: new Date(anoReal, mesReal - 1, dataHoje.getDate()).toISOString(), tipo: t.tipo, formaPagamento: t.formaPagamento, status: 'pendente', mesReferencia: mesReal, anoReferencia: anoReal, kmMoto: t.kmMoto || null, grupo_id: null
           })
         });
-
         return [reqUpdate, reqCreate];
       });
 
       await Promise.all(promessas);
-
-      // Recarrega o banco e JOGA a tela para o mês atual para você ver a mágica
       const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
       if (resT.ok) {
         setTransacoes(await resT.json());
-        setDataVis({ mes: mesReal, ano: anoReal }); // Muda o painel para Junho
+        setDataVis({ mes: mesReal, ano: anoReal });
         modal.alert(`As pendências foram movidas para ${nomesMeses[mesReal - 1]} com sucesso!`, '✅ Rolagem Concluída');
       }
-    } catch (err) {
-      modal.alert('Erro de conexão ao tentar importar pendências.', '❌ Erro');
-    }
+    } catch (err) { modal.alert('Erro de conexão ao tentar importar pendências.', '❌ Erro'); }
   };
 
   const abrirModalPendencias = () => {
     const conteudoModal = (
       <div className="space-y-3">
-        <p className="text-sm text-slate-600 mb-4">
-          Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) que ficaram pendentes nos meses anteriores. Deseja trazê-los para o mês atual ({nomesMeses[mesReal - 1]})?
-        </p>
+        <p className="text-sm text-slate-600 mb-4">Você tem <b>{pendenciasPassadas.length}</b> lançamento(s) que ficaram pendentes nos meses anteriores. Deseja trazê-los para o mês atual ({nomesMeses[mesReal - 1]})?</p>
         <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
-          {pendenciasPassadas.map(t => (
-            <div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between items-center shadow-sm">
-              <div className="truncate pr-2">
-                <p className="text-xs font-bold text-rose-800 truncate">{t.descricao}</p>
-                <p className="text-[10px] text-rose-500 uppercase font-medium mt-1">{nomesMeses[t.mesReferencia - 1]} • {t.categoria}</p>
-              </div>
-              <span className="font-bold text-rose-700 text-sm whitespace-nowrap">{formatarMoeda(t.valorParcela)}</span>
-            </div>
-          ))}
+          {pendenciasPassadas.map(t => (<div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between items-center shadow-sm"><div className="truncate pr-2"><p className="text-xs font-bold text-rose-800 truncate">{t.descricao}</p><p className="text-[10px] text-rose-500 uppercase font-medium mt-1">{nomesMeses[t.mesReferencia - 1]} • {t.categoria}</p></div><span className="font-bold text-rose-700 text-sm whitespace-nowrap">{formatarMoeda(t.valorParcela)}</span></div>))}
         </div>
-        <button
-          onClick={() => { modal.close(); processarRolagemPendencias(); }}
-          className="w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg shadow transition-colors"
-        >
-          Importar para {nomesMeses[mesReal - 1]}
-        </button>
+        <button onClick={() => { modal.close(); processarRolagemPendencias(); }} className="w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg shadow transition-colors">Importar para {nomesMeses[mesReal - 1]}</button>
       </div>
     );
-
     modal.alert(conteudoModal, '⚠️ Notificação de Pendências');
   };
 
-  // =========================================================================
-  // INTELIGÊNCIA PREDITIVA E RAIO-X DE CATEGORIA
-  // =========================================================================
-  // Adicionamos o "tipoCategoria" aqui na primeira linha!
+  /**
+   * 🤖 INTELIGÊNCIA PREDITIVA E RAIO-X
+   */
   const abrirDetalhesCategoria = (nomeCategoria, valorGasto, valorMeta, tipoCategoria) => {
-
-    const transacoesMes = transacoes.filter(t =>
-      t.categoria === nomeCategoria &&
-      t.mesReferencia === dataVis.mes &&
-      t.anoReferencia === dataVis.ano
-    );
-
+    const transacoesMes = transacoes.filter(t => t.categoria === nomeCategoria && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
     if (transacoesMes.length === 0) return;
 
     const qtdLancamentos = transacoesMes.length;
     const mediaGasto = valorGasto / qtdLancamentos;
-
     const maiorGasto = transacoesMes.reduce((max, t) => t.valorParcela > max.valorParcela ? t : max, transacoesMes[0]);
     const menorGasto = transacoesMes.reduce((min, t) => t.valorParcela < min.valorParcela ? t : min, transacoesMes[0]);
 
-    // 4. Inteligência Preditiva BIFURCADA (Despesa vs Investimento)
     const dataAtual = new Date();
     const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
-
     let previsaoFimMes = valorGasto;
     let analiseIA = "";
 
@@ -955,64 +698,58 @@ function App() {
       const diaHoje = dataAtual.getDate();
       previsaoFimMes = (valorGasto / diaHoje) * diasNoMes;
 
-      // O Sistema agora pergunta: É uma despesa (Gasto) ou é um investimento?
       if (tipoCategoria === 'despesa' || tipoCategoria === 'Gasto' || tipoCategoria === 'gasto') {
-        // LÓGICA DE DESPESA (Gastar menos é bom)
-        if (previsaoFimMes > valorMeta) {
-          analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, você deve fechar o mês em ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - valorMeta)}.`;
-        } else {
-          analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês em ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(valorMeta - previsaoFimMes)}.`;
-        }
+        if (previsaoFimMes > valorMeta) analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, você deve fechar o mês em ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - valorMeta)}.`;
+        else analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês em ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(valorMeta - previsaoFimMes)}.`;
       } else {
-        // LÓGICA DE INVESTIMENTO / SONHO (Investir mais é bom)
-        if (previsaoFimMes < valorMeta) {
-          analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(valorMeta - previsaoFimMes)} para bater a sua meta.`;
-        } else {
-          analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta em ${formatarMoeda(previsaoFimMes - valorMeta)}!`;
-        }
+        if (previsaoFimMes < valorMeta) analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(valorMeta - previsaoFimMes)} para bater a sua meta.`;
+        else analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta em ${formatarMoeda(previsaoFimMes - valorMeta)}!`;
       }
     } else {
       analiseIA = "Análise preditiva disponível apenas para o mês atual.";
     }
 
-    // 5. Monta a tela do Modal (Continua igual)
     const conteudoModal = (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-slate-50 p-3 rounded-lg border">
-            <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Atual vs Meta</p>
-            <p className="text-lg font-bold text-slate-800">{formatarMoeda(valorGasto)} <span className="text-xs text-slate-400 font-normal">/ {formatarMoeda(valorMeta)}</span></p>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border">
-            <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Média por Lançamento</p>
-            <p className="text-lg font-bold text-slate-800">{formatarMoeda(mediaGasto)} <span className="text-xs text-slate-400 font-normal">em {qtdLancamentos}x</span></p>
-          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Atual vs Meta</p><p className="text-lg font-bold text-slate-800">{formatarMoeda(valorGasto)} <span className="text-xs text-slate-400 font-normal">/ {formatarMoeda(valorMeta)}</span></p></div>
+          <div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Média por Lançamento</p><p className="text-lg font-bold text-slate-800">{formatarMoeda(mediaGasto)} <span className="text-xs text-slate-400 font-normal">em {qtdLancamentos}x</span></p></div>
         </div>
 
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <p className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p>
-          <p className="text-sm text-blue-900 font-medium">{analiseIA}</p>
-        </div>
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100"><p className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p><p className="text-sm text-blue-900 font-medium">{analiseIA}</p></div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-rose-50 p-3 rounded-lg border border-rose-100">
-            <p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p>
-            <p className="text-sm font-bold text-rose-700">{formatarMoeda(maiorGasto.valorParcela)}</p>
-            <p className="text-[9px] text-rose-500 mt-1 truncate" title={maiorGasto.descricao}>{new Date(maiorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maiorGasto.descricao}</p>
-          </div>
-          <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-            <p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p>
-            <p className="text-sm font-bold text-emerald-700">{formatarMoeda(menorGasto.valorParcela)}</p>
-            <p className="text-[9px] text-emerald-500 mt-1 truncate" title={menorGasto.descricao}>{new Date(menorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menorGasto.descricao}</p>
-          </div>
+          <div className="bg-rose-50 p-3 rounded-lg border border-rose-100"><p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p><p className="text-sm font-bold text-rose-700">{formatarMoeda(maiorGasto.valorParcela)}</p><p className="text-[9px] text-rose-500 mt-1 truncate" title={maiorGasto.descricao}>{new Date(maiorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maiorGasto.descricao}</p></div>
+          <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100"><p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p><p className="text-sm font-bold text-emerald-700">{formatarMoeda(menorGasto.valorParcela)}</p><p className="text-[9px] text-emerald-500 mt-1 truncate" title={menorGasto.descricao}>{new Date(menorGasto.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menorGasto.descricao}</p></div>
         </div>
 
-        {/* 🚀 BOTÃO DO CALENDÁRIO DA GARAGEM */}
+        {/* 🚀 BOTÃO DO CALENDÁRIO DA GARAGEM — FIX APLICADO! */}
+        {/* Usamos setConfig diretamente para não perder o escopo */}
         {nomeCategoria === 'Gasolina' && nomeUsuario === 'stewart' && (
           <button
             onClick={() => {
-              modal.close();
-              setTimeout(() => abrirModalCalendarioGasolina(), 300);
+              modal.setConfig({
+                type: 'calendario',
+                title: '📅 Ajuste de Uso da Biz 125',
+                mes: dataVis.mes,
+                ano: dataVis.ano,
+                diasMarcados: diasNaoRodados,
+                onToggle: async (dataStr) => {
+                  try {
+                    const res = await fetch(`${API}/garagem/dias-nao-rodados/toggle`, {
+                      method: 'POST',
+                      headers: getHeaders(),
+                      body: JSON.stringify({ data: dataStr })
+                    });
+                    if (res.ok) {
+                      const json = await res.json();
+                      setDiasNaoRodados(prev => json.status === 'added' ? [...prev, dataStr] : prev.filter(d => d !== dataStr));
+                    }
+                  } catch (err) { console.error('Erro de conexão ao salvar calendário', err); }
+                },
+                onCancel: modal.close,
+                onClose: modal.close
+              });
             }}
             className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2"
           >
@@ -1021,129 +758,75 @@ function App() {
         )}
       </div>
     );
-
-    // 6. Abre o Modal
     modal.alert(conteudoModal, `Raio-X: ${nomeCategoria}`);
   };
 
-  // =========================================================================
-  // COMPROVANTES (apenas stewart)
-  // =========================================================================
   const anexarComprovante = async (t) => {
     const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,application/pdf';
+    input.type = 'file'; input.accept = 'image/*,application/pdf';
     input.onchange = async (e) => {
       const arquivo = e.target.files[0];
       if (!arquivo) return;
       if (arquivo.size > 10 * 1024 * 1024) { await modal.alert('Arquivo muito grande. Máximo: 10MB.', '❌ Erro'); return; }
-      const formData = new FormData();
-      formData.append('arquivo', arquivo);
+      const formData = new FormData(); formData.append('arquivo', arquivo);
       try {
         const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
         const data = await res.json();
-        if (res.ok) {
-          setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id } : tr));
-          await modal.alert('Comprovante anexado com sucesso!', '✅ Sucesso');
-        } else { await modal.alert(data.message || 'Erro ao fazer upload.', '❌ Erro'); }
+        if (res.ok) { setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id } : tr)); await modal.alert('Comprovante anexado!', '✅ Sucesso'); }
+        else { await modal.alert(data.message || 'Erro.', '❌ Erro'); }
       } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
     };
     input.click();
   };
 
   const removerComprovante = async (t) => {
-    const ok = await modal.confirm('Deseja remover o comprovante deste lançamento?', '🗑️ Remover Comprovante', { confirmLabel: 'Remover', confirmColor: 'bg-red-600 hover:bg-red-700' });
+    const ok = await modal.confirm('Remover o comprovante?', '🗑️ Remover', { confirmLabel: 'Remover', confirmColor: 'bg-red-600 hover:bg-red-700' });
     if (!ok) return;
     try {
       const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, { method: 'DELETE', headers: getHeaders() });
-      if (res.ok) {
-        setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: null, comprovante_public_id: null } : tr));
-        await modal.alert('Comprovante removido.', '✅ Removido');
-      }
+      if (res.ok) { setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, comprovante_url: null, comprovante_public_id: null } : tr)); await modal.alert('Removido.', '✅ Removido'); }
     } catch (err) { await modal.alert('Erro de conexão.', '❌ Erro'); }
   };
 
   const verComprovante = (t) => {
     const isPDF = t.comprovante_url && t.comprovante_url.includes('/raw/');
-    modal.setConfig({
-      type: 'comprovante',
-      title: `📎 Comprovante — ${t.descricao}`,
-      url: t.comprovante_url,
-      isPDF,
-      onCancel: modal.close,
-      onClose: modal.close,
-      onRemover: () => { modal.close(); removerComprovante(t); }
-    });
+    modal.setConfig({ type: 'comprovante', title: `📎 Comprovante — ${t.descricao}`, url: t.comprovante_url, isPDF, onCancel: modal.close, onClose: modal.close, onRemover: () => { modal.close(); removerComprovante(t); } });
   };
 
-  // =========================================================================
-  // FUNÇÕES DE ADMIN
-  // =========================================================================
   const carregarUsuarios = async () => {
     const res = await fetch(`${API}/admin/usuarios`, { headers: getHeaders() });
     if (res.ok) setUsuarios(await res.json());
   };
-
   const criarUsuario = async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const usuario = fd.get('usuario');
-    const is_admin = fd.get('is_admin') === 'on';
+    e.preventDefault(); const fd = new FormData(e.target); const usuario = fd.get('usuario'); const is_admin = fd.get('is_admin') === 'on';
     const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) });
     const data = await res.json();
-    if (res.ok) { await modal.alert(data.message, '✅ Usuário criado'); e.target.reset(); carregarUsuarios(); }
-    else await modal.alert(data.message, '❌ Erro');
+    if (res.ok) { await modal.alert(data.message, '✅ Criado'); e.target.reset(); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro');
   };
-
   const deletarUsuario = async (id, nome) => {
-    const ok = await modal.confirm(`Deletar o usuário "${nome}" e todos os seus dados?\n\nEsta ação não pode ser desfeita.`, '🗑️ Deletar Usuário', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' });
+    const ok = await modal.confirm(`Deletar usuário "${nome}"?`, '🗑️ Deletar', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' });
     if (!ok) return;
     const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() });
-    const data = await res.json();
-    if (res.ok) { await modal.alert(data.message, '✅ Deletado'); carregarUsuarios(); }
-    else await modal.alert(data.message, '❌ Erro');
+    if (res.ok) { await modal.alert(await res.json().message, '✅ Deletado'); carregarUsuarios(); }
   };
-
   const resetarSenha = async (id, nome) => {
-    const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?\n\nEle será obrigado a trocar no próximo login.`, '🔑 Resetar Senha', { confirmLabel: 'Resetar' });
+    const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' });
     if (!ok) return;
     const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() });
-    const data = await res.json();
-    await modal.alert(data.message, res.ok ? '✅ Senha resetada' : '❌ Erro');
+    await modal.alert(await res.json().message, res.ok ? '✅ Resetada' : '❌ Erro');
   };
-
   const toggleAdmin = async (id, nomeU, atualIsAdmin) => {
-    const acao = atualIsAdmin ? 'remover o Super Admin' : 'promover a Super Admin';
-    const ok = await modal.confirm(`Deseja ${acao} o usuário "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: atualIsAdmin ? 'Remover Admin' : 'Tornar Admin' });
+    const ok = await modal.confirm(`Alterar admin de "${nomeU}"?`, '⭐ Alterar', { confirmLabel: 'Confirmar' });
     if (!ok) return;
     const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() });
-    const data = await res.json();
-    if (res.ok) carregarUsuarios();
-    else await modal.alert(data.message, '❌ Erro');
+    if (res.ok) carregarUsuarios(); else await modal.alert(await res.json().message, '❌ Erro');
   };
 
-  // =========================================================================
-  // TELAS
-  // =========================================================================
-  if (!token && !precisaTrocarSenha) {
-    return <Login fazerLogin={fazerLogin} usuarioLogin={usuarioLogin} setUsuarioLogin={setUsuarioLogin} senhaLogin={senhaLogin} setSenhaLogin={setSenhaLogin} erroLogin={erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} />;
-  }
-
-  if (precisaTrocarSenha) {
-    return <TrocaSenha enviarNovaSenha={enviarNovaSenha} novaSenha={novaSenha} setNovaSenha={setNovaSenha} confirmarSenha={confirmarSenha} setConfirmarSenha={setConfirmarSenha} erroTrocaSenha={erroTrocaSenha} fazerLogout={fazerLogout} />;
-  }
-
-  if (telaAtiva === 'admin') {
-    return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={criarUsuario} carregarUsuarios={carregarUsuarios} usuarios={usuarios} toggleAdmin={toggleAdmin} resetarSenha={resetarSenha} deletarUsuario={deletarUsuario} />;
-  }
-
-  if (telaAtiva === 'setup') {
-    return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} setCartoes={setCartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} setCategorias={setCategorias} addContaFixa={addContaFixa} contasFixas={contasFixas} setContasFixas={setContasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} setRendasFixas={setRendasFixas} getHeaders={getHeaders} />;
-  }
-
-  if (telaAtiva === 'garagem') {
-    return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={getHeaders} transacoes={transacoes} />;
-  }
+  if (!token && !precisaTrocarSenha) { return <Login fazerLogin={fazerLogin} usuarioLogin={usuarioLogin} setUsuarioLogin={setUsuarioLogin} senhaLogin={senhaLogin} setSenhaLogin={setSenhaLogin} erroLogin={erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} />; }
+  if (precisaTrocarSenha) { return <TrocaSenha enviarNovaSenha={enviarNovaSenha} novaSenha={novaSenha} setNovaSenha={setNovaSenha} confirmarSenha={confirmarSenha} setConfirmarSenha={setConfirmarSenha} erroTrocaSenha={erroTrocaSenha} fazerLogout={fazerLogout} />; }
+  if (telaAtiva === 'admin') { return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={criarUsuario} carregarUsuarios={carregarUsuarios} usuarios={usuarios} toggleAdmin={toggleAdmin} resetarSenha={resetarSenha} deletarUsuario={deletarUsuario} />; }
+  if (telaAtiva === 'setup') { return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} gerarMesManual={gerarMesManual} gerandoMes={gerandoMes} exportarCSV={exportarCSV} setTelaAtiva={setTelaAtiva} addCartao={addCartao} cartoes={cartoes} setCartoes={setCartoes} removerSetup={removerSetup} addCategoria={addCategoria} categorias={categorias} setCategorias={setCategorias} addContaFixa={addContaFixa} contasFixas={contasFixas} setContasFixas={setContasFixas} addRendaFixa={addRendaFixa} rendasFixas={rendasFixas} setRendasFixas={setRendasFixas} getHeaders={getHeaders} />; }
+  if (telaAtiva === 'garagem') { return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={getHeaders} transacoes={transacoes} />; }
 
   return (
     <Dashboard
