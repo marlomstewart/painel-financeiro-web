@@ -151,7 +151,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     /**
      * Calcula as projeções de gastos da categoria e monta a interface detalhada.
-     * Retorna a UI exata contendo previsões completas baseadas no dia do mês.
+     * Frases refatoradas para explicitarem a Meta vs Margem excedente.
      */
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
         const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
@@ -169,20 +169,20 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
             const diaHoje = dataHoje.getDate();
 
-            // Regra de Três: (Gasto Atual / Dias Passados) * Total de Dias do Mês
+            // Regra de Três Temporal
             previsaoFimMes = (vGasto / diaHoje) * diasNoMes;
 
             if (tCat === 'despesa' || tCat === 'Gasto' || tCat === 'gasto') {
                 if (previsaoFimMes > vMeta) {
-                    analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, a previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - vMeta)}.`;
+                    analiseIA = `⚠️ Cuidado! No ritmo atual, a previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, estourando o limite de ${formatarMoeda(vMeta)} (gastando a mais ${formatarMoeda(previsaoFimMes - vMeta)}).`;
                 } else {
-                    analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(vMeta - previsaoFimMes)}.`;
+                    analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(vMeta - previsaoFimMes)} do seu limite de ${formatarMoeda(vMeta)}.`;
                 }
-            } else { // Regra para Investimentos/Sonhos
+            } else { // Regra para Renda / Investimentos / Sonhos
                 if (previsaoFimMes < vMeta) {
-                    analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(vMeta - previsaoFimMes)} para bater a sua meta.`;
+                    analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(vMeta - previsaoFimMes)} para atingir a sua meta de ${formatarMoeda(vMeta)}.`;
                 } else {
-                    analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta em ${formatarMoeda(previsaoFimMes - vMeta)}!`;
+                    analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta de ${formatarMoeda(vMeta)} em ${formatarMoeda(previsaoFimMes - vMeta)}!`;
                 }
             }
         }
