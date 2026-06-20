@@ -1,15 +1,22 @@
 import React, { useState, useMemo, useCallback } from 'react';
 
+/**
+ * Formata um valor numérico para o padrão monetário brasileiro (BRL).
+ * @param {number|string} valor 
+ * @returns {string} Valor formatado como moeda (ex: R$ 1.500,00).
+ */
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 /**
  * Hook Customizado: useDashboard
- * Abstrai a lógica matemática pesada do painel principal (cálculo de metas, raio-x,
- * rolagem de pendências e filtragem da tabela).
+ * Motor cognitivo e matemático da tela principal.
+ * Processa saldos acumulados, filtragem de tabelas, rolagem de pendências e as 
+ * previsões de inteligência artificial (Raio-X de categorias e Resumos de Cards).
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
+    // Estados de UI e Filtros da Tabela
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
     const [ordenacao, setOrdenacao] = useState({ coluna: 'data', direcao: 'desc' });
@@ -17,6 +24,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const [filtrosAvancados, setFiltrosAvancados] = useState({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
     const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
 
+    // =========================================================================
+    // NAVEGAÇÃO TEMPORAL E CÁLCULO DE PATRIMÔNIO ACUMULADO
+    // =========================================================================
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
@@ -34,6 +44,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
     const saldoMesAnterior = useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
 
+    // =========================================================================
+    // MOTOR DE FILTRAGEM E ORDENAÇÃO DA TABELA
+    // =========================================================================
     const mudarOrdenacao = useCallback((coluna) => {
         setOrdenacao(prev => ({ coluna, direcao: prev.coluna === coluna ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc' }));
     }, []);
@@ -72,6 +85,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return filtrados;
     }, [transacoesMes, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
+    // =========================================================================
+    // MATEMÁTICA E AGRUPAMENTOS MENSAIS
+    // =========================================================================
     let totRendaTotal = 0, totRendaPaga = 0, totGastoReal = 0, totInvestido = 0, totGastoPago = 0, totFaturaCreditoAberto = 0;
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
     let gastoSemCategoria = 0, gastoContasFixas = 0;
@@ -101,6 +117,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
     const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
 
+    // =========================================================================
+    // ROLAGEM DE PENDÊNCIAS
+    // =========================================================================
     const dataHoje = new Date();
     const mesReal = dataHoje.getMonth() + 1;
     const anoReal = dataHoje.getFullYear();
@@ -126,9 +145,13 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         modal.alert(<div className="space-y-3"><p className="text-sm"><b>{pendenciasPassadas.length}</b> pendência(s) antiga(s). Deseja importar para {nomesMeses[mesReal - 1]}?</p><div className="max-h-60 overflow-y-auto space-y-2 pr-2">{pendenciasPassadas.map(t => (<div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between"><div className="truncate"><p className="text-xs font-bold text-rose-800">{t.descricao}</p></div><span className="font-bold text-rose-700 text-sm">{formatarMoeda(t.valorParcela)}</span></div>))}</div><button onClick={() => { modal.close(); processarRolagemPendencias(); }} className="w-full mt-4 bg-rose-600 text-white font-bold py-3 rounded-lg shadow">Importar</button></div>, '⚠️ Pendências');
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
+    // =========================================================================
+    // UI PREDITIVA E JANELAS DO DASHBOARD (Raio-X)
+    // =========================================================================
+
     /**
-     * ✅ BUG FIX: Cálculo seguro de numéricos usando `Number()` na lógica de reduce (linha 115) 
-     * garante que se o Banco retornar o valor como "100.00" ele não use comparação lexicográfica em Strings.
+     * Calcula as projeções de gastos da categoria e monta a interface detalhada.
+     * Retorna a UI exata contendo previsões completas baseadas no dia do mês.
      */
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
         const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
@@ -138,31 +161,71 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const med = vGasto / qtd;
         const maior = ts.reduce((max, t) => Number(t.valorParcela) > Number(max.valorParcela) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => Number(t.valorParcela) < Number(min.valorParcela) ? t : min, ts[0]);
-        let prev = vGasto;
-        let analise = "Indisponível fora do mês atual.";
+
+        let previsaoFimMes = vGasto;
+        let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
 
         if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
-            prev = (vGasto / dataHoje.getDate()) * new Date(dataVis.ano, dataVis.mes, 0).getDate();
+            const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
+            const diaHoje = dataHoje.getDate();
+
+            // Regra de Três: (Gasto Atual / Dias Passados) * Total de Dias do Mês
+            previsaoFimMes = (vGasto / diaHoje) * diasNoMes;
+
             if (tCat === 'despesa' || tCat === 'Gasto' || tCat === 'gasto') {
-                analise = prev > vMeta ? `⚠️ Alerta: Estouro de limite projetado de ${formatarMoeda(prev - vMeta)}.` : `✅ Controlado. Economia projetada: ${formatarMoeda(vMeta - prev)}.`;
-            } else {
-                analise = prev < vMeta ? `⚠️ Ritmo lento. Faltam ${formatarMoeda(vMeta - prev)} para a meta.` : `✅ Excelente! Superando a meta em ${formatarMoeda(prev - vMeta)}.`;
+                if (previsaoFimMes > vMeta) {
+                    analiseIA = `⚠️ Cuidado! No ritmo atual de gastos, a previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, estourando o limite em ${formatarMoeda(previsaoFimMes - vMeta)}.`;
+                } else {
+                    analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(vMeta - previsaoFimMes)}.`;
+                }
+            } else { // Regra para Investimentos/Sonhos
+                if (previsaoFimMes < vMeta) {
+                    analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(vMeta - previsaoFimMes)} para bater a sua meta.`;
+                } else {
+                    analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta em ${formatarMoeda(previsaoFimMes - vMeta)}!`;
+                }
             }
         }
 
         const conteudo = (
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] font-bold mb-1">Atual vs Meta</p><p className="text-lg font-bold">{formatarMoeda(vGasto)}<span className="text-xs font-normal"> / {formatarMoeda(vMeta)}</span></p></div>
-                    <div className="bg-slate-50 p-3 rounded-lg border"><p className="text-[10px] font-bold mb-1">Média</p><p className="text-lg font-bold">{formatarMoeda(med)}<span className="text-xs font-normal"> em {qtd}x</span></p></div>
+                    <div className="bg-slate-50 p-3 rounded-lg border">
+                        <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Atual vs Meta</p>
+                        <p className="text-lg font-bold text-slate-800">
+                            {formatarMoeda(vGasto)} <span className="text-slate-400 font-normal">/</span>
+                        </p>
+                        <p className="text-sm text-slate-500 font-normal mt-0.5">{formatarMoeda(vMeta)}</p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-lg border">
+                        <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Média por Lançamento</p>
+                        <p className="text-lg font-bold text-slate-800">{formatarMoeda(med)}</p>
+                        <p className="text-sm text-slate-500 font-normal mt-0.5">em {qtd}x</p>
+                    </div>
                 </div>
-                <div className="bg-blue-50 p-4 rounded-lg border text-blue-900 text-sm font-medium">{analise}</div>
+
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p>
+                    <p className="text-sm text-blue-900 font-medium">{analiseIA}</p>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-rose-50 p-3 rounded-lg border border-rose-100"><p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p><p className="text-sm font-bold text-rose-700">{formatarMoeda(maior.valorParcela)}</p><p className="text-[9px] text-rose-500 mt-1 truncate" title={maior.descricao}>{new Date(maior.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maior.descricao}</p></div>
-                    <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100"><p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p><p className="text-sm font-bold text-emerald-700">{formatarMoeda(menor.valorParcela)}</p><p className="text-[9px] text-emerald-500 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p></div>
+                    <div className="bg-rose-50 p-3 rounded-lg border border-rose-100">
+                        <p className="text-[10px] uppercase text-rose-600 font-bold mb-1">Maior Valor</p>
+                        <p className="text-sm font-bold text-rose-700">{formatarMoeda(maior.valorParcela)}</p>
+                        <p className="text-[9px] text-rose-500 mt-1 truncate" title={maior.descricao}>{new Date(maior.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maior.descricao}</p>
+                    </div>
+                    <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <p className="text-[10px] uppercase text-emerald-600 font-bold mb-1">Menor Valor</p>
+                        <p className="text-sm font-bold text-emerald-700">{formatarMoeda(menor.valorParcela)}</p>
+                        <p className="text-[9px] text-emerald-500 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
+                    </div>
                 </div>
+
                 {nCat === 'Gasolina' && nomeUsuario === 'stewart' && (
-                    <button onClick={(e) => garagem.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md">📅 Ajustar Dias Não Rodados</button>
+                    <button onClick={(e) => garagem.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md">
+                        📅 Ajustar Dias Não Rodados
+                    </button>
                 )}
             </div>
         );
