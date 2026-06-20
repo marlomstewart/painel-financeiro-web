@@ -10,10 +10,22 @@ export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState(config?.defaultValue || '');
   const inputRef = useRef(null);
 
+  /**
+   * ✅ BUG FIX: ESTADO LOCAL DO CALENDÁRIO (Optimistic UI)
+   * Armazena os dias marcados localmente para garantir que o calendário 
+   * mude de cor instantaneamente ao clique, sem esperar o roundtrip da API.
+   */
+  const [localMarcados, setLocalMarcados] = useState([]);
+
   useEffect(() => {
     if (config) {
       setInputValue(config.defaultValue || '');
       setTimeout(() => inputRef.current?.focus(), 50);
+
+      // Quando o modal abre, copia os dias da configuração global para a memória local
+      if (config.type === 'calendario') {
+        setLocalMarcados(config.diasMarcados || []);
+      }
     }
   }, [config]);
 
@@ -25,6 +37,19 @@ export function Modal({ config, onClose }) {
   const handleCancel = () => { if (onCancel) onCancel(); onClose(); };
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleConfirm(); if (e.key === 'Escape') handleCancel(); };
 
+  /**
+   * Manipulador de cliques dos dias do calendário.
+   * Alterna a cor imediatamente na tela e avisa o backend.
+   */
+  const handleToggleCalendario = (dataStr) => {
+    // 1. Atualiza visualmente (Verde <-> Vermelho)
+    setLocalMarcados(prev =>
+      prev.includes(dataStr) ? prev.filter(d => d !== dataStr) : [...prev, dataStr]
+    );
+    // 2. Dispara a rota da API (Background)
+    if (config.onToggle) config.onToggle(dataStr);
+  };
+
   const btnConfirm = confirmColor || 'bg-slate-800 hover:bg-slate-700';
 
   return (
@@ -33,7 +58,6 @@ export function Modal({ config, onClose }) {
         <div className="p-6">
           {title && <h3 className="text-base font-bold text-slate-800 mb-2">{title}</h3>}
 
-          {/* ✅ BUG FIX: Evita Invalid DOM Nesting. Se a mensagem for JSX, renderiza em DIV ao invés de <p> */}
           {message && (
             typeof message === 'string'
               ? <p className="text-sm text-slate-600 mb-4 whitespace-pre-line">{message}</p>
@@ -105,18 +129,10 @@ export function Modal({ config, onClose }) {
                         <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
                         <div className="flex gap-2">
                           {item.pendente > 0 && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.pagarFatura(config.cartaoIds[item.nome]); }}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"
-                            > Pagar Fatura </button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.pagarFatura(config.cartaoIds[item.nome]); }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"> Pagar Fatura </button>
                           )}
                           {item.pago > 0 && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.reverterFatura(config.cartaoIds[item.nome]); }}
-                              className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"
-                            > Reverter </button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.reverterFatura(config.cartaoIds[item.nome]); }} className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"> Reverter </button>
                           )}
                         </div>
                       </div>
@@ -136,7 +152,7 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* TIPO: calendário da garagem */}
+          {/* TIPO: CALENDÁRIO DA GARAGEM */}
           {type === 'calendario' && (
             <div className="mt-2">
               <p className="text-xs text-slate-500 mb-4 leading-relaxed bg-slate-50 p-3 rounded border">
@@ -146,18 +162,34 @@ export function Modal({ config, onClose }) {
                 {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => <div key={d} className="text-[10px] font-bold text-slate-400 py-1">{d}</div>)}
                 {Array.from({ length: new Date(config.ano, config.mes - 1, 1).getDay() }).map((_, i) => <div key={`empty-${i}`} />)}
                 {Array.from({ length: new Date(config.ano, config.mes, 0).getDate() }).map((_, i) => {
-                  const dia = i + 1; const dataAtual = new Date(config.ano, config.mes - 1, dia); const diaSemana = dataAtual.getDay();
+                  const dia = i + 1;
+                  const dataAtual = new Date(config.ano, config.mes - 1, dia);
+                  const diaSemana = dataAtual.getDay();
                   const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
                   const isDiaAlvo = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
-                  const isMarcado = config.diasMarcados && config.diasMarcados.includes(dataStr);
+                  // Agora verificamos contra o estado LOCAL que reage instantaneamente
+                  const isMarcado = localMarcados.includes(dataStr);
 
                   let bgClass = "bg-slate-50 border border-slate-100 text-slate-300";
-                  if (isDiaAlvo) { bgClass = isMarcado ? "bg-rose-500 text-white border-rose-600 shadow-inner" : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200 cursor-pointer"; }
-                  else if (isMarcado) { bgClass = "bg-rose-400 text-white border-rose-500 cursor-pointer shadow-inner"; }
-                  else { bgClass += " hover:bg-slate-100 cursor-pointer text-slate-600"; }
+                  if (isDiaAlvo) {
+                    bgClass = isMarcado
+                      ? "bg-rose-500 text-white border-rose-600 shadow-inner"
+                      : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200 cursor-pointer";
+                  }
+                  else if (isMarcado) {
+                    bgClass = "bg-rose-500 text-white border-rose-600 cursor-pointer shadow-inner";
+                  }
+                  else {
+                    bgClass += " hover:bg-slate-100 cursor-pointer text-slate-600";
+                  }
 
                   return (
-                    <div key={dia} onClick={() => { if (config.onToggle) config.onToggle(dataStr); }} className={`py-2 rounded flex items-center justify-center text-sm font-bold select-none transition-colors ${bgClass}`}>
+                    <div
+                      key={dia}
+                      onClick={() => handleToggleCalendario(dataStr)}
+                      className={`py-2 rounded flex items-center justify-center text-sm font-bold select-none transition-colors ${bgClass}`}
+                    >
                       {dia}
                     </div>
                   );
