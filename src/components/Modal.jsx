@@ -10,22 +10,13 @@ export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState(config?.defaultValue || '');
   const inputRef = useRef(null);
 
-  /**
-   * ✅ BUG FIX: ESTADO LOCAL DO CALENDÁRIO (Optimistic UI)
-   * Armazena os dias marcados localmente para garantir que o calendário 
-   * mude de cor instantaneamente ao clique, sem esperar o roundtrip da API.
-   */
   const [localMarcados, setLocalMarcados] = useState([]);
 
   useEffect(() => {
     if (config) {
       setInputValue(config.defaultValue || '');
       setTimeout(() => inputRef.current?.focus(), 50);
-
-      // Quando o modal abre, copia os dias da configuração global para a memória local
-      if (config.type === 'calendario') {
-        setLocalMarcados(config.diasMarcados || []);
-      }
+      if (config.type === 'calendario') setLocalMarcados(config.diasMarcados || []);
     }
   }, [config]);
 
@@ -38,16 +29,24 @@ export function Modal({ config, onClose }) {
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleConfirm(); if (e.key === 'Escape') handleCancel(); };
 
   /**
-   * Manipulador de cliques dos dias do calendário.
-   * Alterna a cor imediatamente na tela e avisa o backend.
+   * ✅ LÓGICA DE ROLLBACK OTIMISTA
+   * Altera a interface instantaneamente. Se a requisição explodir, desfaz a alteração.
    */
-  const handleToggleCalendario = (dataStr) => {
-    // 1. Atualiza visualmente (Verde <-> Vermelho)
-    setLocalMarcados(prev =>
-      prev.includes(dataStr) ? prev.filter(d => d !== dataStr) : [...prev, dataStr]
-    );
-    // 2. Dispara a rota da API (Background)
-    if (config.onToggle) config.onToggle(dataStr);
+  const handleToggleCalendario = async (dataStr) => {
+    const wasMarcado = localMarcados.includes(dataStr);
+
+    // 1. Atualização Otimista Imediata (Muda a cor)
+    setLocalMarcados(prev => wasMarcado ? prev.filter(d => d !== dataStr) : [...prev, dataStr]);
+
+    if (config.onToggle) {
+      // 2. Aguarda a resposta do backend
+      const success = await config.onToggle(dataStr);
+
+      // 3. Rollback: Se a rede falhar, devolve o botão para a cor original
+      if (!success) {
+        setLocalMarcados(prev => wasMarcado ? [...prev, dataStr] : prev.filter(d => d !== dataStr));
+      }
+    }
   };
 
   const btnConfirm = confirmColor || 'bg-slate-800 hover:bg-slate-700';
@@ -59,14 +58,10 @@ export function Modal({ config, onClose }) {
           {title && <h3 className="text-base font-bold text-slate-800 mb-2">{title}</h3>}
 
           {message && (
-            typeof message === 'string'
-              ? <p className="text-sm text-slate-600 mb-4 whitespace-pre-line">{message}</p>
-              : <div className="w-full mb-4">{message}</div>
+            typeof message === 'string' ? <p className="text-sm text-slate-600 mb-4 whitespace-pre-line">{message}</p> : <div className="w-full mb-4">{message}</div>
           )}
 
-          {type === 'alert' && (
-            <button onClick={handleConfirm} className={`w-full ${btnConfirm} text-white font-bold py-2.5 rounded-lg text-sm transition-colors`}>{confirmLabel || 'OK'}</button>
-          )}
+          {type === 'alert' && <button onClick={handleConfirm} className={`w-full ${btnConfirm} text-white font-bold py-2.5 rounded-lg text-sm transition-colors`}>{confirmLabel || 'OK'}</button>}
 
           {type === 'confirm' && (
             <div className="flex gap-3 mt-2">
@@ -100,15 +95,9 @@ export function Modal({ config, onClose }) {
           {type === 'comprovante' && (
             <div className="mt-1">
               {config.isPDF ? (
-                <a href={config.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 px-4 py-6 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors">
-                  <span className="text-3xl">📄</span>
-                  <div><p className="font-bold text-slate-700 text-sm">Abrir PDF</p><p className="text-xs text-slate-400">Clique para visualizar em nova aba</p></div>
-                </a>
+                <a href={config.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 px-4 py-6 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors"><span className="text-3xl">📄</span><div><p className="font-bold text-slate-700 text-sm">Abrir PDF</p><p className="text-xs text-slate-400">Clique para visualizar em nova aba</p></div></a>
               ) : (
-                <a href={config.url} target="_blank" rel="noopener noreferrer">
-                  <img src={config.url} alt="Comprovante" className="w-full rounded-lg border object-contain max-h-80 hover:opacity-90 transition-opacity" />
-                  <p className="text-xs text-slate-400 text-center mt-1">Clique para abrir em tamanho completo</p>
-                </a>
+                <a href={config.url} target="_blank" rel="noopener noreferrer"><img src={config.url} alt="Comprovante" className="w-full rounded-lg border object-contain max-h-80 hover:opacity-90 transition-opacity" /><p className="text-xs text-slate-400 text-center mt-1">Clique para abrir em tamanho completo</p></a>
               )}
               <div className="flex gap-2 mt-4">
                 <button onClick={config.onRemover} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-lg text-sm border border-red-200 transition-colors">🗑️ Remover</button>
@@ -119,21 +108,15 @@ export function Modal({ config, onClose }) {
 
           {type === 'faturas' && (
             <div className="space-y-2 mt-1">
-              {config.itens.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">Nenhum gasto no crédito neste mês.</p>
-              ) : (
+              {config.itens.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">Nenhum gasto no crédito neste mês.</p> : (
                 <>
                   {config.itens.map((item, i) => (
                     <div key={i} className="px-3 py-3 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-bold text-slate-800">💳 {item.nome}</span>
                         <div className="flex gap-2">
-                          {item.pendente > 0 && (
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.pagarFatura(config.cartaoIds[item.nome]); }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"> Pagar Fatura </button>
-                          )}
-                          {item.pago > 0 && (
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.reverterFatura(config.cartaoIds[item.nome]); }} className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"> Reverter </button>
-                          )}
+                          {item.pendente > 0 && <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.pagarFatura(config.cartaoIds[item.nome]); }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"> Pagar Fatura </button>}
+                          {item.pago > 0 && <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); config.reverterFatura(config.cartaoIds[item.nome]); }} className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm transition-colors cursor-pointer"> Reverter </button>}
                         </div>
                       </div>
                       <div className="flex gap-2 text-xs text-slate-500">
@@ -142,10 +125,7 @@ export function Modal({ config, onClose }) {
                       </div>
                     </div>
                   ))}
-                  <div className="flex justify-between items-center px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-200 mt-1">
-                    <span className="text-sm font-bold text-slate-700">Total Geral</span>
-                    <span className="text-sm font-bold text-purple-700">{formatarMoeda(config.itens.reduce((s, i) => s + i.total, 0))}</span>
-                  </div>
+                  <div className="flex justify-between items-center px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-200 mt-1"><span className="text-sm font-bold text-slate-700">Total Geral</span><span className="text-sm font-bold text-purple-700">{formatarMoeda(config.itens.reduce((s, i) => s + i.total, 0))}</span></div>
                 </>
               )}
               <button type="button" onClick={handleCancel} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition-colors mt-2">Fechar</button>
@@ -162,34 +142,18 @@ export function Modal({ config, onClose }) {
                 {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => <div key={d} className="text-[10px] font-bold text-slate-400 py-1">{d}</div>)}
                 {Array.from({ length: new Date(config.ano, config.mes - 1, 1).getDay() }).map((_, i) => <div key={`empty-${i}`} />)}
                 {Array.from({ length: new Date(config.ano, config.mes, 0).getDate() }).map((_, i) => {
-                  const dia = i + 1;
-                  const dataAtual = new Date(config.ano, config.mes - 1, dia);
-                  const diaSemana = dataAtual.getDay();
+                  const dia = i + 1; const dataAtual = new Date(config.ano, config.mes - 1, dia); const diaSemana = dataAtual.getDay();
                   const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-
                   const isDiaAlvo = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
-                  // Agora verificamos contra o estado LOCAL que reage instantaneamente
                   const isMarcado = localMarcados.includes(dataStr);
 
                   let bgClass = "bg-slate-50 border border-slate-100 text-slate-300";
-                  if (isDiaAlvo) {
-                    bgClass = isMarcado
-                      ? "bg-rose-500 text-white border-rose-600 shadow-inner"
-                      : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200 cursor-pointer";
-                  }
-                  else if (isMarcado) {
-                    bgClass = "bg-rose-500 text-white border-rose-600 cursor-pointer shadow-inner";
-                  }
-                  else {
-                    bgClass += " hover:bg-slate-100 cursor-pointer text-slate-600";
-                  }
+                  if (isDiaAlvo) { bgClass = isMarcado ? "bg-rose-500 text-white border-rose-600 shadow-inner" : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200 cursor-pointer"; }
+                  else if (isMarcado) { bgClass = "bg-rose-500 text-white border-rose-600 cursor-pointer shadow-inner"; }
+                  else { bgClass += " hover:bg-slate-100 cursor-pointer text-slate-600"; }
 
                   return (
-                    <div
-                      key={dia}
-                      onClick={() => handleToggleCalendario(dataStr)}
-                      className={`py-2 rounded flex items-center justify-center text-sm font-bold select-none transition-colors ${bgClass}`}
-                    >
+                    <div key={dia} onClick={() => handleToggleCalendario(dataStr)} className={`py-2 rounded flex items-center justify-center text-sm font-bold select-none transition-colors ${bgClass}`}>
                       {dia}
                     </div>
                   );
@@ -222,7 +186,6 @@ export function Modal({ config, onClose }) {
                 )}
                 <button onClick={() => { config.onDeletar(); onClose(); }} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-lg text-sm transition-colors">🗑️ Excluir</button>
               </div>
-
               <button onClick={handleCancel} className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 font-medium py-2 rounded-lg text-sm transition-colors">Fechar</button>
             </div>
           )}

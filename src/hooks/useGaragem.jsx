@@ -3,15 +3,11 @@ import { useState, useCallback, useMemo } from 'react';
 /**
  * Hook Customizado: useGaragem
  * Gerencia a lógica de negócio atrelada à frota de veículos automotores.
- * Avalia o desgaste de manutenções em tempo real e calcula orçamentos variáveis.
  */
-export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes }) {
+export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes, showToast }) {
     const [veiculosGaragem, setVeiculosGaragem] = useState([]);
     const [diasNaoRodados, setDiasNaoRodados] = useState([]);
 
-    /**
-     * Traz os metadados mecânicos da nuvem ao carregar a aplicação.
-     */
     const carregarDadosGaragem = useCallback(async () => {
         if (nomeUsuario.toLowerCase() !== 'stewart') return;
         try {
@@ -22,10 +18,6 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes }) 
         } catch (err) { console.error("Erro garagem:", err); }
     }, [API, getHeaders, nomeUsuario]);
 
-    /**
-     * Intercepta um novo abastecimento/manutenção verificando se algum item
-     * (como Pneus ou Relação) ultrapassou os 60% de desgaste útil no Odômetro.
-     */
     const verificarDesgasteVeiculo = useCallback(async (veiculoId, kmAtual) => {
         try {
             const res = await fetch(`${API}/garagem/veiculos/${veiculoId}/itens`, { headers: getHeaders() });
@@ -49,10 +41,6 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes }) 
         } catch (err) { console.error('Erro ao verificar desgaste:', err); }
     }, [API, getHeaders, modal]);
 
-    /**
-     * Calcula o teto orçamentário dinâmico. Multiplica dias úteis de deslocamento por R$23,
-     * ignorando datas que constam no vetor de diasNaoRodados.
-     */
     const calcularMetaGasolina = useCallback((mes, ano) => {
         let diasDeAbastecimento = 0;
         const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
@@ -65,9 +53,6 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes }) 
         return diasDeAbastecimento * 23;
     }, [diasNaoRodados]);
 
-    /**
-     * Gera o estado do Card interativo exclusivo da Biz 125 no painel.
-     */
     const alertaMoto = useMemo(() => {
         if (nomeUsuario.toLowerCase() !== 'stewart') return null;
         const transacoesComKm = transacoes.filter(t => t.kmMoto).sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra));
@@ -84,7 +69,8 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes }) 
     }, [nomeUsuario, transacoes]);
 
     /**
-     * Abstração da injeção do Calendário Interativo no motor Universal do Modal.
+     * Abstração do Calendário Interativo.
+     * Retorna true ou false para a UI saber se o banco salvou a ação de fato.
      */
     const abrirCalendarioGasolina = useCallback((e, mesVis, anoVis) => {
         e.preventDefault(); e.stopPropagation(); modal.close();
@@ -94,13 +80,23 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes }) 
                 onToggle: async (dataStr) => {
                     try {
                         const res = await fetch(`${API}/garagem/dias-nao-rodados/toggle`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ data: dataStr }) });
-                        if (res.ok) { const json = await res.json(); setDiasNaoRodados(prev => json.status === 'added' ? [...prev, dataStr] : prev.filter(d => d !== dataStr)); }
-                    } catch (err) { console.error('Erro calendário', err); }
+                        if (res.ok) {
+                            const json = await res.json();
+                            setDiasNaoRodados(prev => json.status === 'added' ? [...prev, dataStr] : prev.filter(d => d !== dataStr));
+                            return true; // Sucesso na rede
+                        }
+                        showToast('Erro ao sincronizar calendário. Tente novamente.', 'error');
+                        return false; // Erro de servidor (500)
+                    } catch (err) {
+                        console.error('Erro calendário', err);
+                        showToast('Erro de rede ou Timeout. Verifique a conexão.', 'error');
+                        return false; // Erro de internet caída
+                    }
                 },
                 onCancel: modal.close, onClose: modal.close
             });
         }, 150);
-    }, [API, getHeaders, modal, diasNaoRodados]);
+    }, [API, getHeaders, modal, diasNaoRodados, showToast]);
 
     return {
         veiculosGaragem, setVeiculosGaragem, diasNaoRodados, setDiasNaoRodados,
