@@ -47,7 +47,7 @@ export function useCartoesFaturas({
     const reverterFaturaCartao = useCallback(async (cartaoId) => {
         const cartao = cartoes.find(c => c.id === cartaoId);
         if (!cartao) return;
-        
+
         const confirmacao = await modal.confirm(`Deseja REVERTER os pagamentos do cartão "${cartao.nome}" para PENDENTE?`, '↩️ Reverter Fatura');
         if (!confirmacao) return;
 
@@ -84,15 +84,15 @@ export function useCartoesFaturas({
         });
 
         const itens = Object.entries(porCartao).map(([nome, v]) => ({ nome, ...v }));
-        modal.setConfig({ 
-            type: 'faturas', 
-            title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`, 
-            itens, 
-            cartaoIds, 
-            pagarFatura: pagarFaturaCartao, 
-            reverterFatura: reverterFaturaCartao, 
-            onCancel: modal.close, 
-            onClose: modal.close 
+        modal.setConfig({
+            type: 'faturas',
+            title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
+            itens,
+            cartaoIds,
+            pagarFatura: pagarFaturaCartao,
+            reverterFatura: reverterFaturaCartao,
+            onCancel: modal.close,
+            onClose: modal.close
         });
     }, [transacoesMes, cartoes, dataVis, modal, pagarFaturaCartao, reverterFaturaCartao]);
 

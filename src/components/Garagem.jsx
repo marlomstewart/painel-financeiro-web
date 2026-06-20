@@ -359,60 +359,60 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
                 {/* BARRAS DE DESGASTE — só para veículos próprios */}
                 {veiculoSelecionado.tipo !== 'convidado' && (
-                <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-sm font-bold text-slate-600 uppercase">⚙️ Odômetro de Desgaste</h2>
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
-                            <button onClick={() => setModoBarras('pct')} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${modoBarras === 'pct' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>% Uso</button>
-                            <button onClick={() => setModoBarras('km')} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${modoBarras === 'km' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>KM Faltando</button>
+                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-sm font-bold text-slate-600 uppercase">⚙️ Odômetro de Desgaste</h2>
+                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                                <button onClick={() => setModoBarras('pct')} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${modoBarras === 'pct' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>% Uso</button>
+                                <button onClick={() => setModoBarras('km')} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${modoBarras === 'km' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>KM Faltando</button>
+                            </div>
                         </div>
+
+                        {itens.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400 text-sm">
+                                <p>Nenhum item cadastrado ainda.</p>
+                                <button onClick={() => setModalItem('novo')} className="mt-2 text-blue-500 hover:underline font-medium text-xs">+ Adicionar primeiro item</button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {itens.map(item => {
+                                    const kmDesdeUltima = kmAtual - Number(item.km_ultima_troca);
+                                    const intervalo = Number(item.intervalo_km);
+                                    const pct = Math.min((kmDesdeUltima / intervalo) * 100, 100);
+                                    const kmFaltando = Math.max(intervalo - kmDesdeUltima, 0);
+                                    const corBarra = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500';
+                                    const corTexto = pct >= 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-emerald-600';
+
+                                    return (
+                                        <div key={item.id} className="border rounded-lg p-3">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-slate-700 text-sm">{item.nome}</span>
+                                                    {pct >= 90 && <span className="text-xs bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">⚠️ Trocar!</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs font-bold ${corTexto}`}>
+                                                        {modoBarras === 'pct' ? `${pct.toFixed(0)}%` : `${kmFaltando.toLocaleString('pt-BR')} km`}
+                                                    </span>
+                                                    <button onClick={() => setModalItem(item)} className="text-blue-400 hover:text-blue-600 text-xs">✏️</button>
+                                                    <button onClick={() => excluirItem(item.id)} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
+                                                </div>
+                                            </div>
+                                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                <div className={`${corBarra} h-2 rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                                                <span>Última troca: {Number(item.km_ultima_troca).toLocaleString('pt-BR')} km</span>
+                                                <span>Intervalo: {intervalo.toLocaleString('pt-BR')} km</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        <button onClick={() => setModalItem('novo')} className="mt-4 w-full border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-400 hover:text-blue-600 font-medium py-2 rounded-lg text-sm transition-all">+ Adicionar Item</button>
                     </div>
-
-                    {itens.length === 0 ? (
-                        <div className="text-center py-8 text-slate-400 text-sm">
-                            <p>Nenhum item cadastrado ainda.</p>
-                            <button onClick={() => setModalItem('novo')} className="mt-2 text-blue-500 hover:underline font-medium text-xs">+ Adicionar primeiro item</button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {itens.map(item => {
-                                const kmDesdeUltima = kmAtual - Number(item.km_ultima_troca);
-                                const intervalo = Number(item.intervalo_km);
-                                const pct = Math.min((kmDesdeUltima / intervalo) * 100, 100);
-                                const kmFaltando = Math.max(intervalo - kmDesdeUltima, 0);
-                                const corBarra = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500';
-                                const corTexto = pct >= 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-emerald-600';
-
-                                return (
-                                    <div key={item.id} className="border rounded-lg p-3">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-slate-700 text-sm">{item.nome}</span>
-                                                {pct >= 90 && <span className="text-xs bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">⚠️ Trocar!</span>}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-xs font-bold ${corTexto}`}>
-                                                    {modoBarras === 'pct' ? `${pct.toFixed(0)}%` : `${kmFaltando.toLocaleString('pt-BR')} km`}
-                                                </span>
-                                                <button onClick={() => setModalItem(item)} className="text-blue-400 hover:text-blue-600 text-xs">✏️</button>
-                                                <button onClick={() => excluirItem(item.id)} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
-                                            </div>
-                                        </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                            <div className={`${corBarra} h-2 rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
-                                        </div>
-                                        <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                                            <span>Última troca: {Number(item.km_ultima_troca).toLocaleString('pt-BR')} km</span>
-                                            <span>Intervalo: {intervalo.toLocaleString('pt-BR')} km</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    <button onClick={() => setModalItem('novo')} className="mt-4 w-full border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-400 hover:text-blue-600 font-medium py-2 rounded-lg text-sm transition-all">+ Adicionar Item</button>
-                </div>
                 )}
 
                 {/* DIÁRIO DE BORDO */}
@@ -443,34 +443,34 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
                     {/* MANUTENÇÕES MANUAIS — só para veículos próprios */}
                     {veiculoSelecionado.tipo !== 'convidado' && (
-                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-sm font-bold text-slate-600 uppercase">🔧 Manutenções Manuais</h2>
-                            <button onClick={() => setModalManutencao('novo')} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">+ Registrar</button>
-                        </div>
-                        {manutencoes.length === 0 ? (
-                            <p className="text-center py-8 text-slate-400 text-sm">Nenhuma manutenção registrada ainda.</p>
-                        ) : (
-                            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                                {manutencoes.map(m => (
-                                    <div key={m.id} className="p-2.5 bg-slate-50 rounded-lg border text-sm">
-                                        <div className="flex justify-between items-start">
-                                            <p className="font-medium text-slate-800">{m.descricao}</p>
-                                            <div className="flex gap-1 flex-shrink-0 ml-2">
-                                                <button onClick={() => setModalManutencao(m)} className="text-blue-400 hover:text-blue-600 text-xs">✏️</button>
-                                                <button onClick={() => excluirManutencao(m.id)} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
-                                            </div>
-                                        </div>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">
-                                            {m.data_registro ? formatarData(m.data_registro) : ''}
-                                            {m.km_registro ? ` • ${Number(m.km_registro).toLocaleString('pt-BR')} km` : ''}
-                                        </p>
-                                        {m.observacao && <p className="text-xs text-slate-500 mt-1 italic">{m.observacao}</p>}
-                                    </div>
-                                ))}
+                        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-sm font-bold text-slate-600 uppercase">🔧 Manutenções Manuais</h2>
+                                <button onClick={() => setModalManutencao('novo')} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">+ Registrar</button>
                             </div>
-                        )}
-                    </div>
+                            {manutencoes.length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">Nenhuma manutenção registrada ainda.</p>
+                            ) : (
+                                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                                    {manutencoes.map(m => (
+                                        <div key={m.id} className="p-2.5 bg-slate-50 rounded-lg border text-sm">
+                                            <div className="flex justify-between items-start">
+                                                <p className="font-medium text-slate-800">{m.descricao}</p>
+                                                <div className="flex gap-1 flex-shrink-0 ml-2">
+                                                    <button onClick={() => setModalManutencao(m)} className="text-blue-400 hover:text-blue-600 text-xs">✏️</button>
+                                                    <button onClick={() => excluirManutencao(m.id)} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">
+                                                {m.data_registro ? formatarData(m.data_registro) : ''}
+                                                {m.km_registro ? ` • ${Number(m.km_registro).toLocaleString('pt-BR')} km` : ''}
+                                            </p>
+                                            {m.observacao && <p className="text-xs text-slate-500 mt-1 italic">{m.observacao}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
