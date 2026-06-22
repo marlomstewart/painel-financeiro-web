@@ -112,7 +112,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     let custoPrevisto = gastoSemCategoria + gastoContasFixas;
     categoriasDinamicas.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
-
+    
     const saldoMesAtual = totRendaPaga - totGastoPago;
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
     const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
@@ -148,10 +148,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     // =========================================================================
     // UI PREDITIVA E JANELAS DO DASHBOARD (Raio-X)
     // =========================================================================
-
+    
     /**
      * Calcula as projeções de gastos da categoria e monta a interface detalhada.
-     * Frases refatoradas para explicitarem a Meta vs Margem excedente.
+     * ✅ Alteração: Inclusão de lógicas de 3 vias (Estourado Hoje vs Vai Estourar vs Seguro).
      */
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
         const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
@@ -161,27 +161,37 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const med = vGasto / qtd;
         const maior = ts.reduce((max, t) => Number(t.valorParcela) > Number(max.valorParcela) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => Number(t.valorParcela) < Number(min.valorParcela) ? t : min, ts[0]);
-
+        
         let previsaoFimMes = vGasto;
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
 
         if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
             const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
             const diaHoje = dataHoje.getDate();
-
+            
             // Regra de Três Temporal
             previsaoFimMes = (vGasto / diaHoje) * diasNoMes;
 
             if (tCat === 'despesa' || tCat === 'Gasto' || tCat === 'gasto') {
-                if (previsaoFimMes > vMeta) {
+                if (vGasto > vMeta) {
+                    // Cenário 1: Já estourou o limite hoje.
+                    analiseIA = `🔴 Alerta! O limite de ${formatarMoeda(vMeta)} já foi estourado. Se mantiver o ritmo atual, fechará o mês com ${formatarMoeda(previsaoFimMes)} (gastando a mais ${formatarMoeda(previsaoFimMes - vMeta)}).`;
+                } else if (previsaoFimMes > vMeta) {
+                    // Cenário 2: Está seguro hoje, mas a previsão é estourar no fim do mês.
                     analiseIA = `⚠️ Cuidado! No ritmo atual, a previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, estourando o limite de ${formatarMoeda(vMeta)} (gastando a mais ${formatarMoeda(previsaoFimMes - vMeta)}).`;
                 } else {
+                    // Cenário 3: Está seguro e a previsão é continuar seguro.
                     analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(vMeta - previsaoFimMes)} do seu limite de ${formatarMoeda(vMeta)}.`;
                 }
             } else { // Regra para Renda / Investimentos / Sonhos
-                if (previsaoFimMes < vMeta) {
+                if (vGasto >= vMeta) {
+                    // Cenário 1: Já bateu a meta positiva hoje!
+                    analiseIA = `🏆 Meta alcançada! Você já atingiu os ${formatarMoeda(vMeta)}. Mantendo o ritmo, fechará o mês com ${formatarMoeda(previsaoFimMes)} (superando em ${formatarMoeda(previsaoFimMes - vMeta)}).`;
+                } else if (previsaoFimMes < vMeta) {
+                    // Cenário 2: Previsão é falhar na meta positiva.
                     analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(vMeta - previsaoFimMes)} para atingir a sua meta de ${formatarMoeda(vMeta)}.`;
                 } else {
+                    // Cenário 3: Previsão é bater a meta positiva com folga no fim do mês.
                     analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta de ${formatarMoeda(vMeta)} em ${formatarMoeda(previsaoFimMes - vMeta)}!`;
                 }
             }
@@ -221,7 +231,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-[9px] text-emerald-500 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
                     </div>
                 </div>
-
+                
                 {nCat === 'Gasolina' && nomeUsuario === 'stewart' && (
                     <button onClick={(e) => garagem.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md">
                         📅 Ajustar Dias Não Rodados
@@ -239,10 +249,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas,
+        categoriasDinamicas, gCat, pendenciasPassadas, 
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
