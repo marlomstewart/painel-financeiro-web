@@ -1,9 +1,14 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
+/**
+ * Componente Presentational: Dashboard
+ * Fornece a interface analítica principal, gerenciamento de transações diárias e meta-controles.
+ * Incorpora paginação infinita baseada em IntersectionObserver com pre-fetching inteligente de rolagem.
+ */
 export function Dashboard({
     nomeUsuario, alertaMoto, abrirDetalhesCategoria, dataVis, mesAnterior, mesProximo, isAdmin, setTelaAtiva, carregarUsuarios, fazerLogout,
     totRendaPaga, totGastoReal, totInvestido, verFaturasPorCartao, totFaturaCreditoAberto,
@@ -19,6 +24,42 @@ export function Dashboard({
     const [detalhesTransacao, setDetalhesTransacao] = useState(null);
     const [catFormulario, setCatFormulario] = useState('Sem Categoria');
     const todosSelecionados = dadosTabela.length > 0 && selecionados.length === dadosTabela.length;
+
+    // =========================================================================
+    // ARQUITETURA DE PAGINAÇÃO INFINITA (LAZY LOAD / INTERSECTION OBSERVER)
+    // =========================================================================
+    const [limiteExibicao, setLimiteExibicao] = useState(30);
+    const elementoSentinelaRef = useRef(null);
+
+    // Reseta o limite de exibição sempre que o usuário trocar de mês ou aplicar filtros/buscas
+    useEffect(() => {
+        setLimiteExibicao(30);
+    }, [dataVis, filtroStatus, buscaTexto, filtrosAvancados]);
+
+    // Configura o observador para injetar mais 30 itens de forma antecipada (Pre-fetching)
+    useEffect(() => {
+        const sentinela = elementoSentinelaRef.current;
+        if (!sentinela) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            // Se o elemento sentinela entrar na margem de visão e ainda houver dados a carregar
+            if (entries[0].isIntersecting && limiteExibicao < dadosTabela.length) {
+                setLimiteExibicao(prev => prev + 30);
+            }
+        }, {
+            root: null,
+            rootMargin: '250px', // Gatilho acionado 250px antes de tocar o fundo da lista (Garante o Pre-fetching sem Delay)
+            threshold: 0.1
+        });
+
+        observer.observe(sentinela);
+        return () => {
+            if (sentinela) observer.unobserve(sentinela);
+        };
+    }, [limiteExibicao, dadosTabela.length]);
+
+    // Clona e fatia a matriz original de dados para poupar a renderização do React DOM
+    const dadosExibidos = dadosTabela.slice(0, limiteExibicao);
 
     const abrirDetalhes = (t) => {
         setDetalhesTransacao({
@@ -68,7 +109,7 @@ export function Dashboard({
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-2 md:p-8 text-slate-800 dark:text-slate-200 overflow-x-hidden transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 dark:text-slate-200 overflow-x-hidden transition-colors duration-300">
             <ModalComponent config={modalConfig} onClose={modalClose} />
             <ModalComponent config={detalhesTransacao} onClose={() => setDetalhesTransacao(null)} />
             <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
@@ -93,14 +134,13 @@ export function Dashboard({
                     </div>
                 </header>
 
-                {/* CARD INTELIGENTE DE PENDÊNCIAS */}
                 {pendenciasPassadas && pendenciasPassadas.length > 0 && (
                     <div role="button" tabIndex={0} onClick={abrirModalPendencias} className="bg-gradient-to-r from-rose-500 to-red-600 dark:from-rose-600 dark:to-red-800 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row items-center justify-between border border-rose-400 dark:border-rose-700 gap-4">
                         <div className="flex items-center gap-4 w-full">
                             <div className="bg-white/20 p-3 rounded-full flex-shrink-0"><span className="text-2xl text-white">⚠️</span></div>
                             <div>
                                 <h3 className="text-white font-bold text-base md:text-lg leading-tight">Atenção! Você tem pendências antigas.</h3>
-                                <p className="text-rose-100 text-xs md:text-sm mt-1">Existem {pendenciasPassadas.length} lançamento(s) de meses anteriores aguardando resolução.</p>
+                                <p className="text-rose-100 text-xs md:text-sm mt-1">Existem {pendenciasPassadas.length} lançamento(s) de meses anteriores aguardando resolution.</p>
                             </div>
                         </div>
                         <div className="w-full md:w-auto text-center md:text-left text-white font-semibold bg-black/10 dark:bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm whitespace-nowrap">
@@ -134,7 +174,7 @@ export function Dashboard({
                         <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Saldo Mês Anterior</h3>
                         <p className={`text-sm md:text-lg font-bold mt-1 ${saldoMesAnterior >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}`}>{formatarMoeda(saldoMesAnterior)}</p>
                         <p className="text-[9px] text-slate-400 dark:text-slate-500 mb-2">{nomesMeses[mesAntRef.mes - 1]} {mesAntRef.ano}</p>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setSomarSaldoAnterior(v => !v); }} className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border cursor-pointer ${somarSaldoAnterior ? 'bg-teal-500 text-white border-teal-600 dark:bg-teal-600 dark:border-teal-700' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setSomarSaldoAnterior(v => !v); }} className={`w-full text-[9px] md:text-[10px] font-bold py-1 px-2 rounded transition-colors border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer`}>
                             {somarSaldoAnterior ? '✔ Somando ao Saldo' : '+ Somar ao Saldo'}
                         </button>
                     </div>
@@ -302,10 +342,10 @@ export function Dashboard({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                        {dadosTabela.length === 0 && (
+                                        {dadosExibidos.length === 0 && (
                                             <tr><td colSpan="7" className="py-12 text-center text-slate-400 dark:text-slate-500 text-sm">Nenhum lançamento encontrado.</td></tr>
                                         )}
-                                        {dadosTabela.map(t => (
+                                        {dadosExibidos.map(t => (
                                             <tr key={t.id} className={`hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50/50 dark:bg-indigo-900/30' : ''}`}>
                                                 <td className="px-3 py-3 text-center"><input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 dark:accent-indigo-500 cursor-pointer" /></td>
                                                 <td className="px-3 py-3">
@@ -343,8 +383,8 @@ export function Dashboard({
                                     })}
                                 </div>
                                 <div className="divide-y divide-slate-100 dark:divide-slate-700/50 transition-colors">
-                                    {dadosTabela.length === 0 && <p className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">Nenhum lançamento encontrado.</p>}
-                                    {dadosTabela.map(t => (
+                                    {dadosExibidos.length === 0 && <p className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">Nenhum lançamento encontrado.</p>}
+                                    {dadosExibidos.map(t => (
                                         <div key={t.id} className={`p-3 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                                             <div className="flex items-start justify-between gap-2 mb-1.5">
                                                 <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -372,6 +412,10 @@ export function Dashboard({
                                     ))}
                                 </div>
                             </div>
+
+                            {/* CONTAINER SENTINELA INVISÍVEL PARA TRIGGER DA PAGINAÇÃO INFINITA ANTECIPADA */}
+                            <div ref={elementoSentinelaRef} className="h-4 w-full clear-both" />
+
                         </div>
                     </div>
                 </div>
