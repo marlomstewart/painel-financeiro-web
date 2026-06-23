@@ -1,48 +1,70 @@
 import { useCallback } from 'react';
 
+const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
 /**
  * Hook Customizado: useTransacoes
- * Responsável pelo ciclo de vida das transações e interação com armazenamento estático (comprovantes).
+ * Responsável pelo ciclo de vida das transações, incluindo feedback visual de Loading.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
-    /** Processa os formulários financeiros e cruza informações com a garagem */
+    /** Processa os formulários financeiros e previne cliques duplos com Loader */
     const addTransacao = useCallback(async (e) => {
         e.preventDefault();
-        const fd = new FormData(e.target);
-        const d = fd.get('descricao'), v = Number(fd.get('valor')), dt = new Date(fd.get('dataCompra') + 'T00:00:00');
-        let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
+        const form = e.target;
+        const btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+        const originalText = btn ? btn.innerHTML : '';
 
-        let km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
-        let veiculo_id = null; let veiculo_emprestado = null;
-
-        if (nomeUsuario.toLowerCase() === 'stewart' && (c === 'Gasolina' || c === 'Manutenção da moto')) {
-            let listaAtual = garagem.veiculosGaragem;
-            try { const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() }); if (resGar.ok) { listaAtual = await resGar.json(); garagem.setVeiculosGaragem(listaAtual); } } catch (err) { console.error('Erro garagem:', err); }
-            const opcoesVeiculo = listaAtual.map(vc => ({ value: vc.id, icon: vc.tipo === 'convidado' ? '🤝' : '🚗', label: vc.modelo, desc: vc.tipo === 'convidado' ? 'Convidado' : `${vc.ano_fabricacao}/${vc.ano_modelo}` }));
-            if (opcoesVeiculo.length === 0) { await modal.alert('Cadastre um veículo primeiro.', '🏍️ Vazio'); return; }
-            const idEscolhido = await modal.options('Qual veículo recebeu o lançamento?', opcoesVeiculo, '🏍️ Veículo');
-            if (!idEscolhido) return;
-            const veiculoEscolhido = listaAtual.find(vc => vc.id === idEscolhido);
-            veiculo_id = veiculoEscolhido.id;
-            if (veiculoEscolhido.tipo === 'convidado') { veiculo_emprestado = veiculoEscolhido.modelo; km_moto = null; }
+        // Feedback Visual Imediato (Bloqueia o botão e gira o spinner)
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-70', 'cursor-wait');
+            btn.innerHTML = `${loadingIcon} Processando...`;
         }
 
-        if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
-        if (c === 'Contas Fixas') t = 'despesa';
-        const grupoId = parc > 1 ? Date.now().toString() : null; let novasT = [];
+        try {
+            const fd = new FormData(form);
+            const d = fd.get('descricao'), v = Number(fd.get('valor')), dt = new Date(fd.get('dataCompra') + 'T00:00:00');
+            let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
 
-        if (p.startsWith('credito_')) {
-            const cart = cartoes.find(card => card.id === p.split('_')[1]); let mI = (dt.getDate() >= cart.melhorDia) ? dt.getMonth() + 1 : dt.getMonth();
-            for (let i = 0; i < parc; i++) { let mP = mI + i, aP = dt.getFullYear(); if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; } novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado }); }
-        } else {
-            novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado });
+            let km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
+            let veiculo_id = null; let veiculo_emprestado = null;
+
+            if (nomeUsuario.toLowerCase() === 'stewart' && (c === 'Gasolina' || c === 'Manutenção da moto')) {
+                let listaAtual = garagem.veiculosGaragem;
+                try { const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() }); if (resGar.ok) { listaAtual = await resGar.json(); garagem.setVeiculosGaragem(listaAtual); } } catch (err) { console.error('Erro garagem:', err); }
+                const opcoesVeiculo = listaAtual.map(vc => ({ value: vc.id, icon: vc.tipo === 'convidado' ? '🤝' : '🚗', label: vc.modelo, desc: vc.tipo === 'convidado' ? 'Convidado' : `${vc.ano_fabricacao}/${vc.ano_modelo}` }));
+                if (opcoesVeiculo.length === 0) { await modal.alert('Cadastre um veículo primeiro.', '🏍️ Vazio'); return; }
+                const idEscolhido = await modal.options('Qual veículo recebeu o lançamento?', opcoesVeiculo, '🏍️ Veículo');
+                if (!idEscolhido) return;
+                const veiculoEscolhido = listaAtual.find(vc => vc.id === idEscolhido);
+                veiculo_id = veiculoEscolhido.id;
+                if (veiculoEscolhido.tipo === 'convidado') { veiculo_emprestado = veiculoEscolhido.modelo; km_moto = null; }
+            }
+
+            if (c === 'Renda' || c === 'Renda Fixa') t = 'renda';
+            if (c === 'Contas Fixas') t = 'despesa';
+            const grupoId = parc > 1 ? Date.now().toString() : null; let novasT = [];
+
+            if (p.startsWith('credito_')) {
+                const cart = cartoes.find(card => card.id === p.split('_')[1]); let mI = (dt.getDate() >= cart.melhorDia) ? dt.getMonth() + 1 : dt.getMonth();
+                for (let i = 0; i < parc; i++) { let mP = mI + i, aP = dt.getFullYear(); if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; } novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado }); }
+            } else {
+                novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado });
+            }
+
+            for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
+            setTransacoes([...transacoes, ...novasT]); form.reset();
+
+            if (km_moto && veiculo_id && !veiculo_emprestado) await garagem.verificarDesgasteVeiculo(veiculo_id, km_moto);
+        } finally {
+            // Reverte o botão para o estado normal independente de sucesso ou erro
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70', 'cursor-wait');
+                btn.innerHTML = originalText;
+            }
         }
-
-        for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
-        setTransacoes([...transacoes, ...novasT]); e.target.reset();
-
-        if (km_moto && veiculo_id && !veiculo_emprestado) await garagem.verificarDesgasteVeiculo(veiculo_id, km_moto);
     }, [API, getHeaders, modal, nomeUsuario, cartoes, transacoes, setTransacoes, garagem]);
 
     /** Ações massivas ativadas pelos checkboxes na Dashboard */

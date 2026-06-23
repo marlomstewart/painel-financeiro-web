@@ -1,16 +1,12 @@
 import { useState, useCallback } from 'react';
 
+const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
 /**
  * Hook Customizado: useAuth
- * Encapsula o portão de segurança (Gatekeeper) do sistema.
- * Gere token JWT, níveis de acesso, fluxos de login/logout e rotinas do Super Admin.
- * * @param {Object} params - Instâncias globais injetadas pelo Root.
- * @param {string} params.API - URL Base da API REST.
- * @param {Object} params.modal - Instância de manipulação visual de janelas.
- * @param {Function} params.setCarregouAPI - Setter de estado de carregamento do App principal.
+ * Gere token JWT e fluxos de login com prevenção visual de múltiplos disparos.
  */
 export function useAuth({ API, modal, setCarregouAPI }) {
-    // Estados Globais de Autenticação
     const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
     const [tokenTemp, setTokenTemp] = useState(null);
     const [precisaTrocarSenha, setPrecisaTrocarSenha] = useState(false);
@@ -18,7 +14,6 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true' || false);
     const [usuarios, setUsuarios] = useState([]);
 
-    // Estados Locais de Formulário
     const [usuarioLogin, setUsuarioLogin] = useState('');
     const [senhaLogin, setSenhaLogin] = useState('');
     const [erroLogin, setErroLogin] = useState('');
@@ -26,19 +21,19 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [erroTrocaSenha, setErroTrocaSenha] = useState('');
 
-    /**
-     * Memória injetável do JWT em cada requisição REST do sistema.
-     */
     const getHeaders = useCallback(() => ({
         'Authorization': `Bearer ${token || tokenTemp}`,
         'Content-Type': 'application/json'
     }), [token, tokenTemp]);
 
-    /**
-     * Realiza o aperto de mãos (Handshake) com o Backend validando as credenciais.
-     */
     const fazerLogin = async (e) => {
-        e.preventDefault(); setErroLogin('');
+        e.preventDefault();
+        setErroLogin('');
+
+        const btn = e.target.querySelector('button[type="submit"]') || e.target.querySelector('button');
+        const originalText = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Autenticando...`; }
+
         try {
             const res = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: usuarioLogin, senha: senhaLogin }) });
             const data = await res.json();
@@ -50,30 +45,38 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     setToken(data.token); setIsAdmin(data.is_admin === true);
                 }
             } else { setErroLogin(data.message); }
-        } catch (err) { setErroLogin("Erro ao conectar no servidor."); }
+        } catch (err) {
+            setErroLogin("Erro ao conectar no servidor.");
+        } finally {
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; }
+        }
     };
 
-    /**
-     * Purga violentamente qualquer estado local e de sessão do cliente.
-     */
     const fazerLogout = useCallback(() => {
         localStorage.removeItem('tokenPainel'); localStorage.removeItem('nomeUsuario'); localStorage.removeItem('isAdmin');
         setToken(null); setTokenTemp(null); setPrecisaTrocarSenha(false); setCarregouAPI(false); setNomeUsuario(''); setIsAdmin(false); setUsuarios([]);
     }, [setCarregouAPI]);
 
-    /**
-     * Atualiza no banco de dados a senha do usuário e liberta o Token temporário para uso vitalício (12h).
-     */
     const enviarNovaSenha = async (e) => {
-        e.preventDefault(); setErroTrocaSenha('');
+        e.preventDefault();
+        setErroTrocaSenha('');
         const regexSenhaForte = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/;
         if (novaSenha !== confirmarSenha) return setErroTrocaSenha("As senhas não coincidem.");
         if (!regexSenhaForte.test(novaSenha)) return setErroTrocaSenha("Mínimo 12 caracteres, 1 Maiúscula, 1 Minúscula, 1 Número, 1 Especial.");
+
+        const btn = e.target.querySelector('button[type="submit"]') || e.target.querySelector('button');
+        const originalText = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Atualizando...`; }
+
         try {
             const res = await fetch(`${API}/mudar-senha`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ novaSenha }) });
             if (res.ok) { localStorage.setItem('tokenPainel', tokenTemp); setToken(tokenTemp); setTokenTemp(null); setPrecisaTrocarSenha(false); }
             else { setErroTrocaSenha("Erro ao atualizar a senha no servidor."); }
-        } catch (err) { setErroTrocaSenha("Erro de conexão."); }
+        } catch (err) {
+            setErroTrocaSenha("Erro de conexão.");
+        } finally {
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; }
+        }
     };
 
     /** Operações restritas ao Super Admin */
