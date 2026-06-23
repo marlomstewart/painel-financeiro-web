@@ -228,6 +228,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         let conteudo;
         let titulo;
 
+        // Calcula a quantidade exata de dias do mês/ano que o usuário está visualizando
+        const ultimoDiaDoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
+
         if (tipo === 'rendas') {
             titulo = 'Detalhamento de Rendas';
             conteudo = (
@@ -237,7 +240,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800/50"><span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">⏳ A Receber (Pendente)</span><span className="font-bold text-amber-800 dark:text-amber-300">{formatarMoeda(totRendaPendente)}</span></div>
                 </div>
             );
-        }
+        } 
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
@@ -286,22 +289,22 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Acúmulo de Meses Anteriores</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>
                     )}
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 mt-2">
-                        <span className="text-slate-800 dark:text-slate-200 font-bold text-sm">Sobra Estimada no dia 31</span><span className={`font-bold text-lg ${previstoFimMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-bold text-sm">Sobra Estimada no dia {ultimoDiaDoMes}</span><span className={`font-bold text-lg ${previstoFimMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</span>
                     </div>
                 </div>
             );
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto]);
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas,
+        categoriasDinamicas, gCat, pendenciasPassadas, 
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
