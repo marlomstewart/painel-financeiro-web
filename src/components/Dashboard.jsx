@@ -115,15 +115,15 @@ export function Dashboard({
             <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
 
                 <header className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-300">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                         <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">Painel Financeiro</h1>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium capitalize">Olá, {nomeUsuario}! 👋</p>
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 bg-slate-50 dark:bg-slate-900 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-slate-200 dark:border-slate-700 order-3 lg:order-2 w-full lg:w-auto justify-center transition-colors">
-                        <button type="button" onClick={mesAnterior} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold flex-shrink-0 transition-colors">◀</button>
+                        <button type="button" onClick={mesAnterior} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold shrink-0 transition-colors">◀</button>
                         <span className="font-semibold text-slate-700 dark:text-slate-200 uppercase text-center text-[11px] sm:text-xs md:text-base whitespace-nowrap">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-                        <button type="button" onClick={mesProximo} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold flex-shrink-0 transition-colors">▶</button>
+                        <button type="button" onClick={mesProximo} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold shrink-0 transition-colors">▶</button>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 sm:gap-2 order-2 lg:order-3 justify-end flex-1 lg:flex-none">
@@ -135,9 +135,9 @@ export function Dashboard({
                 </header>
 
                 {pendenciasPassadas && pendenciasPassadas.length > 0 && (
-                    <div role="button" tabIndex={0} onClick={abrirModalPendencias} className="bg-gradient-to-r from-rose-500 to-red-600 dark:from-rose-600 dark:to-red-800 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row items-center justify-between border border-rose-400 dark:border-rose-700 gap-4">
+                    <div role="button" tabIndex={0} onClick={abrirModalPendencias} className="bg-linear-to-r from-rose-500 to-red-600 dark:from-rose-600 dark:to-red-800 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row items-center justify-between border border-rose-400 dark:border-rose-700 gap-4">
                         <div className="flex items-center gap-4 w-full">
-                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0"><span className="text-2xl text-white">⚠️</span></div>
+                            <div className="bg-white/20 p-3 rounded-full shrink-0"><span className="text-2xl text-white">⚠️</span></div>
                             <div>
                                 <h3 className="text-white font-bold text-base md:text-lg leading-tight">Atenção! Você tem pendências antigas.</h3>
                                 <p className="text-rose-100 text-xs md:text-sm mt-1">Existem {pendenciasPassadas.length} lançamento(s) de meses anteriores aguardando resolution.</p>
@@ -376,7 +376,7 @@ export function Dashboard({
                                     ].map(({ coluna, label }) => {
                                         const ativo = ordenacao.coluna === coluna;
                                         return (
-                                            <button key={coluna} type="button" onClick={() => mudarOrdenacao(coluna)} className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer ${ativo ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                                            <button key={coluna} type="button" onClick={() => mudarOrdenacao(coluna)} className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors shrink-0 cursor-pointer ${ativo ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                                                 {label} {ativo ? (ordenacao.direcao === 'asc' ? '↑' : '↓') : ''}
                                             </button>
                                         );
@@ -388,7 +388,7 @@ export function Dashboard({
                                         <div key={t.id} className={`p-3 transition-colors ${selecionados.includes(t.id) ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                                             <div className="flex items-start justify-between gap-2 mb-1.5">
                                                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                                                    <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 dark:accent-indigo-500 cursor-pointer mt-0.5 flex-shrink-0" />
+                                                    <input type="checkbox" checked={selecionados.includes(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-indigo-600 dark:accent-indigo-500 cursor-pointer mt-0.5 shrink-0" />
                                                     <button type="button" onClick={() => abrirDetalhes(t)} className="text-left min-w-0 group cursor-pointer">
                                                         <p className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{t.descricao}</p>
                                                         <div className="flex items-center gap-1 mt-0.5">

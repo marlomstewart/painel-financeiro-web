@@ -394,7 +394,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                             <p className="font-medium text-slate-800 dark:text-slate-200 truncate">{t.descricao}</p>
                                             <p className="text-[10px] text-slate-400 dark:text-slate-500">{formatarData(t.dataCompra)} {t.km_moto ? `• ${Number(t.km_moto).toLocaleString('pt-BR')} km` : ''}</p>
                                         </div>
-                                        <div className="text-right flex-shrink-0 ml-2">
+                                        <div className="text-right shrink-0 ml-2">
                                             <p className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(t.valorParcela)}</p>
                                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${t.status === 'pago' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>{t.status}</span>
                                         </div>
@@ -418,7 +418,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                         <div key={m.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 text-sm transition-colors">
                                             <div className="flex justify-between items-start">
                                                 <p className="font-medium text-slate-800 dark:text-slate-200">{m.descricao}</p>
-                                                <div className="flex gap-1 flex-shrink-0 ml-2">
+                                                <div className="flex gap-1 shrink-0 ml-2">
                                                     <button type="button" onClick={() => setModalManutencao(m)} className="text-blue-400 hover:text-blue-600 cursor-pointer text-xs">✏️</button>
                                                     <button type="button" onClick={() => excluirManutencao(m.id)} className="text-red-400 hover:text-red-600 cursor-pointer text-xs">🗑️</button>
                                                 </div>

@@ -10,7 +10,7 @@ export function ThemeToggle({ theme, toggleTheme }) {
     return (
         <button
             onClick={toggleTheme}
-            className="fixed bottom-6 left-6 p-3 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 z-[9000] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer"
+            className="fixed bottom-6 left-6 p-3 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 z-9000 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer"
             title="Alternar Tema Visual"
         >
             <span className="text-xl leading-none block select-none">

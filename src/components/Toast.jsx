@@ -13,7 +13,7 @@ export function Toast({ toast }) {
     const icon = isError ? '❌' : '✅';
 
     return (
-        <div className={`fixed bottom-6 right-6 flex items-center gap-3 ${bgClass} text-white px-5 py-3 rounded-lg shadow-2xl z-[9999] transition-all animate-bounce`}>
+        <div className={`fixed bottom-6 right-6 flex items-center gap-3 ${bgClass} text-white px-5 py-3 rounded-lg shadow-2xl z-9999 transition-all animate-bounce`}>
             <span className="text-xl">{icon}</span>
             <p className="text-sm font-bold tracking-wide">{toast.message}</p>
         </div>
