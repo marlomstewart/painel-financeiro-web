@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+/* 
+ * Configuração nativa para o Dark Mode funcionar por classe no Tailwind v4.
+ * O Tailwind agora varre os elementos HTML buscando a classe '.dark'.
+ */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+    body {
+        @apply bg-slate-100 text-slate-800 transition-colors duration-300 ease-in-out;
+    }
+
+    .dark body {
+        @apply bg-slate-900 text-slate-100;
+    }
+}
