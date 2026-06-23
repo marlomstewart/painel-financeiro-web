@@ -31,24 +31,21 @@ export function Dashboard({
     const [limiteExibicao, setLimiteExibicao] = useState(30);
     const elementoSentinelaRef = useRef(null);
 
-    // Reseta o limite de exibição sempre que o usuário trocar de mês ou aplicar filtros/buscas
     useEffect(() => {
         setLimiteExibicao(30);
     }, [dataVis, filtroStatus, buscaTexto, filtrosAvancados]);
 
-    // Configura o observador para injetar mais 30 itens de forma antecipada (Pre-fetching)
     useEffect(() => {
         const sentinela = elementoSentinelaRef.current;
         if (!sentinela) return;
 
         const observer = new IntersectionObserver((entries) => {
-            // Se o elemento sentinela entrar na margem de visão e ainda houver dados a carregar
             if (entries[0].isIntersecting && limiteExibicao < dadosTabela.length) {
                 setLimiteExibicao(prev => prev + 30);
             }
         }, {
             root: null,
-            rootMargin: '250px', // Gatilho acionado 250px antes de tocar o fundo da lista (Garante o Pre-fetching sem Delay)
+            rootMargin: '250px',
             threshold: 0.1
         });
 
@@ -58,7 +55,6 @@ export function Dashboard({
         };
     }, [limiteExibicao, dadosTabela.length]);
 
-    // Clona e fatia a matriz original de dados para poupar a renderização do React DOM
     const dadosExibidos = dadosTabela.slice(0, limiteExibicao);
 
     const abrirDetalhes = (t) => {
@@ -109,7 +105,7 @@ export function Dashboard({
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-2 md:p-8 text-slate-800 dark:text-slate-200 overflow-x-hidden transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-2 md:p-8 text-slate-800 dark:text-slate-200 overflow-x-hidden transition-colors duration-300">
             <ModalComponent config={modalConfig} onClose={modalClose} />
             <ModalComponent config={detalhesTransacao} onClose={() => setDetalhesTransacao(null)} />
             <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
@@ -121,29 +117,29 @@ export function Dashboard({
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 bg-slate-50 dark:bg-slate-900 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-slate-200 dark:border-slate-700 order-3 lg:order-2 w-full lg:w-auto justify-center transition-colors">
-                        <button type="button" onClick={mesAnterior} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold shrink-0 transition-colors">◀</button>
+                        <button type="button" onClick={mesAnterior} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold shrink-0 transition-colors cursor-pointer">◀</button>
                         <span className="font-semibold text-slate-700 dark:text-slate-200 uppercase text-center text-[11px] sm:text-xs md:text-base whitespace-nowrap">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-                        <button type="button" onClick={mesProximo} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold shrink-0 transition-colors">▶</button>
+                        <button type="button" onClick={mesProximo} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg md:text-xl font-bold shrink-0 transition-colors cursor-pointer">▶</button>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 sm:gap-2 order-2 lg:order-3 justify-end flex-1 lg:flex-none">
-                        {isAdmin && (<button type="button" onClick={() => { setTelaAtiva('admin'); carregarUsuarios(); }} className="bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-400 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-purple-200 dark:border-purple-800 transition-colors whitespace-nowrap">👥 <span className="hidden sm:inline">Usuários</span></button>)}
-                        {nomeUsuario === 'stewart' && (<button type="button" onClick={() => setTelaAtiva('garagem')} className="bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-orange-700 dark:text-orange-400 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-orange-200 dark:border-orange-800 transition-colors whitespace-nowrap">🏍️ <span className="hidden sm:inline">Garagem</span></button>)}
-                        <button type="button" onClick={() => setTelaAtiva('setup')} className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-slate-200 dark:border-slate-600 transition-colors whitespace-nowrap">⚙ <span className="hidden sm:inline">Config</span></button>
-                        <button type="button" onClick={fazerLogout} className="bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-red-100 dark:border-red-800 transition-colors whitespace-nowrap">Sair</button>
+                        {isAdmin && (<button type="button" onClick={() => { setTelaAtiva('admin'); carregarUsuarios(); }} className="bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-400 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-purple-200 dark:border-purple-800 transition-colors whitespace-nowrap cursor-pointer">👥 <span className="hidden sm:inline">Usuários</span></button>)}
+                        {nomeUsuario === 'stewart' && (<button type="button" onClick={() => setTelaAtiva('garagem')} className="bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-orange-700 dark:text-orange-400 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-orange-200 dark:border-orange-800 transition-colors whitespace-nowrap cursor-pointer">🏍️ <span className="hidden sm:inline">Garagem</span></button>)}
+                        <button type="button" onClick={() => setTelaAtiva('setup')} className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-slate-200 dark:border-slate-600 transition-colors whitespace-nowrap cursor-pointer">⚙ <span className="hidden sm:inline">Config</span></button>
+                        <button type="button" onClick={fazerLogout} className="bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium border border-red-100 dark:border-red-800 transition-colors whitespace-nowrap cursor-pointer">Sair</button>
                     </div>
                 </header>
 
                 {pendenciasPassadas && pendenciasPassadas.length > 0 && (
-                    <div role="button" tabIndex={0} onClick={abrirModalPendencias} className="bg-linear-to-r from-rose-500 to-red-600 dark:from-rose-600 dark:to-red-800 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row items-center justify-between border border-rose-400 dark:border-rose-700 gap-4">
+                    <div role="button" tabIndex={0} onClick={abrirModalPendencias} className="bg-linear-to-r  to-red-600 dark:from-rose-600 dark:to-red-800 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row items-center justify-between border border-rose-400 dark:border-rose-700 gap-4">
                         <div className="flex items-center gap-4 w-full">
                             <div className="bg-white/20 p-3 rounded-full shrink-0"><span className="text-2xl text-white">⚠️</span></div>
                             <div>
                                 <h3 className="text-white font-bold text-base md:text-lg leading-tight">Atenção! Você tem pendências antigas.</h3>
-                                <p className="text-rose-100 text-xs md:text-sm mt-1">Existem {pendenciasPassadas.length} lançamento(s) de meses anteriores aguardando resolution.</p>
+                                <p className="text-rose-100 text-xs md:text-sm mt-1">Existem {pendenciasPassadas.length} lançamento(s) de meses anteriores aguardando resolução.</p>
                             </div>
                         </div>
-                        <div className="w-full md:w-auto text-center md:text-left text-white font-semibold bg-black/10 dark:bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm whitespace-nowrap">
+                        <div className="w-full md:w-auto text-center md:text-left text-white font-semibold bg-black/10 dark:bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm whitespace-nowrap cursor-pointer">
                             Resolver Agora ➔
                         </div>
                     </div>
