@@ -5,9 +5,7 @@ import { TrocaSenha } from './components/TrocaSenha';
 import { Admin } from './components/Admin';
 import { Setup } from './components/Setup';
 import { Dashboard } from './components/Dashboard';
-import { Lancamentos } from './components/Lancamentos';
 import { Garagem } from './components/Garagem';
-import { Sidebar } from './components/Sidebar';
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -68,48 +66,38 @@ function App() {
     carregar();
   }, [auth.token]);
 
-  const exportarCSV = () => { /* Export mantido no Hook Setup em refatorações futuras */ };
+  const exportarCSV = () => { /* Export mantido no Setup */ };
 
-  // GATING DE ACESSO E SKELETON
   if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
   if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
   if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
 
-  // ROTEADOR CENTRAL
-  const renderizarConteudoAtivo = () => {
-    if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
-
-    // Fallback temporário para as telas que serão isoladas nas próximas etapas
-    if (telaAtiva === 'setup' || telaAtiva === 'contas_fixas' || telaAtiva === 'metas_categorias' || telaAtiva === 'cartoes' || telaAtiva === 'configuracoes') {
-      return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} exportarCSV={exportarCSV} getHeaders={auth.getHeaders} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} addCartao={setup.addCartao} cartoes={setup.cartoes} setCartoes={setup.setCartoes} addCategoria={setup.addCategoria} categorias={setup.categorias} setCategorias={setup.setCategorias} addContaFixa={setup.addContaFixa} contasFixas={setup.contasFixas} setContasFixas={setup.setContasFixas} addRendaFixa={setup.addRendaFixa} rendasFixas={setup.rendasFixas} setRendasFixas={setup.setRendasFixas} removerSetup={setup.removerSetup} />;
-    }
-
-    if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} />;
-
-    if (telaAtiva === 'lancamentos') {
-      return <Lancamentos categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} />;
-    }
-
-    // Default: Dashboard
-    return <Dashboard dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} />;
-  };
+  if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
+  if (telaAtiva === 'setup') return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} exportarCSV={exportarCSV} getHeaders={auth.getHeaders} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} addCartao={setup.addCartao} cartoes={setup.cartoes} setCartoes={setup.setCartoes} addCategoria={setup.addCategoria} categorias={setup.categorias} setCategorias={setup.setCategorias} addContaFixa={setup.addContaFixa} contasFixas={setup.contasFixas} setContasFixas={setup.setContasFixas} addRendaFixa={setup.addRendaFixa} rendasFixas={setup.rendasFixas} setRendasFixas={setup.setRendasFixas} removerSetup={setup.removerSetup} />;
+  if (telaAtiva === 'garagem') return <><Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
-      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} />
-      <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
-        {/* Menu Mobile Flutuante Superior */}
-        <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-40 sticky top-0">
-          <h1 className="text-lg font-black tracking-tight flex items-center gap-2"><span className="text-blue-500">⚡</span> Financeiro</h1>
-          <select value={telaAtiva} onChange={(e) => setTelaAtiva(e.target.value)} className="bg-slate-800 text-sm p-2 rounded outline-none border border-slate-700">
-            <option value="dashboard">📊 Dashboard</option><option value="lancamentos">💸 Lançamentos</option><option value="cartoes">💳 Cartões</option><option value="contas_fixas">🔄 Contas Fixas</option><option value="metas_categorias">🎯 Metas</option><option value="garagem">🚗 Garagem</option><option value="configuracoes">⚙️ Config.</option>{auth.isAdmin && <option value="admin">👥 Admin</option>}
-          </select>
-        </div>
-        {renderizarConteudoAtivo()}
-      </main>
+    <>
+      <Dashboard
+        nomeUsuario={auth.nomeUsuario} alertaMoto={garagem.alertaMoto} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria}
+        dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo}
+        isAdmin={auth.isAdmin} setTelaAtiva={setTelaAtiva} carregarUsuarios={auth.carregarUsuarios} fazerLogout={auth.fazerLogout}
+        totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido}
+        verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto}
+        saldoMesAnterior={dashboardManager.saldoMesAnterior} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior}
+        saldoAtual={dashboardManager.saldoAtual} saldoMesAtual={dashboardManager.saldoMesAtual} mesAntRef={dashboardManager.mesAntRef} previstoFimMes={dashboardManager.previstoFimMes}
+        categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} cartoes={setup.cartoes}
+        filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto}
+        mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados}
+        mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela}
+        pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard}
+        ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close}
+        addTransacao={transacoesManager.addTransacao} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa}
+        anexarComprovante={transacoesManager.anexarComprovante} removerComprovante={transacoesManager.removerComprovante} verComprovante={transacoesManager.verComprovante} pagarFaturaCartao={cartoesFaturas.pagarFaturaCartao}
+      />
       <Toast toast={toast} />
       <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-    </div>
+    </>
   );
 }
 
