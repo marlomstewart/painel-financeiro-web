@@ -3,9 +3,9 @@ import React from 'react';
 
 export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin, modalConfig, modalClose, ModalComponent }) {
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
             <ModalComponent config={modalConfig} onClose={modalClose} />
-            
+
             <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-sm border border-transparent dark:border-slate-700 transition-colors duration-300">
                 <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 transition-colors">Painel Financeiro</h1>
