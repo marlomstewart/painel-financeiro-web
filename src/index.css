@@ -5,8 +5,6 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* === AJUSTES DE ACESSIBILIDADE DE SISTEMA === */
-
-/* Força os ícones de input tipo "date" (o calendário do navegador) a ficarem claros quando o modo escuro estiver ativado */
 .dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.7;
@@ -15,4 +13,22 @@
 
 .dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
+}
+
+/* === SCROLLBAR CUSTOMIZADA PARA O MENU LATERAL E MAIN === */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(71, 85, 105, 0.3);
 }
