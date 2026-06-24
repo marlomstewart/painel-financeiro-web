@@ -56,12 +56,29 @@ export function Dashboard({
                     <h3 className="text-xl font-black text-purple-600 dark:text-purple-400">{formatarMoeda(totFaturaCreditoAberto)}</h3>
                 </div>
 
+                {/* CARD DE SALDO LÍQUIDO - COM CHECKBOX ISOLADA E AMPLIADA */}
                 <div onClick={() => abrirResumoCard('saldo')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group relative">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-indigo-500 transition">Saldo Líquido</p>
                     <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(saldoAtual)}</h3>
-                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                        <input type="checkbox" checked={somarSaldoAnterior} onChange={(e) => { e.stopPropagation(); setSomarSaldoAnterior(e.target.checked); }} className="cursor-pointer scale-75" title="Somar Mês Anterior?" />
-                        <span className="text-[8px] font-bold text-slate-500">Mês Ant.</span>
+
+                    {/* AQUI ESTÁ A CORREÇÃO DO VAZAMENTO DE CLIQUE */}
+                    <div
+                        className="absolute top-3 right-3 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Somar saldo que sobrou do mês anterior?"
+                    >
+                        <input
+                            type="checkbox"
+                            checked={somarSaldoAnterior}
+                            onChange={(e) => setSomarSaldoAnterior(e.target.checked)}
+                            className="cursor-pointer w-4 h-4 accent-indigo-600"
+                        />
+                        <span
+                            className="text-[10px] font-bold text-slate-700 dark:text-slate-300 select-none cursor-pointer"
+                            onClick={() => setSomarSaldoAnterior(!somarSaldoAnterior)}
+                        >
+                            + Mês Ant.
+                        </span>
                     </div>
                 </div>
 
