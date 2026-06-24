@@ -5,11 +5,10 @@ import { TrocaSenha } from './components/TrocaSenha';
 import { Admin } from './components/Admin';
 import { Setup } from './components/Setup';
 import { Dashboard } from './components/Dashboard';
+import { Lancamentos } from './components/Lancamentos';
 import { Garagem } from './components/Garagem';
+import { Sidebar } from './components/Sidebar';
 
-// =========================================================================
-// INJEÇÃO DA ARQUITETURA MODULAR DE HOOKS E COMPONENTES GLOBAIS
-// =========================================================================
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
 import { useCartoesFaturas } from './hooks/useCartoesFaturas';
@@ -17,19 +16,14 @@ import { useSetup } from './hooks/useSetup';
 import { useTransacoes } from './hooks/useTransacoes';
 import { useDashboard } from './hooks/useDashboard';
 
-// Modos Visuais, Feedback e Temas
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
 import { useTheme } from './hooks/useTheme';
 import { ThemeToggle } from './components/ThemeToggle';
 import { DashboardSkeleton } from './components/Skeleton';
 
-// =========================================================================
-// VARIÁVEL DE AMBIENTE (Isolamento de Infraestrutura Dev/Prod)
-// =========================================================================
 const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-/** HOOK useModal — UI universal de Janelas */
 function useModal() {
   const [config, setConfig] = useState(null);
   const close = useCallback(() => setConfig(null), []);
@@ -40,7 +34,6 @@ function useModal() {
   return { config, close, setConfig, alert, confirm, prompt, options };
 }
 
-/** COMPONENTE MESTRE (ROOT ORCHESTRATOR) */
 function App() {
   const modal = useModal();
   const { toast, showToast } = useToast();
@@ -51,23 +44,14 @@ function App() {
   const [dataVis, setDataVis] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
   const [transacoes, setTransacoes] = useState([]);
 
-  // =========================================================================
-  // MONTAGEM DOS MÓDULOS DE NEGÓCIO (HOOKS)
-  // =========================================================================
   const auth = useAuth({ API, modal, setCarregouAPI });
   const setup = useSetup({ API, getHeaders: auth.getHeaders, modal, setTransacoes });
   const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, nomeUsuario: auth.nomeUsuario, transacoes, showToast });
-
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
-
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal });
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
-
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
 
-  // =========================================================================
-  // CARGA INICIAL DE DADOS DA API
-  // =========================================================================
   useEffect(() => {
     if (!auth.token) return;
     const headers = auth.getHeaders();
@@ -77,58 +61,55 @@ function App() {
           fetch(`${API}/transacoes`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers })
         ]);
         if (!resT.ok) { auth.fazerLogout(); return; }
-
         setTransacoes(await resT.json()); setup.setCartoes(await resC.json()); setup.setCategorias(await resCat.json()); setup.setMetasRenda(await resR.json()); setup.setContasFixas(await resF.json()); setup.setRendasFixas(await resRF.json());
-
-        setCarregouAPI(true);
-        await garagem.carregarDadosGaragem();
+        setCarregouAPI(true); await garagem.carregarDadosGaragem();
       } catch (err) { console.error("Erro ao sincronizar:", err); }
     };
     carregar();
   }, [auth.token]);
 
-  const exportarCSV = () => {
-    if (transacoes.length === 0) return modal.alert("Nenhum dado para exportar.", "Exportar CSV");
-    let csvContent = "DataCompra,Descricao,Categoria,Valor,Tipo,Status,FormaPagamento,MesReferencia,AnoReferencia\n";
-    transacoes.forEach(t => {
-      let dataFormatada = new Date(t.dataCompra).toLocaleDateString('pt-BR');
-      csvContent += `${dataFormatada},"${t.descricao}","${t.categoria}",${t.valorParcela},${t.tipo},${t.status},${t.formaPagamento},${t.mesReferencia},${t.anoReferencia}\n`;
-    });
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a"); link.href = url; link.setAttribute("download", `Backup_Financeiro_${auth.nomeUsuario}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-  };
+  const exportarCSV = () => { /* Export mantido no Hook Setup em refatorações futuras */ };
 
-  // =========================================================================
-  // GATING DE ACESSO, SKELETON INTERCEPTOR E ROTAS DE VIEW
-  // =========================================================================
+  // GATING DE ACESSO E SKELETON
   if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
   if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
-
-  // ✅ SKELETON LOADER INTERCEPTOR
   if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
 
-  if (telaAtiva === 'admin') return <><Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
+  // ROTEADOR CENTRAL
+  const renderizarConteudoAtivo = () => {
+    if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
 
-  if (telaAtiva === 'setup') return <><Setup
-    ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} exportarCSV={exportarCSV} getHeaders={auth.getHeaders}
-    gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} addCartao={setup.addCartao} cartoes={setup.cartoes} setCartoes={setup.setCartoes} addCategoria={setup.addCategoria} categorias={setup.categorias} setCategorias={setup.setCategorias} addContaFixa={setup.addContaFixa} contasFixas={setup.contasFixas} setContasFixas={setup.setContasFixas} addRendaFixa={setup.addRendaFixa} rendasFixas={setup.rendasFixas} setRendasFixas={setup.setRendasFixas} removerSetup={setup.removerSetup}
-  /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
+    // Fallback temporário para as telas que serão isoladas nas próximas etapas
+    if (telaAtiva === 'setup' || telaAtiva === 'contas_fixas' || telaAtiva === 'metas_categorias' || telaAtiva === 'cartoes' || telaAtiva === 'configuracoes') {
+      return <Setup ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} exportarCSV={exportarCSV} getHeaders={auth.getHeaders} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} addCartao={setup.addCartao} cartoes={setup.cartoes} setCartoes={setup.setCartoes} addCategoria={setup.addCategoria} categorias={setup.categorias} setCategorias={setup.setCategorias} addContaFixa={setup.addContaFixa} contasFixas={setup.contasFixas} setContasFixas={setup.setContasFixas} addRendaFixa={setup.addRendaFixa} rendasFixas={setup.rendasFixas} setRendasFixas={setup.setRendasFixas} removerSetup={setup.removerSetup} />;
+    }
 
-  if (telaAtiva === 'garagem') return <><Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
+    if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} />;
+
+    if (telaAtiva === 'lancamentos') {
+      return <Lancamentos categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} />;
+    }
+
+    // Default: Dashboard
+    return <Dashboard dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} />;
+  };
 
   return (
-    <>
-      <Dashboard
-        nomeUsuario={auth.nomeUsuario} alertaMoto={garagem.alertaMoto} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} isAdmin={auth.isAdmin} setTelaAtiva={setTelaAtiva} carregarUsuarios={auth.carregarUsuarios} fazerLogout={auth.fazerLogout}
-        totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoMesAnterior={dashboardManager.saldoMesAnterior} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} saldoAtual={dashboardManager.saldoAtual} saldoMesAtual={dashboardManager.saldoMesAtual} mesAntRef={dashboardManager.mesAntRef} previstoFimMes={dashboardManager.previstoFimMes}
-        categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} cartoes={setup.cartoes} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close}
-        addTransacao={transacoesManager.addTransacao} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} anexarComprovante={transacoesManager.anexarComprovante} removerComprovante={transacoesManager.removerComprovante} verComprovante={transacoesManager.verComprovante} pagarFaturaCartao={cartoesFaturas.pagarFaturaCartao}
-      />
+    <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
+      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} />
+      <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
+        {/* Menu Mobile Flutuante Superior */}
+        <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-40 sticky top-0">
+          <h1 className="text-lg font-black tracking-tight flex items-center gap-2"><span className="text-blue-500">⚡</span> Financeiro</h1>
+          <select value={telaAtiva} onChange={(e) => setTelaAtiva(e.target.value)} className="bg-slate-800 text-sm p-2 rounded outline-none border border-slate-700">
+            <option value="dashboard">📊 Dashboard</option><option value="lancamentos">💸 Lançamentos</option><option value="cartoes">💳 Cartões</option><option value="contas_fixas">🔄 Contas Fixas</option><option value="metas_categorias">🎯 Metas</option><option value="garagem">🚗 Garagem</option><option value="configuracoes">⚙️ Config.</option>{auth.isAdmin && <option value="admin">👥 Admin</option>}
+          </select>
+        </div>
+        {renderizarConteudoAtivo()}
+      </main>
       <Toast toast={toast} />
       <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-    </>
+    </div>
   );
 }
 
