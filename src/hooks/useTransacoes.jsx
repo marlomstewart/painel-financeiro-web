@@ -4,28 +4,26 @@ const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current in
 
 /**
  * Hook Customizado: useTransacoes
- * Responsável pelo ciclo de vida das transações, incluindo feedback visual de Loading.
+ * Responsável pelo ciclo de vida das transações.
+ * Atualizado na Fase 4 para interrogar o campo 'observacao' via FormData.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
-    /** Processa os formulários financeiros e previne cliques duplos com Loader */
     const addTransacao = useCallback(async (e) => {
         e.preventDefault();
         const form = e.target;
         const btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
         const originalText = btn ? btn.innerHTML : '';
 
-        // Feedback Visual Imediato (Bloqueia o botão e gira o spinner)
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-70', 'cursor-wait');
-            btn.innerHTML = `${loadingIcon} Processando...`;
-        }
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Processando...`; }
 
         try {
             const fd = new FormData(form);
             const d = fd.get('descricao'), v = Number(fd.get('valor')), dt = new Date(fd.get('dataCompra') + 'T00:00:00');
             let t = fd.get('tipo'), c = fd.get('categoria'), p = fd.get('formaPagamento'), parc = Number(fd.get('parcelas')) || 1, s = fd.get('status');
+
+            // Extração do campo observacao da Fase 4
+            let obs = fd.get('observacao') ? fd.get('observacao') : null;
 
             let km_moto = fd.get('kmMoto') ? Number(fd.get('kmMoto')) : null;
             let veiculo_id = null; let veiculo_emprestado = null;
@@ -34,9 +32,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
                 let listaAtual = garagem.veiculosGaragem;
                 try { const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() }); if (resGar.ok) { listaAtual = await resGar.json(); garagem.setVeiculosGaragem(listaAtual); } } catch (err) { console.error('Erro garagem:', err); }
                 const opcoesVeiculo = listaAtual.map(vc => ({ value: vc.id, icon: vc.tipo === 'convidado' ? '🤝' : '🚗', label: vc.modelo, desc: vc.tipo === 'convidado' ? 'Convidado' : `${vc.ano_fabricacao}/${vc.ano_modelo}` }));
-                if (opcoesVeiculo.length === 0) { await modal.alert('Cadastre um veículo primeiro.', '🏍️ Vazio'); return; }
+                if (opcoesVeiculo.length === 0) { await modal.alert('Cadastre um veículo primeiro.', '🏍️ Vazio'); return false; }
                 const idEscolhido = await modal.options('Qual veículo recebeu o lançamento?', opcoesVeiculo, '🏍️ Veículo');
-                if (!idEscolhido) return;
+                if (!idEscolhido) return false;
                 const veiculoEscolhido = listaAtual.find(vc => vc.id === idEscolhido);
                 veiculo_id = veiculoEscolhido.id;
                 if (veiculoEscolhido.tipo === 'convidado') { veiculo_emprestado = veiculoEscolhido.modelo; km_moto = null; }
@@ -48,26 +46,22 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
             if (p.startsWith('credito_')) {
                 const cart = cartoes.find(card => card.id === p.split('_')[1]); let mI = (dt.getDate() >= cart.melhorDia) ? dt.getMonth() + 1 : dt.getMonth();
-                for (let i = 0; i < parc; i++) { let mP = mI + i, aP = dt.getFullYear(); if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; } novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado }); }
+                for (let i = 0; i < parc; i++) { let mP = mI + i, aP = dt.getFullYear(); if (mP > 11) { aP += Math.floor(mP / 12); mP %= 12; } novasT.push({ id: (Date.now() + i).toString(), descricao: parc > 1 ? `${d} (${i + 1}/${parc})` : d, categoria: c, valorParcela: v / parc, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: mP + 1, anoReferencia: aP, grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado, observacao: obs }); }
             } else {
-                novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado });
+                novasT.push({ id: Date.now().toString(), descricao: d, categoria: c, valorParcela: v, dataCompra: dt.toISOString(), tipo: t, formaPagamento: p, status: s, mesReferencia: dt.getMonth() + 1, anoReferencia: dt.getFullYear(), grupo_id: grupoId, km_moto, veiculo_id, veiculo_emprestado, observacao: obs });
             }
 
             for (const nova of novasT) await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(nova) });
-            setTransacoes([...transacoes, ...novasT]); form.reset();
-
-            if (km_moto && veiculo_id && !veiculo_emprestado) await garagem.verificarDesgasteVeiculo(veiculo_id, km_moto);
+            setTransacoes([...transacoes, ...novasT]);
+            return true;
+        } catch (err) {
+            console.error(err);
+            return false;
         } finally {
-            // Reverte o botão para o estado normal independente de sucesso ou erro
-            if (btn) {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70', 'cursor-wait');
-                btn.innerHTML = originalText;
-            }
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; }
         }
     }, [API, getHeaders, modal, nomeUsuario, cartoes, transacoes, setTransacoes, garagem]);
 
-    /** Ações massivas ativadas pelos checkboxes na Dashboard */
     const executarAcaoEmMassa = useCallback(async (acao, ids) => {
         const confirmacao = await modal.confirm(`Deseja aplicar ${acao.toUpperCase()} a ${ids.length} item(s)?`, '⚠️ Ação em Massa'); if (!confirmacao) return false;
         try {
@@ -81,7 +75,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         } catch (err) { modal.alert('Erro de conexão.', '❌ Erro'); return false; }
     }, [API, getHeaders, modal, transacoes, setTransacoes]);
 
-    /** Exclusão atômica (Lida de forma especial com objetos contendo grupo_id de parcelamento) */
     const deletarTransacao = useCallback(async (t) => {
         if (t.grupo_id) {
             const opcao = await modal.options(`"${t.descricao}" parcelada. O que excluir?`, [{ value: '1', icon: '1️⃣', label: 'Esta parcela' }, { value: '2', icon: '2️⃣', label: 'Esta e futuras' }, { value: '3', icon: '3️⃣', label: 'Esta e anteriores' }, { value: '4', icon: '4️⃣', label: 'Todas parcelas' }], '🗑️ Excluir');
@@ -109,13 +102,16 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         const nD = await modal.prompt(`2️⃣ Nova DATA?\nDD/MM/AAAA`, `${dia}/${mes}/${ano}`, '📅 Editar', { confirmLabel: 'Próximo' }); if (nD === null) return;
         const partes = nD.split('/'); if (partes.length !== 3) return modal.alert('Formato inválido.', '❌ Erro'); const novaDataStr = `${partes[2]}-${partes[1]}-${partes[0]}`;
         const opcoesCat = [{ value: 'Sem Categoria', icon: '🏷️', label: 'Sem Categoria' }, { value: 'Contas Fixas', icon: '📅', label: 'Contas Fixas' }, { value: 'Renda Fixa', icon: '💰', label: 'Renda Fixa' }, { value: 'Renda', icon: '💵', label: 'Renda Variável' }, ...categorias.map(c => ({ value: c.nome, icon: c.tipo === 'investimento' ? '📈' : '💸', label: c.nome }))];
-        const nCat = await modal.options(`3️⃣ CATEGORIA?\nAtual: ${t.categoria}`, opcoesCat, '🏷️ Editar'); if (!nCat) return;
-        const nS = await modal.options(`4️⃣ STATUS?\nAtual: ${t.status.toUpperCase()}`, [{ value: 'pago', icon: '✔', label: 'PAGO' }, { value: 'pendente', icon: '⏳', label: 'PENDENTE' }], '🔄 Editar'); if (!nS) return;
+        const nCat = await modal.options(`3️⃣ CATEGORIA?\nAtual: ${t.categoria}`, opcoesCat, '🏷️ Editar', { confirmLabel: 'Próximo' }); if (!nCat) return;
 
-        try { await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr, categoria: nCat }) }); setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS, categoria: nCat } : tr)); } catch (err) { modal.alert('Erro ao atualizar.', '❌ Erro'); }
+        // Campo Observação anexado à edição
+        const nObs = await modal.prompt(`4️⃣ OBSERVAÇÃO?\nAtual: ${t.observacao || 'Nenhuma'}`, t.observacao || '', '✏️ Editar', { confirmLabel: 'Próximo' }); if (nObs === null) return;
+
+        const nS = await modal.options(`5️⃣ STATUS?\nAtual: ${t.status.toUpperCase()}`, [{ value: 'pago', icon: '✔', label: 'PAGO' }, { value: 'pendente', icon: '⏳', label: 'PENDENTE' }], '🔄 Editar'); if (!nS) return;
+
+        try { await fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: nS, valorParcela: novoValor, dataCompra: novaDataStr, categoria: nCat, observacao: nObs }) }); setTransacoes(prev => prev.map(tr => tr.id === t.id ? { ...tr, valorParcela: novoValor, dataCompra: novaDataStr, status: nS, categoria: nCat, observacao: nObs } : tr)); } catch (err) { modal.alert('Erro ao atualizar.', '❌ Erro'); }
     }, [API, getHeaders, modal, categorias, setTransacoes]);
 
-    /** Lógica Multer -> Cloudinary de Mídias Estáticas */
     const anexarComprovante = useCallback(async (t) => {
         const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*,application/pdf';
         input.onchange = async (e) => {

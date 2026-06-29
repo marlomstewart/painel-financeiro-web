@@ -8,7 +8,6 @@ import { Lancamentos } from './components/Lancamentos';
 import { Garagem } from './components/Garagem';
 import { Sidebar } from './components/Sidebar';
 
-// NOVOS COMPONENTES MODULARES
 import { Cartoes } from './components/Cartoes';
 import { MetasCategorias } from './components/MetasCategorias';
 import { ContasFixas } from './components/ContasFixas';
@@ -46,6 +45,7 @@ function App() {
   const [carregouAPI, setCarregouAPI] = useState(false);
 
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [dataVis, setDataVis] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
   const [transacoes, setTransacoes] = useState([]);
 
@@ -73,44 +73,39 @@ function App() {
     carregar();
   }, [auth.token]);
 
-  const exportarCSV = () => { /* Logic is in setup hook currently */ };
+  const exportarCSV = () => { /* Logic in setup hook */ };
 
-  // GATING DE ACESSO
   if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
   if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
   if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
 
-  // ROTEADOR CENTRAL (SAAS NAVIGATION)
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
 
-    // Novas Telas Modulares:
-    if (telaAtiva === 'cartoes') return <Cartoes cartoes={setup.cartoes} addCartao={setup.addCartao} />;
-    if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} />;
-    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} />;
+    if (telaAtiva === 'cartoes') return <Cartoes cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} exportarCSV={exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} />;
     if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} />;
-    if (telaAtiva === 'lancamentos') return <Lancamentos categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} />;
+    if (telaAtiva === 'lancamentos') return <Lancamentos categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante} />;
 
-    // Default: Dashboard Executivo
-    return <Dashboard dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} />;
+    return <Dashboard dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} />;
   };
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
-      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} />
+      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
         {/* Menu Mobile */}
-        <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-40 sticky top-0">
+        <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-30 sticky top-0">
           <h1 className="text-lg font-black tracking-tight flex items-center gap-2"><span className="text-blue-500">⚡</span> Financeiro</h1>
-          <select value={telaAtiva} onChange={(e) => setTelaAtiva(e.target.value)} className="bg-slate-800 text-sm p-2 rounded outline-none border border-slate-700">
-            <option value="dashboard">📊 Dashboard</option><option value="lancamentos">💸 Lançamentos</option><option value="cartoes">💳 Cartões</option><option value="contas_fixas">🔄 Contas Fixas</option><option value="metas_categorias">🎯 Metas</option><option value="garagem">🚗 Garagem</option><option value="configuracoes">⚙️ Config.</option>{auth.isAdmin && <option value="admin">👥 Admin</option>}
-          </select>
+          <button onClick={() => setIsMobileMenuOpen(true)} className="text-2xl cursor-pointer hover:text-blue-400 transition-colors p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+          </button>
         </div>
         {renderizarConteudoAtivo()}
       </main>
-
-      {/* OVERLAYS GLOBAIS DE EFEITO (SOLUÇÃO DO BUG DO MODAL) */}
       <Modal config={modal.config} onClose={modal.close} />
       <Toast toast={toast} />
       <ThemeToggle theme={theme} toggleTheme={toggleTheme} />

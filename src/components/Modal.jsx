@@ -4,7 +4,8 @@ const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 
 
 /**
  * Componente: Modal Universal
- * Centraliza e renderiza diálogos customizados do sistema com suporte integral a temas escuros.
+ * Centraliza e renderiza diálogos customizados do sistema.
+ * Atualizado: Removidos callbacks 'onClose' conflitantes para habilitar encadeamento de modais.
  */
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState(config?.defaultValue || '');
@@ -30,8 +31,8 @@ export function Modal({ config, onClose }) {
     const wasMarcado = localMarcados.includes(dataStr);
     setLocalMarcados(prev => wasMarcado ? prev.filter(d => d !== dataStr) : [...prev, dataStr]);
     if (config.onToggle) {
-        const success = await config.onToggle(dataStr);
-        if (!success) setLocalMarcados(prev => wasMarcado ? [...prev, dataStr] : prev.filter(d => d !== dataStr));
+      const success = await config.onToggle(dataStr);
+      if (!success) setLocalMarcados(prev => wasMarcado ? [...prev, dataStr] : prev.filter(d => d !== dataStr));
     }
   };
 
@@ -42,11 +43,11 @@ export function Modal({ config, onClose }) {
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md transition-colors duration-300 border border-transparent dark:border-slate-700" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {title && <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">{title}</h3>}
-          
+
           {message && (
-            typeof message === 'string' 
-                ? <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 whitespace-pre-line">{message}</p> 
-                : <div className="w-full mb-4 text-slate-800 dark:text-slate-200">{message}</div>
+            typeof message === 'string'
+              ? <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 whitespace-pre-line">{message}</p>
+              : <div className="w-full mb-4 text-slate-800 dark:text-slate-200">{message}</div>
           )}
 
           {type === 'alert' && <button onClick={handleConfirm} className={`w-full ${btnConfirm} text-white font-bold py-2.5 rounded-lg text-sm transition-colors cursor-pointer`}>{confirmLabel || 'OK'}</button>}
@@ -135,8 +136,8 @@ export function Modal({ config, onClose }) {
                   const isMarcado = localMarcados.includes(dataStr);
 
                   let bgClass = "bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700";
-                  if (isDiaAlvo) { bgClass = isMarcado ? "bg-rose-500 text-white border-rose-600 shadow-inner" : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900/70 cursor-pointer"; } 
-                  else if (isMarcado) { bgClass = "bg-rose-500 text-white border-rose-600 cursor-pointer shadow-inner"; } 
+                  if (isDiaAlvo) { bgClass = isMarcado ? "bg-rose-500 text-white border-rose-600 shadow-inner" : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900/70 cursor-pointer"; }
+                  else if (isMarcado) { bgClass = "bg-rose-500 text-white border-rose-600 cursor-pointer shadow-inner"; }
                   else { bgClass += " hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-600 dark:text-slate-400"; }
 
                   return (<div key={dia} onClick={() => handleToggleCalendario(dataStr)} className={`py-2 rounded flex items-center justify-center text-sm font-bold select-none transition-colors ${bgClass}`}>{dia}</div>);
@@ -155,18 +156,26 @@ export function Modal({ config, onClose }) {
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg px-3 py-2 border dark:border-slate-700/50"><p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold mb-0.5">Valor</p><p className="text-sm font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(config.transacao.valorParcela)}</p></div>
               </div>
 
-              <button onClick={() => { config.onAlternarStatus(); onClose(); }} className={`w-full py-2.5 rounded-lg text-sm font-bold uppercase transition-colors cursor-pointer ${config.transacao.status === 'pago' ? 'bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400'}`}>
+              {config.transacao.observacao && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 border border-blue-100 dark:border-blue-800/50 mb-3">
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase font-semibold mb-0.5">Observação</p>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-200">{config.transacao.observacao}</p>
+                </div>
+              )}
+
+              {/* CORREÇÃO CRÍTICA AQUI: Remoção do onClose(); para permitir encadeamento sem destruir o Modal */}
+              <button onClick={() => { config.onAlternarStatus(); }} className={`w-full py-2.5 rounded-lg text-sm font-bold uppercase transition-colors cursor-pointer ${config.transacao.status === 'pago' ? 'bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400'}`}>
                 {config.transacao.status === 'pago' ? '✔ PAGO — clique para marcar como Pendente' : '⏳ PENDENTE — clique para marcar como Pago'}
               </button>
 
               <div className="flex gap-2 pt-1">
-                <button onClick={() => { config.onEditar(); onClose(); }} className="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-2.5 rounded-lg text-sm transition-colors cursor-pointer">✏️ Editar</button>
+                <button onClick={() => { config.onEditar(); }} className="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-2.5 rounded-lg text-sm transition-colors cursor-pointer">✏️ Editar</button>
                 {config.isStewart && (
                   config.transacao.comprovante_url
-                    ? <button onClick={() => { config.onVerComprovante(); onClose(); }} className="flex-1 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 font-bold py-2.5 rounded-lg text-sm border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer">📎 Comprovante</button>
-                    : <button onClick={() => { config.onAnexarComprovante(); onClose(); }} className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold py-2.5 rounded-lg text-sm border border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer">📎 Anexar</button>
+                    ? <button onClick={() => { config.onVerComprovante(); }} className="flex-1 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 font-bold py-2.5 rounded-lg text-sm border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer">📎 Comprovante</button>
+                    : <button onClick={() => { config.onAnexarComprovante(); }} className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold py-2.5 rounded-lg text-sm border border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer">📎 Anexar</button>
                 )}
-                <button onClick={() => { config.onDeletar(); onClose(); }} className="flex-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 font-bold py-2.5 rounded-lg text-sm transition-colors cursor-pointer">🗑️ Excluir</button>
+                <button onClick={() => { config.onDeletar(); }} className="flex-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 font-bold py-2.5 rounded-lg text-sm transition-colors cursor-pointer">🗑️ Excluir</button>
               </div>
               <button onClick={handleCancel} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-medium py-2 rounded-lg text-sm transition-colors cursor-pointer">Fechar</button>
             </div>

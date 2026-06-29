@@ -7,7 +7,8 @@ export function Dashboard({
     dataVis, mesAnterior, mesProximo,
     totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
     saldoAtual, previstoFimMes, somarSaldoAnterior, setSomarSaldoAnterior,
-    categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard
+    categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
+    verFaturasPorCartao // Nova propriedade injetada para acionar o modal de cartões
 }) {
 
     return (
@@ -51,17 +52,16 @@ export function Dashboard({
                     <h3 className="text-xl font-black text-blue-600 dark:text-blue-400">{formatarMoeda(totInvestido)}</h3>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-purple-400 transition group">
+                {/* CORREÇÃO: Injeção do evento onClick e classe cursor-pointer */}
+                <div onClick={verFaturasPorCartao} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-purple-400 transition group cursor-pointer">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-purple-500 transition">Faturas Abertas</p>
                     <h3 className="text-xl font-black text-purple-600 dark:text-purple-400">{formatarMoeda(totFaturaCreditoAberto)}</h3>
                 </div>
 
-                {/* CARD DE SALDO LÍQUIDO - COM CHECKBOX ISOLADA E AMPLIADA */}
                 <div onClick={() => abrirResumoCard('saldo')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group relative">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-indigo-500 transition">Saldo Líquido</p>
                     <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(saldoAtual)}</h3>
 
-                    {/* AQUI ESTÁ A CORREÇÃO DO VAZAMENTO DE CLIQUE */}
                     <div
                         className="absolute top-3 right-3 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
                         onClick={(e) => e.stopPropagation()}

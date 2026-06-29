@@ -5,6 +5,7 @@ const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current in
 /**
  * Hook Customizado: useSetup
  * Abstrai o CRUD das configurações com bloqueio de duplo clique via Loader Visual.
+ * Atualizado na Fase 4 com o motor de Edição (editarSetup) otimista.
  */
 export function useSetup({ API, getHeaders, modal, setTransacoes }) {
     const [cartoes, setCartoes] = useState([]);
@@ -29,7 +30,7 @@ export function useSetup({ API, getHeaders, modal, setTransacoes }) {
 
         try {
             await acaoData(new FormData(form));
-            form.reset();
+            // form.reset() removido daqui para evitar conflito com inputs controlados pelo React nas Views.
         } catch (err) {
             console.error("Erro no processamento:", err);
         } finally {
@@ -48,8 +49,30 @@ export function useSetup({ API, getHeaders, modal, setTransacoes }) {
 
     const addCartao = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); }), [processarSubmitComLoading, salvarConfig, cartoes]);
     const addCategoria = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); }), [processarSubmitComLoading, salvarConfig, categorias]);
-    const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valor')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); }), [processarSubmitComLoading, salvarConfig, contasFixas]);
-    const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valor')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
+    const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); }), [processarSubmitComLoading, salvarConfig, contasFixas]);
+    const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
+
+    // Novo motor de edição (Fase 4)
+    const editarSetup = useCallback(async (banco, id, dadosAtualizados) => {
+        const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas' };
+        try {
+            const res = await fetch(`${API}/${rotas[banco]}/${id}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(dadosAtualizados)
+            });
+            if (res.ok) {
+                const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas] };
+                const [setter, state] = setters[banco];
+                setter(state.map(i => i.id === id ? { ...i, ...dadosAtualizados } : i));
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.error("Erro ao editar setup:", err);
+            return false;
+        }
+    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas]);
 
     const removerSetup = useCallback(async (banco, id) => {
         const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas' };
@@ -75,6 +98,6 @@ export function useSetup({ API, getHeaders, modal, setTransacoes }) {
     return {
         cartoes, setCartoes, categorias, setCategorias, metasRenda, setMetasRenda,
         contasFixas, setContasFixas, rendasFixas, setRendasFixas, gerandoMes,
-        addCartao, addCategoria, addContaFixa, addRendaFixa, removerSetup, gerarMesManual
+        addCartao, addCategoria, addContaFixa, addRendaFixa, editarSetup, removerSetup, gerarMesManual
     };
 }
