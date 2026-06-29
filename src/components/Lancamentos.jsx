@@ -18,7 +18,7 @@ export function Lancamentos({
     const [parcelas, setParcelas] = useState(1);
     const [observacao, setObservacao] = useState('');
 
-    // Novo State para capturar o Hodômetro da Moto
+    // RESTAURAÇÃO: State do Hodômetro recuperado
     const [kmMoto, setKmMoto] = useState('');
 
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
@@ -88,11 +88,10 @@ export function Lancamentos({
                             <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo</label><select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Investimento</option></select></div>
                             <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status</label><select name="status" value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="pendente">Pendente</option><option value="pago">Pago / Recebido</option></select></div>
                         </div>
-
                         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Categoria</label><select name="categoria" value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select></div>
 
-                        {/* INJEÇÃO AUTOMÁTICA: Janela flutuante do KM da Moto baseada na Categoria Escohida */}
-                        {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && (
+                        {/* RESTAURAÇÃO: Condicional do Hodômetro inserido abaixo da Categoria */}
+                        {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario.toLowerCase() === 'stewart' && (
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 transition-colors animate-fade-in-down">
                                 <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1">
                                     Odômetro Atual (KM)
@@ -102,8 +101,8 @@ export function Lancamentos({
                                     type="number"
                                     value={kmMoto}
                                     onChange={(e) => setKmMoto(e.target.value)}
-                                    className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
-                                    placeholder="Ex: 15200 (Vazio se for veículo emprestado)"
+                                    className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
+                                    placeholder="Ex: 15200 (Deixe vazio se for emprestado)"
                                 />
                             </div>
                         )}
