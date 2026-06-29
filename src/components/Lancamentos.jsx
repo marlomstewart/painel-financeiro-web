@@ -17,12 +17,16 @@ export function Lancamentos({
     const [formaPagamento, setFormaPagamento] = useState('pix');
     const [parcelas, setParcelas] = useState(1);
     const [observacao, setObservacao] = useState('');
+
+    // Novo State para capturar o Hodômetro da Moto
+    const [kmMoto, setKmMoto] = useState('');
+
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
 
     const handleSubmit = async (e) => {
         const sucesso = await addTransacao(e);
         if (sucesso) {
-            setDescricao(''); setValor(''); setObservacao(''); setDataCompra(new Date().toISOString().split('T')[0]); setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria'); setFormaPagamento('pix'); setParcelas(1);
+            setDescricao(''); setValor(''); setObservacao(''); setKmMoto(''); setDataCompra(new Date().toISOString().split('T')[0]); setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria'); setFormaPagamento('pix'); setParcelas(1);
         }
     };
 
@@ -31,11 +35,23 @@ export function Lancamentos({
 
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    const obterNomePagamento = (forma) => {
+        if (!forma) return 'Desconhecido';
+        if (forma.startsWith('credito_')) {
+            const idCartao = forma.split('_')[1];
+            const cartao = cartoes.find(c => c.id === idCartao);
+            return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
+        }
+        if (forma === 'pix') return 'PIX / Dinheiro';
+        if (forma === 'debito') return 'Débito';
+        return forma;
+    };
+
     const abrirDetalhes = (t) => {
         modal.setConfig({
             type: 'detalhes',
             transacao: t,
-            nomePagamento: t.formaPagamento.replace('credito_', 'Crédito '),
+            nomePagamento: obterNomePagamento(t.formaPagamento),
             isStewart: nomeUsuario.toLowerCase() === 'stewart',
             onAlternarStatus: () => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra),
             onEditar: () => editarValor(t),
@@ -61,6 +77,7 @@ export function Lancamentos({
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Novo Lançamento</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição</label><input name="descricao" type="text" value={descricao} onChange={(e) => setDescricao(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="Ex: Supermercado" /></div>
+
                         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Observação (Opcional)</label><textarea name="observacao" value={observacao} onChange={(e) => setObservacao(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors resize-none" placeholder="Detalhes extras..." rows="2"></textarea></div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -71,7 +88,26 @@ export function Lancamentos({
                             <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo</label><select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="despesa">Despesa</option><option value="renda">Renda</option><option value="investimento">Investimento</option></select></div>
                             <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status</label><select name="status" value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="pendente">Pendente</option><option value="pago">Pago / Recebido</option></select></div>
                         </div>
+
                         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Categoria</label><select name="categoria" value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select></div>
+
+                        {/* INJEÇÃO AUTOMÁTICA: Janela flutuante do KM da Moto baseada na Categoria Escohida */}
+                        {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && (
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 transition-colors animate-fade-in-down">
+                                <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1">
+                                    Odômetro Atual (KM)
+                                </label>
+                                <input
+                                    name="kmMoto"
+                                    type="number"
+                                    value={kmMoto}
+                                    onChange={(e) => setKmMoto(e.target.value)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                                    placeholder="Ex: 15200 (Vazio se for veículo emprestado)"
+                                />
+                            </div>
+                        )}
+
                         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Pagamento</label><select name="formaPagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"><option value="pix">PIX / Dinheiro</option><option value="debito">Cartão de Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}</select></div>
                         {formaPagamento.startsWith('credito_') && (
                             <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Parcelas</label><input name="parcelas" type="number" min="1" max="48" value={parcelas} onChange={(e) => setParcelas(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors" /></div>
@@ -122,8 +158,8 @@ export function Lancamentos({
                     )}
 
                     <div className="overflow-x-auto flex-1 rounded-lg border border-slate-200 dark:border-slate-800">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-extrabold tracking-wider">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-extrabold tracking-wider whitespace-nowrap">
                                 <tr>
                                     <th className="p-3 text-center w-10"><input type="checkbox" onChange={selecionarTodas} checked={dadosTabela.length > 0 && transacoesSelecionadas.length === dadosTabela.length} className="cursor-pointer" /></th>
                                     <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200" onClick={() => mudarOrdenacao('descricao')}>Descrição {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
@@ -137,28 +173,30 @@ export function Lancamentos({
                                     <tr><td colSpan="5" className="p-8 text-center text-slate-500 dark:text-slate-400">Nenhum lançamento.</td></tr>
                                 ) : (
                                     dadosTabela.map((t) => (
-                                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="p-3 text-center">
+                                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                            <td className="p-3 text-center whitespace-nowrap">
                                                 <input type="checkbox" checked={transacoesSelecionadas.includes(t.id)} onChange={() => toggleSelecao(t.id)} className="cursor-pointer" />
                                             </td>
-                                            <td className="p-3">
-                                                {/* Área de Clique Direcionado (Apenas na Descrição) */}
-                                                <p className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer truncate max-w-[150px] sm:max-w-xs inline-flex items-center gap-2 transition-colors" onClick={() => abrirDetalhes(t)}>
+                                            <td className="p-3 min-w-[140px]">
+                                                <span
+                                                    onClick={() => abrirDetalhes(t)}
+                                                    className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-start gap-1 transition-colors break-words whitespace-normal"
+                                                    style={{ wordBreak: 'break-word' }}
+                                                >
                                                     {t.descricao}
                                                     {t.observacao && (
-                                                        <svg title={t.observacao} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500 transition-colors inline-block ml-1 cursor-help">
+                                                        <svg title="Possui Observação" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors inline-block flex-shrink-0 mt-0.5 cursor-help">
                                                             <path fillRule="evenodd" d="M4.804 21.644A6.707 6.707 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337 4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785Z" clipRule="evenodd" />
                                                         </svg>
                                                     )}
-                                                </p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{t.categoria} • {t.formaPagamento.replace('credito_', 'Crédito ')}</p>
+                                                </span>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                             </td>
-                                            <td className="p-3 text-slate-600 dark:text-slate-400 text-xs hidden sm:table-cell">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
-                                            <td className="p-3 text-center">
-                                                {/* Botão independente para troca rápida de Status sem abrir detalhes */}
+                                            <td className="p-3 text-slate-600 dark:text-slate-400 text-xs hidden sm:table-cell whitespace-nowrap">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                                            <td className="p-3 text-center whitespace-nowrap">
                                                 <button type="button" onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-2 py-1 text-[10px] font-bold uppercase rounded transition cursor-pointer hover:scale-105 active:scale-95 ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{t.status}</button>
                                             </td>
-                                            <td className={`p-3 text-right font-bold ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>{formatarMoeda(t.valorParcela)}</td>
+                                            <td className={`p-3 text-right font-bold whitespace-nowrap ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>{formatarMoeda(t.valorParcela)}</td>
                                         </tr>
                                     ))
                                 )}

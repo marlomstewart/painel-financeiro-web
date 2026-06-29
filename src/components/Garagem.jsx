@@ -5,13 +5,19 @@ const API = 'https://painel-gestao-financeira-api.onrender.com/api';
 const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
 
-export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, modalConfig, modalClose }) {
+export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, modalConfig, modalClose, garagem }) {
 
-    const [veiculos, setVeiculos] = useState([]);
+    // Herança otimizada de Cache Global para anular o "Carregando Frota"
+    const [veiculosLocais, setVeiculosLocais] = useState([]);
+    const veiculos = garagem ? garagem.veiculosGaragem : veiculosLocais;
+    const setVeiculos = garagem ? garagem.setVeiculosGaragem : setVeiculosLocais;
+
+    // O loading só vai piscar se a variável global ainda for puramente undefined
+    const [carregando, setCarregando] = useState(!garagem);
+
     const [veiculoSelecionado, setVeiculoSelecionado] = useState(null);
     const [itens, setItens] = useState([]);
     const [manutencoes, setManutencoes] = useState([]);
-    const [carregando, setCarregando] = useState(true);
 
     const [modalVeiculo, setModalVeiculo] = useState(null);
     const [modalItem, setModalItem] = useState(null);
@@ -21,9 +27,13 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     const [tipoVeiculoForm, setTipoVeiculoForm] = useState('proprio');
 
     useEffect(() => {
-        carregarVeiculos();
+        if (!garagem || veiculos.length === 0) {
+            carregarVeiculos();
+        } else {
+            setCarregando(false);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [garagem]);
 
     const carregarVeiculos = async () => {
         setCarregando(true);
@@ -32,14 +42,9 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
             if (res.ok) {
                 const dados = await res.json();
                 setVeiculos(dados);
-            } else {
-                const erro = await res.json().catch(() => ({}));
-                console.error('Erro ao carregar veículos:', res.status, erro);
-                alert(`Erro ao carregar veículos (${res.status}): ${erro.error || erro.message || 'desconhecido'}`);
             }
         } catch (err) {
             console.error('Erro de conexão ao carregar veículos:', err);
-            alert('Erro de conexão ao carregar veículos. Verifique sua internet.');
         }
         setCarregando(false);
     };

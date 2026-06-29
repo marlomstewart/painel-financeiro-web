@@ -85,9 +85,12 @@ function App() {
     if (telaAtiva === 'cartoes') return <Cartoes cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-
+    
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} exportarCSV={exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} />;
-    if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} />;
+    
+    // CORREÇÃO DE REDE: Injeção do objeto 'garagem' direto na View para evitar latência.
+    if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
+    
     if (telaAtiva === 'lancamentos') return <Lancamentos categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante} />;
 
     return <Dashboard dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} />;
@@ -97,7 +100,6 @@ function App() {
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
       <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
-        {/* Menu Mobile */}
         <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-30 sticky top-0">
           <h1 className="text-lg font-black tracking-tight flex items-center gap-2"><span className="text-blue-500">⚡</span> Financeiro</h1>
           <button onClick={() => setIsMobileMenuOpen(true)} className="text-2xl cursor-pointer hover:text-blue-400 transition-colors p-1">
