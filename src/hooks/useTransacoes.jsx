@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
-
+    
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
@@ -13,7 +13,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     const addTransacao = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-
+        
         let valorBruto = formData.get('valor');
         if (typeof valorBruto === 'string') {
             valorBruto = valorBruto.replace(/[R$\s.]/g, '').replace(',', '.');
@@ -41,15 +41,15 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             let mesRef = obj.mesReferencia + i;
             let anoRef = obj.anoReferencia;
             if (mesRef > 12) { mesRef -= 12; anoRef += 1; }
-
-            const parcelaObj = {
-                ...obj,
-                id: `${obj.id}_${i}`,
-                mesReferencia: mesRef,
-                anoReferencia: anoRef,
-                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao
+            
+            const parcelaObj = { 
+                ...obj, 
+                id: `${obj.id}_${i}`, 
+                mesReferencia: mesRef, 
+                anoReferencia: anoRef, 
+                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao 
             };
-
+            
             const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
             if (!res.ok) sucesso = false;
             else if (obj.km_moto && garagem) await garagem.registrarHodometro(obj.km_moto, obj.dataCompra, obj.descricao);
@@ -59,53 +59,43 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         else { modal.alert('Erro ao registrar lançamento.', '❌ Erro'); return false; }
     };
 
-    // CORREÇÃO: Utilização de callback "prev" para garantir atualização instantânea da Tabela.
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
-
+        
         try {
-            const res = await fetch(`${API}/transacoes/${id}/status`, {
-                method: 'PUT',
-                headers: getHeaders(),
-                body: JSON.stringify({ status: novoStatus })
+            const res = await fetch(`${API}/transacoes/${id}/status`, { 
+                method: 'PUT', 
+                headers: getHeaders(), 
+                body: JSON.stringify({ status: novoStatus }) 
             });
             const data = await res.json();
-
+            
             if (res.ok) {
-                // Atualização blindada na interface sem precisar recarregar o banco
                 setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
+            } else {
+                modal.alert(`Falha ao alterar status:\n${data.error}`, '❌ Erro do Servidor');
             }
         } catch (err) { console.error("Erro ao mudar status:", err); }
     };
 
     const editarValor = async (transacao) => {
-        const dadosEditados = await modal.prompt(
-            '',
-            '',
-            '✏️ Edição de Lançamento',
-            {
-                inputType: 'editar_transacao',
-                transacao,
-                categorias,
-                cartoes
-            }
-        );
-
+        const dadosEditados = await modal.prompt('', '', '✏️ Edição de Lançamento', { inputType: 'editar_transacao', transacao, categorias, cartoes });
         if (!dadosEditados) return;
 
         try {
-            const res = await fetch(`${API}/transacoes/${transacao.id}`, {
-                method: 'PUT',
-                headers: getHeaders(),
-                body: JSON.stringify(dadosEditados)
+            const res = await fetch(`${API}/transacoes/${transacao.id}`, { 
+                method: 'PUT', headers: getHeaders(), body: JSON.stringify(dadosEditados) 
             });
+            
             if (res.ok) {
                 await carregarTransacoes();
                 modal.alert('Lançamento atualizado com segurança!', '✅ Sucesso');
             } else {
-                modal.alert('Não foi possível atualizar o lançamento.', '❌ Erro');
+                // ATUALIZADO: Agora ele mostra EXATAMENTE o erro do Banco de Dados
+                const errData = await res.json();
+                modal.alert(`Servidor rejeitou a atualização.\n\nMotivo: ${errData.error}`, '❌ Erro de Sistema');
             }
-        } catch (err) { modal.alert('Erro de conexão ao editar', '❌ Erro'); }
+        } catch (err) { modal.alert(`Erro de conexão: ${err.message}`, '❌ Erro de Rede'); }
     };
 
     const deletarTransacao = async (t) => {
