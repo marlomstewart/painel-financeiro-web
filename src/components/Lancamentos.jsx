@@ -7,7 +7,11 @@ export function Lancamentos({
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela,
     alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa,
-    modal, nomeUsuario, anexarComprovante, verComprovante
+    modal, nomeUsuario, anexarComprovante, verComprovante,
+    // NOVAS PROPS INJETADAS PARA O SELETOR DE MESES
+    dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
+    mesAnterior = () => { },
+    mesProximo = () => { }
 }) {
     const [descricao, setDescricao] = useState('');
     const [valor, setValor] = useState('');
@@ -21,6 +25,12 @@ export function Lancamentos({
     const [kmMoto, setKmMoto] = useState('');
 
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
+
+    // Array para nomes dos meses
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    // Captura os 5 últimos lançamentos baseados na data da compra (mais recentes primeiro)
+    const ultimosCinco = [...dadosTabela].sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra)).slice(0, 5);
 
     const handleSubmit = async (e) => {
         const sucesso = await addTransacao(e);
@@ -159,6 +169,36 @@ export function Lancamentos({
                         </div>
                     </form>
                 </div>
+
+                {/* NOVIDADE: Bloco com os 5 últimos lançamentos adicionados */}
+                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm mt-6 animate-fade-in-up">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
+                        <span>Últimos Lançamentos</span>
+                        <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300">{dataVis.ano}</span>
+                    </h3>
+
+                    <div className="space-y-3">
+                        {ultimosCinco.map(t => (
+                            <div key={t.id} onClick={() => abrirDetalhes(t)} className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer group">
+                                <div>
+                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{t.descricao}</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                                        {formatarMoeda(t.valorParcela)}
+                                    </p>
+                                    <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                        {t.status}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {ultimosCinco.length === 0 && (
+                            <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registrado nesta competência ainda.</p>
+                        )}
+                    </div>
+                </div>
             </div>
         );
     }
@@ -168,9 +208,25 @@ export function Lancamentos({
     // ------------------------------------------------------------------------
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24">
-            <header className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📋 Extrato do Mês</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Audite, pesquise e faça a gestão em lote de todas as movimentações.</p>
+            <header className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📋 Extrato de Lançamentos</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Audite, pesquise e faça a gestão em lote de todas as movimentações.</p>
+                </div>
+
+                {/* NOVIDADE: Seletor de Mês e Ano (Mesmo formato do Dashboard) */}
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm self-start md:self-auto">
+                    <button onClick={mesAnterior} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div className="flex flex-col items-center min-w-[120px] justify-center px-2">
+                        <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-xs">{meses[dataVis.mes - 1]}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
+                    </div>
+                    <button onClick={mesProximo} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
             </header>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm flex flex-col">
@@ -200,7 +256,7 @@ export function Lancamentos({
                 </div>
 
                 {mostrarFiltrosAvancados && (
-                    <div className="mb-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-colors">
+                    <div className="mb-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-colors animate-fade-in-down">
                         <div><label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Data Início</label><input type="date" value={filtrosAvancados.dataInicio} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, dataInicio: e.target.value })} className={inputCls} /></div>
                         <div><label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Data Fim</label><input type="date" value={filtrosAvancados.dataFim} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, dataFim: e.target.value })} className={inputCls} /></div>
                         <div><label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Categoria</label><select value={filtrosAvancados.categoria} onChange={e => setFiltrosAvancados({ ...filtrosAvancados, categoria: e.target.value })} className={inputCls}><option value="">Todas</option><option value="Sem Categoria">Sem Categoria</option><option value="Contas Fixas">Contas Fixas</option>{categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}</select></div>
