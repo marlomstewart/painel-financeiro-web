@@ -93,8 +93,6 @@ function App() {
 
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
-    // ATUALIZAÇÃO 1: Roteamento centralizado para Subtelas de Despesas (Contas Fixas, Rendas Fixas e Dívidas)
-    // A view ContasFixas receberá a prop `modo` para saber qual aba exibir.
     if (['contas_fixas', 'dividas', 'rendas_fixas'].includes(telaAtiva)) {
       return <ContasFixas modo={telaAtiva} contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     }
@@ -103,13 +101,38 @@ function App() {
 
     if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
 
-    // ATUALIZAÇÃO 2: Roteamento centralizado para Subtelas de Lançamentos (Novo Lançamento vs Extrato)
-    // A view Lancamentos receberá a prop `modo` para dividir o ecrã.
+    // ATUALIZAÇÃO: Injeção de dataVis, mesAnterior e mesProximo
     if (['novo_lancamento', 'extrato', 'lancamentos'].includes(telaAtiva)) {
-      return <Lancamentos modo={telaAtiva} categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante} />;
+      return <Lancamentos
+        modo={telaAtiva}
+        categorias={dashboardManager.categoriasDinamicas}
+        cartoes={setup.cartoes}
+        addTransacao={transacoesManager.addTransacao}
+        filtroStatus={dashboardManager.filtroStatus}
+        setFiltroStatus={dashboardManager.setFiltroStatus}
+        buscaTexto={dashboardManager.buscaTexto}
+        setBuscaTexto={dashboardManager.setBuscaTexto}
+        mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados}
+        setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados}
+        filtrosAvancados={dashboardManager.filtrosAvancados}
+        setFiltrosAvancados={dashboardManager.setFiltrosAvancados}
+        mudarOrdenacao={dashboardManager.mudarOrdenacao}
+        ordenacao={dashboardManager.ordenacao}
+        dadosTabela={dashboardManager.dadosTabela}
+        alternarStatusTransacao={transacoesManager.alternarStatusTransacao}
+        editarValor={transacoesManager.editarValor}
+        deletarTransacao={transacoesManager.deletarTransacao}
+        executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa}
+        modal={modal}
+        nomeUsuario={auth.nomeUsuario}
+        anexarComprovante={transacoesManager.anexarComprovante}
+        verComprovante={transacoesManager.verComprovante}
+        dataVis={dataVis}
+        mesAnterior={dashboardManager.mesAnterior}
+        mesProximo={dashboardManager.mesProximo}
+      />;
     }
 
-    // ATUALIZAÇÃO 3: Roteamento para Investimentos (Placeholder enquanto não desenvolvemos a tela oficial)
     if (telaAtiva === 'investimentos') {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in transition-colors duration-300">
