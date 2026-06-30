@@ -8,8 +8,41 @@ export function Dashboard({
     totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
     saldoAtual, previstoFimMes, somarSaldoAnterior, setSomarSaldoAnterior,
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
-    verFaturasPorCartao // Nova propriedade injetada para acionar o modal de cartões
+    verFaturasPorCartao,
+    // NOVIDADE: Recebendo os dados para as novas seções
+    transacoesMes = [],
+    garagem = null
 }) {
+
+    // 1. Processar 5 Últimos Lançamentos
+    const ultimosCinco = [...transacoesMes]
+        .sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra))
+        .slice(0, 5);
+
+    // 2. Processar Alertas da Garagem (Avisos de Manutenção)
+    const alertasGaragem = [];
+    if (garagem && garagem.veiculos && garagem.itens) {
+        garagem.veiculos.forEach(veiculo => {
+            if (veiculo.ativo === 0) return; // Ignora veículos inativos
+
+            const itensDoVeiculo = garagem.itens.filter(i => i.veiculo_id === veiculo.id);
+            itensDoVeiculo.forEach(item => {
+                const kmProximaTroca = Number(item.km_ultima_troca) + Number(item.intervalo_km);
+                const kmRestante = kmProximaTroca - Number(veiculo.km_atual);
+
+                // Dispara o alerta se faltar menos de 500km para a revisão/troca, ou se já passou
+                if (kmRestante <= 500) {
+                    alertasGaragem.push({
+                        id: item.id,
+                        veiculoNome: veiculo.modelo,
+                        itemNome: item.nome,
+                        kmRestante,
+                        atrasado: kmRestante < 0
+                    });
+                }
+            });
+        });
+    }
 
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto pb-24">
@@ -52,7 +85,6 @@ export function Dashboard({
                     <h3 className="text-xl font-black text-blue-600 dark:text-blue-400">{formatarMoeda(totInvestido)}</h3>
                 </div>
 
-                {/* CORREÇÃO: Injeção do evento onClick e classe cursor-pointer */}
                 <div onClick={verFaturasPorCartao} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-purple-400 transition group cursor-pointer">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-purple-500 transition">Faturas Abertas</p>
                     <h3 className="text-xl font-black text-purple-600 dark:text-purple-400">{formatarMoeda(totFaturaCreditoAberto)}</h3>
@@ -133,6 +165,73 @@ export function Dashboard({
                         <p className="text-slate-500 dark:text-slate-400">Nenhuma meta tática configurada no Setup.</p>
                     </div>
                 )}
+            </div>
+
+            {/* NOVIDADE: Grade Dividida para Lançamentos Recentes e Alertas Veiculares */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Coluna 1 e 2: Últimos Lançamentos */}
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">⏱️ Últimos Lançamentos</h3>
+                        <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded font-bold uppercase tracking-wider">{nomesMeses[dataVis.mes - 1]}</span>
+                    </div>
+
+                    <div className="space-y-3">
+                        {ultimosCinco.map(t => (
+                            <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800/50">
+                                <div>
+                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200">{t.descricao}</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5">
+                                        {new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}
+                                    </p>
+                                </div>
+                                <div className="text-right flex flex-col items-end">
+                                    <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                                        {formatarMoeda(t.valorParcela)}
+                                    </p>
+                                    <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                        {t.status}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {ultimosCinco.length === 0 && (
+                            <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm">Nenhum lançamento registrado nesta competência.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Coluna 3: Alertas da Garagem */}
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">🔧 Alertas do Veículo</h3>
+
+                    {alertasGaragem.length === 0 ? (
+                        <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl h-full flex items-center justify-center">
+                            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Manutenção em dia! 🚀</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {alertasGaragem.map((alerta, i) => (
+                                <div key={i} className={`p-4 rounded-lg border ${alerta.atrasado ? 'bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800/50' : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50'}`}>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-lg">{alerta.atrasado ? '🚨' : '⚠️'}</span>
+                                        <p className={`font-bold text-sm ${alerta.atrasado ? 'text-rose-800 dark:text-rose-400' : 'text-amber-800 dark:text-amber-400'}`}>{alerta.itemNome}</p>
+                                    </div>
+                                    <p className={`text-xs font-semibold ${alerta.atrasado ? 'text-rose-600 dark:text-rose-500' : 'text-amber-700 dark:text-amber-500'}`}>
+                                        {alerta.veiculoNome}
+                                    </p>
+                                    <p className={`text-[10px] uppercase font-black mt-3 inline-block px-2 py-1 rounded ${alerta.atrasado ? 'bg-rose-200 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300' : 'bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>
+                                        {alerta.atrasado ? `Atrasado em ${Math.abs(alerta.kmRestante)} KM` : `Troca em ${alerta.kmRestante} KM`}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     );
