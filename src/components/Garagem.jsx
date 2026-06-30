@@ -1,7 +1,9 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
 
-const API = 'https://painel-gestao-financeira-api.onrender.com/api';
+// CORREÇÃO: URL hardcoded removida. Agora consome a variável de ambiente do Vite.
+const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
+
 const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
 
