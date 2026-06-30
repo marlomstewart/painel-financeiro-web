@@ -9,28 +9,30 @@ export function Dashboard({
     saldoAtual, previstoFimMes, somarSaldoAnterior, setSomarSaldoAnterior,
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
     verFaturasPorCartao,
-    // NOVIDADE: Recebendo os dados para as novas seções
     transacoesMes = [],
-    garagem = null
+    garagem = null,
+    nomeUsuario = '' // NOVIDADE: Recebendo o nome do usuário logado
 }) {
+
+    // Trava de exibição: O módulo veicular só aparece para o Stewart
+    const isStewart = nomeUsuario?.toLowerCase() === 'stewart';
 
     // 1. Processar 5 Últimos Lançamentos
     const ultimosCinco = [...transacoesMes]
         .sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra))
         .slice(0, 5);
 
-    // 2. Processar Alertas da Garagem (Avisos de Manutenção)
+    // 2. Processar Alertas da Garagem (Só se for o Stewart)
     const alertasGaragem = [];
-    if (garagem && garagem.veiculos && garagem.itens) {
+    if (isStewart && garagem && garagem.veiculos && garagem.itens) {
         garagem.veiculos.forEach(veiculo => {
-            if (veiculo.ativo === 0) return; // Ignora veículos inativos
+            if (veiculo.ativo === 0) return;
 
             const itensDoVeiculo = garagem.itens.filter(i => i.veiculo_id === veiculo.id);
             itensDoVeiculo.forEach(item => {
                 const kmProximaTroca = Number(item.km_ultima_troca) + Number(item.intervalo_km);
                 const kmRestante = kmProximaTroca - Number(veiculo.km_atual);
 
-                // Dispara o alerta se faltar menos de 500km para a revisão/troca, ou se já passou
                 if (kmRestante <= 500) {
                     alertasGaragem.push({
                         id: item.id,
@@ -99,16 +101,8 @@ export function Dashboard({
                         onClick={(e) => e.stopPropagation()}
                         title="Somar saldo que sobrou do mês anterior?"
                     >
-                        <input
-                            type="checkbox"
-                            checked={somarSaldoAnterior}
-                            onChange={(e) => setSomarSaldoAnterior(e.target.checked)}
-                            className="cursor-pointer w-4 h-4 accent-indigo-600"
-                        />
-                        <span
-                            className="text-[10px] font-bold text-slate-700 dark:text-slate-300 select-none cursor-pointer"
-                            onClick={() => setSomarSaldoAnterior(!somarSaldoAnterior)}
-                        >
+                        <input type="checkbox" checked={somarSaldoAnterior} onChange={(e) => setSomarSaldoAnterior(e.target.checked)} className="cursor-pointer w-4 h-4 accent-indigo-600" />
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 select-none cursor-pointer" onClick={() => setSomarSaldoAnterior(!somarSaldoAnterior)}>
                             + Mês Ant.
                         </span>
                     </div>
@@ -167,26 +161,28 @@ export function Dashboard({
                 )}
             </div>
 
-            {/* NOVIDADE: Grade Dividida para Lançamentos Recentes e Alertas Veiculares */}
+            {/* GRADE INFERIOR DIVIDIDA */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* Coluna 1 e 2: Últimos Lançamentos */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
+                {/* 1. ÚLTIMOS LANÇAMENTOS (Se for Stewart, ocupa 2 colunas. Se não, expande tudo) */}
+                <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col ${isStewart ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">⏱️ Últimos Lançamentos</h3>
-                        <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded font-bold uppercase tracking-wider">{nomesMeses[dataVis.mes - 1]}</span>
+                        <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full font-bold uppercase tracking-wider">{nomesMeses[dataVis.mes - 1]}</span>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 flex-1">
                         {ultimosCinco.map(t => (
-                            <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800/50">
-                                <div>
-                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200">{t.descricao}</p>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5">
+                            <div key={t.id} className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800/50 hover:border-blue-200 dark:hover:border-blue-800/50 transition-colors">
+                                {/* CORREÇÃO DO OVERFLOW: min-w-0 e truncate ativados */}
+                                <div className="flex-1 min-w-0 pr-4">
+                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{t.descricao}</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">
                                         {new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}
                                     </p>
                                 </div>
-                                <div className="text-right flex flex-col items-end">
+                                {/* CORREÇÃO DO OVERFLOW: shrink-0 ativado */}
+                                <div className="text-right flex flex-col items-end shrink-0">
                                     <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {formatarMoeda(t.valorParcela)}
                                     </p>
@@ -197,42 +193,45 @@ export function Dashboard({
                             </div>
                         ))}
                         {ultimosCinco.length === 0 && (
-                            <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                            <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl h-full flex items-center justify-center">
                                 <p className="text-slate-500 dark:text-slate-400 text-sm">Nenhum lançamento registrado nesta competência.</p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Coluna 3: Alertas da Garagem */}
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">🔧 Alertas do Veículo</h3>
+                {/* 2. ALERTAS DA GARAGEM (Exclusivo para Stewart) */}
+                {isStewart && (
+                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">🔧 Alertas do Veículo</h3>
 
-                    {alertasGaragem.length === 0 ? (
-                        <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl h-full flex items-center justify-center">
-                            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Manutenção em dia! 🚀</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {alertasGaragem.map((alerta, i) => (
-                                <div key={i} className={`p-4 rounded-lg border ${alerta.atrasado ? 'bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800/50' : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50'}`}>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-lg">{alerta.atrasado ? '🚨' : '⚠️'}</span>
-                                        <p className={`font-bold text-sm ${alerta.atrasado ? 'text-rose-800 dark:text-rose-400' : 'text-amber-800 dark:text-amber-400'}`}>{alerta.itemNome}</p>
+                        {alertasGaragem.length === 0 ? (
+                            <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl h-full flex flex-col items-center justify-center gap-2">
+                                <span className="text-3xl">🚀</span>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm font-bold">Manutenção em dia!</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 flex-1">
+                                {alertasGaragem.map((alerta, i) => (
+                                    <div key={i} className={`p-4 rounded-xl border transition-colors ${alerta.atrasado ? 'bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800/50' : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50'}`}>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-lg">{alerta.atrasado ? '🚨' : '⚠️'}</span>
+                                            <p className={`font-bold text-sm truncate ${alerta.atrasado ? 'text-rose-800 dark:text-rose-400' : 'text-amber-800 dark:text-amber-400'}`} title={alerta.itemNome}>{alerta.itemNome}</p>
+                                        </div>
+                                        <p className={`text-xs font-semibold truncate ${alerta.atrasado ? 'text-rose-600 dark:text-rose-500' : 'text-amber-700 dark:text-amber-500'}`}>
+                                            {alerta.veiculoNome}
+                                        </p>
+                                        <p className={`text-[10px] uppercase font-black mt-3 inline-block px-2 py-1 rounded-md shadow-sm ${alerta.atrasado ? 'bg-rose-600 text-white dark:bg-rose-500' : 'bg-amber-500 text-white dark:bg-amber-400 dark:text-amber-900'}`}>
+                                            {alerta.atrasado ? `Atrasado ${Math.abs(alerta.kmRestante)} KM` : `Troca em ${alerta.kmRestante} KM`}
+                                        </p>
                                     </div>
-                                    <p className={`text-xs font-semibold ${alerta.atrasado ? 'text-rose-600 dark:text-rose-500' : 'text-amber-700 dark:text-amber-500'}`}>
-                                        {alerta.veiculoNome}
-                                    </p>
-                                    <p className={`text-[10px] uppercase font-black mt-3 inline-block px-2 py-1 rounded ${alerta.atrasado ? 'bg-rose-200 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300' : 'bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>
-                                        {alerta.atrasado ? `Atrasado em ${Math.abs(alerta.kmRestante)} KM` : `Troca em ${alerta.kmRestante} KM`}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
+
         </div>
     );
 }
