@@ -8,7 +8,6 @@ export function Lancamentos({
     mudarOrdenacao, ordenacao, dadosTabela,
     alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa,
     modal, nomeUsuario, anexarComprovante, verComprovante,
-    // NOVAS PROPS INJETADAS PARA O SELETOR DE MESES
     dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
     mesAnterior = () => { },
     mesProximo = () => { }
@@ -26,10 +25,8 @@ export function Lancamentos({
 
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
 
-    // Array para nomes dos meses
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    // Captura os 5 últimos lançamentos baseados na data da compra (mais recentes primeiro)
     const ultimosCinco = [...dadosTabela].sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra)).slice(0, 5);
 
     const handleSubmit = async (e) => {
@@ -103,7 +100,8 @@ export function Lancamentos({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelCls}>Valor (R$)</label>
-                                <input name="valor" type="number" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} required className={inputCls} placeholder="0.00" />
+                                {/* CORREÇÃO: type="text" para aceitar a vírgula brasileira no input */}
+                                <input name="valor" type="text" value={valor} onChange={(e) => setValor(e.target.value)} required className={inputCls} placeholder="Ex: 89,90" />
                             </div>
                             <div>
                                 <label className={labelCls}>Data da Transação</label>
@@ -170,7 +168,6 @@ export function Lancamentos({
                     </form>
                 </div>
 
-                {/* NOVIDADE: Bloco com os 5 últimos lançamentos adicionados */}
                 <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm mt-6 animate-fade-in-up">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
                         <span>Últimos Lançamentos</span>
@@ -184,13 +181,17 @@ export function Lancamentos({
                                     <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{t.descricao}</p>
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex flex-col items-end">
                                     <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {formatarMoeda(t.valorParcela)}
                                     </p>
                                     <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                         {t.status}
                                     </span>
+                                    {/* NOVIDADE: Etiqueta de data de pagamento se existir */}
+                                    {t.status === 'pago' && t.data_pagamento && (
+                                        <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Pago em: {new Date(t.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -214,7 +215,6 @@ export function Lancamentos({
                     <p className="text-sm text-slate-500 dark:text-slate-400">Audite, pesquise e faça a gestão em lote de todas as movimentações.</p>
                 </div>
 
-                {/* NOVIDADE: Seletor de Mês e Ano (Mesmo formato do Dashboard) */}
                 <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm self-start md:self-auto">
                     <button onClick={mesAnterior} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
@@ -286,8 +286,8 @@ export function Lancamentos({
                             <tr>
                                 <th className="p-3 text-center w-10"><input type="checkbox" onChange={selecionarTodas} checked={dadosTabela.length > 0 && transacoesSelecionadas.length === dadosTabela.length} className="cursor-pointer" /></th>
                                 <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200" onClick={() => mudarOrdenacao('descricao')}>Descrição {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
-                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 hidden sm:table-cell" onClick={() => mudarOrdenacao('data')}>Data {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
-                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-center" onClick={() => mudarOrdenacao('status')}>Status {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
+                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 hidden sm:table-cell" onClick={() => mudarOrdenacao('data')}>Vencimento / Compra {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
+                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-center" onClick={() => mudarOrdenacao('status')}>Status da Conta {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
                                 <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
                             </tr>
                         </thead>
@@ -316,9 +316,17 @@ export function Lancamentos({
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </td>
                                         <td className="p-3 text-slate-600 dark:text-slate-400 text-xs hidden sm:table-cell whitespace-nowrap">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+
+                                        {/* NOVIDADE: A célula do Status agora inclui a data de pagamento */}
                                         <td className="p-3 text-center whitespace-nowrap">
-                                            <button type="button" onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-2 py-1 text-[10px] font-bold uppercase rounded transition cursor-pointer hover:scale-105 active:scale-95 border ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>{t.status}</button>
+                                            <div className="flex flex-col items-center justify-center">
+                                                <button type="button" onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-2 py-1 text-[10px] font-bold uppercase rounded transition cursor-pointer hover:scale-105 active:scale-95 border ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>{t.status}</button>
+                                                {t.status === 'pago' && t.data_pagamento && (
+                                                    <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Pago em: {new Date(t.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                                )}
+                                            </div>
                                         </td>
+
                                         <td className={`p-3 text-right font-bold whitespace-nowrap ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>{formatarMoeda(t.valorParcela)}</td>
                                     </tr>
                                 ))
