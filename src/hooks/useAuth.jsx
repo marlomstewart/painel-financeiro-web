@@ -4,92 +4,214 @@ const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current in
 
 /**
  * Hook Customizado: useAuth
- * Gere token JWT e fluxos de login com prevenção visual de múltiplos disparos.
+ * Gere o token JWT, fluxos de login, permissões administrativas e agora 
+ * a atualização de perfil e palavra-passe do próprio utilizador.
  */
 export function useAuth({ API, modal, setCarregouAPI }) {
     const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
     const [tokenTemp, setTokenTemp] = useState(null);
     const [precisaTrocarSenha, setPrecisaTrocarSenha] = useState(false);
     const [nomeUsuario, setNomeUsuario] = useState(localStorage.getItem('nomeUsuario') || '');
-    const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true' || false);
-    const [usuarios, setUsuarios] = useState([]);
+    const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdminPainel') === 'true');
 
+    const [usuarios, setUsuarios] = useState([]);
     const [usuarioLogin, setUsuarioLogin] = useState('');
     const [senhaLogin, setSenhaLogin] = useState('');
     const [erroLogin, setErroLogin] = useState('');
+
     const [novaSenha, setNovaSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [erroTrocaSenha, setErroTrocaSenha] = useState('');
 
     const getHeaders = useCallback(() => ({
-        'Authorization': `Bearer ${token || tokenTemp}`,
-        'Content-Type': 'application/json'
-    }), [token, tokenTemp]);
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    }), [token]);
 
     const fazerLogin = async (e) => {
         e.preventDefault();
-        setErroLogin('');
-
-        const btn = e.target.querySelector('button[type="submit"]') || e.target.querySelector('button');
-        const originalText = btn ? btn.innerHTML : '';
-        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Autenticando...`; }
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `${loadingIcon} Entrando...`;
 
         try {
-            const res = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: usuarioLogin, senha: senhaLogin }) });
+            const res = await fetch(`${API}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario: usuarioLogin, senha: senhaLogin })
+            });
             const data = await res.json();
-            if (data.auth) {
-                localStorage.setItem('nomeUsuario', usuarioLogin); setNomeUsuario(usuarioLogin);
-                if (data.precisaTrocar) { setTokenTemp(data.token); setPrecisaTrocarSenha(true); }
-                else {
-                    localStorage.setItem('tokenPainel', data.token); localStorage.setItem('isAdmin', data.is_admin ? 'true' : 'false');
-                    setToken(data.token); setIsAdmin(data.is_admin === true);
+
+            if (res.ok) {
+                if (data.precisaTrocar) {
+                    setTokenTemp(data.token);
+                    setPrecisaTrocarSenha(true);
+                } else {
+                    localStorage.setItem('tokenPainel', data.token);
+                    localStorage.setItem('nomeUsuario', usuarioLogin);
+                    localStorage.setItem('isAdminPainel', data.is_admin);
+                    setToken(data.token);
+                    setNomeUsuario(usuarioLogin);
+                    setIsAdmin(data.is_admin);
                 }
-            } else { setErroLogin(data.message); }
+            } else {
+                setErroLogin(data.message || 'Erro ao fazer login');
+                setTimeout(() => setErroLogin(''), 3000);
+            }
         } catch (err) {
-            setErroLogin("Erro ao conectar no servidor.");
+            setErroLogin('Erro de conexão. Servidor pode estar hibernando.');
+            console.error(err);
         } finally {
-            if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; }
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
+
+    const enviarNovaSenha = async (e) => {
+        e.preventDefault();
+        if (novaSenha !== confirmarSenha) {
+            setErroTrocaSenha('As senhas não coincidem!');
+            return;
+        }
+        try {
+            const res = await fetch(`${API}/mudar-senha`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenTemp}` },
+                // CORREÇÃO: Enviamos a senha atual em cache para satisfazer a nova regra do backend
+                body: JSON.stringify({ novaSenha, senhaAtual: senhaLogin })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('tokenPainel', tokenTemp);
+                localStorage.setItem('nomeUsuario', usuarioLogin);
+                setToken(tokenTemp);
+                setNomeUsuario(usuarioLogin);
+                setPrecisaTrocarSenha(false);
+                setTokenTemp(null);
+                setNovaSenha('');
+                setConfirmarSenha('');
+                setSenhaLogin('');
+            } else {
+                setErroTrocaSenha(data.message || 'Erro ao mudar senha');
+            }
+        } catch (err) {
+            setErroTrocaSenha('Erro de conexão.');
         }
     };
 
     const fazerLogout = useCallback(() => {
-        localStorage.removeItem('tokenPainel'); localStorage.removeItem('nomeUsuario'); localStorage.removeItem('isAdmin');
-        setToken(null); setTokenTemp(null); setPrecisaTrocarSenha(false); setCarregouAPI(false); setNomeUsuario(''); setIsAdmin(false); setUsuarios([]);
+        localStorage.removeItem('tokenPainel');
+        localStorage.removeItem('nomeUsuario');
+        localStorage.removeItem('isAdminPainel');
+        setToken(null);
+        setNomeUsuario('');
+        setIsAdmin(false);
+        setCarregouAPI(false);
+        setUsuarioLogin('');
+        setSenhaLogin('');
+        setErroLogin('');
     }, [setCarregouAPI]);
 
-    const enviarNovaSenha = async (e) => {
-        e.preventDefault();
-        setErroTrocaSenha('');
-        const regexSenhaForte = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/;
-        if (novaSenha !== confirmarSenha) return setErroTrocaSenha("As senhas não coincidem.");
-        if (!regexSenhaForte.test(novaSenha)) return setErroTrocaSenha("Mínimo 12 caracteres, 1 Maiúscula, 1 Minúscula, 1 Número, 1 Especial.");
-
-        const btn = e.target.querySelector('button[type="submit"]') || e.target.querySelector('button');
-        const originalText = btn ? btn.innerHTML : '';
-        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Atualizando...`; }
-
+    /**
+     * ATUALIZAÇÃO: Atualiza os dados de perfil no servidor e na sessão local.
+     */
+    const atualizarPerfil = async (dados) => {
         try {
-            const res = await fetch(`${API}/mudar-senha`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ novaSenha }) });
-            if (res.ok) { localStorage.setItem('tokenPainel', tokenTemp); setToken(tokenTemp); setTokenTemp(null); setPrecisaTrocarSenha(false); }
-            else { setErroTrocaSenha("Erro ao atualizar a senha no servidor."); }
+            const res = await fetch(`${API}/perfil`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(dados)
+            });
+            if (res.ok) {
+                localStorage.setItem('nomeUsuario', dados.nomeExibicao);
+                setNomeUsuario(dados.nomeExibicao);
+                await modal.alert('O seu perfil foi atualizado com sucesso!', '✅ Perfil Atualizado');
+            } else {
+                await modal.alert('Não foi possível atualizar o perfil. Tente novamente.', '❌ Erro');
+            }
         } catch (err) {
-            setErroTrocaSenha("Erro de conexão.");
-        } finally {
-            if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; }
+            console.error("Erro ao atualizar perfil:", err);
+            await modal.alert('Erro de conexão com o servidor.', '❌ Erro de Rede');
         }
     };
 
-    /** Operações restritas ao Super Admin */
-    const carregarUsuarios = async () => { const res = await fetch(`${API}/admin/usuarios`, { headers: getHeaders() }); if (res.ok) setUsuarios(await res.json()); };
-    const criarUsuario = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const usuario = fd.get('usuario'); const is_admin = fd.get('is_admin') === 'on'; const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) }); const data = await res.json(); if (res.ok) { await modal.alert(data.message, '✅ Criado'); e.target.reset(); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro'); };
-    const deletarUsuario = async (id, nome) => { const ok = await modal.confirm(`Deletar o usuário "${nome}"?`, '🗑️ Deletar', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() }); const data = await res.json(); if (res.ok) { await modal.alert(data.message, '✅ Deletado'); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro'); };
-    const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); const data = await res.json(); await modal.alert(data.message, res.ok ? '✅ Resetada' : '❌ Erro'); };
-    const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const acao = atualIsAdmin ? 'remover admin' : 'promover a admin'; const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
+    /**
+     * ATUALIZAÇÃO: Envia a requisição de alteração de senha a partir da aba de Configurações.
+     */
+    const alterarSenha = async (dados) => {
+        try {
+            const res = await fetch(`${API}/mudar-senha`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(dados)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                await modal.alert('A sua palavra-passe foi alterada com sucesso!', '✅ Segurança Atualizada');
+            } else {
+                await modal.alert(data.message || 'A palavra-passe atual está incorreta.', '❌ Erro de Validação');
+            }
+        } catch (err) {
+            console.error("Erro ao alterar senha:", err);
+            await modal.alert('Erro de conexão com o servidor.', '❌ Erro de Rede');
+        }
+    };
+
+    const carregarUsuarios = async () => {
+        try {
+            const res = await fetch(`${API}/admin/usuarios`, { headers: getHeaders() });
+            if (res.ok) setUsuarios(await res.json());
+        } catch (err) { console.error("Erro ao carregar utilizadores", err); }
+    };
+
+    const criarUsuario = async (e) => {
+        e.preventDefault();
+        const form = new FormData(e.target);
+        const usr = form.get('usuario');
+        const ehAdmin = form.get('is_admin') === 'on';
+        try {
+            const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario: usr, is_admin: ehAdmin }) });
+            const data = await res.json();
+            if (res.ok) { await modal.alert(data.message, '✅ Sucesso'); carregarUsuarios(); e.target.reset(); }
+            else await modal.alert(data.message || data.error, '❌ Erro');
+        } catch (err) { await modal.alert('Erro conexão', '❌ Erro'); }
+    };
+
+    const deletarUsuario = async (id, nome) => {
+        const ok = await modal.confirm(`Tem a certeza que deseja EXCLUIR o utilizador "${nome}"?`, '🗑️ Excluir', { confirmLabel: 'Sim, Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
+        if (!ok) return;
+        const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() });
+        const data = await res.json();
+        if (res.ok) { await modal.alert(data.message, '✅ Excluído'); carregarUsuarios(); }
+        else await modal.alert(data.message, '❌ Erro');
+    };
+
+    const resetarSenha = async (id, nome) => {
+        const ok = await modal.confirm(`Redefinir a senha de "${nome}" para 'admin123'?`, '🔑 Repor', { confirmLabel: 'Redefinir' });
+        if (!ok) return;
+        const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() });
+        const data = await res.json();
+        await modal.alert(data.message, res.ok ? '✅ Redefinida' : '❌ Erro');
+    };
+
+    const toggleAdmin = async (id, nomeU, atualIsAdmin) => {
+        const acao = atualIsAdmin ? 'remover privilégios de administrador' : 'promover a administrador';
+        const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' });
+        if (!ok) return;
+        const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() });
+        const data = await res.json();
+        if (res.ok) carregarUsuarios();
+        else await modal.alert(data.message, '❌ Erro');
+    };
 
     return {
         token, precisaTrocarSenha, nomeUsuario, isAdmin, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
-        fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin
+        fazerLogin, enviarNovaSenha, fazerLogout,
+        carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin,
+        atualizarPerfil, alterarSenha // Injeção das novas funções na View
     };
 }
