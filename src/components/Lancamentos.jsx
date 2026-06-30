@@ -13,7 +13,10 @@ export function Lancamentos({
     mesProximo = () => { }
 }) {
     const [descricao, setDescricao] = useState('');
-    const [valor, setValor] = useState('');
+
+    // NOVIDADE: Estado para a Máscara Bancária
+    const [valorStr, setValorStr] = useState('0');
+
     const [dataCompra, setDataCompra] = useState(new Date().toISOString().split('T')[0]);
     const [tipo, setTipo] = useState('despesa');
     const [status, setStatus] = useState('pendente');
@@ -26,13 +29,22 @@ export function Lancamentos({
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
 
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-
     const ultimosCinco = [...dadosTabela].sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra)).slice(0, 5);
+
+    // NOVIDADE: Manipulador da Máscara Bancária
+    const handleValorChange = (e) => {
+        let val = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
+        if (val === '') val = '0';
+        setValorStr(val);
+    };
+
+    // Renderiza a string de números puros no formato monetário PT-BR (ex: 0,00)
+    const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const handleSubmit = async (e) => {
         const sucesso = await addTransacao(e);
         if (sucesso) {
-            setDescricao(''); setValor(''); setObservacao(''); setKmMoto('');
+            setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
             setFormaPagamento('pix'); setParcelas(1);
@@ -41,7 +53,6 @@ export function Lancamentos({
 
     const toggleSelecao = (id) => { setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]); };
     const selecionarTodas = () => { if (transacoesSelecionadas.length === dadosTabela.length) setTransacoesSelecionadas([]); else setTransacoesSelecionadas(dadosTabela.map(t => t.id)); };
-
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     const obterNomePagamento = (forma) => {
@@ -100,8 +111,15 @@ export function Lancamentos({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelCls}>Valor (R$)</label>
-                                {/* CORREÇÃO: type="text" para aceitar a vírgula brasileira no input */}
-                                <input name="valor" type="text" value={valor} onChange={(e) => setValor(e.target.value)} required className={inputCls} placeholder="Ex: 89,90" />
+                                {/* APLICAÇÃO DA MÁSCARA BANCÁRIA */}
+                                <input
+                                    name="valor"
+                                    type="text"
+                                    value={displayValor}
+                                    onChange={handleValorChange}
+                                    required
+                                    className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`}
+                                />
                             </div>
                             <div>
                                 <label className={labelCls}>Data da Transação</label>
@@ -188,7 +206,6 @@ export function Lancamentos({
                                     <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                         {t.status}
                                     </span>
-                                    {/* NOVIDADE: Etiqueta de data de pagamento se existir */}
                                     {t.status === 'pago' && t.data_pagamento && (
                                         <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Pago em: {new Date(t.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                                     )}
@@ -317,7 +334,6 @@ export function Lancamentos({
                                         </td>
                                         <td className="p-3 text-slate-600 dark:text-slate-400 text-xs hidden sm:table-cell whitespace-nowrap">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
 
-                                        {/* NOVIDADE: A célula do Status agora inclui a data de pagamento */}
                                         <td className="p-3 text-center whitespace-nowrap">
                                             <div className="flex flex-col items-center justify-center">
                                                 <button type="button" onClick={() => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra)} className={`px-2 py-1 text-[10px] font-bold uppercase rounded transition cursor-pointer hover:scale-105 active:scale-95 border ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>{t.status}</button>
