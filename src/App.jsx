@@ -32,7 +32,6 @@ const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-ap
  * Hook Customizado: useModal
  * Gerencia a configuração e visibilidade de modais genéricos síncronos
  * (alertas, confirmações, prompts e opções).
- * @returns {Object} Métodos utilitários e estado de configuração do Modal.
  */
 function useModal() {
   const [config, setConfig] = useState(null);
@@ -46,9 +45,7 @@ function useModal() {
 
 /**
  * Componente Principal: App
- * Orquestrador de roteamento virtual baseado no state telaAtiva, prop-drilling
- * para Views e integrador de todos os Custom Hooks do sistema.
- * @returns {JSX.Element} SPA renderizado.
+ * Orquestrador de roteamento virtual baseado no state telaAtiva.
  */
 function App() {
   const modal = useModal();
@@ -96,14 +93,32 @@ function App() {
 
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
-    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    // ATUALIZAÇÃO 1: Roteamento centralizado para Subtelas de Despesas (Contas Fixas, Rendas Fixas e Dívidas)
+    // A view ContasFixas receberá a prop `modo` para saber qual aba exibir.
+    if (['contas_fixas', 'dividas', 'rendas_fixas'].includes(telaAtiva)) {
+      return <ContasFixas modo={telaAtiva} contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    }
 
-    // CORREÇÃO: Injeção das propriedades atualizarPerfil e alterarSenha na view Configuracoes
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} />;
 
     if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
 
-    if (telaAtiva === 'lancamentos') return <Lancamentos categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante} />;
+    // ATUALIZAÇÃO 2: Roteamento centralizado para Subtelas de Lançamentos (Novo Lançamento vs Extrato)
+    // A view Lancamentos receberá a prop `modo` para dividir o ecrã.
+    if (['novo_lancamento', 'extrato', 'lancamentos'].includes(telaAtiva)) {
+      return <Lancamentos modo={telaAtiva} categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao} filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto} setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados} setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados} setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao} dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor} deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante} />;
+    }
+
+    // ATUALIZAÇÃO 3: Roteamento para Investimentos (Placeholder enquanto não desenvolvemos a tela oficial)
+    if (telaAtiva === 'investimentos') {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in transition-colors duration-300">
+          <span className="text-6xl mb-6">📈</span>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Módulo de Investimentos</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md">O ambiente para gerir a sua carteira, fundos imobiliários e aportes está a ser preparado. Em breve estará disponível.</p>
+        </div>
+      );
+    }
 
     return <Dashboard dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} />;
   };
