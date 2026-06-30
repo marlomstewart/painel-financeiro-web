@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export function Lancamentos({
-    modo = 'lancamentos',
+    modo = 'lancamentos', // 'novo_lancamento' | 'extrato' | 'lancamentos'
     categorias, cartoes, addTransacao,
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
@@ -15,6 +15,7 @@ export function Lancamentos({
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [veiculoEmprestado, setVeiculoEmprestado] = useState(false);
+    const [veiculoIdSelecionado, setVeiculoIdSelecionado] = useState('');
 
     const [descricao, setDescricao] = useState('');
     const [valorStr, setValorStr] = useState('0');
@@ -50,7 +51,7 @@ export function Lancamentos({
             setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
-            setFormaPagamento('pix'); setParcelas(1); setVeiculoEmprestado(false);
+            setFormaPagamento('pix'); setParcelas(1); setVeiculoEmprestado(false); setVeiculoIdSelecionado('');
         }
 
         setIsSubmitting(false);
@@ -148,6 +149,7 @@ export function Lancamentos({
                             </select>
                         </div>
 
+                        {/* CORREÇÃO AQUI: Filtro removido e IA de auto-seleção adicionada */}
                         {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario.toLowerCase() === 'stewart' && (
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl border border-indigo-200 dark:border-indigo-800/50 animate-fade-in space-y-4">
                                 <div className="flex items-center gap-2 mb-2 border-b border-indigo-100 dark:border-indigo-800/50 pb-2">
@@ -157,25 +159,49 @@ export function Lancamentos({
 
                                 <div>
                                     <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Veículo Vinculado</label>
-                                    <select name="veiculoId" className={inputCls} required>
+                                    <select
+                                        name="veiculoId"
+                                        className={inputCls}
+                                        required
+                                        value={veiculoIdSelecionado}
+                                        onChange={(e) => {
+                                            setVeiculoIdSelecionado(e.target.value);
+                                            const vSelecionado = garagem?.veiculos?.find(v => v.id === e.target.value);
+                                            if (vSelecionado && vSelecionado.tipo !== 'proprio') {
+                                                setVeiculoEmprestado(true);
+                                            } else {
+                                                setVeiculoEmprestado(false);
+                                            }
+                                        }}
+                                    >
                                         <option value="">Selecione o veículo...</option>
-                                        {garagem?.veiculos?.filter(v => v.ativo === 1).map(v => (
-                                            <option key={v.id} value={v.id}>{v.modelo}</option>
+                                        {garagem?.veiculos?.map(v => (
+                                            <option key={v.id} value={v.id}>
+                                                {v.modelo} {v.tipo && v.tipo !== 'proprio' ? '(Convidado)' : ''}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <input type="checkbox" name="veiculoEmprestado" id="veiculoEmprestado" value="1" checked={veiculoEmprestado} onChange={(e) => setVeiculoEmprestado(e.target.checked)} className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                                    <input
+                                        type="checkbox"
+                                        name="veiculoEmprestado"
+                                        id="veiculoEmprestado"
+                                        value="1"
+                                        checked={veiculoEmprestado}
+                                        onChange={(e) => setVeiculoEmprestado(e.target.checked)}
+                                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                                    />
                                     <label htmlFor="veiculoEmprestado" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                                        Veículo Emprestado (Não atualizar meu KM)
+                                        Veículo Convidado/Emprestado (Não atualiza KM)
                                     </label>
                                 </div>
 
                                 {!veiculoEmprestado && (
-                                    <div className="pt-2">
+                                    <div className="pt-2 animate-fade-in">
                                         <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM)</label>
-                                        <input name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)} className={inputCls} placeholder="Ex: 15200" required={!veiculoEmprestado} />
+                                        <input name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)} className={inputCls} placeholder="Ex: 81604" required={!veiculoEmprestado} />
                                     </div>
                                 )}
                             </div>
