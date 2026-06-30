@@ -3,10 +3,10 @@ import { useCallback } from 'react';
 /**
  * Hook Customizado: useTransacoes
  * Gere o CRUD do livro-razão financeiro, integração com a Garagem (hodômetro),
- * edição inteligente (aceitando vírgulas) e controle de Data de Pagamento.
+ * e orquestra a nova Edição Completa utilizando o Modal avançado.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
-
+    
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
@@ -18,10 +18,12 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     const addTransacao = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-
-        // Permite que o usuário digite com vírgula no formulário
+        
+        // Tratamento do valor vindo da Máscara Bancária (remove pontos de milhar, R$ e troca vírgula)
         let valorBruto = formData.get('valor');
-        if (typeof valorBruto === 'string') valorBruto = valorBruto.replace(',', '.');
+        if (typeof valorBruto === 'string') {
+            valorBruto = valorBruto.replace(/[R$\s.]/g, '').replace(',', '.');
+        }
 
         const obj = {
             id: Date.now().toString(),
@@ -45,15 +47,15 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             let mesRef = obj.mesReferencia + i;
             let anoRef = obj.anoReferencia;
             if (mesRef > 12) { mesRef -= 12; anoRef += 1; }
-
-            const parcelaObj = {
-                ...obj,
-                id: `${obj.id}_${i}`,
-                mesReferencia: mesRef,
-                anoReferencia: anoRef,
-                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao
+            
+            const parcelaObj = { 
+                ...obj, 
+                id: `${obj.id}_${i}`, 
+                mesReferencia: mesRef, 
+                anoReferencia: anoRef, 
+                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao 
             };
-
+            
             const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
             if (!res.ok) sucesso = false;
             else if (obj.km_moto && garagem) await garagem.registrarHodometro(obj.km_moto, obj.dataCompra, obj.descricao);
@@ -63,69 +65,56 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         else { modal.alert('Erro ao registrar lançamento.', '❌ Erro'); return false; }
     };
 
-    /**
-     * Alternar Status: Agora grava a Data de Pagamento se mudar para "pago"
-     */
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
-
-        // Se for mudar para pago, avisamos no texto que a data de hoje será registrada
-        let tituloAlert = novoStatus === 'pago' ? '💰 Marcar como Pago' : '⏳ Marcar como Pendente';
-        let msgAlert = novoStatus === 'pago'
-            ? 'A data de pagamento será registrada como o dia de hoje.'
-            : 'O lançamento voltará para pendências.';
-
+        
         try {
-            const res = await fetch(`${API}/transacoes/${id}/status`, {
-                method: 'PUT',
-                headers: getHeaders(),
-                body: JSON.stringify({ status: novoStatus })
+            const res = await fetch(`${API}/transacoes/${id}/status`, { 
+                method: 'PUT', 
+                headers: getHeaders(), 
+                body: JSON.stringify({ status: novoStatus }) 
             });
             const data = await res.json();
-
+            
             if (res.ok) {
-                // Atualiza o estado local preservando todos os dados, injetando apenas o status e a data_pagamento
                 setTransacoes(transacoes.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
-                // Opcional: Retirar o modal visual se preferir um clique mais rápido e silencioso
-                // modal.alert(msgAlert, tituloAlert); 
             }
         } catch (err) { console.error("Erro ao mudar status:", err); }
     };
 
     /**
-     * Edição Inteligente: Aceita formato Brasileiro e preserva competência.
+     * ATUALIZADO: Invoca a Edição Completa no Modal Avançado
      */
     const editarValor = async (transacao) => {
-        // Exibe o valor atual formatado para o Brasil como sugestão
-        const valorSugerido = transacao.valorParcela.toString().replace('.', ',');
-
-        // NOVIDADE: Em vez de inputType: 'number', usamos text para permitir a vírgula!
-        const novoValorStr = await modal.prompt(
-            `Atualize o valor (ex: 89,90) ou a descrição do lançamento "${transacao.descricao}":\n\n(Dica: Para alterar outros dados estruturais, apague e crie novamente)`,
-            valorSugerido,
-            '✏️ Edição Rápida',
-            { inputType: 'text' }
+        // Envia as propriedades necessárias para o Modal montar o formulário
+        const dadosEditados = await modal.prompt(
+            '', 
+            '', 
+            '✏️ Edição de Lançamento', 
+            { 
+                inputType: 'editar_transacao',
+                transacao,
+                categorias,
+                cartoes
+            }
         );
 
-        if (!novoValorStr) return;
-
-        // Limpeza e conversão do formato brasileiro para o formato do banco
-        let valorTratado = novoValorStr.replace('R$', '').trim().replace(',', '.');
-        if (isNaN(parseFloat(valorTratado))) {
-            return modal.alert("Por favor, digite um número válido.", "❌ Erro de Formato");
-        }
+        // Se o usuário clicar em Cancelar, aborta silenciosamente
+        if (!dadosEditados) return;
 
         try {
-            const res = await fetch(`${API}/transacoes/${transacao.id}`, {
-                method: 'PUT',
-                headers: getHeaders(),
-                body: JSON.stringify({ valorParcela: parseFloat(valorTratado) })
+            const res = await fetch(`${API}/transacoes/${transacao.id}`, { 
+                method: 'PUT', 
+                headers: getHeaders(), 
+                body: JSON.stringify(dadosEditados) 
             });
             if (res.ok) {
                 await carregarTransacoes();
-                modal.alert('Valor atualizado com segurança!', '✅ Sucesso');
+                modal.alert('Lançamento atualizado com segurança!', '✅ Sucesso');
+            } else {
+                modal.alert('Não foi possível atualizar o lançamento.', '❌ Erro');
             }
-        } catch (err) { modal.alert('Erro ao editar', '❌ Erro'); }
+        } catch (err) { modal.alert('Erro de conexão ao editar', '❌ Erro'); }
     };
 
     const deletarTransacao = async (t) => {
