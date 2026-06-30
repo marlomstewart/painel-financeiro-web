@@ -1,12 +1,7 @@
 import { useCallback } from 'react';
 
-/**
- * Hook Customizado: useTransacoes
- * Gere o CRUD do livro-razão financeiro, integração com a Garagem (hodômetro),
- * e orquestra a nova Edição Completa utilizando o Modal avançado.
- */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
-    
+
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
@@ -18,8 +13,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     const addTransacao = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-        
-        // Tratamento do valor vindo da Máscara Bancária (remove pontos de milhar, R$ e troca vírgula)
+
         let valorBruto = formData.get('valor');
         if (typeof valorBruto === 'string') {
             valorBruto = valorBruto.replace(/[R$\s.]/g, '').replace(',', '.');
@@ -47,15 +41,15 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             let mesRef = obj.mesReferencia + i;
             let anoRef = obj.anoReferencia;
             if (mesRef > 12) { mesRef -= 12; anoRef += 1; }
-            
-            const parcelaObj = { 
-                ...obj, 
-                id: `${obj.id}_${i}`, 
-                mesReferencia: mesRef, 
-                anoReferencia: anoRef, 
-                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao 
+
+            const parcelaObj = {
+                ...obj,
+                id: `${obj.id}_${i}`,
+                mesReferencia: mesRef,
+                anoReferencia: anoRef,
+                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao
             };
-            
+
             const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
             if (!res.ok) sucesso = false;
             else if (obj.km_moto && garagem) await garagem.registrarHodometro(obj.km_moto, obj.dataCompra, obj.descricao);
@@ -65,33 +59,31 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         else { modal.alert('Erro ao registrar lançamento.', '❌ Erro'); return false; }
     };
 
+    // CORREÇÃO: Utilização de callback "prev" para garantir atualização instantânea da Tabela.
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
-        
+
         try {
-            const res = await fetch(`${API}/transacoes/${id}/status`, { 
-                method: 'PUT', 
-                headers: getHeaders(), 
-                body: JSON.stringify({ status: novoStatus }) 
+            const res = await fetch(`${API}/transacoes/${id}/status`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify({ status: novoStatus })
             });
             const data = await res.json();
-            
+
             if (res.ok) {
-                setTransacoes(transacoes.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
+                // Atualização blindada na interface sem precisar recarregar o banco
+                setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
             }
         } catch (err) { console.error("Erro ao mudar status:", err); }
     };
 
-    /**
-     * ATUALIZADO: Invoca a Edição Completa no Modal Avançado
-     */
     const editarValor = async (transacao) => {
-        // Envia as propriedades necessárias para o Modal montar o formulário
         const dadosEditados = await modal.prompt(
-            '', 
-            '', 
-            '✏️ Edição de Lançamento', 
-            { 
+            '',
+            '',
+            '✏️ Edição de Lançamento',
+            {
                 inputType: 'editar_transacao',
                 transacao,
                 categorias,
@@ -99,14 +91,13 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             }
         );
 
-        // Se o usuário clicar em Cancelar, aborta silenciosamente
         if (!dadosEditados) return;
 
         try {
-            const res = await fetch(`${API}/transacoes/${transacao.id}`, { 
-                method: 'PUT', 
-                headers: getHeaders(), 
-                body: JSON.stringify(dadosEditados) 
+            const res = await fetch(`${API}/transacoes/${transacao.id}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(dadosEditados)
             });
             if (res.ok) {
                 await carregarTransacoes();
@@ -122,7 +113,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         if (!ok) return;
         try {
             const res = await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
-            if (res.ok) setTransacoes(transacoes.filter(item => item.id !== t.id));
+            if (res.ok) setTransacoes(prev => prev.filter(item => item.id !== t.id));
         } catch (err) { modal.alert('Erro ao deletar.', '❌ Erro'); }
     };
 

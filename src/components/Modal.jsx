@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 function FormularioEdicao({ config, onConfirm, onCancel }) {
   const { transacao, categorias = [], cartoes = [] } = config;
 
-  // Máscara Bancária: Guarda o valor como string de números puros. Ex: "8990" = R$ 89,90
+  // Máscara Bancária
   const initValorStr = Math.round((transacao.valorParcela || 0) * 100).toString();
   const [valorStr, setValorStr] = useState(initValorStr);
 
@@ -21,12 +21,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   const [observacao, setObservacao] = useState(transacao.observacao || '');
 
   const handleValorChange = (e) => {
-    let val = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
+    let val = e.target.value.replace(/\D/g, '');
     if (val === '') val = '0';
     setValorStr(val);
   };
 
-  // Renderiza a string de números puros no formato monetário PT-BR
   const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const handleSubmit = (e) => {
@@ -36,7 +35,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
       alert('O valor deve ser maior que zero.');
       return;
     }
-    // Envia o objeto editado de volta para o hook useTransacoes
     onConfirm({ descricao, valorParcela: numericValue, dataCompra, tipo, status, categoria, formaPagamento, observacao });
   };
 
@@ -137,7 +135,6 @@ export function Modal({ config, onClose }) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel || onClose}></div>
       <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in">
 
-        {/* Cabecalho */}
         <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
           <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{title || 'Aviso'}</h3>
           <button onClick={onCancel || onClose} className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer p-1">
@@ -145,10 +142,8 @@ export function Modal({ config, onClose }) {
           </button>
         </div>
 
-        {/* Corpo do Modal com Scroll Interno */}
         <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
 
-          {/* MODAL: ALERT */}
           {type === 'alert' && (
             <div className="space-y-4">
               <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
@@ -158,7 +153,6 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* MODAL: CONFIRM */}
           {type === 'confirm' && (
             <div className="space-y-4">
               <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
@@ -169,7 +163,6 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* MODAL: PROMPT SIMPLES */}
           {type === 'prompt' && inputType !== 'editar_transacao' && (
             <div className="space-y-4">
               <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
@@ -187,12 +180,10 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* MODAL: PROMPT ESPECIAL (EDIÇÃO COMPLETA) */}
           {type === 'prompt' && inputType === 'editar_transacao' && (
             <FormularioEdicao config={config} onConfirm={onConfirm} onCancel={onCancel} />
           )}
 
-          {/* MODAL: OPÇÕES */}
           {type === 'options' && (
             <div className="space-y-4">
               <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
@@ -209,7 +200,6 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* MODAL: DETALHES DA TRANSAÇÃO */}
           {type === 'detalhes' && config.transacao && (
             <div className="space-y-6">
               <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
@@ -249,20 +239,21 @@ export function Modal({ config, onClose }) {
                 )}
               </div>
 
+              {/* CORREÇÃO DO BUG: Retirado o onClose() das chamadas que abrem novos Modais */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={() => { config.onAlternarStatus(); onClose(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
+                <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
                   🔄 {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago'}
                 </button>
-                <button onClick={() => { config.onEditar(); onClose(); }} className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition cursor-pointer border border-blue-200 dark:border-blue-800">
+                <button onClick={() => config.onEditar()} className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition cursor-pointer border border-blue-200 dark:border-blue-800">
                   ✏️ Editar Tudo
                 </button>
-                <button onClick={() => { config.onDeletar(); onClose(); }} className="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-bold rounded hover:bg-rose-200 dark:hover:bg-rose-900/50 transition cursor-pointer">
+                <button onClick={() => config.onDeletar()} className="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-bold rounded hover:bg-rose-200 dark:hover:bg-rose-900/50 transition cursor-pointer">
                   🗑️ Excluir
                 </button>
-                <button onClick={() => { config.onAnexarComprovante(); onClose(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
+                <button onClick={() => config.onAnexarComprovante()} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
                   📎 Anexar
                 </button>
-                <button onClick={() => { config.onVerComprovante(); onClose(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
+                <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
                   📄 Ver Anexo
                 </button>
               </div>
