@@ -1,73 +1,173 @@
 import React, { useState } from 'react';
 
-export function MetasCategorias({ categorias, addCategoria, editarSetup, removerSetup, modal }) {
+/**
+ * Componente: MetasCategorias
+ * View de orçamentação tática. Gere as expectativas de Receita (Metas de Renda)
+ * e os limites/alvos de Saída (Categorias de Despesa e Investimento).
+ */
+export function MetasCategorias({ categorias, addCategoria, metasRenda = [], addMetaRenda, editarSetup, removerSetup, modal }) {
     const [nomeCategoria, setNomeCategoria] = useState('');
     const [metaCategoria, setMetaCategoria] = useState('');
     const [tipoCategoria, setTipoCategoria] = useState('despesa');
 
-    const handleSubmit = async (e) => {
-        await addCategoria(e);
-        setNomeCategoria(''); setMetaCategoria(''); setTipoCategoria('despesa');
-    };
-
-    const handleEditar = async (c) => {
-        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' }); if (nNome === null) return;
-        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?`, String(c.meta), '✏️ Editar Categoria', { inputType: 'number', confirmLabel: 'Próximo' }); if (nMeta === null) return;
-        const nTipo = await modal.options(`3️⃣ Qual o Comportamento?`, [{ value: 'despesa', icon: '🔻', label: 'Despesa (Teto)' }, { value: 'investimento', icon: '📈', label: 'Investimento (Alvo)' }], '✏️ Editar Categoria'); if (!nTipo) return;
-
-        const sucesso = await editarSetup('categorias', c.id, { nome: nNome, meta: Number(nMeta), tipo: nTipo });
-        if (sucesso) modal.alert('Categoria atualizada!', '✅ Sucesso');
-    };
-
-    const handleExcluir = async (id) => {
-        const ok = await modal.confirm('Tem certeza? Lançamentos vinculados perderão a regra de meta.', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
-        if (ok) removerSetup('categorias', id);
-    };
-
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24">
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Planejamento e Metas</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Crie tetos de gastos e defina orçamentos para alimentar o motor de inteligência preditiva.</p>
-            </div>
+    /**
+     * Interceta a submissão do formulário para delegar ao hook de setup
+     * a criação da entidade correta com base no tipo selecionado.
+     */
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Nova Categoria</h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome da Categoria</label><input name="nome" type="text" value={nomeCategoria} onChange={(e) => setNomeCategoria(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Supermercado, Gasolina" /></div>
-                        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Teto Mensal / Meta (R$)</label><input name="meta" type="number" step="0.01" min="0" value={metaCategoria} onChange={(e) => setMetaCategoria(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0.00" /></div>
-                        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Comportamento</label><select name="tipo" value={tipoCategoria} onChange={(e) => setTipoCategoria(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"><option value="despesa">Teto de Gasto (Limite)</option><option value="investimento">Meta de Crescimento (Alvo)</option></select></div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">Criar Categoria</button>
-                    </form>
+        if (tipoCategoria === 'renda') {
+            if (addMetaRenda) {
+                await addMetaRenda(e);
+            } else {
+                await modal.alert('A função de adicionar metas de renda ainda não foi ligada no App.jsx. Aguarde a injeção do próximo ficheiro.', '⚠️ Aviso de Transição');
+            }
+        } else {
+            await addCategoria(e);
+        }
+
+        setNomeCategoria('');
+        setMetaCategoria('');
+        setTipoCategoria('despesa');
+    };
+
+    const handleEditarCategoria = async (c) => {
+        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' }); if (nNome === null) return;
+        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?`, String(c.meta), '✏️ Editar Categoria', { inputType: 'number', confirmLabel: 'Próximo' }); if (nMeta === null) return;
+        const nTipo = await modal.options(`3️⃣ Qual o Comportamento?`, [
+            { value: 'despesa', icon: '🔻', label: 'Despesa (Teto)' },
+            { value: 'investimento', icon: '📈', label: 'Investimento (Alvo)' }
+        ], '✏️ Editar Categoria'); if (!nTipo) return;
+
+        await editarSetup('categorias', c.id, { nome: nNome, meta: Number(nMeta), tipo: nTipo });
+    };
+
+    const handleEditarMetaRenda = async (m) => {
+        const nNome = await modal.prompt(`1️⃣ Novo NOME da Expectativa de Renda?`, m.nome, '✏️ Editar Receita', { confirmLabel: 'Próximo' }); if (nNome === null) return;
+        const nValor = await modal.prompt(`2️⃣ Novo Alvo Mensal (R$)?`, String(m.valor), '✏️ Editar Receita', { inputType: 'number', confirmLabel: 'Salvar' }); if (nValor === null) return;
+
+        await editarSetup('metasRenda', m.id, { nome: nNome, valor: Number(nValor) });
+    };
+
+    const handleExcluir = async (id, contexto) => {
+        const ok = await modal.confirm('Deseja excluir este registo estrutural? Não afetará os lançamentos já efetuados no livro-razão.', '🗑️ Excluir Registo');
+        if (!ok) return;
+        await removerSetup(contexto, id);
+    };
+
+    return (
+        <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-24">
+            <header className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Metas & Categorias</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Defina os tetos de gastos, alvos de investimento e expectativas de receita.</p>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                {/* ================= COLUNA ESQUERDA: FORMULÁRIO ================= */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm sticky top-24">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Nova Meta Estratégica</h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">Nome da Categoria/Meta</label>
+                                <input
+                                    type="text" name="nome" required
+                                    value={nomeCategoria} onChange={(e) => setNomeCategoria(e.target.value)}
+                                    placeholder="Ex: Supermercado, Salário, Dividendos..."
+                                    className="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">Valor Alvo (R$)</label>
+                                <input
+                                    type="number" name="meta" step="0.01" required
+                                    value={metaCategoria} onChange={(e) => setMetaCategoria(e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">Tipo de Meta</label>
+                                <select
+                                    name="tipo"
+                                    value={tipoCategoria} onChange={(e) => setTipoCategoria(e.target.value)}
+                                    className="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors cursor-pointer"
+                                >
+                                    <option value="despesa">🔻 Teto de Despesa</option>
+                                    <option value="investimento">📈 Alvo de Investimento</option>
+                                    <option value="renda">💰 Expectativa de Receita</option>
+                                </select>
+                            </div>
+                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md mt-2">
+                                Adicionar Meta
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
-                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 h-fit">
-                    {categorias.length === 0 ? (
-                        <div className="sm:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhuma meta configurada.</div>
-                    ) : (
-                        categorias.map(c => (
-                            <div key={c.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex items-center justify-between group">
-                                <div>
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-200">{c.nome}</h4>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase mt-0.5">{c.tipo === 'despesa' ? 'Teto Máximo' : 'Alvo Mensal'}</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className={`text-right font-black ${c.tipo === 'despesa' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                        {formatarMoeda(c.meta)}
-                                    </div>
+                {/* ================= COLUNA DIREITA: LISTAGEM DUPLA ================= */}
+                <div className="lg:col-span-2 space-y-8">
 
-                                    {/* ATUALIZAÇÃO TOUCH: Sempre visível no mobile */}
-                                    <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-slate-700 pl-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleEditar(c)} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
-                                        <button onClick={() => handleExcluir(c.id)} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>
+                    {/* BLOCO 1: METAS DE RENDA */}
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Entradas / Receitas</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {metasRenda.length === 0 ? (
+                                <div className="col-span-full text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Nenhuma expectativa de renda configurada.</p>
+                                </div>
+                            ) : metasRenda.map(m => (
+                                <div key={m.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-200">{m.nome}</h4>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase mt-0.5">Meta de Renda</p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right font-black text-emerald-600 dark:text-emerald-400">
+                                            {formatarMoeda(m.valor)}
+                                        </div>
+                                        <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-slate-700 pl-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button type="button" onClick={() => handleEditarMetaRenda(m)} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
+                                            <button type="button" onClick={() => handleExcluir(m.id, 'metasRenda')} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    )}
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* BLOCO 2: CATEGORIAS (DESPESAS E INVESTIMENTOS) */}
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Saídas (Despesas e Investimentos)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {categorias.length === 0 ? (
+                                <div className="col-span-full text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Nenhuma categoria de saída configurada.</p>
+                                </div>
+                            ) : categorias.map(c => (
+                                <div key={c.id} className={`bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group transition-colors ${c.tipo === 'despesa' ? 'hover:border-amber-300 dark:hover:border-amber-700' : 'hover:border-blue-300 dark:hover:border-blue-700'}`}>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-200">{c.nome}</h4>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase mt-0.5">{c.tipo === 'despesa' ? 'Teto Máximo' : 'Alvo Mensal'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`text-right font-black ${c.tipo === 'despesa' ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                                            {formatarMoeda(c.meta)}
+                                        </div>
+                                        <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-slate-700 pl-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button type="button" onClick={() => handleEditarCategoria(c)} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
+                                            <button type="button" onClick={() => handleExcluir(c.id, 'categorias')} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
