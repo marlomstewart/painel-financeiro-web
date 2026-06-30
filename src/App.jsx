@@ -125,6 +125,7 @@ function App() {
         dataVis={dataVis}
         mesAnterior={dashboardManager.mesAnterior}
         mesProximo={dashboardManager.mesProximo}
+        garagem={garagem} /* NOVIDADE: Injeção do módulo de Garagem */
       />;
     }
 

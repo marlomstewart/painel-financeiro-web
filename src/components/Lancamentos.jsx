@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export function Lancamentos({
-    modo = 'lancamentos', // 'novo_lancamento' | 'extrato' | 'lancamentos'
+    modo = 'lancamentos',
     categorias, cartoes, addTransacao,
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
@@ -10,13 +10,14 @@ export function Lancamentos({
     modal, nomeUsuario, anexarComprovante, verComprovante,
     dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
     mesAnterior = () => { },
-    mesProximo = () => { }
+    mesProximo = () => { },
+    garagem = null
 }) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [veiculoEmprestado, setVeiculoEmprestado] = useState(false);
+
     const [descricao, setDescricao] = useState('');
-
-    // NOVIDADE: Estado para a Máscara Bancária
     const [valorStr, setValorStr] = useState('0');
-
     const [dataCompra, setDataCompra] = useState(new Date().toISOString().split('T')[0]);
     const [tipo, setTipo] = useState('despesa');
     const [status, setStatus] = useState('pendente');
@@ -31,24 +32,28 @@ export function Lancamentos({
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const ultimosCinco = [...dadosTabela].sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra)).slice(0, 5);
 
-    // NOVIDADE: Manipulador da Máscara Bancária
     const handleValorChange = (e) => {
-        let val = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
+        let val = e.target.value.replace(/\D/g, '');
         if (val === '') val = '0';
         setValorStr(val);
     };
 
-    // Renderiza a string de números puros no formato monetário PT-BR (ex: 0,00)
     const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
         const sucesso = await addTransacao(e);
+
         if (sucesso) {
             setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
-            setFormaPagamento('pix'); setParcelas(1);
+            setFormaPagamento('pix'); setParcelas(1); setVeiculoEmprestado(false);
         }
+
+        setIsSubmitting(false);
     };
 
     const toggleSelecao = (id) => { setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]); };
@@ -85,9 +90,6 @@ export function Lancamentos({
     const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
     const labelCls = "block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider";
 
-    // ------------------------------------------------------------------------
-    // VISÃO 1: APENAS NOVO LANÇAMENTO
-    // ------------------------------------------------------------------------
     if (modo === 'novo_lancamento') {
         return (
             <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto pb-24">
@@ -111,15 +113,7 @@ export function Lancamentos({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelCls}>Valor (R$)</label>
-                                {/* APLICAÇÃO DA MÁSCARA BANCÁRIA */}
-                                <input
-                                    name="valor"
-                                    type="text"
-                                    value={displayValor}
-                                    onChange={handleValorChange}
-                                    required
-                                    className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`}
-                                />
+                                <input name="valor" type="text" value={displayValor} onChange={handleValorChange} required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} />
                             </div>
                             <div>
                                 <label className={labelCls}>Data da Transação</label>
@@ -155,9 +149,35 @@ export function Lancamentos({
                         </div>
 
                         {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario.toLowerCase() === 'stewart' && (
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
-                                <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual da Moto (KM)</label>
-                                <input name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors" placeholder="Ex: 15200 (Deixe vazio se for veículo emprestado)" />
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl border border-indigo-200 dark:border-indigo-800/50 animate-fade-in space-y-4">
+                                <div className="flex items-center gap-2 mb-2 border-b border-indigo-100 dark:border-indigo-800/50 pb-2">
+                                    <span className="text-xl">🔧</span>
+                                    <h4 className="font-bold text-indigo-800 dark:text-indigo-400">Integração com a Garagem</h4>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Veículo Vinculado</label>
+                                    <select name="veiculoId" className={inputCls} required>
+                                        <option value="">Selecione o veículo...</option>
+                                        {garagem?.veiculos?.filter(v => v.ativo === 1).map(v => (
+                                            <option key={v.id} value={v.id}>{v.modelo}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <input type="checkbox" name="veiculoEmprestado" id="veiculoEmprestado" value="1" checked={veiculoEmprestado} onChange={(e) => setVeiculoEmprestado(e.target.checked)} className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                                    <label htmlFor="veiculoEmprestado" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                                        Veículo Emprestado (Não atualizar meu KM)
+                                    </label>
+                                </div>
+
+                                {!veiculoEmprestado && (
+                                    <div className="pt-2">
+                                        <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM)</label>
+                                        <input name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)} className={inputCls} placeholder="Ex: 15200" required={!veiculoEmprestado} />
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -179,8 +199,18 @@ export function Lancamentos({
                         </div>
 
                         <div className="pt-4">
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">
-                                Registrar Transação
+                            <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 cursor-not-allowed opacity-90' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
+                                {isSubmitting ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Processando...
+                                    </>
+                                ) : (
+                                    'Registrar Transação'
+                                )}
                             </button>
                         </div>
                     </form>

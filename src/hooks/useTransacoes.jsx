@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
-    
+
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
@@ -13,11 +13,16 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     const addTransacao = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-        
+
         let valorBruto = formData.get('valor');
         if (typeof valorBruto === 'string') {
             valorBruto = valorBruto.replace(/[R$\s.]/g, '').replace(',', '.');
         }
+
+        // NOVIDADE: Captura os dados do veículo se existirem no formulário
+        const veiculoId = formData.get('veiculoId') || null;
+        const veiculoEmprestado = formData.get('veiculoEmprestado') === '1' ? 1 : 0;
+        const kmMoto = formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null;
 
         const obj = {
             id: Date.now().toString(),
@@ -31,7 +36,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             mesReferencia: parseInt(formData.get('dataCompra').split('-')[1]),
             anoReferencia: parseInt(formData.get('dataCompra').split('-')[0]),
             observacao: formData.get('observacao') || '',
-            km_moto: formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null
+            veiculo_id: veiculoId,
+            veiculo_emprestado: veiculoEmprestado,
+            km_moto: veiculoEmprestado ? null : kmMoto // Se emprestado, ignora o KM
         };
 
         const numParcelas = parseInt(formData.get('parcelas')) || 1;
@@ -41,35 +48,44 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             let mesRef = obj.mesReferencia + i;
             let anoRef = obj.anoReferencia;
             if (mesRef > 12) { mesRef -= 12; anoRef += 1; }
-            
-            const parcelaObj = { 
-                ...obj, 
-                id: `${obj.id}_${i}`, 
-                mesReferencia: mesRef, 
-                anoReferencia: anoRef, 
-                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao 
+
+            const parcelaObj = {
+                ...obj,
+                id: `${obj.id}_${i}`,
+                mesReferencia: mesRef,
+                anoReferencia: anoRef,
+                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao
             };
-            
+
             const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
             if (!res.ok) sucesso = false;
-            else if (obj.km_moto && garagem) await garagem.registrarHodometro(obj.km_moto, obj.dataCompra, obj.descricao);
         }
 
-        if (sucesso) { await carregarTransacoes(); modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso'); return true; }
-        else { modal.alert('Erro ao registrar lançamento.', '❌ Erro'); return false; }
+        if (sucesso) {
+            await carregarTransacoes();
+            // NOVIDADE: Atualiza os dados da garagem imediatamente no Front-end!
+            if (veiculoId && garagem?.carregarDadosGaragem) {
+                await garagem.carregarDadosGaragem();
+            }
+            modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
+            return true;
+        } else {
+            modal.alert('Erro ao registrar lançamento.', '❌ Erro');
+            return false;
+        }
     };
 
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
-        
+
         try {
-            const res = await fetch(`${API}/transacoes/${id}/status`, { 
-                method: 'PUT', 
-                headers: getHeaders(), 
-                body: JSON.stringify({ status: novoStatus }) 
+            const res = await fetch(`${API}/transacoes/${id}/status`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify({ status: novoStatus })
             });
             const data = await res.json();
-            
+
             if (res.ok) {
                 setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
             } else {
@@ -83,15 +99,14 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         if (!dadosEditados) return;
 
         try {
-            const res = await fetch(`${API}/transacoes/${transacao.id}`, { 
-                method: 'PUT', headers: getHeaders(), body: JSON.stringify(dadosEditados) 
+            const res = await fetch(`${API}/transacoes/${transacao.id}`, {
+                method: 'PUT', headers: getHeaders(), body: JSON.stringify(dadosEditados)
             });
-            
+
             if (res.ok) {
                 await carregarTransacoes();
                 modal.alert('Lançamento atualizado com segurança!', '✅ Sucesso');
             } else {
-                // ATUALIZADO: Agora ele mostra EXATAMENTE o erro do Banco de Dados
                 const errData = await res.json();
                 modal.alert(`Servidor rejeitou a atualização.\n\nMotivo: ${errData.error}`, '❌ Erro de Sistema');
             }
