@@ -30,23 +30,19 @@ const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-ap
 
 /**
  * Hook Customizado: useModal
- * Gerencia a configuração e visibilidade de modais genéricos síncronos
- * (alertas, confirmações, prompts e opções).
+ * CORRIGIDO: Agora todos os eventos de fechar, cancelar e confirmar
+ * emitem setConfig(null) para destruir o modal da tela e evitar congelamento.
  */
 function useModal() {
   const [config, setConfig] = useState(null);
   const close = useCallback(() => setConfig(null), []);
-  const alert = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'alert', title, message, onConfirm: resolve, onClose: () => { setConfig(null); resolve(); }, ...opts })), []);
-  const confirm = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => resolve(true), onCancel: () => resolve(false), onClose: () => { setConfig(null); resolve(false); }, ...opts })), []);
-  const prompt = useCallback((message, defaultValue = '', title, opts = {}) => new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
-  const options = useCallback((message, opts_list, title, opts = {}) => new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => resolve(val), onCancel: () => resolve(null), onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
+  const alert = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'alert', title, message, onConfirm: () => { setConfig(null); resolve(); }, onClose: () => { setConfig(null); resolve(); }, ...opts })), []);
+  const confirm = useCallback((message, title, opts = {}) => new Promise(resolve => setConfig({ type: 'confirm', title, message, onConfirm: () => { setConfig(null); resolve(true); }, onCancel: () => { setConfig(null); resolve(false); }, onClose: () => { setConfig(null); resolve(false); }, ...opts })), []);
+  const prompt = useCallback((message, defaultValue = '', title, opts = {}) => new Promise(resolve => setConfig({ type: 'prompt', title, message, defaultValue, onConfirm: (val) => { setConfig(null); resolve(val); }, onCancel: () => { setConfig(null); resolve(null); }, onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
+  const options = useCallback((message, opts_list, title, opts = {}) => new Promise(resolve => setConfig({ type: 'options', title, message, options: opts_list, onConfirm: (val) => { setConfig(null); resolve(val); }, onCancel: () => { setConfig(null); resolve(null); }, onClose: () => { setConfig(null); resolve(null); }, ...opts })), []);
   return { config, close, setConfig, alert, confirm, prompt, options };
 }
 
-/**
- * Componente Principal: App
- * Orquestrador de roteamento virtual baseado no state telaAtiva.
- */
 function App() {
   const modal = useModal();
   const { toast, showToast } = useToast();
@@ -101,7 +97,6 @@ function App() {
 
     if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
 
-    // ATUALIZAÇÃO: Injeção de dataVis, mesAnterior e mesProximo
     if (['novo_lancamento', 'extrato', 'lancamentos'].includes(telaAtiva)) {
       return <Lancamentos
         modo={telaAtiva}
