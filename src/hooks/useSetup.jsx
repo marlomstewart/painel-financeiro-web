@@ -5,7 +5,8 @@ const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current in
 /**
  * Hook Customizado: useSetup
  * Abstrai o CRUD das configurações com bloqueio de duplo clique via Loader Visual.
- * Atualizado para suportar a injeção e gravação de Metas de Renda (Expectativas de Receita) e Exportação CSV.
+ * Gere a injeção e gravação de Metas de Renda, Exportação CSV e a
+ * validação de segurança reforçada para a Zona de Perigo.
  */
 export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) {
     const [cartoes, setCartoes] = useState([]);
@@ -15,7 +16,6 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const [rendasFixas, setRendasFixas] = useState([]);
     const [gerandoMes, setGerandoMes] = useState(false);
 
-    /** Motor central que recebe a submissão, liga o Spinner, salva e desliga o Spinner. */
     const processarSubmitComLoading = useCallback(async (e, acaoData) => {
         e.preventDefault();
         const form = e.target;
@@ -49,12 +49,11 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const addCartao = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); }), [processarSubmitComLoading, salvarConfig, cartoes]);
     const addCategoria = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); }), [processarSubmitComLoading, salvarConfig, categorias]);
 
-    // NOVA FUNÇÃO: Adicionar Expectativa de Receita (Meta de Renda)
     const addMetaRenda = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
         await salvarConfig('metas-renda', {
             id: Date.now().toString(),
             nome: fd.get('nome'),
-            valor: Number(fd.get('meta')) // O formulário partilha o input name="meta"
+            valor: Number(fd.get('meta'))
         }, setMetasRenda, metasRenda);
     }), [processarSubmitComLoading, salvarConfig, metasRenda]);
 
@@ -82,8 +81,56 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         }
     }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas]);
 
+    /**
+     * Remove um registro individual ou limpa conjuntos em massa.
+     * ATUALIZAÇÃO: Exclusões em massa agora exigem confirmação rigorosa e validação de senha.
+     */
     const removerSetup = useCallback(async (banco, id = null) => {
         if (!id) {
+            // Bloco de Exclusão em Massa (Zona de Perigo)
+            const mapNomes = {
+                categoria: 'todas as Metas e Categorias',
+                contaFixa: 'todas as Contas Fixas',
+                cartao: 'todos os Cartões'
+            };
+            const nomeAmigavel = mapNomes[banco];
+
+            // 1. Confirmação de intenção destrutiva
+            const confirmacao = await modal.confirm(
+                `Tem a certeza absoluta que deseja EXCLUIR ${nomeAmigavel}? Esta ação é destrutiva e não pode ser desfeita.`,
+                '⚠️ Confirmação Destrutiva',
+                { confirmColor: 'bg-red-600 hover:bg-red-700', confirmLabel: 'Sim, Excluir' }
+            );
+            if (!confirmacao) return;
+
+            // 2. Validação da credencial
+            const senha = await modal.prompt(
+                'Por motivos de segurança, digite a sua senha de acesso para confirmar a exclusão:',
+                '',
+                '🔒 Validação de Segurança',
+                { inputType: 'password', confirmLabel: 'Validar e Excluir' }
+            );
+
+            if (!senha) return;
+
+            try {
+                const resVal = await fetch(`${API}/validar-senha`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ senha })
+                });
+
+                if (!resVal.ok) {
+                    const dataVal = await resVal.json();
+                    await modal.alert(dataVal.message || 'Senha incorreta. Ação abortada.', '❌ Acesso Negado');
+                    return;
+                }
+            } catch (err) {
+                await modal.alert('Erro de rede ao validar segurança.', '❌ Erro');
+                return;
+            }
+
+            // 3. Execução efetiva da limpeza após a senha ser validada
             let rotaLimpar = banco;
             if (banco === 'categoria') rotaLimpar = 'categorias';
             if (banco === 'contaFixa') rotaLimpar = 'contas-fixas';
@@ -92,9 +139,11 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             try {
                 const res = await fetch(`${API}/${rotaLimpar}`, { method: 'DELETE', headers: getHeaders() });
                 if (res.ok) {
-                    if (banco === 'categoria') setCategorias([]);
+                    if (banco === 'categoria') { setCategorias([]); setMetasRenda([]); }
                     if (banco === 'contaFixa') { setContasFixas([]); setRendasFixas([]); }
                     if (banco === 'cartao') setCartoes([]);
+
+                    await modal.alert(`${nomeAmigavel} excluídos com sucesso da base de dados.`, '✅ Exclusão Concluída');
                 }
             } catch (err) {
                 console.error('Erro na remoção massiva:', err);
@@ -102,12 +151,13 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             return;
         }
 
+        // Bloco de Exclusão Unitária
         const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas' };
         await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'DELETE', headers: getHeaders() });
         const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas] };
         const [setter, state] = setters[banco];
         setter(state.filter(i => i.id !== id));
-    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas]);
+    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, modal]);
 
     const gerarMesManual = useCallback(async () => {
         setGerandoMes(true);
