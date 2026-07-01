@@ -2,14 +2,13 @@ import { useCallback } from 'react';
 
 /**
  * @file src/hooks/useTransacoes.jsx
- * @description Hook customizado para gerenciar o CRUD de transações.
- * Restaura o fluxo original da Garagem: invoca o pop-up nativo de seleção de veículo
- * através do método `registrarHodometro` após o registro bem-sucedido de uma transação.
+ * @description Hook customizado para gerenciar o CRUD de transações financeiras.
+ * Implementa a interceção via pop-up (modal.options) para seleção obrigatória de veículo em despesas automotivas.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
     /**
-     * Atualiza o estado global com os dados mais recentes do banco.
+     * Sincroniza o estado global das transações com o Backend.
      */
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
@@ -20,8 +19,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     }, [API, getHeaders, token, setTransacoes]);
 
     /**
-     * Processa o formulário de novo lançamento e envia para o backend.
-     * Aciona o pop-up da garagem caso o KM seja fornecido.
+     * Intercepta a submissão, solicita o veículo via pop-up (se aplicável), e grava a transação.
+     * @param {Event} e - Evento de formulário.
+     * @returns {Promise<boolean>} Retorna true se a operação for concluída com sucesso.
      */
     const addTransacao = async (e) => {
         e.preventDefault();
@@ -32,12 +32,40 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             valorBruto = valorBruto.replace(/[R$\s.]/g, '').replace(',', '.');
         }
 
-        const km_moto = formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null;
+        const categoria = formData.get('categoria');
+        let km_moto = formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null;
+        let veiculo_id = null;
+        let veiculo_emprestado = 0;
+
+        // POP-UP NATIVO: Pede o veículo ANTES de disparar os dados para o banco.
+        // BUG CORRIGIDO: Usando 'garagem.veiculosGaragem' conforme exportado pelo useGaragem.jsx
+        if ((categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart') {
+            if (garagem && garagem.veiculosGaragem && garagem.veiculosGaragem.length > 0) {
+                // Monta a lista de botões que aparecerão no pop-up
+                const opcoes = garagem.veiculosGaragem.filter(v => v.ativo === 1).map(v => ({
+                    label: `${v.modelo} ${v.tipo !== 'proprio' ? '(Convidado)' : ''}`,
+                    value: v.id
+                }));
+
+                // Exibe o modal interrompendo a execução até que você clique em um veículo
+                veiculo_id = await modal.options('A qual veículo este lançamento pertence?', opcoes, '🔧 Selecione o Veículo');
+
+                // Se você fechar o pop-up ou clicar em Cancelar, aborta o registro
+                if (!veiculo_id) return false;
+
+                // Identifica se é convidado para não alterar o seu KM principal
+                const veicObj = garagem.veiculosGaragem.find(v => v.id === veiculo_id);
+                if (veicObj && veicObj.tipo !== 'proprio') {
+                    veiculo_emprestado = 1;
+                    km_moto = null;
+                }
+            }
+        }
 
         const obj = {
             id: Date.now().toString(),
             descricao: formData.get('descricao'),
-            categoria: formData.get('categoria'),
+            categoria,
             valorParcela: parseFloat(valorBruto),
             dataCompra: formData.get('dataCompra'),
             tipo: formData.get('tipo'),
@@ -45,7 +73,10 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             status: formData.get('status'),
             mesReferencia: parseInt(formData.get('dataCompra').split('-')[1], 10),
             anoReferencia: parseInt(formData.get('dataCompra').split('-')[0], 10),
-            observacao: formData.get('observacao') || ''
+            observacao: formData.get('observacao') || '',
+            veiculo_id,
+            veiculo_emprestado,
+            km_moto
         };
 
         const numParcelas = parseInt(formData.get('parcelas'), 10) || 1;
@@ -71,12 +102,12 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         if (sucesso) {
             await carregarTransacoes();
 
-            // FLUXO ORIGINAL RESTAURADO: A Garagem assume o controle e abre o pop-up
-            if (km_moto && garagem && garagem.registrarHodometro) {
-                await garagem.registrarHodometro(km_moto, obj.dataCompra, obj.descricao);
-            } else {
-                modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
+            // Atualiza a garagem para os Alertas do Dashboard refletirem o novo KM na mesma hora
+            if (veiculo_id && garagem && garagem.carregarDadosGaragem) {
+                await garagem.carregarDadosGaragem();
             }
+
+            modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
             return true;
         } else {
             modal.alert('Erro ao registrar lançamento.', '❌ Erro');
@@ -85,16 +116,18 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Alterna rapidamente entre "pago" e "pendente".
+     * Alterna o status entre liquidado (pago) e pendente com atualização otimista na tela.
+     * @param {string} id - ID da transação
+     * @param {string} statusAtual - Status presente
+     * @param {number} valor - Valor da parcela
+     * @param {string} dataCompra - Data de registro
      */
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
 
         try {
             const res = await fetch(`${API}/transacoes/${id}/status`, {
-                method: 'PUT',
-                headers: getHeaders(),
-                body: JSON.stringify({ status: novoStatus })
+                method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus })
             });
             const data = await res.json();
 
@@ -107,7 +140,8 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Abre o modal com o formulário completo de edição da transação.
+     * Aciona o modal customizado com formulário completo para edição de valores e atributos.
+     * @param {Object} transacao - Objeto transacional selecionado.
      */
     const editarValor = async (transacao) => {
         const dadosEditados = await modal.prompt('', '', '✏️ Edição de Lançamento', { inputType: 'editar_transacao', transacao, categorias, cartoes });
@@ -129,7 +163,8 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Deleta permanentemente uma transação.
+     * Interpela o usuário para segurança e exclui a transação definitivamente.
+     * @param {Object} t - Transação a excluir.
      */
     const deletarTransacao = async (t) => {
         const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?`, '🗑️ Excluir');
@@ -141,7 +176,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Executa ações em lote (Pagar, Pendente, Excluir) em várias transações.
+     * Executa alterações rápidas (status ou deleção) para uma matriz de IDs.
+     * @param {Array<string>} idsSelecionados - Identificadores.
+     * @param {string} acao - Comando a executar.
      */
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
@@ -153,8 +190,14 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         } catch (err) { modal.alert('Erro na ação.', '❌ Erro'); }
     };
 
+    /** Placeholder para anexar comprovantes visuais. */
     const anexarComprovante = async (t) => { modal.alert("Funcionalidade de anexo está integrada noutro módulo. Verifique o uploadController.", "Aviso"); };
-    const verComprovante = (t) => { if (t.comprovante_url) window.open(t.comprovante_url, '_blank'); else modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo'); };
+
+    /** Exibe o anexo da transação (se houver). */
+    const verComprovante = (t) => {
+        if (t.comprovante_url) window.open(t.comprovante_url, '_blank');
+        else modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo');
+    };
 
     return { addTransacao, alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
 }

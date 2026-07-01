@@ -1,36 +1,37 @@
 import React, { useState } from 'react';
 
 /**
- * Componente principal para gestão de lançamentos financeiros.
- * Responsável por renderizar o formulário de novos lançamentos e o extrato de movimentações.
+ * @file src/components/Lancamentos.jsx
+ * @description Componente principal para a gestão de lançamentos financeiros.
+ * Responsável por renderizar o formulário de criação de transações e o extrato detalhado.
  * * @param {Object} props - Propriedades do componente.
  * @param {string} props.modo - Modo de visualização ativo ('novo_lancamento' ou 'extrato').
- * @param {Array} props.categorias - Lista de categorias orçamentais disponíveis.
- * @param {Array} props.cartoes - Lista de cartões de crédito cadastrados.
- * @param {Function} props.addTransacao - Função para registrar uma nova transação no sistema.
- * @param {string} props.filtroStatus - Estado atual do filtro de status (pago, pendente, todos).
- * @param {Function} props.setFiltroStatus - Função para atualizar o filtro de status.
- * @param {string} props.buscaTexto - Texto atual inserido no campo de busca.
- * @param {Function} props.setBuscaTexto - Função para atualizar o texto de busca.
- * @param {boolean} props.mostrarFiltrosAvancados - Flag que controla a exibição do painel de filtros avançados.
- * @param {Function} props.setMostrarFiltrosAvancados - Função para alternar a exibição dos filtros avançados.
- * @param {Object} props.filtrosAvancados - Objeto contendo os parâmetros de filtro detalhados.
- * @param {Function} props.setFiltrosAvancados - Função para atualizar os parâmetros de filtros avançados.
- * @param {Function} props.mudarOrdenacao - Função para alterar a ordenação da tabela.
- * @param {Object} props.ordenacao - Objeto com a coluna e direção da ordenação atual.
- * @param {Array} props.dadosTabela - Lista de transações filtradas e prontas para exibição.
- * @param {Function} props.alternarStatusTransacao - Função para alternar o status (pago/pendente).
- * @param {Function} props.editarValor - Função que abre o modal de edição completa da transação.
- * @param {Function} props.deletarTransacao - Função para excluir permanentemente uma transação.
- * @param {Function} props.executarAcaoEmMassa - Função para aplicar ações (pagar, pendente, excluir) em lote.
- * @param {Object} props.modal - Objeto de controle do hook useModal para exibição de alertas e prompts.
- * @param {string} props.nomeUsuario - Nome de exibição do usuário atualmente logado.
- * @param {Function} props.anexarComprovante - Função para anexar arquivos/comprovantes à transação.
- * @param {Function} props.verComprovante - Função para abrir e visualizar o comprovante anexado.
- * @param {Object} props.dataVis - Objeto contendo o mês e ano visualizados atualmente.
- * @param {Function} props.mesAnterior - Função para retroceder um mês na visualização.
- * @param {Function} props.mesProximo - Função para avançar um mês na visualização.
- * @param {Object} props.garagem - Objeto de contexto e métodos do módulo de garagem.
+ * @param {Array} props.categorias - Lista dinâmica de categorias orçamentais.
+ * @param {Array} props.cartoes - Lista de cartões de crédito configurados.
+ * @param {Function} props.addTransacao - Função assíncrona para submeter uma nova transação.
+ * @param {string} props.filtroStatus - Filtro atual de status na tabela ('todos', 'pago', 'pendente').
+ * @param {Function} props.setFiltroStatus - Atualiza o filtro de status.
+ * @param {string} props.buscaTexto - String de pesquisa ativa no extrato.
+ * @param {Function} props.setBuscaTexto - Atualiza a string de pesquisa.
+ * @param {boolean} props.mostrarFiltrosAvancados - Visibilidade do painel de filtros complexos.
+ * @param {Function} props.setMostrarFiltrosAvancados - Alterna a visibilidade dos filtros complexos.
+ * @param {Object} props.filtrosAvancados - Valores aplicados nos campos de filtro avançado.
+ * @param {Function} props.setFiltrosAvancados - Atualiza o objeto de filtros avançados.
+ * @param {Function} props.mudarOrdenacao - Altera a coluna e direção de ordenação da tabela.
+ * @param {Object} props.ordenacao - Estado atual da ordenação { coluna, direcao }.
+ * @param {Array} props.dadosTabela - Array filtrado e ordenado de transações para renderização.
+ * @param {Function} props.alternarStatusTransacao - Função para marcar a transação como paga/pendente.
+ * @param {Function} props.editarValor - Dispara o modal de edição de transação.
+ * @param {Function} props.deletarTransacao - Dispara a rotina de exclusão de transação.
+ * @param {Function} props.executarAcaoEmMassa - Aplica ações em múltiplos lançamentos selecionados.
+ * @param {Object} props.modal - Orquestrador de pop-ups (alertas, prompts, options).
+ * @param {string} props.nomeUsuario - Identificador do utilizador logado.
+ * @param {Function} props.anexarComprovante - Rotina de anexo de ficheiros.
+ * @param {Function} props.verComprovante - Rotina de visualização de anexos.
+ * @param {Object} props.dataVis - Data de competência atual (mes, ano).
+ * @param {Function} props.mesAnterior - Recua um mês na visualização.
+ * @param {Function} props.mesProximo - Avança um mês na visualização.
+ * @param {Object} props.garagem - Módulo de gestão veicular injetado a partir do App.
  */
 export function Lancamentos({
     modo = 'lancamentos',
@@ -64,8 +65,8 @@ export function Lancamentos({
     const ultimosCinco = [...dadosTabela].sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra)).slice(0, 5);
 
     /**
-     * Manipula a digitação no campo de valor, aplicando a máscara bancária da direita para a esquerda.
-     * @param {Object} e - Evento de input do React.
+     * Aplica máscara bancária instantânea ao valor digitado (da direita para a esquerda).
+     * @param {Object} e - Evento sintético do React.
      */
     const handleValorChange = (e) => {
         let val = e.target.value.replace(/\D/g, '');
@@ -73,12 +74,13 @@ export function Lancamentos({
         setValorStr(val);
     };
 
-    /** Valor processado e formatado para exibição no input (PT-BR) */
+    /** String do valor em formato de moeda local para exibição no input */
     const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     /**
-     * Previne o comportamento padrão do formulário, ativa o estado de loading e invoca o controlador.
-     * @param {Object} e - Evento de submit do React.
+     * Intercepta o envio do formulário, bloqueia duplos cliques e invoca a persistência de dados.
+     * Limpa o formulário caso a submissão e todos os pop-ups sequenciais tenham êxito.
+     * @param {Object} e - Evento sintético do React.
      */
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -97,30 +99,32 @@ export function Lancamentos({
     };
 
     /**
-     * Adiciona ou remove uma transação da lista de seleção em massa.
-     * @param {string} id - ID da transação.
+     * Alterna o estado de seleção (checked) de uma transação específica na tabela.
+     * @param {string} id - O UUID da transação.
      */
     const toggleSelecao = (id) => {
         setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]);
     };
 
-    /** Seleciona ou desmarca todas as transações visíveis na tabela atualmente. */
+    /**
+     * Comuta a seleção em massa de todos os itens atualmente visíveis na grelha de dados.
+     */
     const selecionarTodas = () => {
         if (transacoesSelecionadas.length === dadosTabela.length) setTransacoesSelecionadas([]);
         else setTransacoesSelecionadas(dadosTabela.map(t => t.id));
     };
 
     /**
-     * Formata um número para o padrão monetário Real Brasileiro (BRL).
+     * Formata um valor numérico para a notação de moeda BRL (R$).
      * @param {number|string} v - Valor a ser formatado.
-     * @returns {string} Valor formatado (ex: R$ 1.000,00).
+     * @returns {string} Valor devidamente formatado.
      */
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     /**
-     * Resolve o nome legível da forma de pagamento, decodificando IDs de cartões.
-     * @param {string} forma - Identificador da forma de pagamento salvo no banco.
-     * @returns {string} Nome amigável para exibição ao usuário.
+     * Converte o identificador técnico de pagamento no seu respetivo nome legível.
+     * @param {string} forma - Identificador da forma de pagamento.
+     * @returns {string} Nome humano para a interface.
      */
     const obterNomePagamento = (forma) => {
         if (!forma) return 'Desconhecido';
@@ -134,8 +138,8 @@ export function Lancamentos({
     };
 
     /**
-     * Monta as configurações e abre o Modal detalhado de uma transação específica.
-     * @param {Object} t - Objeto da transação completa.
+     * Ativa o modal de detalhes para visualizar a fotografia integral da transação clicada.
+     * @param {Object} t - A transação selecionada.
      */
     const abrirDetalhes = (t) => {
         modal.setConfig({
@@ -151,7 +155,7 @@ export function Lancamentos({
         });
     };
 
-    /** Limpa os inputs do painel de Filtros Avançados */
+    /** Reinicia todos os campos do painel de pesquisa avançada */
     const limparFiltros = () => {
         setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
     };
@@ -217,7 +221,7 @@ export function Lancamentos({
                             </select>
                         </div>
 
-                        {/* RESTAURAÇÃO: Exibe apenas o campo simples e opcional de Odômetro. A seleção do veículo ocorre via pop-up pós-save. */}
+                        {/* RESTAURAÇÃO: Interface limpa, exibindo apenas o campo de Odômetro condicional */}
                         {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario.toLowerCase() === 'stewart' && (
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
                                 <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
@@ -227,7 +231,7 @@ export function Lancamentos({
                                     value={kmMoto}
                                     onChange={(e) => setKmMoto(e.target.value)}
                                     className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
-                                    placeholder="Ex: 81604 (Deixe em branco se não quiser registrar)"
+                                    placeholder="Ex: 81604 (Deixe em branco se não quiser registar)"
                                 />
                             </div>
                         )}
@@ -294,7 +298,7 @@ export function Lancamentos({
                             </div>
                         ))}
                         {ultimosCinco.length === 0 && (
-                            <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registrado nesta competência ainda.</p>
+                            <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registado nesta competência ainda.</p>
                         )}
                     </div>
                 </div>
@@ -391,7 +395,7 @@ export function Lancamentos({
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                             {dadosTabela.length === 0 ? (
-                                <tr><td colSpan="5" className="p-8 text-center text-slate-500 dark:text-slate-400">Nenhum lançamento encontrado nesta competência.</td></tr>
+                                <tr><td colSpan="5" className="p-8 text-center text-slate-500 dark:text-slate-400">Nenhum lançamento registado nesta competência ainda.</td></tr>
                             ) : (
                                 dadosTabela.map((t) => (
                                     <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
