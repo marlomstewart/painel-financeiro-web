@@ -1,7 +1,39 @@
 import React, { useState } from 'react';
 
+/**
+ * Componente principal para gestão de lançamentos financeiros.
+ * Responsável por renderizar o formulário de novos lançamentos e o extrato de movimentações.
+ * * @param {Object} props - Propriedades do componente.
+ * @param {string} props.modo - Modo de visualização ativo ('novo_lancamento' ou 'extrato').
+ * @param {Array} props.categorias - Lista de categorias orçamentais disponíveis.
+ * @param {Array} props.cartoes - Lista de cartões de crédito cadastrados.
+ * @param {Function} props.addTransacao - Função para registrar uma nova transação no sistema.
+ * @param {string} props.filtroStatus - Estado atual do filtro de status (pago, pendente, todos).
+ * @param {Function} props.setFiltroStatus - Função para atualizar o filtro de status.
+ * @param {string} props.buscaTexto - Texto atual inserido no campo de busca.
+ * @param {Function} props.setBuscaTexto - Função para atualizar o texto de busca.
+ * @param {boolean} props.mostrarFiltrosAvancados - Flag que controla a exibição do painel de filtros avançados.
+ * @param {Function} props.setMostrarFiltrosAvancados - Função para alternar a exibição dos filtros avançados.
+ * @param {Object} props.filtrosAvancados - Objeto contendo os parâmetros de filtro detalhados.
+ * @param {Function} props.setFiltrosAvancados - Função para atualizar os parâmetros de filtros avançados.
+ * @param {Function} props.mudarOrdenacao - Função para alterar a ordenação da tabela.
+ * @param {Object} props.ordenacao - Objeto com a coluna e direção da ordenação atual.
+ * @param {Array} props.dadosTabela - Lista de transações filtradas e prontas para exibição.
+ * @param {Function} props.alternarStatusTransacao - Função para alternar o status (pago/pendente).
+ * @param {Function} props.editarValor - Função que abre o modal de edição completa da transação.
+ * @param {Function} props.deletarTransacao - Função para excluir permanentemente uma transação.
+ * @param {Function} props.executarAcaoEmMassa - Função para aplicar ações (pagar, pendente, excluir) em lote.
+ * @param {Object} props.modal - Objeto de controle do hook useModal para exibição de alertas e prompts.
+ * @param {string} props.nomeUsuario - Nome de exibição do usuário atualmente logado.
+ * @param {Function} props.anexarComprovante - Função para anexar arquivos/comprovantes à transação.
+ * @param {Function} props.verComprovante - Função para abrir e visualizar o comprovante anexado.
+ * @param {Object} props.dataVis - Objeto contendo o mês e ano visualizados atualmente.
+ * @param {Function} props.mesAnterior - Função para retroceder um mês na visualização.
+ * @param {Function} props.mesProximo - Função para avançar um mês na visualização.
+ * @param {Object} props.garagem - Objeto de contexto e métodos do módulo de garagem.
+ */
 export function Lancamentos({
-    modo = 'lancamentos', // 'novo_lancamento' | 'extrato' | 'lancamentos'
+    modo = 'lancamentos',
     categorias, cartoes, addTransacao,
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
@@ -14,8 +46,6 @@ export function Lancamentos({
     garagem = null
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [veiculoEmprestado, setVeiculoEmprestado] = useState(false);
-    const [veiculoIdSelecionado, setVeiculoIdSelecionado] = useState('');
 
     const [descricao, setDescricao] = useState('');
     const [valorStr, setValorStr] = useState('0');
@@ -33,14 +63,23 @@ export function Lancamentos({
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const ultimosCinco = [...dadosTabela].sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra)).slice(0, 5);
 
+    /**
+     * Manipula a digitação no campo de valor, aplicando a máscara bancária da direita para a esquerda.
+     * @param {Object} e - Evento de input do React.
+     */
     const handleValorChange = (e) => {
         let val = e.target.value.replace(/\D/g, '');
         if (val === '') val = '0';
         setValorStr(val);
     };
 
+    /** Valor processado e formatado para exibição no input (PT-BR) */
     const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+    /**
+     * Previne o comportamento padrão do formulário, ativa o estado de loading e invoca o controlador.
+     * @param {Object} e - Evento de submit do React.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -51,16 +90,38 @@ export function Lancamentos({
             setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
-            setFormaPagamento('pix'); setParcelas(1); setVeiculoEmprestado(false); setVeiculoIdSelecionado('');
+            setFormaPagamento('pix'); setParcelas(1);
         }
 
         setIsSubmitting(false);
     };
 
-    const toggleSelecao = (id) => { setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]); };
-    const selecionarTodas = () => { if (transacoesSelecionadas.length === dadosTabela.length) setTransacoesSelecionadas([]); else setTransacoesSelecionadas(dadosTabela.map(t => t.id)); };
+    /**
+     * Adiciona ou remove uma transação da lista de seleção em massa.
+     * @param {string} id - ID da transação.
+     */
+    const toggleSelecao = (id) => {
+        setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]);
+    };
+
+    /** Seleciona ou desmarca todas as transações visíveis na tabela atualmente. */
+    const selecionarTodas = () => {
+        if (transacoesSelecionadas.length === dadosTabela.length) setTransacoesSelecionadas([]);
+        else setTransacoesSelecionadas(dadosTabela.map(t => t.id));
+    };
+
+    /**
+     * Formata um número para o padrão monetário Real Brasileiro (BRL).
+     * @param {number|string} v - Valor a ser formatado.
+     * @returns {string} Valor formatado (ex: R$ 1.000,00).
+     */
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    /**
+     * Resolve o nome legível da forma de pagamento, decodificando IDs de cartões.
+     * @param {string} forma - Identificador da forma de pagamento salvo no banco.
+     * @returns {string} Nome amigável para exibição ao usuário.
+     */
     const obterNomePagamento = (forma) => {
         if (!forma) return 'Desconhecido';
         if (forma.startsWith('credito_')) {
@@ -72,6 +133,10 @@ export function Lancamentos({
         return forma;
     };
 
+    /**
+     * Monta as configurações e abre o Modal detalhado de uma transação específica.
+     * @param {Object} t - Objeto da transação completa.
+     */
     const abrirDetalhes = (t) => {
         modal.setConfig({
             type: 'detalhes',
@@ -86,7 +151,10 @@ export function Lancamentos({
         });
     };
 
-    const limparFiltros = () => { setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' }); };
+    /** Limpa os inputs do painel de Filtros Avançados */
+    const limparFiltros = () => {
+        setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
+    };
 
     const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
     const labelCls = "block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider";
@@ -149,61 +217,18 @@ export function Lancamentos({
                             </select>
                         </div>
 
-                        {/* CORREÇÃO AQUI: Filtro removido e IA de auto-seleção adicionada */}
+                        {/* RESTAURAÇÃO: Exibe apenas o campo simples e opcional de Odômetro. A seleção do veículo ocorre via pop-up pós-save. */}
                         {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario.toLowerCase() === 'stewart' && (
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl border border-indigo-200 dark:border-indigo-800/50 animate-fade-in space-y-4">
-                                <div className="flex items-center gap-2 mb-2 border-b border-indigo-100 dark:border-indigo-800/50 pb-2">
-                                    <span className="text-xl">🔧</span>
-                                    <h4 className="font-bold text-indigo-800 dark:text-indigo-400">Integração com a Garagem</h4>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Veículo Vinculado</label>
-                                    <select
-                                        name="veiculoId"
-                                        className={inputCls}
-                                        required
-                                        value={veiculoIdSelecionado}
-                                        onChange={(e) => {
-                                            setVeiculoIdSelecionado(e.target.value);
-                                            const vSelecionado = garagem?.veiculos?.find(v => v.id === e.target.value);
-                                            if (vSelecionado && vSelecionado.tipo !== 'proprio') {
-                                                setVeiculoEmprestado(true);
-                                            } else {
-                                                setVeiculoEmprestado(false);
-                                            }
-                                        }}
-                                    >
-                                        <option value="">Selecione o veículo...</option>
-                                        {garagem?.veiculos?.map(v => (
-                                            <option key={v.id} value={v.id}>
-                                                {v.modelo} {v.tipo && v.tipo !== 'proprio' ? '(Convidado)' : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        name="veiculoEmprestado"
-                                        id="veiculoEmprestado"
-                                        value="1"
-                                        checked={veiculoEmprestado}
-                                        onChange={(e) => setVeiculoEmprestado(e.target.checked)}
-                                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                                    />
-                                    <label htmlFor="veiculoEmprestado" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                                        Veículo Convidado/Emprestado (Não atualiza KM)
-                                    </label>
-                                </div>
-
-                                {!veiculoEmprestado && (
-                                    <div className="pt-2 animate-fade-in">
-                                        <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM)</label>
-                                        <input name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)} className={inputCls} placeholder="Ex: 81604" required={!veiculoEmprestado} />
-                                    </div>
-                                )}
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
+                                <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
+                                <input
+                                    name="kmMoto"
+                                    type="number"
+                                    value={kmMoto}
+                                    onChange={(e) => setKmMoto(e.target.value)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
+                                    placeholder="Ex: 81604 (Deixe em branco se não quiser registrar)"
+                                />
                             </div>
                         )}
 
