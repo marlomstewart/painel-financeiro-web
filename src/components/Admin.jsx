@@ -104,11 +104,11 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-center">
-                      <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                      <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center">
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Última Sessão</p>
-                        {formatarUltimoAcesso(u.ultimo_login || u.ultimoLogin || u.created_at || u.createdAt || null)}
+                        {formatarUltimoAcesso(u.ultimo_login)}
                       </div>
-                      <div className={`p-2 rounded-lg border ${u.precisa_trocar === 1 ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30' : 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/30'}`}>
+                      <div className={`p-2 rounded-lg border flex flex-col items-center justify-center ${u.precisa_trocar === 1 ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30' : 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/30'}`}>
                         <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${u.precisa_trocar === 1 ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500'}`}>Credencial</p>
                         <span className={`text-[10px] font-black uppercase ${u.precisa_trocar === 1 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                           {u.precisa_trocar === 1 ? '⚠ VAZADA' : '✔ FORTE'}
@@ -132,58 +132,59 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
               </div>
 
               {/* ========================================================================= */}
-              {/* LAYOUT 2: COMPUTADOR (TABELA FLUIDA SEM ROLAGEM HORIZONTAL) */}
+              {/* LAYOUT 2: COMPUTADOR (TABELA FIXA COM LIMITES ESTRITOS) */}
               {/* ========================================================================= */}
               <div className="hidden lg:block w-full">
-                <table className="w-full text-sm text-left table-auto">
+                {/* Alterado para table-fixed para forçar os limites e impedir expansão indesejada */}
+                <table className="w-full text-sm text-left table-fixed">
                   <thead className="bg-slate-100/50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black transition-colors">
                     <tr>
-                      <th className="px-5 py-4 w-1/4">Utilizador Registado</th>
-                      <th className="px-5 py-4 text-center">Nível de Acesso</th>
-                      <th className="px-5 py-4 text-center">Última Sessão</th>
-                      <th className="px-5 py-4 text-center">Status Credencial</th>
-                      <th className="px-5 py-4 text-center w-1/3">Ações Destrutivas</th>
+                      {/* Larguras bem definidas em percentagem */}
+                      <th className="px-4 py-4 w-3/12">Utilizador Registado</th>
+                      <th className="px-2 py-4 text-center w-2/12">Nível</th>
+                      <th className="px-2 py-4 text-center w-2/12">Última Sessão</th>
+                      <th className="px-2 py-4 text-center w-2/12">Credencial</th>
+                      <th className="px-4 py-4 text-center w-3/12">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                     {usuarios.map(u => (
                       <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
 
-                        {/* Nome com break-words para evitar esticar a tabela */}
-                        <td className="px-5 py-4 font-black text-slate-800 dark:text-slate-200 break-words">
+                        <td className="px-4 py-4 font-black text-slate-800 dark:text-slate-200 break-words">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 shrink-0 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 font-bold uppercase border border-slate-300 dark:border-slate-600">
                               {u.usuario.charAt(0)}
                             </div>
-                            <span className="break-all">{u.usuario}</span>
+                            <span className="truncate" title={u.usuario}>{u.usuario}</span>
                           </div>
                         </td>
 
-                        <td className="px-5 py-4 text-center">
-                          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-md shadow-sm whitespace-nowrap ${u.is_admin === 1 ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
-                            {u.is_admin === 1 ? '⭐ Administrador' : 'Visualizador'}
+                        <td className="px-2 py-4 text-center">
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md shadow-sm ${u.is_admin === 1 ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                            {u.is_admin === 1 ? '⭐ Admin' : 'Comum'}
                           </span>
                         </td>
 
-                        <td className="px-5 py-4 text-center whitespace-nowrap">
-                          {formatarUltimoAcesso(u.ultimo_login || u.ultimoLogin || u.created_at || u.createdAt || null)}
+                        <td className="px-2 py-4 text-center">
+                          {formatarUltimoAcesso(u.ultimo_login)}
                         </td>
 
-                        <td className="px-5 py-4 text-center">
-                          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-md shadow-sm whitespace-nowrap ${u.precisa_trocar === 1 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50'}`}>
+                        <td className="px-2 py-4 text-center">
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md shadow-sm ${u.precisa_trocar === 1 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50'}`}>
                             {u.precisa_trocar === 1 ? '⚠ VAZADA' : '✔ FORTE'}
                           </span>
                         </td>
 
-                        <td className="px-5 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2 justify-center">
-                            <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} title={u.is_admin === 1 ? 'Rebaixar para Visualizador' : 'Promover a Administrador'} className="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 px-3 py-2 rounded-lg font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap">
-                              {u.is_admin === 1 ? '↓ Rebaixar' : '↑ Promover'}
+                            <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} title={u.is_admin === 1 ? 'Rebaixar para Visualizador' : 'Promover a Administrador'} className="text-[11px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer transition-colors shadow-sm">
+                              {u.is_admin === 1 ? '↓ Rebaxar' : '↑ Promover'}
                             </button>
-                            <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} title="Forçar a senha do utilizador a voltar para 'admin123'" className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 px-3 py-2 rounded-lg font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap">
+                            <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} title="Forçar a senha a voltar para 'admin123'" className="text-[11px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer transition-colors shadow-sm">
                               🔑 Reset
                             </button>
-                            <button type="button" onClick={() => deletarUsuario(u.id, u.usuario)} title="Apagar a conta do utilizador permanentemente" className="text-xs bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 px-3 py-2 rounded-lg font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap">
+                            <button type="button" onClick={() => deletarUsuario(u.id, u.usuario)} title="Apagar a conta permanentemente" className="text-[11px] bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer transition-colors shadow-sm">
                               🗑️ Excluir
                             </button>
                           </div>
