@@ -2,13 +2,13 @@ import { useCallback } from 'react';
 
 /**
  * @file src/hooks/useTransacoes.jsx
- * @description Hook customizado para gerenciar o CRUD de transações financeiras.
- * Implementa a interceção via pop-up (modal.options) para seleção obrigatória de veículo em despesas automotivas.
+ * @description Hook customizado para gerir o CRUD (Create, Read, Update, Delete) de transações financeiras.
+ * Implementa lógicas de interceção para a Garagem, cálculo de parcelamentos e inteligência de faturas de cartão.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
     /**
-     * Sincroniza o estado global das transações com o Backend.
+     * Sincroniza o estado global das transações com a base de dados.
      */
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
@@ -19,8 +19,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     }, [API, getHeaders, token, setTransacoes]);
 
     /**
-     * Intercepta a submissão, solicita o veículo via pop-up (se aplicável), e grava a transação.
-     * @param {Event} e - Evento de formulário.
+     * Processa a submissão do formulário, valida viaturas, aplica divisão de parcelas
+     * e calcula a data de competência baseada no dia de fechamento do cartão de crédito.
+     * @param {Event} e - Evento de submissão do formulário.
      * @returns {Promise<boolean>} Retorna true se a operação for concluída com sucesso.
      */
     const addTransacao = async (e) => {
@@ -33,66 +34,96 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         }
 
         const categoria = formData.get('categoria');
+        const dataCompraStr = formData.get('dataCompra');
+        const formaPagamento = formData.get('formaPagamento');
+        const numParcelas = parseInt(formData.get('parcelas'), 10) || 1;
+
         let km_moto = formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null;
         let veiculo_id = null;
         let veiculo_emprestado = 0;
 
-        // POP-UP NATIVO: Pede o veículo ANTES de disparar os dados para o banco.
-        // BUG CORRIGIDO: Usando 'garagem.veiculosGaragem' conforme exportado pelo useGaragem.jsx
+        // POP-UP NATIVO: Interrompe o fluxo e pede a viatura ANTES de disparar os dados para o servidor.
         if ((categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart') {
             if (garagem && garagem.veiculosGaragem && garagem.veiculosGaragem.length > 0) {
-                // Monta a lista de botões que aparecerão no pop-up
                 const opcoes = garagem.veiculosGaragem.filter(v => v.ativo === 1).map(v => ({
                     label: `${v.modelo} ${v.tipo !== 'proprio' ? '(Convidado)' : ''}`,
                     value: v.id
                 }));
 
-                // Exibe o modal interrompendo a execução até que você clique em um veículo
-                veiculo_id = await modal.options('A qual veículo este lançamento pertence?', opcoes, '🔧 Selecione o Veículo');
+                if (opcoes.length > 0) {
+                    veiculo_id = await modal.options('A qual veículo este lançamento pertence?', opcoes, '🔧 Selecione o Veículo');
+                    if (!veiculo_id) return false;
 
-                // Se você fechar o pop-up ou clicar em Cancelar, aborta o registro
-                if (!veiculo_id) return false;
-
-                // Identifica se é convidado para não alterar o seu KM principal
-                const veicObj = garagem.veiculosGaragem.find(v => v.id === veiculo_id);
-                if (veicObj && veicObj.tipo !== 'proprio') {
-                    veiculo_emprestado = 1;
-                    km_moto = null;
+                    const veicObj = garagem.veiculosGaragem.find(v => v.id === veiculo_id);
+                    if (veicObj && veicObj.tipo !== 'proprio') {
+                        veiculo_emprestado = 1;
+                        km_moto = null;
+                    }
                 }
             }
         }
 
-        const obj = {
+        // CÁLCULO DE DATAS E FATURA: Identifica a competência inicial respeitando o "Melhor Dia" do Cartão
+        const [anoStr, mesStr, diaStr] = dataCompraStr.split('-');
+        const diaCompra = parseInt(diaStr, 10);
+        let mesRefInicial = parseInt(mesStr, 10);
+        let anoRefInicial = parseInt(anoStr, 10);
+
+        if (formaPagamento.startsWith('credito_')) {
+            const cartaoId = formaPagamento.split('_')[1];
+            // Verifica as configurações do cartão selecionado
+            const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
+
+            if (cartao && cartao.dia_fechamento) {
+                const diaFechamento = parseInt(cartao.dia_fechamento, 10);
+                // Se a compra foi feita no dia de fechamento ou depois, entra apenas na próxima fatura
+                if (diaCompra >= diaFechamento) {
+                    mesRefInicial += 1;
+                    if (mesRefInicial > 12) {
+                        mesRefInicial = 1;
+                        anoRefInicial += 1;
+                    }
+                }
+            }
+        }
+
+        // CÁLCULO DE VALOR: Divide o valor total pelo número de parcelas (arredondando para 2 casas decimais)
+        const valorParcelaCalculado = Math.round((parseFloat(valorBruto) / numParcelas) * 100) / 100;
+
+        const objBase = {
             id: Date.now().toString(),
             descricao: formData.get('descricao'),
             categoria,
-            valorParcela: parseFloat(valorBruto),
-            dataCompra: formData.get('dataCompra'),
+            dataCompra: dataCompraStr,
             tipo: formData.get('tipo'),
-            formaPagamento: formData.get('formaPagamento'),
+            formaPagamento,
             status: formData.get('status'),
-            mesReferencia: parseInt(formData.get('dataCompra').split('-')[1], 10),
-            anoReferencia: parseInt(formData.get('dataCompra').split('-')[0], 10),
             observacao: formData.get('observacao') || '',
             veiculo_id,
             veiculo_emprestado,
             km_moto
         };
 
-        const numParcelas = parseInt(formData.get('parcelas'), 10) || 1;
         let sucesso = true;
 
+        // Geração das parcelas com a matemática de datas e valores corretos
         for (let i = 0; i < numParcelas; i++) {
-            let mesRef = obj.mesReferencia + i;
-            let anoRef = obj.anoReferencia;
-            if (mesRef > 12) { mesRef -= 12; anoRef += 1; }
+            let mesRef = mesRefInicial + i;
+            let anoRef = anoRefInicial;
+
+            // Corrige viradas de ano (ex: Mês 13 vira Janeiro do ano seguinte)
+            while (mesRef > 12) {
+                mesRef -= 12;
+                anoRef += 1;
+            }
 
             const parcelaObj = {
-                ...obj,
-                id: `${obj.id}_${i}`,
+                ...objBase,
+                id: `${objBase.id}_${i}`,
+                valorParcela: valorParcelaCalculado, // Valor já dividido
                 mesReferencia: mesRef,
                 anoReferencia: anoRef,
-                descricao: numParcelas > 1 ? `${obj.descricao} (${i + 1}/${numParcelas})` : obj.descricao
+                descricao: numParcelas > 1 ? `${objBase.descricao} (${i + 1}/${numParcelas})` : objBase.descricao
             };
 
             const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
@@ -102,25 +133,25 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         if (sucesso) {
             await carregarTransacoes();
 
-            // Atualiza a garagem para os Alertas do Dashboard refletirem o novo KM na mesma hora
+            // Força a Garagem a atualizar os dados para os Alertas no Dashboard
             if (veiculo_id && garagem && garagem.carregarDadosGaragem) {
                 await garagem.carregarDadosGaragem();
             }
 
-            modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
+            modal.alert('Lançamento registado com sucesso!', '✅ Sucesso');
             return true;
         } else {
-            modal.alert('Erro ao registrar lançamento.', '❌ Erro');
+            modal.alert('Erro ao registar lançamento.', '❌ Erro');
             return false;
         }
     };
 
     /**
-     * Alterna o status entre liquidado (pago) e pendente com atualização otimista na tela.
-     * @param {string} id - ID da transação
-     * @param {string} statusAtual - Status presente
-     * @param {number} valor - Valor da parcela
-     * @param {string} dataCompra - Data de registro
+     * Alterna o estado de uma transação entre pendente e liquidado.
+     * @param {string} id - O UUID da transação.
+     * @param {string} statusAtual - Status presente.
+     * @param {number} valor - Valor associado.
+     * @param {string} dataCompra - Data de competência.
      */
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
@@ -140,8 +171,8 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Aciona o modal customizado com formulário completo para edição de valores e atributos.
-     * @param {Object} transacao - Objeto transacional selecionado.
+     * Exibe o modal com o formulário completo para edição detalhada da transação.
+     * @param {Object} transacao - Objeto completo da transação selecionada.
      */
     const editarValor = async (transacao) => {
         const dadosEditados = await modal.prompt('', '', '✏️ Edição de Lançamento', { inputType: 'editar_transacao', transacao, categorias, cartoes });
@@ -163,8 +194,8 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Interpela o usuário para segurança e exclui a transação definitivamente.
-     * @param {Object} t - Transação a excluir.
+     * Interpela o utilizador para segurança e exclui permanentemente o registo.
+     * @param {Object} t - A transação a eliminar.
      */
     const deletarTransacao = async (t) => {
         const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?`, '🗑️ Excluir');
@@ -176,9 +207,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Executa alterações rápidas (status ou deleção) para uma matriz de IDs.
-     * @param {Array<string>} idsSelecionados - Identificadores.
-     * @param {string} acao - Comando a executar.
+     * Aplica uma determinada ação (pagar, pendente, excluir) sobre múltiplas transações.
+     * @param {Array<string>} idsSelecionados - Matriz com os identificadores.
+     * @param {string} acao - Ação a desencadear.
      */
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
@@ -190,10 +221,10 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         } catch (err) { modal.alert('Erro na ação.', '❌ Erro'); }
     };
 
-    /** Placeholder para anexar comprovantes visuais. */
-    const anexarComprovante = async (t) => { modal.alert("Funcionalidade de anexo está integrada noutro módulo. Verifique o uploadController.", "Aviso"); };
+    /** Placeholder para o módulo de anexo de comprovativos. */
+    const anexarComprovante = async (t) => { modal.alert("Funcionalidade de anexo está integrada noutro módulo.", "Aviso"); };
 
-    /** Exibe o anexo da transação (se houver). */
+    /** Exibe o comprovativo anexado num novo separador. */
     const verComprovante = (t) => {
         if (t.comprovante_url) window.open(t.comprovante_url, '_blank');
         else modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo');
