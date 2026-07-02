@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 /**
  * @file src/components/Lancamentos.jsx
  * @description Componente principal para a gestão de lançamentos financeiros.
- * Conta com layout de tabela híbrida (Cards no Mobile, Tabela no Desktop) para 100% de responsividade.
+ * Conta com layout de tabela híbrida e trava de overflow horizontal para responsividade perfeita no mobile.
  */
 export function Lancamentos({
     modo = 'lancamentos',
@@ -105,13 +105,14 @@ export function Lancamentos({
 
     if (modo === 'novo_lancamento') {
         return (
-            <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto pb-24">
+            // CORREÇÃO: Adicionado w-full e overflow-x-hidden para travar scroll lateral
+            <div className="p-4 md:p-8 space-y-6 w-full max-w-3xl mx-auto pb-24 overflow-x-hidden">
                 <header className="border-b border-slate-200 dark:border-slate-800 pb-4">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">➕ Novo Lançamento</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Adicione uma nova despesa, receita ou investimento ao seu livro-razão.</p>
                 </header>
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-xl shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-xl shadow-sm">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
                             <label className={labelCls}>Descrição</label>
@@ -199,7 +200,7 @@ export function Lancamentos({
                     </form>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm mt-6 animate-fade-in-up">
+                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm mt-6 animate-fade-in-up">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
                         <span>Últimos Lançamentos</span>
                         <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300">{dataVis.ano}</span>
@@ -222,7 +223,7 @@ export function Lancamentos({
                                 </div>
                             </div>
                         ))}
-                        {ultimosCinco.length === 0 && <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registado nesta competência ainda.</p>}
+                        {ultimosCinco.length === 0 && <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registrado nesta competência.</p>}
                     </div>
                 </div>
             </div>
@@ -230,10 +231,11 @@ export function Lancamentos({
     }
 
     // ------------------------------------------------------------------------
-    // VISÃO 2: EXTRATO (Com Design Responsivo de Múltiplos Layouts)
+    // VISÃO 2: EXTRATO (Com Trava de Scroll Horizontal e Ordenação Mobile)
     // ------------------------------------------------------------------------
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24">
+        // CORREÇÃO: Adicionado w-full e overflow-x-hidden no container principal
+        <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl mx-auto pb-24 overflow-x-hidden">
             <header className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📋 Extrato de Lançamentos</h2>
@@ -250,7 +252,7 @@ export function Lancamentos({
                 </div>
             </header>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm flex flex-col">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm flex flex-col w-full">
                 {/* BARRA DE FILTROS */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
                     <input
@@ -289,7 +291,7 @@ export function Lancamentos({
                     </div>
                 )}
 
-                {/* AÇÕES EM LOTE (Visível tanto no Mobile quanto no Desktop se houver seleção) */}
+                {/* AÇÕES EM LOTE */}
                 {transacoesSelecionadas.length > 0 && (
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
                         <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{transacoesSelecionadas.length} itens selecionados</span>
@@ -302,12 +304,34 @@ export function Lancamentos({
                 )}
 
                 {/* ----------------------------------------------------------------------------------- */}
-                {/* LAYOUT 1: CELULAR E JANELAS DIVIDIDAS (Oculto em telas grandes) - SEM BARRA ROLAGEM */}
+                {/* LAYOUT 1: CELULAR E JANELAS DIVIDIDAS */}
                 {/* ----------------------------------------------------------------------------------- */}
-                <div className="lg:hidden space-y-3 mt-2">
+                <div className="lg:hidden space-y-3 mt-2 w-full">
+
+                    {/* NOVIDADE: BARRA DE ORDENAÇÃO EXCLUSIVA PARA CELULAR */}
+                    {dadosTabela.length > 0 && (
+                        <div className="mb-4 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">Ordenar Lista Por:</p>
+                            <div className="flex flex-wrap gap-2">
+                                <button onClick={() => mudarOrdenacao('data')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'data' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
+                                    Data {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
+                                </button>
+                                <button onClick={() => mudarOrdenacao('descricao')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'descricao' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
+                                    Nome {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
+                                </button>
+                                <button onClick={() => mudarOrdenacao('valor')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'valor' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
+                                    Valor {ordenacao.coluna === 'valor' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
+                                </button>
+                                <button onClick={() => mudarOrdenacao('status')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'status' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
+                                    Status {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {dadosTabela.length > 0 && (
                         <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl mb-4 shadow-sm">
-                            <input type="checkbox" onChange={selecionarTodas} checked={transacoesSelecionadas.length === dadosTabela.length} className="cursor-pointer w-4 h-4 accent-blue-600" />
+                            <input type="checkbox" onChange={selecionarTodas} checked={transacoesSelecionadas.length === dadosTabela.length} className="cursor-pointer w-4 h-4 accent-blue-600 shrink-0" />
                             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Selecionar Todos os {dadosTabela.length} itens</span>
                         </div>
                     )}
@@ -318,17 +342,17 @@ export function Lancamentos({
                         </div>
                     ) : (
                         dadosTabela.map((t) => (
-                            <div key={t.id} className={`bg-white dark:bg-slate-900 rounded-xl border transition-all shadow-sm relative overflow-hidden ${transacoesSelecionadas.includes(t.id) ? 'border-blue-500 ring-1 ring-blue-500 dark:bg-blue-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
+                            <div key={t.id} className={`bg-white dark:bg-slate-900 rounded-xl border transition-all shadow-sm relative overflow-hidden flex w-full ${transacoesSelecionadas.includes(t.id) ? 'border-blue-500 ring-1 ring-blue-500 dark:bg-blue-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
 
-                                {/* Espaço seguro (Gutter) para o Checkbox não conflitar com o clique do Card */}
-                                <div className="absolute top-0 bottom-0 left-0 w-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">
+                                {/* Zona Segura do Checkbox (Shrink-0 impede que seja esmagada) */}
+                                <div className="w-12 shrink-0 flex items-center justify-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">
                                     <input type="checkbox" checked={transacoesSelecionadas.includes(t.id)} onChange={() => toggleSelecao(t.id)} className="cursor-pointer w-4 h-4 accent-blue-600" />
                                 </div>
 
-                                {/* Corpo do Card clicável para abrir detalhes */}
-                                <div className="pl-16 pr-4 py-4 cursor-pointer" onClick={() => abrirDetalhes(t)}>
+                                {/* Corpo Clicável do Card (Min-w-0 trava o vazamento de texto longo) */}
+                                <div className="flex-1 min-w-0 p-4 cursor-pointer" onClick={() => abrirDetalhes(t)}>
                                     <div className="flex justify-between items-start gap-3 mb-2">
-                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight line-clamp-2">
+                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate">
                                             {t.descricao}
                                             {t.observacao && <span className="ml-1 text-blue-500" title="Possui observação">💬</span>}
                                         </h4>
@@ -355,9 +379,9 @@ export function Lancamentos({
                 </div>
 
                 {/* ----------------------------------------------------------------------------------- */}
-                {/* LAYOUT 2: COMPUTADOR TELA CHEIA (Oculto em telas menores) - TABELA CLÁSSICA         */}
+                {/* LAYOUT 2: COMPUTADOR TELA CHEIA - TABELA CLÁSSICA */}
                 {/* ----------------------------------------------------------------------------------- */}
-                <div className="hidden lg:block overflow-x-auto flex-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="hidden lg:block overflow-x-auto flex-1 w-full rounded-lg border border-slate-200 dark:border-slate-800">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-extrabold tracking-wider whitespace-nowrap">
                             <tr>
