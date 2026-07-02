@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * Componente: Sidebar
- * Navegação lateral principal do sistema.
- * Suporta menus expansíveis, renderização condicional baseada em permissões
- * e controlo de estado para visualização mobile.
+ * @file src/components/Sidebar.jsx
+ * @description Componente de Navegação Lateral Principal.
+ * Suporta menus expansíveis, renderização condicional baseada em permissões e controlo de estado mobile.
  */
 export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen }) {
+
     // Estados para controlar o colapso dos menus expansíveis
     const [openMenus, setOpenMenus] = useState({
         lancamentos: false,
@@ -29,7 +29,7 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsu
 
     const handleNavegacao = (tela) => {
         setTelaAtiva(tela);
-        setIsMobileMenuOpen(false); // Fecha o menu no mobile ao clicar
+        setIsMobileMenuOpen(false);
     };
 
     const MenuItem = ({ id, icone, titulo, onClick, isSub = false }) => {
@@ -48,7 +48,6 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsu
 
     const MenuExpansivel = ({ id, icone, titulo, children }) => {
         const isOpen = openMenus[id];
-        // Verifica se algum filho está ativo para manter um leve destaque visual no pai
         const isChildActive = children.some(child => child.props.id === telaAtiva);
 
         return (
@@ -122,6 +121,7 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsu
 
                 {/* Footer / Logout */}
                 <div className="p-4 border-t border-slate-800/60 mt-auto">
+                    {/* Botão de Modo Escuro removido daqui. Função migrada para a aba Configurações. */}
                     <button
                         type="button"
                         onClick={fazerLogout}

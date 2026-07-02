@@ -34,14 +34,18 @@ export function ContasFixas({ contasFixas, addContaFixa, rendasFixas, addRendaFi
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24">
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🔄 Contas Fixas e Assinaturas</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Automatize o registro de contas que se repetem todos os meses.</p>
+        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24 relative">
+
+            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
+            <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
+                <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🔄 Obrigações e Recebíveis</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Automatize o registro financeiro de eventos que se repetem todos os meses.</p>
+                </header>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
+                <div className="xl:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit sticky top-32">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Nova Obrigação Mensal</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo da Conta</label><select value={tipoRegistro} onChange={(e) => setTipoRegistro(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"><option value="despesa">Despesa (Água, Luz, Internet)</option><option value="renda">Renda (Salário, Aluguel Recebido)</option></select></div>
@@ -63,8 +67,6 @@ export function ContasFixas({ contasFixas, addContaFixa, rendasFixas, addRendaFi
                                     <div><p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{c.nome}</p><p className="text-[10px] text-slate-500 uppercase">Dia {c.dia_vencimento || c.vencimento}</p></div>
                                     <div className="flex items-center gap-2">
                                         <span className="font-black text-rose-600 dark:text-rose-400 text-sm">{formatarMoeda(c.valorpadrao || c.valor)}</span>
-
-                                        {/* ATUALIZAÇÃO TOUCH: Sempre visível no mobile */}
                                         <div className="flex flex-col gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity border-l border-slate-100 dark:border-slate-700 pl-2">
                                             <button onClick={() => handleEditar(c, 'despesa')} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
                                             <button onClick={() => handleExcluir(c.id, 'despesa')} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>
@@ -82,8 +84,6 @@ export function ContasFixas({ contasFixas, addContaFixa, rendasFixas, addRendaFi
                                     <div><p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{r.nome}</p><p className="text-[10px] text-slate-500 uppercase">Dia {r.dia_recebimento || r.diaRecebimento}</p></div>
                                     <div className="flex items-center gap-2">
                                         <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{formatarMoeda(r.valorpadrao || r.valor)}</span>
-
-                                        {/* ATUALIZAÇÃO TOUCH: Sempre visível no mobile */}
                                         <div className="flex flex-col gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity border-l border-slate-100 dark:border-slate-700 pl-2">
                                             <button onClick={() => handleEditar(r, 'renda')} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
                                             <button onClick={() => handleExcluir(r.id, 'renda')} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>

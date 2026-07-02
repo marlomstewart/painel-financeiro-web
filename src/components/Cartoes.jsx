@@ -1,22 +1,13 @@
 import React, { useState } from 'react';
 
-/**
- * @file src/components/Cartoes.jsx
- * @description Módulo de gestão de cartões de crédito.
- * Responsável pelo CRUD de cartões, com blindagem de dados contra valores nulos (NaN).
- */
 export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }) {
     const [nomeCartao, setNomeCartao] = useState('');
     const [limite, setLimite] = useState('');
     const [diaFechamento, setDiaFechamento] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
 
-    // Estado de carregamento para feedback visual
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    /**
-     * Intercepta a submissão, ativa o loading de forma segura e limpa os campos.
-     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -32,10 +23,6 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
         }
     };
 
-    /**
-     * Aciona prompts sequenciais para a edição dos dados do cartão,
-     * aplicando validação para impedir o envio de valores em branco.
-     */
     const handleEditar = async (c) => {
         const nNome = await modal.prompt(`1️⃣ Novo NOME do Cartão?`, c.nome, '✏️ Editar Cartão', { confirmLabel: 'Próximo' });
         if (!nNome) return;
@@ -59,19 +46,11 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
         if (sucesso) modal.alert('Cartão atualizado com sucesso!', '✅ Editado');
     };
 
-    /**
-     * Exige confirmação estrita antes de excluir um cartão de crédito.
-     */
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Atenção: Excluir este cartão pode quebrar faturas vinculadas. Tem certeza?', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
         if (ok) removerSetup('cartoes', id);
     };
 
-    /**
-     * ESCUDO MATEMÁTICO:
-     * Converte o valor. Se o banco de dados retornar algo vazio ou quebrado,
-     * força a variável a ser 0, impedindo o erro 'NaN' na tela.
-     */
     const formatarMoeda = (valor) => {
         const numero = Number(valor);
         const valorSeguro = isNaN(numero) ? 0 : numero;
@@ -79,14 +58,17 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
     };
 
     return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in">
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">💳 Meus Cartões de Crédito</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Gerencie seus limites e dias de fechamento para faturas inteligentes.</p>
+        <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in relative">
+
+            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
+            <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
+                <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">💳 Meus Cartões de Crédito</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Gerencie seus limites e dias de fechamento para faturas inteligentes.</p>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* FORMULÁRIO DE CADASTRO */}
                 <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Novo Cartão</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,7 +111,6 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                     </form>
                 </div>
 
-                {/* LISTAGEM DOS CARTÕES */}
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-fit">
                     {cartoes.length === 0 ? (
                         <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhum cartão cadastrado.</div>
@@ -139,7 +120,6 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
                                 <div className="flex justify-between items-start mb-6 relative z-10">
                                     <h4 className="text-lg font-black tracking-widest uppercase">{c.nome}</h4>
-
                                     <div className="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => handleEditar(c)} className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="Editar">✏️</button>
                                         <button onClick={() => handleExcluir(c.id)} className="text-slate-400 hover:text-rose-400 transition-colors cursor-pointer" title="Excluir">🗑️</button>

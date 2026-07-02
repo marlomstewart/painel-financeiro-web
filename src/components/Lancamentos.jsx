@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 
-/**
- * @file src/components/Lancamentos.jsx
- * @description Componente principal para a gestão de lançamentos financeiros.
- * Conta com layout de tabela híbrida e trava de overflow horizontal para responsividade perfeita no mobile.
- */
 export function Lancamentos({
     modo = 'lancamentos',
     categorias, cartoes, addTransacao,
@@ -87,7 +82,7 @@ export function Lancamentos({
             type: 'detalhes',
             transacao: t,
             nomePagamento: obterNomePagamento(t.formaPagamento),
-            isStewart: nomeUsuario.toLowerCase() === 'stewart',
+            isStewart: nomeUsuario?.toLowerCase() === 'stewart',
             onAlternarStatus: () => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra),
             onEditar: () => editarValor(t),
             onDeletar: () => deletarTransacao(t),
@@ -105,12 +100,15 @@ export function Lancamentos({
 
     if (modo === 'novo_lancamento') {
         return (
-            // CORREÇÃO: Adicionado w-full e overflow-x-hidden para travar scroll lateral
-            <div className="p-4 md:p-8 space-y-6 w-full max-w-3xl mx-auto pb-24 overflow-x-hidden">
-                <header className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">➕ Novo Lançamento</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Adicione uma nova despesa, receita ou investimento ao seu livro-razão.</p>
-                </header>
+            <div className="p-4 md:p-8 space-y-6 w-full max-w-3xl mx-auto pb-24 overflow-x-hidden relative">
+
+                {/* CABEÇALHO FIXO */}
+                <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
+                    <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">➕ Novo Lançamento</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Adicione uma nova despesa, receita ou investimento ao seu livro-razão.</p>
+                    </header>
+                </div>
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-xl shadow-sm">
                     <form onSubmit={handleSubmit} className="space-y-5">
@@ -162,7 +160,7 @@ export function Lancamentos({
                             </select>
                         </div>
 
-                        {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario.toLowerCase() === 'stewart' && (
+                        {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart' && (
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
                                 <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
                                 <input
@@ -230,30 +228,30 @@ export function Lancamentos({
         );
     }
 
-    // ------------------------------------------------------------------------
-    // VISÃO 2: EXTRATO (Com Trava de Scroll Horizontal e Ordenação Mobile)
-    // ------------------------------------------------------------------------
+    // EXTRATO VISÃO (Com cabeçalho fixo)
     return (
-        // CORREÇÃO: Adicionado w-full e overflow-x-hidden no container principal
-        <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl mx-auto pb-24 overflow-x-hidden">
-            <header className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📋 Extrato de Lançamentos</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Audite, pesquise e faça a gestão em lote de todas as movimentações.</p>
-                </div>
+        <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl mx-auto pb-24 overflow-x-hidden relative">
 
-                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm self-start md:self-auto shrink-0">
-                    <button onClick={mesAnterior} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
-                    <div className="flex flex-col items-center min-w-[120px] justify-center px-2">
-                        <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-xs">{meses[dataVis.mes - 1]}</span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
+            {/* CABEÇALHO FIXO COM SELETOR DE MESES */}
+            <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
+                <header className="border-b border-slate-200 dark:border-slate-800 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📋 Extrato de Lançamentos</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Audite, pesquise e faça a gestão em lote de todas as movimentações.</p>
                     </div>
-                    <button onClick={mesProximo} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg></button>
-                </div>
-            </header>
+
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm self-start md:self-auto shrink-0">
+                        <button onClick={mesAnterior} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
+                        <div className="flex flex-col items-center min-w-[120px] justify-center px-2">
+                            <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-xs">{meses[dataVis.mes - 1]}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
+                        </div>
+                        <button onClick={mesProximo} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+                    </div>
+                </header>
+            </div>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm flex flex-col w-full">
-                {/* BARRA DE FILTROS */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
                     <input
                         type="text" placeholder="Buscar lançamentos..."
@@ -291,7 +289,6 @@ export function Lancamentos({
                     </div>
                 )}
 
-                {/* AÇÕES EM LOTE */}
                 {transacoesSelecionadas.length > 0 && (
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
                         <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{transacoesSelecionadas.length} itens selecionados</span>
@@ -303,28 +300,15 @@ export function Lancamentos({
                     </div>
                 )}
 
-                {/* ----------------------------------------------------------------------------------- */}
-                {/* LAYOUT 1: CELULAR E JANELAS DIVIDIDAS */}
-                {/* ----------------------------------------------------------------------------------- */}
                 <div className="lg:hidden space-y-3 mt-2 w-full">
-
-                    {/* NOVIDADE: BARRA DE ORDENAÇÃO EXCLUSIVA PARA CELULAR */}
                     {dadosTabela.length > 0 && (
                         <div className="mb-4 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
                             <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">Ordenar Lista Por:</p>
                             <div className="flex flex-wrap gap-2">
-                                <button onClick={() => mudarOrdenacao('data')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'data' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
-                                    Data {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                                </button>
-                                <button onClick={() => mudarOrdenacao('descricao')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'descricao' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
-                                    Nome {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                                </button>
-                                <button onClick={() => mudarOrdenacao('valor')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'valor' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
-                                    Valor {ordenacao.coluna === 'valor' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                                </button>
-                                <button onClick={() => mudarOrdenacao('status')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'status' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
-                                    Status {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                                </button>
+                                <button onClick={() => mudarOrdenacao('data')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'data' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Data {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
+                                <button onClick={() => mudarOrdenacao('descricao')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'descricao' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Nome {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
+                                <button onClick={() => mudarOrdenacao('valor')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'valor' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Valor {ordenacao.coluna === 'valor' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
+                                <button onClick={() => mudarOrdenacao('status')} className={`flex-1 min-w-[80px] px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'status' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Status {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
                             </div>
                         </div>
                     )}
@@ -343,33 +327,21 @@ export function Lancamentos({
                     ) : (
                         dadosTabela.map((t) => (
                             <div key={t.id} className={`bg-white dark:bg-slate-900 rounded-xl border transition-all shadow-sm relative overflow-hidden flex w-full ${transacoesSelecionadas.includes(t.id) ? 'border-blue-500 ring-1 ring-blue-500 dark:bg-blue-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
-
-                                {/* Zona Segura do Checkbox (Shrink-0 impede que seja esmagada) */}
                                 <div className="w-12 shrink-0 flex items-center justify-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">
                                     <input type="checkbox" checked={transacoesSelecionadas.includes(t.id)} onChange={() => toggleSelecao(t.id)} className="cursor-pointer w-4 h-4 accent-blue-600" />
                                 </div>
-
-                                {/* Corpo Clicável do Card (Min-w-0 trava o vazamento de texto longo) */}
                                 <div className="flex-1 min-w-0 p-4 cursor-pointer" onClick={() => abrirDetalhes(t)}>
                                     <div className="flex justify-between items-start gap-3 mb-2">
-                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate">
-                                            {t.descricao}
-                                            {t.observacao && <span className="ml-1 text-blue-500" title="Possui observação">💬</span>}
-                                        </h4>
-                                        <span className={`shrink-0 text-[9px] uppercase font-bold px-2 py-1 rounded-md ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>
-                                            {t.status}
-                                        </span>
+                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate">{t.descricao}{t.observacao && <span className="ml-1 text-blue-500" title="Possui observação">💬</span>}</h4>
+                                        <span className={`shrink-0 text-[9px] uppercase font-bold px-2 py-1 rounded-md ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>{t.status}</span>
                                     </div>
-
                                     <div className="flex justify-between items-end mt-4">
                                         <div className="min-w-0 pr-2">
                                             <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-0.5">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className={`font-black text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-100'}`}>
-                                                {formatarMoeda(t.valorParcela)}
-                                            </p>
+                                            <p className={`font-black text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-100'}`}>{formatarMoeda(t.valorParcela)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -378,9 +350,6 @@ export function Lancamentos({
                     )}
                 </div>
 
-                {/* ----------------------------------------------------------------------------------- */}
-                {/* LAYOUT 2: COMPUTADOR TELA CHEIA - TABELA CLÁSSICA */}
-                {/* ----------------------------------------------------------------------------------- */}
                 <div className="hidden lg:block overflow-x-auto flex-1 w-full rounded-lg border border-slate-200 dark:border-slate-800">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-extrabold tracking-wider whitespace-nowrap">
@@ -398,9 +367,7 @@ export function Lancamentos({
                             ) : (
                                 dadosTabela.map((t) => (
                                     <tr key={t.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group ${transacoesSelecionadas.includes(t.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-                                        <td className="p-3 text-center whitespace-nowrap">
-                                            <input type="checkbox" checked={transacoesSelecionadas.includes(t.id)} onChange={() => toggleSelecao(t.id)} className="cursor-pointer accent-blue-600 w-4 h-4" />
-                                        </td>
+                                        <td className="p-3 text-center whitespace-nowrap"><input type="checkbox" checked={transacoesSelecionadas.includes(t.id)} onChange={() => toggleSelecao(t.id)} className="cursor-pointer accent-blue-600 w-4 h-4" /></td>
                                         <td className="p-3 min-w-[140px]">
                                             <span onClick={() => abrirDetalhes(t)} className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-start gap-1 transition-colors break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>
                                                 {t.descricao} {t.observacao && <svg title="Possui Observação" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block flex-shrink-0 mt-0.5 cursor-help"><path fillRule="evenodd" d="M4.804 21.644A6.707 6.707 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337 4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785Z" clipRule="evenodd" /></svg>}

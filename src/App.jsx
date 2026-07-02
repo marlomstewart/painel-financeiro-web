@@ -22,16 +22,12 @@ import { useDashboard } from './hooks/useDashboard';
 
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
-import { useTheme } from './hooks/useTheme';
-import { ThemeToggle } from './components/ThemeToggle';
 import { DashboardSkeleton } from './components/Skeleton';
 
 const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
 /**
  * Hook Customizado: useModal
- * CORRIGIDO: Agora todos os eventos de fechar, cancelar e confirmar
- * emitem setConfig(null) para destruir o modal da tela e evitar congelamento.
  */
 function useModal() {
   const [config, setConfig] = useState(null);
@@ -46,7 +42,6 @@ function useModal() {
 function App() {
   const modal = useModal();
   const { toast, showToast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [carregouAPI, setCarregouAPI] = useState(false);
 
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
@@ -61,6 +56,30 @@ function App() {
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal });
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
+
+  // Motor Global de Inicialização do Modo Escuro
+  useEffect(() => {
+    const applyTheme = () => {
+      const tema = localStorage.getItem('theme') || 'sistema';
+      const root = window.document.documentElement;
+      if (tema === 'sistema') {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.classList.add('dark');
+        else root.classList.remove('dark');
+      } else if (tema === 'escuro') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+    applyTheme();
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (!localStorage.getItem('theme') || localStorage.getItem('theme') === 'sistema') applyTheme();
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     if (!auth.token) return;
@@ -78,9 +97,9 @@ function App() {
     carregar();
   }, [auth.token]);
 
-  if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
-  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
-  if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
+  if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /></>;
+  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /></>;
+  if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /></>;
 
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
@@ -125,7 +144,7 @@ function App() {
         dataVis={dataVis}
         mesAnterior={dashboardManager.mesAnterior}
         mesProximo={dashboardManager.mesProximo}
-        garagem={garagem} /* NOVIDADE: Injeção do módulo de Garagem */
+        garagem={garagem}
       />;
     }
 
@@ -156,7 +175,6 @@ function App() {
       </main>
       <Modal config={modal.config} onClose={modal.close} />
       <Toast toast={toast} />
-      <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
     </div>
   );
 }

@@ -44,17 +44,22 @@ export function Dashboard({
     }
 
     return (
-        <div className="p-6 space-y-8 max-w-7xl mx-auto pb-24">
+        <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 relative">
 
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Painel Executivo</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Resumo financeiro de {nomesMeses[dataVis.mes - 1]} de {dataVis.ano}</p>
-                </div>
-                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                    <button type="button" onClick={mesAnterior} className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-800 rounded shadow-sm text-slate-600 dark:text-slate-300 transition cursor-pointer">◀</button>
-                    <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-sm w-32 text-center">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-                    <button type="button" onClick={mesProximo} className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-800 rounded shadow-sm text-slate-600 dark:text-slate-300 transition cursor-pointer">▶</button>
+            {/* ----------------------------------------------------------------------------------- */}
+            {/* CABEÇALHO FIXO (STICKY HEADER COM EFEITO BLUR) */}
+            {/* ----------------------------------------------------------------------------------- */}
+            <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm transition-colors">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Painel Executivo</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Resumo financeiro de {nomesMeses[dataVis.mes - 1]} de {dataVis.ano}</p>
+                    </div>
+                    <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <button type="button" onClick={mesAnterior} className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-800 rounded shadow-sm text-slate-600 dark:text-slate-300 transition cursor-pointer">◀</button>
+                        <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-sm w-32 text-center">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
+                        <button type="button" onClick={mesProximo} className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-800 rounded shadow-sm text-slate-600 dark:text-slate-300 transition cursor-pointer">▶</button>
+                    </div>
                 </div>
             </div>
 
@@ -89,7 +94,6 @@ export function Dashboard({
                     <h3 className="text-xl font-black text-purple-600 dark:text-purple-400">{formatarMoeda(totFaturaCreditoAberto)}</h3>
                 </div>
 
-                {/* CORREÇÃO DO LAYOUT (FIM DA SOBREPOSIÇÃO) */}
                 <div onClick={() => abrirResumoCard('saldo')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group flex flex-col justify-between">
                     <div className="flex justify-between items-start w-full mb-1">
                         <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 transition mt-1">Saldo Líquido</p>

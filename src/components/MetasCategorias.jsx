@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 
-/**
- * Componente: MetasCategorias
- * View de orçamentação tática. Gere as expectativas de Receita (Metas de Renda)
- * e os limites/alvos de Saída (Categorias de Despesa e Investimento).
- */
 export function MetasCategorias({ categorias, addCategoria, metasRenda = [], addMetaRenda, editarSetup, removerSetup, modal }) {
     const [nomeCategoria, setNomeCategoria] = useState('');
     const [metaCategoria, setMetaCategoria] = useState('');
@@ -12,10 +7,6 @@ export function MetasCategorias({ categorias, addCategoria, metasRenda = [], add
 
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    /**
-     * Interceta a submissão do formulário para delegar ao hook de setup
-     * a criação da entidade correta com base no tipo selecionado.
-     */
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -59,17 +50,19 @@ export function MetasCategorias({ categorias, addCategoria, metasRenda = [], add
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-24">
-            <header className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Metas & Categorias</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Defina os tetos de gastos, alvos de investimento e expectativas de receita.</p>
-            </header>
+        <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-24 relative">
+
+            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
+            <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
+                <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Metas & Categorias</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Defina os tetos de gastos, alvos de investimento e expectativas de receita.</p>
+                </header>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                {/* ================= COLUNA ESQUERDA: FORMULÁRIO ================= */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm sticky top-24">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm sticky top-32">
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Nova Meta Estratégica</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
@@ -109,10 +102,7 @@ export function MetasCategorias({ categorias, addCategoria, metasRenda = [], add
                     </div>
                 </div>
 
-                {/* ================= COLUNA DIREITA: LISTAGEM DUPLA ================= */}
                 <div className="lg:col-span-2 space-y-8">
-
-                    {/* BLOCO 1: METAS DE RENDA */}
                     <div>
                         <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Entradas / Receitas</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -140,7 +130,6 @@ export function MetasCategorias({ categorias, addCategoria, metasRenda = [], add
                         </div>
                     </div>
 
-                    {/* BLOCO 2: CATEGORIAS (DESPESAS E INVESTIMENTOS) */}
                     <div>
                         <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Saídas (Despesas e Investimentos)</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

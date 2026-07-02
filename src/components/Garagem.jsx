@@ -22,7 +22,6 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     const [modalItem, setModalItem] = useState(null);
     const [modalManutencao, setModalManutencao] = useState(null);
 
-    // NOVIDADE: Estado de Loading para botões e Modal de Confirmação customizado
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [modalConfirm, setModalConfirm] = useState(null);
 
@@ -184,7 +183,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
     if (!veiculoSelecionado) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8 text-slate-800 dark:text-slate-200 transition-colors duration-300 relative">
                 <ModalComponent config={modalConfig} onClose={modalClose} />
 
                 {/* MODAL GLOBAL DE CONFIRMAÇÃO EXCLUSÃO (Para Veículos) */}
@@ -235,13 +234,16 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                 )}
 
                 <div className="mx-auto max-w-4xl">
-                    <header className="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">🏍️ Garagem</h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Selecione um veículo para ver o dashboard</p>
-                        </div>
-                        <button type="button" onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 dark:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 text-sm cursor-pointer transition-colors shadow-sm">← Voltar</button>
-                    </header>
+                    {/* CABEÇALHO FIXO - VISÃO GERAL DE VEÍCULOS */}
+                    <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-8">
+                        <header className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                            <div>
+                                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">🏍️ Garagem</h1>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Selecione um veículo para ver o dashboard</p>
+                            </div>
+                            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 dark:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 text-sm cursor-pointer transition-colors shadow-sm">← Voltar</button>
+                        </header>
+                    </div>
 
                     {carregando ? (
                         <div className="text-center py-20 text-slate-400 dark:text-slate-500 animate-pulse font-bold">Carregando frota...</div>
@@ -287,7 +289,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     const kmAtual = Number(veiculoSelecionado.km_atual);
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-2 md:p-8 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-2 md:p-8 text-slate-800 dark:text-slate-200 transition-colors duration-300 relative">
             <ModalComponent config={modalConfig} onClose={modalClose} />
 
             {/* MODAL GLOBAL DE CONFIRMAÇÃO EXCLUSÃO (Para Dashboard) */}
@@ -364,21 +366,24 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
             )}
 
             <div className="mx-auto max-w-5xl space-y-4 md:space-y-6">
-                <header className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 gap-3 transition-colors">
-                    <div className="flex items-center gap-4">
-                        <button type="button" onClick={() => setVeiculoSelecionado(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-2xl cursor-pointer transition-colors">←</button>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{veiculoSelecionado.modelo}</h1>
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{veiculoSelecionado.ano_fabricacao}/{veiculoSelecionado.ano_modelo} • {Number(kmAtual).toLocaleString('pt-BR')} km</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <button type="button" onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="flex-1 md:flex-none bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-4 py-2.5 rounded-lg text-sm font-bold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer">✏️ Editar</button>
-                        <button type="button" onClick={() => setTelaAtiva('dashboard')} className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 text-sm border border-transparent dark:border-slate-600 cursor-pointer transition-colors shadow-sm">← Painel</button>
-                    </div>
-                </header>
 
-                {/* CORREÇÃO DO LAYOUT: A propriedade md:col-span-2 foi removida abaixo para evitar a quebra horizontal. Agora usa apenas lg:grid-cols-2 */}
+                {/* CABEÇALHO FIXO - VISÃO DO DASHBOARD DO VEÍCULO */}
+                <div className="sticky top-0 z-40 pt-2 md:pt-8 pb-4 -mt-2 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-4 md:mb-6">
+                    <header className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 gap-3 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <button type="button" onClick={() => setVeiculoSelecionado(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-2xl cursor-pointer transition-colors">←</button>
+                            <div>
+                                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{veiculoSelecionado.modelo}</h1>
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{veiculoSelecionado.ano_fabricacao}/{veiculoSelecionado.ano_modelo} • {Number(kmAtual).toLocaleString('pt-BR')} km</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button type="button" onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="flex-1 md:flex-none bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-4 py-2.5 rounded-lg text-sm font-bold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer">✏️ Editar</button>
+                            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 text-sm border border-transparent dark:border-slate-600 cursor-pointer transition-colors shadow-sm">← Painel</button>
+                        </div>
+                    </header>
+                </div>
+
                 <div className={`grid grid-cols-1 ${veiculoSelecionado.tipo !== 'convidado' ? 'lg:grid-cols-2' : ''} gap-4 md:gap-6`}>
 
                     {veiculoSelecionado.tipo !== 'convidado' && (
@@ -466,7 +471,6 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                     </div>
 
                     {veiculoSelecionado.tipo !== 'convidado' && (
-                        // CORREÇÃO DO LAYOUT AQUI: lg:col-span-2 foi mantido. md:col-span-2 foi removido.
                         <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors lg:col-span-2">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                                 <h2 className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">🔧 Manutenções Manuais</h2>
