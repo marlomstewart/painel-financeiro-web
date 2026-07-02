@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 /**
  * @file src/components/Cartoes.jsx
  * @description Módulo de gestão de cartões de crédito.
- * Responsável pelo CRUD de cartões, definindo limites e dias de fechamento/vencimento.
+ * Responsável pelo CRUD de cartões, com blindagem de dados contra valores nulos (NaN).
  */
 export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }) {
     const [nomeCartao, setNomeCartao] = useState('');
@@ -11,44 +11,51 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
     const [diaFechamento, setDiaFechamento] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
 
-    // Estado de carregamento para feedback visual e bloqueio de múltiplos cliques
+    // Estado de carregamento para feedback visual
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     /**
-     * Intercepta a submissão, ativa o loading e chama a função de persistência.
+     * Intercepta a submissão, ativa o loading de forma segura e limpa os campos.
      */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        await addCartao(e);
-
-        setNomeCartao('');
-        setLimite('');
-        setDiaFechamento('');
-        setDiaVencimento('');
-
-        setIsSubmitting(false);
+        try {
+            await addCartao(e);
+            setNomeCartao('');
+            setLimite('');
+            setDiaFechamento('');
+            setDiaVencimento('');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     /**
-     * Aciona prompts sequenciais para a edição dos dados do cartão.
-     * CORREÇÃO: Leitura das chaves corretas (melhorDia e vencimento).
+     * Aciona prompts sequenciais para a edição dos dados do cartão,
+     * aplicando validação para impedir o envio de valores em branco.
      */
     const handleEditar = async (c) => {
         const nNome = await modal.prompt(`1️⃣ Novo NOME do Cartão?`, c.nome, '✏️ Editar Cartão', { confirmLabel: 'Próximo' });
-        if (nNome === null) return;
+        if (!nNome) return;
 
-        const nLim = await modal.prompt(`2️⃣ Novo LIMITE (R$)?`, String(c.limite), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
-        if (nLim === null) return;
+        const nLim = await modal.prompt(`2️⃣ Novo LIMITE (R$)?`, String(c.limite || ''), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
+        if (!nLim || isNaN(Number(nLim))) return modal.alert('Valor de limite inválido. Edição cancelada.', 'Erro');
 
         const nF = await modal.prompt(`3️⃣ Novo Dia de FECHAMENTO?`, String(c.melhorDia || ''), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
-        if (nF === null) return;
+        if (!nF || isNaN(Number(nF))) return modal.alert('Dia de fechamento inválido. Edição cancelada.', 'Erro');
 
         const nV = await modal.prompt(`4️⃣ Novo Dia de VENCIMENTO?`, String(c.vencimento || ''), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Salvar' });
-        if (nV === null) return;
+        if (!nV || isNaN(Number(nV))) return modal.alert('Dia de vencimento inválido. Edição cancelada.', 'Erro');
 
-        const sucesso = await editarSetup('cartoes', c.id, { nome: nNome, limite: Number(nLim), melhorDia: Number(nF), vencimento: Number(nV) });
+        const sucesso = await editarSetup('cartoes', c.id, {
+            nome: nNome,
+            limite: Number(nLim),
+            melhorDia: Number(nF),
+            vencimento: Number(nV)
+        });
+
         if (sucesso) modal.alert('Cartão atualizado com sucesso!', '✅ Editado');
     };
 
@@ -60,7 +67,16 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
         if (ok) removerSetup('cartoes', id);
     };
 
-    const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    /**
+     * ESCUDO MATEMÁTICO:
+     * Converte o valor. Se o banco de dados retornar algo vazio ou quebrado,
+     * força a variável a ser 0, impedindo o erro 'NaN' na tela.
+     */
+    const formatarMoeda = (valor) => {
+        const numero = Number(valor);
+        const valorSeguro = isNaN(numero) ? 0 : numero;
+        return valorSeguro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
 
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in">
@@ -70,6 +86,7 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* FORMULÁRIO DE CADASTRO */}
                 <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Novo Cartão</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -79,7 +96,7 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Limite Total (R$)</label>
-                            <input name="limite" type="number" step="0.01" min="0.01" value={limite} onChange={(e) => setLimite(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0.00" />
+                            <input name="limite" type="number" step="any" min="0.01" value={limite} onChange={(e) => setLimite(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0.00" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -103,7 +120,7 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Cadastrando...
+                                    Processando...
                                 </>
                             ) : (
                                 'Cadastrar Cartão'
@@ -112,6 +129,7 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                     </form>
                 </div>
 
+                {/* LISTAGEM DOS CARTÕES */}
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-fit">
                     {cartoes.length === 0 ? (
                         <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhum cartão cadastrado.</div>
@@ -133,7 +151,6 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                                     <p className="text-xl font-bold text-emerald-400">{formatarMoeda(c.limite)}</p>
                                 </div>
                                 <div className="flex justify-between text-xs text-slate-400 relative z-10">
-                                    {/* CORREÇÃO: Leitura das propriedades 'melhorDia' e 'vencimento' reais */}
                                     <p>Fecha dia <strong className="text-white">{c.melhorDia || '--'}</strong></p>
                                     <p>Vence dia <strong className="text-white">{c.vencimento || '--'}</strong></p>
                                 </div>
