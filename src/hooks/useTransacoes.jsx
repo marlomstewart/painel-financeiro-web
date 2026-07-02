@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 /**
  * @file src/hooks/useTransacoes.jsx
  * @description Hook customizado para gerir o CRUD de transações financeiras.
- * Implementa inteligência de faturas com fallback de segurança para o melhor dia de compra.
+ * Implementa inteligência de faturas sincronizada com o 'melhorDia' dos cartões.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
@@ -20,7 +20,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
     /**
      * Processa a submissão do formulário, valida viaturas, aplica divisão de parcelas
-     * e calcula a data de competência baseada no dia de fechamento do cartão de crédito.
+     * e calcula a data de competência baseada no 'melhorDia' de compra do cartão.
      * @param {Event} e - Evento de submissão do formulário.
      * @returns {Promise<boolean>} Retorna true se a operação for concluída com sucesso.
      */
@@ -42,7 +42,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         let veiculo_id = null;
         let veiculo_emprestado = 0;
 
-        // POP-UP NATIVO: Interrompe o fluxo e pede a viatura ANTES de disparar os dados para o servidor.
+        // POP-UP NATIVO: Interrompe o fluxo e pede a viatura ANTES de disparar os dados
         if ((categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart') {
             if (garagem && garagem.veiculosGaragem && garagem.veiculosGaragem.length > 0) {
                 const opcoes = garagem.veiculosGaragem.filter(v => v.ativo === 1).map(v => ({
@@ -73,13 +73,14 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             const cartaoId = formaPagamento.split('_')[1];
             const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
 
-            // FALLBACK SEGURO: Se o banco trouxer o dia vazio, mas for o Nubank, blindamos no dia 8!
-            let diaFechamento = 8;
+            // FALLBACK SEGURO
+            let diaFechamento = 31;
 
-            if (cartao && cartao.dia_fechamento) {
-                diaFechamento = parseInt(cartao.dia_fechamento, 10);
+            // CORREÇÃO AQUI: Lendo a propriedade correta (melhorDia)[cite: 7]
+            if (cartao && cartao.melhorDia) {
+                diaFechamento = parseInt(cartao.melhorDia, 10);
             } else if (cartao && cartao.nome?.toLowerCase().includes('nubank')) {
-                diaFechamento = 8; // Força o teto correto do Nubank cadastrado
+                diaFechamento = 8; // Força teto de segurança se der falha de leitura
             }
 
             // Se a compra foi feita no dia de fechamento ou após, empurra para a próxima fatura
@@ -179,7 +180,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
                 modal.alert('Lançamento atualizado com segurança!', '✅ Sucesso');
             } else {
                 const errData = await res.json();
-                modal.alert(`Servidor reuniu a atualização.\n\nMotivo: ${errData.error}`, '❌ Erro de Sistema');
+                modal.alert(`Servidor rejeitou a atualização.\n\nMotivo: ${errData.error}`, '❌ Erro de Sistema');
             }
         } catch (err) { modal.alert(`Erro de conexão: ${err.message}`, '❌ Erro de Rede'); }
     };
