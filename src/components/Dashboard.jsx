@@ -11,18 +11,15 @@ export function Dashboard({
     verFaturasPorCartao,
     transacoesMes = [],
     garagem = null,
-    nomeUsuario = '' // NOVIDADE: Recebendo o nome do usuário logado
+    nomeUsuario = ''
 }) {
 
-    // Trava de exibição: O módulo veicular só aparece para o Stewart
     const isStewart = nomeUsuario?.toLowerCase() === 'stewart';
 
-    // 1. Processar 5 Últimos Lançamentos
     const ultimosCinco = [...transacoesMes]
         .sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra))
         .slice(0, 5);
 
-    // 2. Processar Alertas da Garagem (Só se for o Stewart)
     const alertasGaragem = [];
     if (isStewart && garagem && garagem.veiculos && garagem.itens) {
         garagem.veiculos.forEach(veiculo => {
@@ -92,20 +89,23 @@ export function Dashboard({
                     <h3 className="text-xl font-black text-purple-600 dark:text-purple-400">{formatarMoeda(totFaturaCreditoAberto)}</h3>
                 </div>
 
-                <div onClick={() => abrirResumoCard('saldo')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group relative">
-                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-indigo-500 transition">Saldo Líquido</p>
-                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(saldoAtual)}</h3>
+                {/* CORREÇÃO DO LAYOUT (FIM DA SOBREPOSIÇÃO) */}
+                <div onClick={() => abrirResumoCard('saldo')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group flex flex-col justify-between">
+                    <div className="flex justify-between items-start w-full mb-1">
+                        <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 transition mt-1">Saldo Líquido</p>
 
-                    <div
-                        className="absolute top-3 right-3 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                        onClick={(e) => e.stopPropagation()}
-                        title="Somar saldo que sobrou do mês anterior?"
-                    >
-                        <input type="checkbox" checked={somarSaldoAnterior} onChange={(e) => setSomarSaldoAnterior(e.target.checked)} className="cursor-pointer w-4 h-4 accent-indigo-600" />
-                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 select-none cursor-pointer" onClick={() => setSomarSaldoAnterior(!somarSaldoAnterior)}>
-                            + Mês Ant.
-                        </span>
+                        <div
+                            className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10 hover:bg-slate-200 dark:hover:bg-slate-700 transition shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Somar saldo que sobrou do mês anterior?"
+                        >
+                            <input type="checkbox" checked={somarSaldoAnterior} onChange={(e) => setSomarSaldoAnterior(e.target.checked)} className="cursor-pointer w-3.5 h-3.5 accent-indigo-600" />
+                            <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 select-none cursor-pointer whitespace-nowrap" onClick={() => setSomarSaldoAnterior(!somarSaldoAnterior)}>
+                                + Mês Ant.
+                            </span>
+                        </div>
                     </div>
+                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(saldoAtual)}</h3>
                 </div>
 
                 <div onClick={() => abrirResumoCard('previsao')} className={`p-5 rounded-xl shadow-sm border cursor-pointer transition group ${previstoFimMes >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 hover:border-red-400'}`}>
@@ -161,10 +161,8 @@ export function Dashboard({
                 )}
             </div>
 
-            {/* GRADE INFERIOR DIVIDIDA */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* 1. ÚLTIMOS LANÇAMENTOS (Se for Stewart, ocupa 2 colunas. Se não, expande tudo) */}
                 <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col ${isStewart ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">⏱️ Últimos Lançamentos</h3>
@@ -174,14 +172,12 @@ export function Dashboard({
                     <div className="space-y-3 flex-1">
                         {ultimosCinco.map(t => (
                             <div key={t.id} className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800/50 hover:border-blue-200 dark:hover:border-blue-800/50 transition-colors">
-                                {/* CORREÇÃO DO OVERFLOW: min-w-0 e truncate ativados */}
                                 <div className="flex-1 min-w-0 pr-4">
                                     <p className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{t.descricao}</p>
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">
                                         {new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}
                                     </p>
                                 </div>
-                                {/* CORREÇÃO DO OVERFLOW: shrink-0 ativado */}
                                 <div className="text-right flex flex-col items-end shrink-0">
                                     <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {formatarMoeda(t.valorParcela)}
@@ -200,7 +196,6 @@ export function Dashboard({
                     </div>
                 </div>
 
-                {/* 2. ALERTAS DA GARAGEM (Exclusivo para Stewart) */}
                 {isStewart && (
                     <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">🔧 Alertas do Veículo</h3>
