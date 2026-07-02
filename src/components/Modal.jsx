@@ -8,7 +8,6 @@ import React, { useState, useEffect } from 'react';
 function FormularioEdicao({ config, onConfirm, onCancel }) {
   const { transacao, categorias = [], cartoes = [] } = config;
 
-  // Máscara Bancária
   const initValorStr = Math.round((transacao.valorParcela || 0) * 100).toString();
   const [valorStr, setValorStr] = useState(initValorStr);
 
@@ -54,16 +53,10 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         />
       </div>
 
-      <div>
-        <label className={labelCls}>Descrição</label>
-        <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className={inputCls} />
-      </div>
+      <div><label className={labelCls}>Descrição</label><input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className={inputCls} /></div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelCls}>Data</label>
-          <input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} />
-        </div>
+        <div><label className={labelCls}>Data</label><input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} /></div>
         <div>
           <label className={labelCls}>Status</label>
           <select value={status} onChange={e => setStatus(e.target.value)} className={inputCls}>
@@ -101,14 +94,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         </select>
       </div>
 
-      <div>
-        <label className={labelCls}>Observação</label>
-        <textarea value={observacao} onChange={e => setObservacao(e.target.value)} className={`${inputCls} resize-none`} rows="2"></textarea>
-      </div>
+      <div><label className={labelCls}>Observação</label><textarea value={observacao} onChange={e => setObservacao(e.target.value)} className={`${inputCls} resize-none`} rows="2"></textarea></div>
 
       <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-        <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
-        <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-md">Salvar Alterações</button>
+        <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
+        <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-md cursor-pointer">Salvar Alterações</button>
       </div>
     </form>
   );
@@ -116,6 +106,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
 /**
  * Componente: Modal (Orquestrador Global)
+ * Centraliza e renderiza todos os Pop-ups do sistema.
  */
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
@@ -146,7 +137,7 @@ export function Modal({ config, onClose }) {
 
           {type === 'alert' && (
             <div className="space-y-4">
-              <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
               <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button onClick={onConfirm} className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">OK, Entendido</button>
               </div>
@@ -155,7 +146,7 @@ export function Modal({ config, onClose }) {
 
           {type === 'confirm' && (
             <div className="space-y-4">
-              <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
               <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button onClick={onCancel} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
                 <button onClick={onConfirm} className={`px-5 py-2.5 text-white font-bold rounded-lg transition-colors cursor-pointer ${config.confirmColor || 'bg-blue-600 hover:bg-blue-700'}`}>{config.confirmLabel || 'Confirmar'}</button>
@@ -165,7 +156,7 @@ export function Modal({ config, onClose }) {
 
           {type === 'prompt' && inputType !== 'editar_transacao' && (
             <div className="space-y-4">
-              <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
               <input
                 type={inputType || 'text'}
                 value={inputValue}
@@ -186,7 +177,7 @@ export function Modal({ config, onClose }) {
 
           {type === 'options' && (
             <div className="space-y-4">
-              <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</p>
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
               <div className="flex flex-col gap-2">
                 {options.map((opt, i) => (
                   <button key={i} onClick={() => onConfirm(opt.value)} className="w-full p-3 text-left bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-lg font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
@@ -200,6 +191,98 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
+          {/* ----------------------------------------------------------------------------------- */}
+          {/* RENDERIZAÇÃO: MODAL DE FATURAS DE CARTÃO DE CRÉDITO */}
+          {/* ----------------------------------------------------------------------------------- */}
+          {type === 'faturas' && config.itens && (
+            <div className="space-y-4">
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Gerencie as faturas fechadas ou em aberto deste mês. Apenas transações pendentes podem ser pagas em lote.</p>
+
+              {config.itens.length === 0 ? (
+                <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                  <p className="text-slate-500 dark:text-slate-400 font-bold">Nenhum gasto no crédito nesta competência.</p>
+                </div>
+              ) : (
+                config.itens.map((item, i) => {
+                  const cId = config.cartaoIds[item.nome];
+                  return (
+                    <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                      <h4 className="font-black text-slate-800 dark:text-slate-100 text-base mb-3 uppercase tracking-wider flex items-center gap-2">💳 {item.nome}</h4>
+
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center text-center">
+                          <span className="block text-[9px] uppercase font-bold text-slate-400 mb-0.5">Total Fatura</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">{Number(item.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        </div>
+                        <div className="bg-emerald-50 dark:bg-emerald-900/10 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/30 shadow-sm flex flex-col items-center justify-center text-center">
+                          <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-0.5">Já Pago</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">{Number(item.pago).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 p-2 rounded-lg border border-amber-100 dark:border-amber-800/30 shadow-sm flex flex-col items-center justify-center text-center">
+                          <span className="block text-[9px] uppercase font-bold text-amber-500 mb-0.5">Pendente</span>
+                          <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">{Number(item.pendente).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button onClick={() => config.pagarFatura(cId)} disabled={item.pendente <= 0} className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1 ${item.pendente > 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-70'}`}>
+                          ✅ Pagar Fatura
+                        </button>
+                        <button onClick={() => config.reverterFatura(cId)} disabled={item.pago <= 0} className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1 ${item.pago > 0 ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-400 cursor-pointer border border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-70'}`}>
+                          ↩️ Reverter
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* ----------------------------------------------------------------------------------- */}
+          {/* RENDERIZAÇÃO: MODAL DO CALENDÁRIO DA GARAGEM */}
+          {/* ----------------------------------------------------------------------------------- */}
+          {type === 'calendario' && (
+            <div className="space-y-4">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
+                <p className="text-sm text-indigo-800 dark:text-indigo-300 text-center font-medium leading-tight">
+                  Selecione os dias em que você <strong>NÃO</strong> utilizou a moto para trabalhar. Isso abaterá a meta de gasolina automaticamente.
+                </p>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center mb-1">
+                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => <div key={i} className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1.5">
+                {Array.from({ length: new Date(config.ano, config.mes, 0).getDate() }).map((_, i) => {
+                  const dia = i + 1;
+                  const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                  const isMarcado = config.diasMarcados?.includes(dataStr);
+
+                  // Verifica qual é o dia da semana no mês exibido
+                  const diaSemana = new Date(config.ano, config.mes - 1, dia).getDay();
+                  // Dias de trabalho na moto: Segunda(1), Quarta(3), Sexta(5)
+                  const isDiaTrabalho = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
+
+                  return (
+                    <button
+                      key={dia}
+                      onClick={() => config.onToggle(dataStr)}
+                      className={`p-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${isMarcado ? 'bg-rose-500 text-white shadow-inner scale-95 border border-rose-600' : isDiaTrabalho ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/50' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 border border-transparent'}`}
+                    >
+                      {dia}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <button onClick={onCancel} className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer shadow-md w-full">Concluir Ajustes</button>
+              </div>
+            </div>
+          )}
+
+          {/* ----------------------------------------------------------------------------------- */}
+          {/* RENDERIZAÇÃO: MODAL DE DETALHES DE TRANSAÇÃO */}
+          {/* ----------------------------------------------------------------------------------- */}
           {type === 'detalhes' && config.transacao && (
             <div className="space-y-6">
               <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
@@ -239,7 +322,6 @@ export function Modal({ config, onClose }) {
                 )}
               </div>
 
-              {/* CORREÇÃO DO BUG: Retirado o onClose() das chamadas que abrem novos Modais */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
                   🔄 {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago'}
@@ -259,6 +341,7 @@ export function Modal({ config, onClose }) {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
