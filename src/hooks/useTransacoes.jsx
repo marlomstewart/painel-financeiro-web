@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 
 /**
  * @file src/hooks/useTransacoes.jsx
- * @description Hook customizado para gerir o CRUD (Create, Read, Update, Delete) de transações financeiras.
- * Implementa lógicas de interceção para a Garagem, cálculo de parcelamentos e inteligência de faturas de cartão.
+ * @description Hook customizado para gerir o CRUD de transações financeiras.
+ * Implementa inteligência de faturas com fallback de segurança para o melhor dia de compra.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
@@ -63,7 +63,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             }
         }
 
-        // CÁLCULO DE DATAS E FATURA: Identifica a competência inicial respeitando o "Melhor Dia" do Cartão
+        // CÁLCULO DE DATAS E FATURA: Identifica a competência inicial respeitando o "Melhor Dia"
         const [anoStr, mesStr, diaStr] = dataCompraStr.split('-');
         const diaCompra = parseInt(diaStr, 10);
         let mesRefInicial = parseInt(mesStr, 10);
@@ -71,23 +71,28 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
         if (formaPagamento.startsWith('credito_')) {
             const cartaoId = formaPagamento.split('_')[1];
-            // Verifica as configurações do cartão selecionado
             const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
 
+            // FALLBACK SEGURO: Se o banco trouxer o dia vazio, mas for o Nubank, blindamos no dia 8!
+            let diaFechamento = 8;
+
             if (cartao && cartao.dia_fechamento) {
-                const diaFechamento = parseInt(cartao.dia_fechamento, 10);
-                // Se a compra foi feita no dia de fechamento ou depois, entra apenas na próxima fatura
-                if (diaCompra >= diaFechamento) {
-                    mesRefInicial += 1;
-                    if (mesRefInicial > 12) {
-                        mesRefInicial = 1;
-                        anoRefInicial += 1;
-                    }
+                diaFechamento = parseInt(cartao.dia_fechamento, 10);
+            } else if (cartao && cartao.nome?.toLowerCase().includes('nubank')) {
+                diaFechamento = 8; // Força o teto correto do Nubank cadastrado
+            }
+
+            // Se a compra foi feita no dia de fechamento ou após, empurra para a próxima fatura
+            if (diaCompra >= diaFechamento) {
+                mesRefInicial += 1;
+                if (mesRefInicial > 12) {
+                    mesRefInicial = 1;
+                    anoRefInicial += 1;
                 }
             }
         }
 
-        // CÁLCULO DE VALOR: Divide o valor total pelo número de parcelas (arredondando para 2 casas decimais)
+        // CÁLCULO DE VALOR: Divide o valor total pelo número de parcelas
         const valorParcelaCalculado = Math.round((parseFloat(valorBruto) / numParcelas) * 100) / 100;
 
         const objBase = {
@@ -106,12 +111,10 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
         let sucesso = true;
 
-        // Geração das parcelas com a matemática de datas e valores corretos
         for (let i = 0; i < numParcelas; i++) {
             let mesRef = mesRefInicial + i;
             let anoRef = anoRefInicial;
 
-            // Corrige viradas de ano (ex: Mês 13 vira Janeiro do ano seguinte)
             while (mesRef > 12) {
                 mesRef -= 12;
                 anoRef += 1;
@@ -120,7 +123,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             const parcelaObj = {
                 ...objBase,
                 id: `${objBase.id}_${i}`,
-                valorParcela: valorParcelaCalculado, // Valor já dividido
+                valorParcela: valorParcelaCalculado,
                 mesReferencia: mesRef,
                 anoReferencia: anoRef,
                 descricao: numParcelas > 1 ? `${objBase.descricao} (${i + 1}/${numParcelas})` : objBase.descricao
@@ -132,36 +135,27 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
         if (sucesso) {
             await carregarTransacoes();
-
-            // Força a Garagem a atualizar os dados para os Alertas no Dashboard
             if (veiculo_id && garagem && garagem.carregarDadosGaragem) {
                 await garagem.carregarDadosGaragem();
             }
-
-            modal.alert('Lançamento registado com sucesso!', '✅ Sucesso');
+            modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
             return true;
         } else {
-            modal.alert('Erro ao registar lançamento.', '❌ Erro');
+            modal.alert('Erro ao registrar lançamento.', '❌ Erro');
             return false;
         }
     };
 
     /**
      * Alterna o estado de uma transação entre pendente e liquidado.
-     * @param {string} id - O UUID da transação.
-     * @param {string} statusAtual - Status presente.
-     * @param {number} valor - Valor associado.
-     * @param {string} dataCompra - Data de competência.
      */
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
-
         try {
             const res = await fetch(`${API}/transacoes/${id}/status`, {
                 method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus })
             });
             const data = await res.json();
-
             if (res.ok) {
                 setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
             } else {
@@ -172,30 +166,26 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
     /**
      * Exibe o modal com o formulário completo para edição detalhada da transação.
-     * @param {Object} transacao - Objeto completo da transação selecionada.
      */
     const editarValor = async (transacao) => {
         const dadosEditados = await modal.prompt('', '', '✏️ Edição de Lançamento', { inputType: 'editar_transacao', transacao, categorias, cartoes });
         if (!dadosEditados) return;
-
         try {
             const res = await fetch(`${API}/transacoes/${transacao.id}`, {
                 method: 'PUT', headers: getHeaders(), body: JSON.stringify(dadosEditados)
             });
-
             if (res.ok) {
                 await carregarTransacoes();
                 modal.alert('Lançamento atualizado com segurança!', '✅ Sucesso');
             } else {
                 const errData = await res.json();
-                modal.alert(`Servidor rejeitou a atualização.\n\nMotivo: ${errData.error}`, '❌ Erro de Sistema');
+                modal.alert(`Servidor reuniu a atualização.\n\nMotivo: ${errData.error}`, '❌ Erro de Sistema');
             }
         } catch (err) { modal.alert(`Erro de conexão: ${err.message}`, '❌ Erro de Rede'); }
     };
 
     /**
-     * Interpela o utilizador para segurança e exclui permanentemente o registo.
-     * @param {Object} t - A transação a eliminar.
+     * Remove permanentemente uma transação após validação de segurança.
      */
     const deletarTransacao = async (t) => {
         const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?`, '🗑️ Excluir');
@@ -207,9 +197,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Aplica uma determinada ação (pagar, pendente, excluir) sobre múltiplas transações.
-     * @param {Array<string>} idsSelecionados - Matriz com os identificadores.
-     * @param {string} acao - Ação a desencadear.
+     * Aplica uma ação em lote sobre múltiplas transações.
      */
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
@@ -221,14 +209,8 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         } catch (err) { modal.alert('Erro na ação.', '❌ Erro'); }
     };
 
-    /** Placeholder para o módulo de anexo de comprovativos. */
     const anexarComprovante = async (t) => { modal.alert("Funcionalidade de anexo está integrada noutro módulo.", "Aviso"); };
-
-    /** Exibe o comprovativo anexado num novo separador. */
-    const verComprovante = (t) => {
-        if (t.comprovante_url) window.open(t.comprovante_url, '_blank');
-        else modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo');
-    };
+    const verComprovante = (t) => { if (t.comprovante_url) window.open(t.comprovante_url, '_blank'); else modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo'); };
 
     return { addTransacao, alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
 }
