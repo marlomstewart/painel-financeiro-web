@@ -3,11 +3,10 @@ import { useCallback } from 'react';
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 /**
- * Hook Customizado para Gestão de Faturas de Cartão de Crédito.
- * * Desacopla do componente principal a lógica de agrupamento financeiro,
+ * @file src/hooks/useCartoesFaturas.jsx
+ * @description Hook Customizado para Gestão de Faturas de Cartão de Crédito.
+ * Desacopla do componente principal a lógica de agrupamento financeiro,
  * pagamento em lote (Bulk Update) e reversão de status das compras feitas no crédito.
- * * @param {Object} params - Dependências e estados injetados a partir do App.jsx.
- * @returns {Object} Funções de manipulação das faturas a serem passadas para a UI.
  */
 export function useCartoesFaturas({
     transacoes,
@@ -25,18 +24,24 @@ export function useCartoesFaturas({
      * Funciona através de Promise.all para requisições assíncronas paralelas.
      */
     const pagarFaturaCartao = useCallback(async (cartaoId) => {
-        const cartao = cartoes.find(c => c.id === cartaoId);
+        // CORREÇÃO: Comparação convertida para String para evitar falsos negativos (ex: 123 === "123")
+        const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
         if (!cartao) return;
 
-        const confirmacao = await modal.confirm(`Deseja marcar TODOS os lançamentos pendentes no cartão "${cartao.nome}" como PAGO?`, '💳 Pagar Fatura');
+        const confirmacao = await modal.confirm(`Deseja marcar TODOS os lançamentos pendentes na fatura do "${cartao.nome}" como PAGO?`, '💳 Pagar Fatura');
         if (!confirmacao) return;
 
-        const pendentes = transacoes.filter(t => t.status === 'pendente' && t.formaPagamento === `credito_${cartaoId}` && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
+        const pendentes = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
 
         try {
-            const promessas = pendentes.map(t => fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago', valorParcela: t.valorParcela, dataCompra: t.dataCompra }) }));
+            // CORREÇÃO: Endpoint apontado para '/status' para que o backend grave a data do pagamento
+            const promessas = pendentes.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago' }) }));
             await Promise.all(promessas);
-            setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago' } : t));
+
+            const hojeISO = new Date().toISOString();
+            setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago', data_pagamento: hojeISO } : t));
+
+            modal.close();
             modal.alert('Fatura marcada como paga com sucesso!', '✅ Concluído');
         } catch (err) { modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro'); }
     }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes]);
@@ -45,18 +50,21 @@ export function useCartoesFaturas({
      * Reverte todas as transações pagas de um cartão específico no mês atual de volta para "pendente".
      */
     const reverterFaturaCartao = useCallback(async (cartaoId) => {
-        const cartao = cartoes.find(c => c.id === cartaoId);
+        const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
         if (!cartao) return;
 
-        const confirmacao = await modal.confirm(`Deseja REVERTER os pagamentos do cartão "${cartao.nome}" para PENDENTE?`, '↩️ Reverter Fatura');
+        const confirmacao = await modal.confirm(`Deseja REVERTER os pagamentos da fatura do "${cartao.nome}" para PENDENTE?`, '↩️ Reverter Fatura');
         if (!confirmacao) return;
 
-        const pagos = transacoes.filter(t => t.status === 'pago' && t.formaPagamento === `credito_${cartaoId}` && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
+        const pagos = transacoes.filter(t => t.status === 'pago' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
 
         try {
-            const promessas = pagos.map(t => fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente', valorParcela: t.valorParcela, dataCompra: t.dataCompra }) }));
+            const promessas = pagos.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente' }) }));
             await Promise.all(promessas);
-            setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente' } : t));
+
+            setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
+
+            modal.close();
             modal.alert('Fatura revertida com sucesso!', '✅ Concluído');
         } catch (err) { modal.alert('Erro na reversão.', '❌ Erro'); }
     }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes]);
@@ -70,20 +78,31 @@ export function useCartoesFaturas({
         const cartaoIds = {};
 
         transacoesMes.forEach(t => {
-            if (t.formaPagamento && t.formaPagamento.startsWith('credito_')) {
-                const cartaoId = t.formaPagamento.split('_')[1];
-                const cartao = cartoes.find(c => c.id === cartaoId);
-                const nome = cartao ? cartao.nome : 'Cartão Desconhecido';
-                if (cartao) cartaoIds[nome] = cartao.id;
+            if (t.formaPagamento && String(t.formaPagamento).startsWith('credito_')) {
+                const cartaoId = String(t.formaPagamento).split('_')[1];
+
+                // CORREÇÃO MESTRA: Buscar sempre utilizando String para impedir bloqueio de Modal
+                const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
+                const nome = cartao ? cartao.nome : 'Cartão Excluído / Desconhecido';
+
+                // Salvar forçadamente o ID para os botões de ação serem desenhados corretamente
+                cartaoIds[nome] = cartao ? cartao.id : cartaoId;
 
                 if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
-                porCartao[nome].total += Number(t.valorParcela);
-                if (t.status === 'pago') porCartao[nome].pago += Number(t.valorParcela);
-                else porCartao[nome].pendente += Number(t.valorParcela);
+
+                const valorAtual = Number(t.valorParcela) || 0;
+                porCartao[nome].total += valorAtual;
+
+                if (t.status === 'pago') {
+                    porCartao[nome].pago += valorAtual;
+                } else {
+                    porCartao[nome].pendente += valorAtual;
+                }
             }
         });
 
         const itens = Object.entries(porCartao).map(([nome, v]) => ({ nome, ...v }));
+
         modal.setConfig({
             type: 'faturas',
             title: `💳 Gastos no Crédito — ${nomesMeses[dataVis.mes - 1]} ${dataVis.ano}`,
