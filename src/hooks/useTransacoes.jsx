@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 /**
  * @file src/hooks/useTransacoes.jsx
  * @description Hook customizado para gerir o CRUD de transações financeiras.
- * Implementa inteligência de faturas sincronizada com o 'melhorDia' dos cartões.
+ * Implementa inteligência de faturas, exclusão inteligente de parcelamentos e integração com a Garagem.
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
@@ -73,17 +73,14 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             const cartaoId = formaPagamento.split('_')[1];
             const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
 
-            // FALLBACK SEGURO
             let diaFechamento = 31;
 
-            // CORREÇÃO AQUI: Lendo a propriedade correta (melhorDia)[cite: 7]
             if (cartao && cartao.melhorDia) {
                 diaFechamento = parseInt(cartao.melhorDia, 10);
             } else if (cartao && cartao.nome?.toLowerCase().includes('nubank')) {
-                diaFechamento = 8; // Força teto de segurança se der falha de leitura
+                diaFechamento = 8;
             }
 
-            // Se a compra foi feita no dia de fechamento ou após, empurra para a próxima fatura
             if (diaCompra >= diaFechamento) {
                 mesRefInicial += 1;
                 if (mesRefInicial > 12) {
@@ -186,19 +183,67 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Remove permanentemente uma transação após validação de segurança.
+     * Motor de Exclusão Inteligente. Verifica se a transação faz parte de um parcelamento
+     * e oferece opções de exclusão em massa baseada na cronologia das parcelas.
+     * @param {Object} t - Transação a excluir.
      */
     const deletarTransacao = async (t) => {
-        const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?`, '🗑️ Excluir');
-        if (!ok) return;
+        // Identifica se a transação tem o padrão de ID parcelado (timestamp_indice)
+        const isParcelado = t.id && String(t.id).includes('_');
+        let idsParaDeletar = [t.id];
+
+        if (isParcelado) {
+            const baseId = String(t.id).split('_')[0];
+            const currentIndex = parseInt(String(t.id).split('_')[1], 10);
+
+            const acao = await modal.options(
+                `Atenção: O lançamento "${t.descricao}" faz parte de um parcelamento. O que deseja fazer?`,
+                [
+                    { label: '🗑️ Excluir APENAS esta parcela', value: 'unica' },
+                    { label: '⏭️ Excluir esta e as PRÓXIMAS', value: 'futuras' },
+                    { label: '⚠️ Excluir TODAS as parcelas', value: 'todas' }
+                ],
+                'Exclusão de Parcelamento'
+            );
+
+            if (!acao) return; // O utilizador fechou a janela ou cancelou
+
+            if (acao === 'todas') {
+                idsParaDeletar = transacoes.filter(item => String(item.id).startsWith(baseId)).map(item => item.id);
+            } else if (acao === 'futuras') {
+                idsParaDeletar = transacoes.filter(item => {
+                    if (!String(item.id).startsWith(baseId)) return false;
+                    const idx = parseInt(String(item.id).split('_')[1], 10);
+                    return idx >= currentIndex;
+                }).map(item => item.id);
+            }
+        } else {
+            // Exclusão padrão para transações de parcela única
+            const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?`, '🗑️ Excluir');
+            if (!ok) return;
+        }
+
         try {
-            const res = await fetch(`${API}/transacoes/${t.id}`, { method: 'DELETE', headers: getHeaders() });
-            if (res.ok) setTransacoes(prev => prev.filter(item => item.id !== t.id));
-        } catch (err) { modal.alert('Erro ao deletar.', '❌ Erro'); }
+            // Executa a exclusão de todos os IDs levantados utilizando Promise.all para máxima compatibilidade com a API atual
+            const promessas = idsParaDeletar.map(id =>
+                fetch(`${API}/transacoes/${id}`, { method: 'DELETE', headers: getHeaders() })
+            );
+
+            await Promise.all(promessas);
+
+            // Limpa o estado local
+            setTransacoes(prev => prev.filter(item => !idsParaDeletar.includes(item.id)));
+
+            if (idsParaDeletar.length > 1) {
+                modal.alert(`${idsParaDeletar.length} parcelas foram excluídas com sucesso!`, '✅ Excluído');
+            }
+        } catch (err) {
+            modal.alert('Falha de rede ao tentar excluir lançamentos.', '❌ Erro');
+        }
     };
 
     /**
-     * Aplica uma ação em lote sobre múltiplas transações.
+     * Aplica uma ação em lote sobre múltiplas transações via caixa de seleção.
      */
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
