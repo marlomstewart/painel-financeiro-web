@@ -12,7 +12,7 @@ import { Cartoes } from './components/Cartoes';
 import { MetasCategorias } from './components/MetasCategorias';
 import { ContasFixas } from './components/ContasFixas';
 import { Configuracoes } from './components/Configuracoes';
-import { Dividas } from './components/Dividas'; // 🔥 IMPORT DA TELA NOVA
+import { Dividas } from './components/Dividas';
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -23,8 +23,6 @@ import { useDashboard } from './hooks/useDashboard';
 
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
-import { useTheme } from './hooks/useTheme';
-import { ThemeToggle } from './components/ThemeToggle';
 import { DashboardSkeleton } from './components/Skeleton';
 
 const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
@@ -45,7 +43,6 @@ function useModal() {
 function App() {
   const modal = useModal();
   const { toast, showToast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [carregouAPI, setCarregouAPI] = useState(false);
 
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
@@ -61,6 +58,7 @@ function App() {
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
 
+  // Motor Global de Inicialização do Modo Escuro (Sem botão flutuante)
   useEffect(() => {
     const applyTheme = () => {
       const tema = localStorage.getItem('theme') || 'sistema';
@@ -84,7 +82,6 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // 🔥 NOVIDADE: Adicionado fetch(`${API}/dividas`) na carga inicial
   useEffect(() => {
     if (!auth.token) return;
     const headers = auth.getHeaders();
@@ -101,9 +98,9 @@ function App() {
     carregar();
   }, [auth.token]);
 
-  if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
-  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
-  if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /><ThemeToggle theme={theme} toggleTheme={toggleTheme} /></>;
+  if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /></>;
+  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /></>;
+  if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /></>;
 
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
@@ -112,12 +109,10 @@ function App() {
 
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
-    // 🔥 NOVIDADE: A rota de Dívidas agora renderiza o arquivo Dividas.jsx isoladamente
     if (telaAtiva === 'dividas') {
       return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
     }
 
-    // A rota contas_fixas agora atende APENAS contas_fixas e rendas_fixas
     if (['contas_fixas', 'rendas_fixas'].includes(telaAtiva)) {
       return <ContasFixas modo={telaAtiva} contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     }
@@ -185,7 +180,6 @@ function App() {
       </main>
       <Modal config={modal.config} onClose={modal.close} />
       <Toast toast={toast} />
-      <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
     </div>
   );
 }
