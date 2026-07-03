@@ -23,7 +23,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
     return (
         <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
             <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
                 <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📉 Dívidas e Financiamentos</h2>
@@ -33,7 +32,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* ================= FORMULÁRIO DE CADASTRO ================= */}
                 <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit sticky top-32">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Registrar Dívida</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -44,24 +42,30 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Total (Opcional)</label>
-                                <input name="valor_total" type="number" step="any" min="0" className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 15000.00" />
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor do Empréstimo (R$)</label>
+                                <input name="valor_total" type="number" step="any" min="0" className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10000.00" title="O valor que você pegou (Opcional)" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Parcela</label>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Parcela (R$)</label>
                                 <input name="valor_parcela" type="number" step="any" min="0.01" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 598.61" />
                             </div>
                         </div>
 
+                        {/* 🔥 NOVIDADE: Entradas duplas de controle do tempo */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Qtd. Parcelas</label>
+                                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Parcelas Totais</label>
                                 <input name="qtd_parcelas" type="number" min="1" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 48" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Vencimento</label>
-                                <input name="dia_vencimento" type="number" min="1" max="31" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10" />
+                                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Parcelas Restantes</label>
+                                <input name="parcelas_restantes" type="number" min="1" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 48" />
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia de Vencimento Mensal</label>
+                            <input name="dia_vencimento" type="number" min="1" max="31" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10" />
                         </div>
 
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -85,11 +89,8 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                     </form>
                 </div>
 
-                {/* ================= GRELHA DE DÍVIDAS ATIVAS ================= */}
                 <div className="lg:col-span-2 space-y-6">
-
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Contratos em Andamento</h3>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {dividas.length === 0 ? (
                             <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
@@ -97,9 +98,11 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             </div>
                         ) : (
                             dividas.map(d => {
-                                // MOTOR DE CÁLCULO: Varrer o Extrato
-                                // Pega todas as parcelas dessa dívida que já constam como 'pago'
-                                const parcelasPagas = transacoes.filter(t => t.nomeContaFixa === d.descricao && t.status === 'pago').length;
+                                // 🔥 MATEMÁTICA AVANÇADA: Soma o histórico antigo com o novo!
+                                const pagasIniciais = Number(d.parcelas_pagas_iniciais || 0);
+                                const parcelasPagasNoExtrato = transacoes.filter(t => t.nomeContaFixa === d.descricao && t.status === 'pago').length;
+                                const parcelasPagas = pagasIniciais + parcelasPagasNoExtrato;
+
                                 const qtdTotal = Number(d.qtd_parcelas);
                                 const parcelasRestantes = qtdTotal - parcelasPagas;
                                 const pctProgresso = qtdTotal > 0 ? (parcelasPagas / qtdTotal) * 100 : 0;
@@ -126,6 +129,7 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                                             <div>
                                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mb-0.5">Valor Parcela</p>
                                                 <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatarMoeda(d.valor_parcela)}</p>
+                                                {d.valor_total > 0 && <p className="text-[9px] text-slate-400 mt-0.5">Total Recebido: {formatarMoeda(d.valor_total)}</p>}
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mb-0.5">Vencimento</p>
@@ -156,18 +160,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             })
                         )}
                     </div>
-
-                    {/* DICA DE CARTÕES (AUTOMÁTICO) */}
-                    <div className="mt-8 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 p-4 rounded-xl flex items-start gap-3">
-                        <span className="text-xl">💳</span>
-                        <div>
-                            <h4 className="text-sm font-bold text-blue-800 dark:text-blue-400">Dívidas Automáticas de Cartão</h4>
-                            <p className="text-xs text-blue-600 dark:text-blue-500 mt-1 leading-relaxed">
-                                Qualquer compra inserida na aba de <strong>Novo Lançamento</strong> utilizando Cartão de Crédito e parcelada em mais de 10x é controlada automaticamente na sua aba de Cartões de Crédito. O limite é atualizado em tempo real!
-                            </p>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>

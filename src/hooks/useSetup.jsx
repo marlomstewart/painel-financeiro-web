@@ -8,7 +8,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const [metasRenda, setMetasRenda] = useState([]);
     const [contasFixas, setContasFixas] = useState([]);
     const [rendasFixas, setRendasFixas] = useState([]);
-    const [dividas, setDividas] = useState([]); // 🔥 NOVIDADE
+    const [dividas, setDividas] = useState([]);
     const [gerandoMes, setGerandoMes] = useState(false);
 
     const processarSubmitComLoading = useCallback(async (e, acaoData) => {
@@ -17,21 +17,9 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         const btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
         const originalText = btn ? btn.innerHTML : '';
 
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-70', 'cursor-wait');
-            btn.innerHTML = `${loadingIcon} Salvando...`;
-        }
-
-        try { await acaoData(new FormData(form)); }
-        catch (err) { console.error("Erro no processamento:", err); }
-        finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70', 'cursor-wait');
-                btn.innerHTML = originalText;
-            }
-        }
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Salvando...`; }
+        try { await acaoData(new FormData(form)); } catch (err) { console.error("Erro no processamento:", err); }
+        finally { if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; } }
     }, []);
 
     const salvarConfig = useCallback(async (rota, dados, setState, stateAtual) => {
@@ -45,14 +33,19 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); }), [processarSubmitComLoading, salvarConfig, contasFixas]);
     const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
 
-    // 🔥 NOVIDADE: Adicionar Dívida
+    // 🔥 NOVIDADE: A Matemática da "Importação"
     const addDivida = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
+        const totais = Number(fd.get('qtd_parcelas'));
+        const restantes = Number(fd.get('parcelas_restantes'));
+        const pagasIniciais = totais - restantes; // Ex: 15 totais - 5 restantes = 10 já foram pagas no passado
+
         await salvarConfig('dividas', {
             id: Date.now().toString(),
             descricao: fd.get('descricao'),
             valor_total: Number(fd.get('valor_total')),
             valor_parcela: Number(fd.get('valor_parcela')),
-            qtd_parcelas: Number(fd.get('qtd_parcelas')),
+            qtd_parcelas: totais,
+            parcelas_pagas_iniciais: pagasIniciais, // <- Salva no banco para calibrar a barra!
             dia_vencimento: Number(fd.get('dia_vencimento')),
             para_terceiros: fd.get('para_terceiros') === 'on' ? 1 : 0,
             nome_terceiro: fd.get('nome_terceiro') || ''
@@ -77,13 +70,10 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         if (!id) {
             const mapNomes = { categoria: 'todas as Metas e Categorias', contaFixa: 'todas as Contas Fixas', cartao: 'todos os Cartões' };
             const nomeAmigavel = mapNomes[banco];
-
             const confirmacao = await modal.confirm(`Tem a certeza absoluta que deseja EXCLUIR ${nomeAmigavel}? Esta ação é destrutiva e não pode ser desfeita.`, '⚠️ Confirmação Destrutiva', { confirmColor: 'bg-red-600 hover:bg-red-700', confirmLabel: 'Sim, Excluir' });
             if (!confirmacao) return;
-
             const senha = await modal.prompt('Por motivos de segurança, digite a sua senha de acesso para confirmar a exclusão:', '', '🔒 Validação de Segurança', { inputType: 'password', confirmLabel: 'Validar e Excluir' });
             if (!senha) return;
-
             try {
                 const resVal = await fetch(`${API}/validar-senha`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ senha }) });
                 if (!resVal.ok) { await modal.alert('Senha incorreta. Ação abortada.', '❌ Acesso Negado'); return; }
@@ -126,7 +116,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         } catch (err) { await modal.alert('Erro ao gerar lançamentos.', '❌ Erro'); } finally { setGerandoMes(false); }
     }, [API, getHeaders, modal, setTransacoes]);
 
-    const exportarCSV = useCallback(() => { /* Igual ao original */ }, [transacoes, modal]);
+    const exportarCSV = useCallback(() => { /* ... */ }, [transacoes, modal]);
 
     return {
         cartoes, setCartoes, categorias, setCategorias, metasRenda, setMetasRenda,
