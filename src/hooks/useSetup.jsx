@@ -2,12 +2,6 @@ import { useState, useCallback } from 'react';
 
 const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
-/**
- * Hook Customizado: useSetup
- * Abstrai o CRUD das configurações com bloqueio de duplo clique via Loader Visual.
- * Gere a injeção e gravação de Metas de Renda, Exportação CSV e a
- * validação de segurança reforçada para a Zona de Perigo.
- */
 export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) {
     const [cartoes, setCartoes] = useState([]);
     const [categorias, setCategorias] = useState([]);
@@ -46,7 +40,17 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         if (res.ok) setState([...stateAtual, dados]);
     }, [API, getHeaders]);
 
-    const addCartao = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); }), [processarSubmitComLoading, salvarConfig, cartoes]);
+    // 🔥 CORREÇÃO AQUI: Adicionado a extração e envio do 'limite'
+    const addCartao = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
+        await salvarConfig('cartoes', {
+            id: Date.now().toString(),
+            nome: fd.get('nome'),
+            limite: Number(fd.get('limite')), // ESTAVA FALTANDO ISTO
+            melhorDia: Number(fd.get('melhorDia')),
+            vencimento: Number(fd.get('vencimento'))
+        }, setCartoes, cartoes);
+    }), [processarSubmitComLoading, salvarConfig, cartoes]);
+
     const addCategoria = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); }), [processarSubmitComLoading, salvarConfig, categorias]);
 
     const addMetaRenda = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
@@ -81,13 +85,8 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         }
     }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas]);
 
-    /**
-     * Remove um registro individual ou limpa conjuntos em massa.
-     * ATUALIZAÇÃO: Exclusões em massa agora exigem confirmação rigorosa e validação de senha.
-     */
     const removerSetup = useCallback(async (banco, id = null) => {
         if (!id) {
-            // Bloco de Exclusão em Massa (Zona de Perigo)
             const mapNomes = {
                 categoria: 'todas as Metas e Categorias',
                 contaFixa: 'todas as Contas Fixas',
@@ -95,7 +94,6 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             };
             const nomeAmigavel = mapNomes[banco];
 
-            // 1. Confirmação de intenção destrutiva
             const confirmacao = await modal.confirm(
                 `Tem a certeza absoluta que deseja EXCLUIR ${nomeAmigavel}? Esta ação é destrutiva e não pode ser desfeita.`,
                 '⚠️ Confirmação Destrutiva',
@@ -103,7 +101,6 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             );
             if (!confirmacao) return;
 
-            // 2. Validação da credencial
             const senha = await modal.prompt(
                 'Por motivos de segurança, digite a sua senha de acesso para confirmar a exclusão:',
                 '',
@@ -130,7 +127,6 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
                 return;
             }
 
-            // 3. Execução efetiva da limpeza após a senha ser validada
             let rotaLimpar = banco;
             if (banco === 'categoria') rotaLimpar = 'categorias';
             if (banco === 'contaFixa') rotaLimpar = 'contas-fixas';
@@ -151,7 +147,6 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             return;
         }
 
-        // Bloco de Exclusão Unitária
         const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas' };
         await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'DELETE', headers: getHeaders() });
         const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas] };
