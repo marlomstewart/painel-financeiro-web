@@ -179,7 +179,7 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2 justify-center">
                             <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} title={u.is_admin === 1 ? 'Rebaixar para Visualizador' : 'Promover a Administrador'} className="text-[11px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer transition-colors shadow-sm">
-                              {u.is_admin === 1 ? '↓ Rebaxar' : '↑ Promover'}
+                              {u.is_admin === 1 ? '↓ Despromover' : '↑ Promover'}
                             </button>
                             <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} title="Forçar a senha a voltar para 'admin123'" className="text-[11px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer transition-colors shadow-sm">
                               🔑 Reset
