@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }) {
+export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, removerSetup, modal }) {
     const [nomeCartao, setNomeCartao] = useState('');
     const [limite, setLimite] = useState('');
     const [diaFechamento, setDiaFechamento] = useState('');
@@ -64,11 +64,12 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
             <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
                 <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">💳 Meus Cartões de Crédito</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Gerencie seus limites e dias de fechamento para faturas inteligentes.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Gerencie seus limites, uso em tempo real e dias de faturamento.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* ================= FORMULÁRIO DE CADASTRO ================= */}
                 <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Novo Cartão</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,31 +112,74 @@ export function Cartoes({ cartoes, addCartao, editarSetup, removerSetup, modal }
                     </form>
                 </div>
 
+                {/* ================= GRELHA DE CARTÕES INTELIGENTES ================= */}
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-fit">
                     {cartoes.length === 0 ? (
                         <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhum cartão cadastrado.</div>
                     ) : (
-                        cartoes.map(c => (
-                            <div key={c.id} className="bg-gradient-to-tr from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
-                                <div className="flex justify-between items-start mb-6 relative z-10">
-                                    <h4 className="text-lg font-black tracking-widest uppercase">{c.nome}</h4>
-                                    <div className="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleEditar(c)} className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="Editar">✏️</button>
-                                        <button onClick={() => handleExcluir(c.id)} className="text-slate-400 hover:text-rose-400 transition-colors cursor-pointer" title="Excluir">🗑️</button>
-                                        <span className="text-xl opacity-50 ml-1">💳</span>
+                        cartoes.map(c => {
+                            // MOTOR FINANCEIRO: Calcular o uso do limite do cartão
+                            const transacoesCartao = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${c.id}`);
+                            const limiteUtilizado = transacoesCartao.reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
+                            const limiteTotal = Number(c.limite || 0);
+                            const limiteRestante = limiteTotal - limiteUtilizado;
+
+                            // Matemática de Progressão
+                            let pctUtilizado = limiteTotal > 0 ? (limiteUtilizado / limiteTotal) * 100 : 0;
+                            const isEstourado = limiteRestante < 0;
+
+                            return (
+                                <div key={c.id} className="bg-gradient-to-tr from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden group">
+                                    {/* Efeito Visual de Cartão de Crédito Físico */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl pointer-events-none"></div>
+
+                                    {/* Cabeçalho do Cartão */}
+                                    <div className="flex justify-between items-start mb-6 relative z-10">
+                                        <h4 className="text-lg font-black tracking-widest uppercase">{c.nome}</h4>
+                                        <div className="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => handleEditar(c)} className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="Editar">✏️</button>
+                                            <button onClick={() => handleExcluir(c.id)} className="text-slate-400 hover:text-rose-400 transition-colors cursor-pointer" title="Excluir">🗑️</button>
+                                            <span className="text-xl opacity-50 ml-1">💳</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Métricas de Limite */}
+                                    <div className="mb-5 relative z-10 space-y-3">
+                                        <div className="flex justify-between items-end">
+                                            <div>
+                                                <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Limite Disponível</p>
+                                                <p className={`text-2xl font-black ${isEstourado ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                    {formatarMoeda(limiteRestante)}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Limite Total</p>
+                                                <p className="text-sm font-bold text-slate-300">{formatarMoeda(limiteTotal)}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Barra de Progresso Inteligente */}
+                                        <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                className={`h-1.5 rounded-full transition-all duration-1000 ${isEstourado ? 'bg-rose-500' : pctUtilizado > 80 ? 'bg-amber-500' : 'bg-blue-500'}`}
+                                                style={{ width: `${Math.min(pctUtilizado, 100)}%` }}
+                                            ></div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400">
+                                            <span>Utilizado: <strong className="text-slate-200">{formatarMoeda(limiteUtilizado)}</strong></span>
+                                            <span>{pctUtilizado.toFixed(1)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Rodapé (Datas) */}
+                                    <div className="flex justify-between text-[10px] text-slate-400 relative z-10 border-t border-slate-700/50 pt-3 uppercase tracking-wider">
+                                        <p>Fechamento: <strong className="text-white">Dia {c.melhorDia || '--'}</strong></p>
+                                        <p>Vencimento: <strong className="text-white">Dia {c.vencimento || '--'}</strong></p>
                                     </div>
                                 </div>
-                                <div className="mb-4 relative z-10">
-                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Limite Total</p>
-                                    <p className="text-xl font-bold text-emerald-400">{formatarMoeda(c.limite)}</p>
-                                </div>
-                                <div className="flex justify-between text-xs text-slate-400 relative z-10">
-                                    <p>Fecha dia <strong className="text-white">{c.melhorDia || '--'}</strong></p>
-                                    <p>Vence dia <strong className="text-white">{c.vencimento || '--'}</strong></p>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </div>

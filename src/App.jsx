@@ -22,6 +22,8 @@ import { useDashboard } from './hooks/useDashboard';
 
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
+import { useTheme } from './hooks/useTheme';
+import { ThemeToggle } from './components/ThemeToggle';
 import { DashboardSkeleton } from './components/Skeleton';
 
 const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
@@ -42,6 +44,7 @@ function useModal() {
 function App() {
   const modal = useModal();
   const { toast, showToast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const [carregouAPI, setCarregouAPI] = useState(false);
 
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
@@ -57,7 +60,6 @@ function App() {
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
 
-  // Motor Global de Inicialização do Modo Escuro
   useEffect(() => {
     const applyTheme = () => {
       const tema = localStorage.getItem('theme') || 'sistema';
@@ -104,7 +106,8 @@ function App() {
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
 
-    if (telaAtiva === 'cartoes') return <Cartoes cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    // 🔥 ATUALIZAÇÃO AQUI: Passando as `transacoes` globais para o componente de Cartões
+    if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
