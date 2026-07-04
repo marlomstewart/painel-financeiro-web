@@ -16,7 +16,6 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         const form = e.target;
         const btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
         const originalText = btn ? btn.innerHTML : '';
-
         if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Salvando...`; }
         try { await acaoData(new FormData(form)); } catch (err) { console.error("Erro no processamento:", err); }
         finally { if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; } }
@@ -33,24 +32,32 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); }), [processarSubmitComLoading, salvarConfig, contasFixas]);
     const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
 
-    // 🔥 NOVIDADE: A Matemática da "Importação"
+    // 🔥 INTELIGÊNCIA MATEMÁTICA: Ajuste das parcelas iniciais descontando o Extrato atual
+    const parseCurrency = (val) => { if (!val) return 0; return Number(String(val).replace(/\./g, '').replace(',', '.')); };
+
     const addDivida = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
         const totais = Number(fd.get('qtd_parcelas'));
         const restantes = Number(fd.get('parcelas_restantes'));
-        const pagasIniciais = totais - restantes; // Ex: 15 totais - 5 restantes = 10 já foram pagas no passado
+        const descricao = fd.get('descricao');
+
+        // Verifica se essa dívida (ex: Consórcio) já tem coisas pagas no Extrato, para não duplicar!
+        const pagasNoExtratoAtuais = transacoes.filter(t => String(t.nomeContaFixa).toLowerCase() === String(descricao).toLowerCase() && t.status === 'pago').length;
+
+        // A matemática cravada: O que eu já paguei antes de usar o sistema (Totais - Restantes) menos o que eu já paguei e registrei no sistema
+        const pagasIniciais = (totais - restantes) - pagasNoExtratoAtuais;
 
         await salvarConfig('dividas', {
             id: Date.now().toString(),
-            descricao: fd.get('descricao'),
-            valor_total: Number(fd.get('valor_total')),
-            valor_parcela: Number(fd.get('valor_parcela')),
+            descricao: descricao,
+            valor_total: parseCurrency(fd.get('valor_total')),
+            valor_parcela: parseCurrency(fd.get('valor_parcela')),
             qtd_parcelas: totais,
-            parcelas_pagas_iniciais: pagasIniciais, // <- Salva no banco para calibrar a barra!
+            parcelas_pagas_iniciais: pagasIniciais,
             dia_vencimento: Number(fd.get('dia_vencimento')),
             para_terceiros: fd.get('para_terceiros') === 'on' ? 1 : 0,
             nome_terceiro: fd.get('nome_terceiro') || ''
         }, setDividas, dividas);
-    }), [processarSubmitComLoading, salvarConfig, dividas]);
+    }), [processarSubmitComLoading, salvarConfig, dividas, transacoes]);
 
     const editarSetup = useCallback(async (banco, id, dadosAtualizados) => {
         const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas', dividas: 'dividas' };

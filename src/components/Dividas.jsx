@@ -3,11 +3,27 @@ import React, { useState } from 'react';
 export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal }) {
     const [paraTerceiros, setParaTerceiros] = useState(false);
 
+    // 🔥 ESTADOS PARA A MÁSCARA BANCÁRIA (R$)
+    const [valorDivida, setValorDivida] = useState('');
+    const [valorParcela, setValorParcela] = useState('');
+
+    const handleCurrency = (e, setter) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (!val) {
+            setter('');
+            return;
+        }
+        val = (parseInt(val, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        setter(val);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         await addDivida(e);
         e.target.reset();
         setParaTerceiros(false);
+        setValorDivida('');
+        setValorParcela('');
     };
 
     const handleExcluir = async (id) => {
@@ -37,14 +53,15 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             <input name="descricao" type="text" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Consórcio Moto, Empréstimo Nubank" />
                         </div>
 
+                        {/* 🔥 CAMPOS COM MÁSCARA BANCÁRIA DA DIREITA PRA ESQUERDA */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor do Empréstimo (R$)</label>
-                                <input name="valor_total" type="number" step="any" min="0" className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10000.00" title="O valor que você pegou (Opcional)" />
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Dívida (R$)</label>
+                                <input name="valor_total" type="text" value={valorDivida} onChange={(e) => handleCurrency(e, setValorDivida)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" title="Opcional" />
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Parcela (R$)</label>
-                                <input name="valor_parcela" type="number" step="any" min="0.01" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 598.61" />
+                                <input name="valor_parcela" type="text" value={valorParcela} onChange={(e) => handleCurrency(e, setValorParcela)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" />
                             </div>
                         </div>
 
@@ -95,7 +112,7 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                         ) : (
                             dividas.map(d => {
                                 const pagasIniciais = Number(d.parcelas_pagas_iniciais || 0);
-                                const parcelasPagasNoExtrato = transacoes.filter(t => t.nomeContaFixa === d.descricao && t.status === 'pago').length;
+                                const parcelasPagasNoExtrato = transacoes.filter(t => String(t.nomeContaFixa).toLowerCase() === String(d.descricao).toLowerCase() && t.status === 'pago').length;
                                 const parcelasPagas = pagasIniciais + parcelasPagasNoExtrato;
 
                                 const qtdTotal = Number(d.qtd_parcelas);
@@ -148,7 +165,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                                                 <p className="text-center text-[10px] text-slate-400 mt-2 font-medium">Faltam {parcelasRestantes} parcelas</p>
                                             )}
                                         </div>
-
                                     </div>
                                 );
                             })

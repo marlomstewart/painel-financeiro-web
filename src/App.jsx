@@ -58,7 +58,6 @@ function App() {
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
 
-  // Motor Global de Inicialização do Modo Escuro
   useEffect(() => {
     const applyTheme = () => {
       const tema = localStorage.getItem('theme') || 'sistema';
@@ -76,7 +75,7 @@ function App() {
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-        if (!localStorage.getItem('theme') || localStorage.getItem('theme') === 'sistema') applyTheme();
+      if (!localStorage.getItem('theme') || localStorage.getItem('theme') === 'sistema') applyTheme();
     };
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
@@ -104,52 +103,28 @@ function App() {
 
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
-
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-
-    if (telaAtiva === 'dividas') {
-        return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
-    }
+    if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
 
     if (['contas_fixas', 'rendas_fixas'].includes(telaAtiva)) {
       return <ContasFixas modo={telaAtiva} contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     }
 
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} />;
-
     if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
 
     if (['novo_lancamento', 'extrato', 'lancamentos'].includes(telaAtiva)) {
       return <Lancamentos
-        modo={telaAtiva}
-        categorias={dashboardManager.categoriasDinamicas}
-        cartoes={setup.cartoes}
-        addTransacao={transacoesManager.addTransacao}
-        filtroStatus={dashboardManager.filtroStatus}
-        setFiltroStatus={dashboardManager.setFiltroStatus}
-        buscaTexto={dashboardManager.buscaTexto}
-        setBuscaTexto={dashboardManager.setBuscaTexto}
-        mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados}
-        setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados}
-        filtrosAvancados={dashboardManager.filtrosAvancados}
-        setFiltrosAvancados={dashboardManager.setFiltrosAvancados}
-        mudarOrdenacao={dashboardManager.mudarOrdenacao}
-        ordenacao={dashboardManager.ordenacao}
-        dadosTabela={dashboardManager.dadosTabela}
-        alternarStatusTransacao={transacoesManager.alternarStatusTransacao}
-        editarValor={transacoesManager.editarValor}
-        deletarTransacao={transacoesManager.deletarTransacao}
-        executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa}
-        modal={modal}
-        nomeUsuario={auth.nomeUsuario}
-        anexarComprovante={transacoesManager.anexarComprovante}
-        verComprovante={transacoesManager.verComprovante}
-        dataVis={dataVis}
-        mesAnterior={dashboardManager.mesAnterior}
-        mesProximo={dashboardManager.mesProximo}
-        garagem={garagem}
+        modo={telaAtiva} categorias={dashboardManager.categoriasDinamicas} cartoes={setup.cartoes} addTransacao={transacoesManager.addTransacao}
+        filtroStatus={dashboardManager.filtroStatus} setFiltroStatus={dashboardManager.setFiltroStatus} buscaTexto={dashboardManager.buscaTexto}
+        setBuscaTexto={dashboardManager.setBuscaTexto} mostrarFiltrosAvancados={dashboardManager.mostrarFiltrosAvancados}
+        setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados}
+        setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao}
+        dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor}
+        deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal}
+        nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante}
+        dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} garagem={garagem}
       />;
     }
 
@@ -163,8 +138,32 @@ function App() {
       );
     }
 
-    // 🔥 ATUALIZAÇÃO AQUI: As propriedades transacoesGlobais e cartoes foram devidamente adicionadas!
-    return <Dashboard nomeUsuario={auth.nomeUsuario} transacoesGlobais={transacoes} cartoes={setup.cartoes} transacoesMes={transacoesMes} garagem={garagem} dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} />;
+    return <Dashboard
+      nomeUsuario={auth.nomeUsuario}
+      transacoesGlobais={transacoes}
+      transacoesMes={transacoesMes}
+      cartoes={setup.cartoes}
+      dividas={setup.dividas}
+      garagem={garagem}
+      dataVis={dataVis}
+      mesAnterior={dashboardManager.mesAnterior}
+      mesProximo={dashboardManager.mesProximo}
+      totRendaPaga={dashboardManager.totRendaPaga}
+      totGastoReal={dashboardManager.totGastoReal}
+      totInvestido={dashboardManager.totInvestido}
+      totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto}
+      saldoAtual={dashboardManager.saldoAtual}
+      previstoFimMes={dashboardManager.previstoFimMes}
+      somarSaldoAnterior={dashboardManager.somarSaldoAnterior}
+      setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior}
+      categorias={dashboardManager.categoriasDinamicas}
+      gCat={dashboardManager.gCat}
+      abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria}
+      pendenciasPassadas={dashboardManager.pendenciasPassadas}
+      abrirModalPendencias={dashboardManager.abrirModalPendencias}
+      abrirResumoCard={dashboardManager.abrirResumoCard}
+      verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao}
+    />;
   };
 
   return (
