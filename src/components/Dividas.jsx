@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 
 export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal }) {
     const [paraTerceiros, setParaTerceiros] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true);
         await addDivida(e);
         e.target.reset();
         setParaTerceiros(false);
-        setIsSubmitting(false);
     };
 
     const handleExcluir = async (id) => {
@@ -51,7 +48,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             </div>
                         </div>
 
-                        {/* 🔥 NOVIDADE: Entradas duplas de controle do tempo */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Parcelas Totais</label>
@@ -83,7 +79,7 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             )}
                         </div>
 
-                        <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 opacity-90 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2">
                             Registrar Contrato
                         </button>
                     </form>
@@ -98,7 +94,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             </div>
                         ) : (
                             dividas.map(d => {
-                                // 🔥 MATEMÁTICA AVANÇADA: Soma o histórico antigo com o novo!
                                 const pagasIniciais = Number(d.parcelas_pagas_iniciais || 0);
                                 const parcelasPagasNoExtrato = transacoes.filter(t => t.nomeContaFixa === d.descricao && t.status === 'pago').length;
                                 const parcelasPagas = pagasIniciais + parcelasPagasNoExtrato;
@@ -110,7 +105,6 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
 
                                 return (
                                     <div key={d.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm relative overflow-hidden group">
-
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h4 className="text-base font-black text-slate-800 dark:text-slate-100">{d.descricao}</h4>

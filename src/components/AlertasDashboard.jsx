@@ -9,32 +9,27 @@ export function AlertasDashboard({ transacoesMes = [], cartoes = [], dataVis }) 
 
     const alertas = [];
 
-    // 1. Varredura de TODOS os lançamentos pendentes do MÊS ATUAL (Rendas, Despesas, Dívidas)
     const pendentes = transacoesMes.filter(t => t.status === 'pendente');
 
     pendentes.forEach(t => {
-        // Tenta encontrar se esta transação foi paga com algum dos cartões cadastrados
         const cartaoVinculado = cartoes.find(c =>
             t.formaPagamento && (
                 String(t.formaPagamento).includes(c.id) ||
-                String(t.formaPagamento).toLowerCase() === c.nome.toLowerCase()
+                (c.nome && String(t.formaPagamento).toLowerCase() === String(c.nome).toLowerCase()) // 🔥 TRAVA DE SEGURANÇA AQUI
             )
         );
 
         let dataBaseParaVencimento = null;
 
         if (cartaoVinculado) {
-            // REGRA DO CARTÃO: Ignora a data da compra e usa o dia de Vencimento do Cartão no mês atual!
             dataBaseParaVencimento = new Date(dataVis.ano, dataVis.mes - 1, cartaoVinculado.vencimento);
         } else if (t.dataCompra) {
-            // REGRA NORMAL: Se for Pix, Boleto ou Dinheiro, usa a data de compra/vencimento original
             const [ano, mes, dia] = t.dataCompra.split('T')[0].split('-');
             dataBaseParaVencimento = new Date(ano, mes - 1, dia);
         }
 
         if (!dataBaseParaVencimento) return;
 
-        // Se a data de vencimento for menor ou igual a hoje + 7 dias, entra no alerta
         if (dataBaseParaVencimento <= limiteAlerta) {
             const diffTime = dataBaseParaVencimento - hoje;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -44,13 +39,12 @@ export function AlertasDashboard({ transacoesMes = [], cartoes = [], dataVis }) 
                 titulo: t.descricao || t.nomeContaFixa || 'Lançamento Pendente',
                 valor: t.valorParcela || t.valor || 0,
                 dias: diffDays,
-                tipo: t.tipo, // 'renda', 'despesa', 'terceiros', 'divida'
+                tipo: t.tipo,
                 cartaoNome: cartaoVinculado ? cartaoVinculado.nome : null
             });
         }
     });
 
-    // Ordenação: O que está mais atrasado/urgente aparece primeiro
     alertas.sort((a, b) => a.dias - b.dias);
 
     if (alertas.length === 0) return null;
@@ -67,7 +61,6 @@ export function AlertasDashboard({ transacoesMes = [], cartoes = [], dataVis }) 
                     const isRenda = alerta.tipo === 'renda';
                     let statusConfig = {};
 
-                    // MOTOR DE INTELIGÊNCIA SEMÂNTICA (Textos Dinâmicos)
                     if (alerta.dias < 0) {
                         statusConfig = {
                             texto: isRenda ? `Renda atrasada há ${Math.abs(alerta.dias)} dias` : `Atrasado há ${Math.abs(alerta.dias)} dias`,
@@ -94,19 +87,16 @@ export function AlertasDashboard({ transacoesMes = [], cartoes = [], dataVis }) 
                                 <h4 className="font-bold text-slate-800 dark:text-slate-100 line-clamp-1 flex-1" title={alerta.titulo}>{alerta.titulo}</h4>
 
                                 <div className="flex flex-col gap-1 items-end shrink-0">
-                                    {/* ETIQUETA DO CARTÃO */}
                                     {alerta.cartaoNome && (
                                         <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
                                             💳 {alerta.cartaoNome}
                                         </span>
                                     )}
-                                    {/* ETIQUETA DE TERCEIROS */}
                                     {alerta.tipo === 'terceiros' && (
                                         <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                                             🤝 Terceiros
                                         </span>
                                     )}
-                                    {/* ETIQUETA DE RENDA */}
                                     {isRenda && !alerta.cartaoNome && (
                                         <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                                             💰 Receita

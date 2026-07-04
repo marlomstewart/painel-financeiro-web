@@ -6,21 +6,14 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
     const [diaFechamento, setDiaFechamento] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true);
 
-        try {
-            await addCartao(e);
-            setNomeCartao('');
-            setLimite('');
-            setDiaFechamento('');
-            setDiaVencimento('');
-        } finally {
-            setIsSubmitting(false);
-        }
+        await addCartao(e);
+        setNomeCartao('');
+        setLimite('');
+        setDiaFechamento('');
+        setDiaVencimento('');
     };
 
     const handleEditar = async (c) => {
@@ -60,7 +53,6 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
     return (
         <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
             <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
                 <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">💳 Meus Cartões de Crédito</h2>
@@ -69,7 +61,6 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* ================= FORMULÁRIO DE CADASTRO ================= */}
                 <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Novo Cartão</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,46 +85,29 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
-                            className={`w-full text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 opacity-90 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2"
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Processando...
-                                </>
-                            ) : (
-                                'Cadastrar Cartão'
-                            )}
+                            Cadastrar Cartão
                         </button>
                     </form>
                 </div>
 
-                {/* ================= GRELHA DE CARTÕES INTELIGENTES ================= */}
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-fit">
                     {cartoes.length === 0 ? (
                         <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhum cartão cadastrado.</div>
                     ) : (
                         cartoes.map(c => {
-                            // MOTOR FINANCEIRO: Calcular o uso do limite do cartão
                             const transacoesCartao = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${c.id}`);
                             const limiteUtilizado = transacoesCartao.reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
                             const limiteTotal = Number(c.limite || 0);
                             const limiteRestante = limiteTotal - limiteUtilizado;
 
-                            // Matemática de Progressão
                             let pctUtilizado = limiteTotal > 0 ? (limiteUtilizado / limiteTotal) * 100 : 0;
                             const isEstourado = limiteRestante < 0;
 
                             return (
                                 <div key={c.id} className="bg-gradient-to-tr from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden group">
-                                    {/* Efeito Visual de Cartão de Crédito Físico */}
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl pointer-events-none"></div>
-
-                                    {/* Cabeçalho do Cartão */}
                                     <div className="flex justify-between items-start mb-6 relative z-10">
                                         <h4 className="text-lg font-black tracking-widest uppercase">{c.nome}</h4>
                                         <div className="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
@@ -143,7 +117,6 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                                         </div>
                                     </div>
 
-                                    {/* Métricas de Limite */}
                                     <div className="mb-5 relative z-10 space-y-3">
                                         <div className="flex justify-between items-end">
                                             <div>
@@ -158,7 +131,6 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                                             </div>
                                         </div>
 
-                                        {/* Barra de Progresso Inteligente */}
                                         <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                                             <div
                                                 className={`h-1.5 rounded-full transition-all duration-1000 ${isEstourado ? 'bg-rose-500' : pctUtilizado > 80 ? 'bg-amber-500' : 'bg-blue-500'}`}
@@ -172,7 +144,6 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                                         </div>
                                     </div>
 
-                                    {/* Rodapé (Datas) */}
                                     <div className="flex justify-between text-[10px] text-slate-400 relative z-10 border-t border-slate-700/50 pt-3 uppercase tracking-wider">
                                         <p>Fechamento: <strong className="text-white">Dia {c.melhorDia || '--'}</strong></p>
                                         <p>Vencimento: <strong className="text-white">Dia {c.vencimento || '--'}</strong></p>
