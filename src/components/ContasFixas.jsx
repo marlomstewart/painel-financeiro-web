@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSetup, modal }) {
     const [valorPadrao, setValorPadrao] = useState('0,00');
 
+    // MÁSCARA BANCÁRIA
     const handleCurrency = (e, setter) => {
         let value = e.target.value.replace(/\D/g, '');
         if (value === '') value = '0';
@@ -28,7 +29,7 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
 
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta Conta Fixa?', '🗑️ Excluir', { confirmLabel: 'Sim', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
-        if (ok) removerSetup('contasFixas', id);
+        if (ok) removerSetup('contasFixas', id); // AGORA ELE APAGA SÓ DA TABELA DE CONTAS FIXAS
     };
 
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -43,9 +44,10 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
                 <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit lg:sticky top-32 z-10">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Nova Despesa</h3>
+
+                    {/* 🔥 NÃO TEM MAIS SELECTOR DE TIPO AQUI! */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição</label>

@@ -28,7 +28,7 @@ export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSet
 
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta Renda Fixa?', '🗑️ Excluir', { confirmLabel: 'Sim', confirmColor: 'bg-emerald-600 hover:bg-emerald-700' });
-        if (ok) removerSetup('rendasFixas', id);
+        if (ok) removerSetup('rendasFixas', id); // APAGA SÓ DAS RENDAS FIXAS
     };
 
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

@@ -11,7 +11,7 @@ import { Sidebar } from './components/Sidebar';
 import { Cartoes } from './components/Cartoes';
 import { MetasCategorias } from './components/MetasCategorias';
 import { ContasFixas } from './components/ContasFixas';
-import { RendasFixas } from './components/RendasFixas'; // 🔥 IMPORT DA TELA NOVA
+import { RendasFixas } from './components/RendasFixas'; // OBRIGATÓRIO IMPORTAR AQUI
 import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
 
@@ -108,7 +108,7 @@ function App() {
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
 
-    // 🔥 NOVIDADE: Separação rigorosa das Rotas
+    // 🔥 CAMINHO PERFEITAMENTE SEPARADO:
     if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
