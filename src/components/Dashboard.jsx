@@ -33,6 +33,9 @@ export function Dashboard({
         });
     }
 
+    // 🔥 INTELIGÊNCIA DE LAYOUT: Só mostra a caixa de garagem se houver alertas
+    const showGarageAlerts = isStewart && alertasGaragem.length > 0;
+
     return (
         <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 relative">
             <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
@@ -124,11 +127,11 @@ export function Dashboard({
                 </div>
             </div>
 
-            {/* 🔥 MÓDULO DE ALERTAS ATUALIZADO PASSANDO 'dividas' E 'transacoesGlobais' */}
             <AlertasDashboard transacoesMes={transacoesMes} transacoesGlobais={transacoesGlobais} cartoes={cartoes} dividas={dividas} dataVis={dataVis} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col ${isStewart ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+                {/* 🔥 SE NÃO HOUVER ALERTAS DE GARAGEM, A COLUNA OCUPA O ECRÃ TODO (col-span-3) */}
+                <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col ${showGarageAlerts ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">⏱️ Últimos Lançamentos</h3>
                         <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full font-bold uppercase tracking-wider">{nomesMeses[dataVis.mes - 1]}</span>
@@ -148,9 +151,16 @@ export function Dashboard({
                                 </div>
                             </div>
                         ))}
+                        {ultimosCinco.length === 0 && (
+                            <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl h-full flex items-center justify-center">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm">Nenhum lançamento registrado nesta competência.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
-                {isStewart && (
+
+                {/* 🔥 SÓ RENDERIZA A GARAGEM SE HOUVER PROBLEMAS */}
+                {showGarageAlerts && (
                     <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">🔧 Alertas do Veículo</h3>
                         <div className="space-y-3 flex-1">
