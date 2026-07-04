@@ -3,18 +3,37 @@ import React, { useState } from 'react';
 export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal }) {
     const [paraTerceiros, setParaTerceiros] = useState(false);
 
-    // 🔥 ESTADOS PARA A MÁSCARA BANCÁRIA (R$)
+    // ESTADOS PARA A MÁSCARA BANCÁRIA
     const [valorDivida, setValorDivida] = useState('');
     const [valorParcela, setValorParcela] = useState('');
 
+    // 🔥 A VERDADEIRA MÁSCARA BANCÁRIA (Da direita para a esquerda)
     const handleCurrency = (e, setter) => {
+        // Remove tudo o que não for número (letras, pontos, vírgulas antigas)
         let val = e.target.value.replace(/\D/g, '');
+
+        // Se o usuário apagar tudo, limpa o campo
         if (!val) {
             setter('');
             return;
         }
-        val = (parseInt(val, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        setter(val);
+
+        // Remove zeros à esquerda (para não acumular) e garante que nunca fique vazio
+        val = val.replace(/^0+/, '');
+        if (val === '') val = '0';
+
+        // O SEGREDO: Garante que existam sempre pelo menos 3 dígitos (1 pro inteiro, 2 pros centavos)
+        val = val.padStart(3, '0');
+
+        // Isola os últimos 2 dígitos para serem os centavos
+        const inteiros = val.slice(0, -2);
+        const centavos = val.slice(-2);
+
+        // Coloca o ponto de milhar na parte dos inteiros (1000 -> 1.000)
+        const inteirosFormatados = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+        // Junta tudo com a vírgula
+        setter(`${inteirosFormatados},${centavos}`);
     };
 
     const handleSubmit = async (e) => {
@@ -53,15 +72,32 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                             <input name="descricao" type="text" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Consórcio Moto, Empréstimo Nubank" />
                         </div>
 
-                        {/* 🔥 CAMPOS COM MÁSCARA BANCÁRIA DA DIREITA PRA ESQUERDA */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Dívida (R$)</label>
-                                <input name="valor_total" type="text" value={valorDivida} onChange={(e) => handleCurrency(e, setValorDivida)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" title="Opcional" />
+                                <input
+                                    name="valor_total"
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={valorDivida}
+                                    onChange={(e) => handleCurrency(e, setValorDivida)}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
+                                    placeholder="0,00"
+                                    title="Opcional"
+                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Parcela (R$)</label>
-                                <input name="valor_parcela" type="text" value={valorParcela} onChange={(e) => handleCurrency(e, setValorParcela)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" />
+                                <input
+                                    name="valor_parcela"
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={valorParcela}
+                                    onChange={(e) => handleCurrency(e, setValorParcela)}
+                                    required
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
+                                    placeholder="0,00"
+                                />
                             </div>
                         </div>
 
