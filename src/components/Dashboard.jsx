@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertasDashboard } from './AlertasDashboard'; // 🔥 IMPORT DA NOSSA INTELIGÊNCIA
+import { AlertasDashboard } from './AlertasDashboard';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -11,8 +11,8 @@ export function Dashboard({
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
     verFaturasPorCartao,
     transacoesMes = [],
-    transacoesGlobais = [], // 🔥 PROP NOVA (Para os Alertas)
-    cartoes = [], // 🔥 PROP NOVA (Para os Alertas)
+    transacoesGlobais = [],
+    cartoes = [],
     garagem = null,
     nomeUsuario = ''
 }) {
@@ -49,9 +49,7 @@ export function Dashboard({
     return (
         <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 relative">
 
-            {/* ----------------------------------------------------------------------------------- */}
-            {/* CABEÇALHO FIXO (STICKY HEADER COM EFEITO BLUR) */}
-            {/* ----------------------------------------------------------------------------------- */}
+            {/* CABEÇALHO FIXO */}
             <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm transition-colors">
                     <div>
@@ -65,9 +63,6 @@ export function Dashboard({
                     </div>
                 </div>
             </div>
-
-            {/* 🔥 RENDERIZAÇÃO DO NOSSO NOVO MÓDULO DE ALERTAS */}
-            <AlertasDashboard transacoes={transacoesGlobais} cartoes={cartoes} />
 
             {pendenciasPassadas.length > 0 && (
                 <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 p-4 rounded-xl flex justify-between items-center shadow-sm">
@@ -170,6 +165,9 @@ export function Dashboard({
                     </div>
                 )}
             </div>
+
+            {/* 🔥 ALERTA MOVIDO PARA BAIXO DO PROGRESSO ESTRATÉGICO */}
+            <AlertasDashboard transacoesMes={transacoesMes} cartoes={cartoes} dataVis={dataVis} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

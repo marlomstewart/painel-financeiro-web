@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function AlertasDashboard({ transacoes = [], cartoes = [] }) {
+export function AlertasDashboard({ transacoesMes = [], cartoes = [], dataVis }) {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
@@ -9,10 +9,13 @@ export function AlertasDashboard({ transacoes = [], cartoes = [] }) {
 
     const alertas = [];
 
-    // 1. Varredura de Contas Fixas e Dívidas Pendentes
-    const pendentes = transacoes.filter(t => t.status === 'pendente' && (t.tipo === 'despesa' || t.tipo === 'terceiros' || t.tipo === 'divida'));
+    // 1. Varredura de Contas Fixas, Dívidas e Terceiros (Que NÃO são Cartão de Crédito)
+    const pendentesNormal = transacoesMes.filter(t =>
+        t.status === 'pendente' &&
+        !String(t.formaPagamento).startsWith('credito_')
+    );
 
-    pendentes.forEach(t => {
+    pendentesNormal.forEach(t => {
         if (!t.dataCompra) return;
         const [ano, mes, dia] = t.dataCompra.split('T')[0].split('-');
         const dataVenc = new Date(ano, mes - 1, dia);
@@ -31,26 +34,26 @@ export function AlertasDashboard({ transacoes = [], cartoes = [] }) {
         }
     });
 
-    // 2. Varredura de Faturas de Cartão de Crédito
+    // 2. Varredura de Faturas de Cartão de Crédito (Agrupando as compras do mês atual)
     cartoes.forEach(c => {
-        const transCartao = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${c.id}`);
-        if (transCartao.length > 0) {
-            let dataVenc = new Date(hoje.getFullYear(), hoje.getMonth(), c.vencimento);
+        // Pega todas as compras do mês que foram feitas NESTE cartão específico
+        const transCartao = transacoesMes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${c.id}`);
 
-            // Se hoje já passou do dia de vencimento, a fatura deste mês está atrasada
-            if (hoje.getDate() > c.vencimento) {
-                dataVenc = new Date(hoje.getFullYear(), hoje.getMonth(), c.vencimento);
-            }
+        if (transCartao.length > 0) {
+            // Cria a data de vencimento baseada no Mês que estamos a visualizar e no dia de Vencimento do Cartão
+            const dataVenc = new Date(dataVis.ano, dataVis.mes - 1, c.vencimento);
 
             if (dataVenc <= limiteAlerta) {
                 const diffTime = dataVenc - hoje;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const valorTotal = transCartao.reduce((acc, t) => acc + Number(t.valorParcela || 0), 0);
+
+                // Soma todas as roupinhas, tênis, etc... numa coisa só!
+                const valorTotalFatura = transCartao.reduce((acc, t) => acc + Number(t.valorParcela || 0), 0);
 
                 alertas.push({
                     id: `fatura_${c.id}`,
                     titulo: `Fatura: ${c.nome}`,
-                    valor: valorTotal,
+                    valor: valorTotalFatura,
                     dias: diffDays,
                     tipo: 'cartao'
                 });
@@ -66,7 +69,7 @@ export function AlertasDashboard({ transacoes = [], cartoes = [] }) {
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <div className="mb-8 animate-fade-in-down">
+        <div className="animate-fade-in-down mb-6">
             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <span className="text-rose-500">🚨</span> Alertas de Vencimento
             </h3>
