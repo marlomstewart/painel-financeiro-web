@@ -3,41 +3,29 @@ import React, { useState } from 'react';
 export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal }) {
     const [paraTerceiros, setParaTerceiros] = useState(false);
 
-    // 🔥 ESTADOS INICIANDO EM 0,00 PARA A MÁSCARA FUNCIONAR COM PERFEIÇÃO
+    // ESTADOS INICIANDO EM 0,00 PARA A MÁSCARA FUNCIONAR COM PERFEIÇÃO
     const [valorDivida, setValorDivida] = useState('0,00');
     const [valorParcela, setValorParcela] = useState('0,00');
 
-    // 🔥 O VERDADEIRO ALGORITMO BANCÁRIO (Empurrando os zeros da direita para a esquerda)
+    // O VERDADEIRO ALGORITMO BANCÁRIO
     const handleCurrency = (e, setter) => {
-        // Pega no valor e arranca tudo o que não for número (vírgulas, pontos, letras)
         let value = e.target.value.replace(/\D/g, '');
-
-        // Se o utilizador apagar tudo, volta ao zero
         if (value === '') value = '0';
 
-        // Converte para número inteiro (Isso arranca fora os zeros à esquerda inúteis. Ex: "0005" vira 5)
         const numericValue = parseInt(value, 10);
         if (isNaN(numericValue)) return;
 
-        // Devolve para texto, mas garantindo que tem pelo menos 3 dígitos (para formar os centavos)
-        // Se for 5, vira "005"
         const stringValue = numericValue.toString().padStart(3, '0');
-
-        // Corta a string em duas: O que é inteiro e os dois últimos que são os centavos
         const inteiros = stringValue.slice(0, -2);
         const centavos = stringValue.slice(-2);
 
-        // Pega na parte dos inteiros e coloca os pontos de milhar (1000 vira 1.000)
         const inteirosFormatados = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-        // Junta tudo com a vírgula!
         setter(`${inteirosFormatados},${centavos}`);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Trava de segurança para não salvar parcela zerada
         if (valorParcela === '0,00') {
             modal.alert('O valor da parcela não pode ser zero.', 'Aviso');
             return;
@@ -69,7 +57,8 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit sticky top-32">
+                {/* 🔥 CORREÇÃO DE LAYOUT: sticky trocado por lg:sticky para rolar normalmente no mobile */}
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit lg:sticky top-32 z-10">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Registrar Dívida</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
@@ -144,7 +133,8 @@ export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal })
                 </div>
 
                 <div className="lg:col-span-2 space-y-6">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Contratos em Andamento</h3>
+                    {/* 🔥 TEXTO ALTERADO COMO PEDIDO */}
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Dívidas em Andamento</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {dividas.length === 0 ? (
                             <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
