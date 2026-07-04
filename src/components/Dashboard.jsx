@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertasDashboard } from './AlertasDashboard'; // 🔥 IMPORT DA NOSSA INTELIGÊNCIA
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -10,6 +11,8 @@ export function Dashboard({
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
     verFaturasPorCartao,
     transacoesMes = [],
+    transacoesGlobais = [], // 🔥 PROP NOVA (Para os Alertas)
+    cartoes = [], // 🔥 PROP NOVA (Para os Alertas)
     garagem = null,
     nomeUsuario = ''
 }) {
@@ -62,6 +65,9 @@ export function Dashboard({
                     </div>
                 </div>
             </div>
+
+            {/* 🔥 RENDERIZAÇÃO DO NOSSO NOVO MÓDULO DE ALERTAS */}
+            <AlertasDashboard transacoes={transacoesGlobais} cartoes={cartoes} />
 
             {pendenciasPassadas.length > 0 && (
                 <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 p-4 rounded-xl flex justify-between items-center shadow-sm">
