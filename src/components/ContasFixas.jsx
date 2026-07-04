@@ -1,97 +1,97 @@
 import React, { useState } from 'react';
 
-export function ContasFixas({ contasFixas, addContaFixa, rendasFixas, addRendaFixa, editarSetup, removerSetup, modal }) {
-    const [nomeConta, setNomeConta] = useState('');
-    const [valorConta, setValorConta] = useState('');
-    const [diaVencimento, setDiaVencimento] = useState('');
-    const [tipoRegistro, setTipoRegistro] = useState('despesa');
+export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSetup, modal }) {
+    const [valorPadrao, setValorPadrao] = useState('0,00');
+
+    const handleCurrency = (e, setter) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value === '') value = '0';
+        const numericValue = parseInt(value, 10);
+        if (isNaN(numericValue)) return;
+        const stringValue = numericValue.toString().padStart(3, '0');
+        const inteiros = stringValue.slice(0, -2);
+        const centavos = stringValue.slice(-2);
+        const inteirosFormatados = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        setter(`${inteirosFormatados},${centavos}`);
+    };
 
     const handleSubmit = async (e) => {
-        if (tipoRegistro === 'despesa') { await addContaFixa(e); }
-        else { await addRendaFixa(e); }
-        setNomeConta(''); setValorConta(''); setDiaVencimento('');
+        e.preventDefault();
+        if (valorPadrao === '0,00') {
+            modal.alert('O valor não pode ser zero.', 'Aviso');
+            return;
+        }
+        await addContaFixa(e);
+        e.target.reset();
+        setValorPadrao('0,00');
     };
 
-    const handleEditar = async (c, tipo) => {
-        const banco = tipo === 'despesa' ? 'contasFixas' : 'rendasFixas';
-        const propDia = tipo === 'despesa' ? 'vencimento' : 'diaRecebimento';
-        const valDiaAtual = tipo === 'despesa' ? c.vencimento : c.dia_recebimento;
-
-        const nNome = await modal.prompt(`1️⃣ Novo NOME da obrigação?`, c.nome, '✏️ Editar', { confirmLabel: 'Próximo' }); if (nNome === null) return;
-        const nVal = await modal.prompt(`2️⃣ Novo VALOR (R$)?`, String(c.valorpadrao || c.valor), '✏️ Editar', { inputType: 'number', confirmLabel: 'Próximo' }); if (nVal === null) return;
-        const nDia = await modal.prompt(`3️⃣ Novo Dia do Mês?`, String(valDiaAtual), '✏️ Editar', { inputType: 'number', confirmLabel: 'Salvar' }); if (nDia === null) return;
-
-        const sucesso = await editarSetup(banco, c.id, { nome: nNome, valorPadrao: Number(nVal), [propDia]: Number(nDia) });
-        if (sucesso) modal.alert('Atualizado!', '✅ Sucesso');
-    };
-
-    const handleExcluir = async (id, tipo) => {
-        const banco = tipo === 'despesa' ? 'contasFixas' : 'rendasFixas';
-        const ok = await modal.confirm('Parar de lançar essa conta automaticamente no início de cada mês?', '🗑️ Excluir Recorrência', { confirmLabel: 'Remover' });
-        if (ok) removerSetup(banco, id);
+    const handleExcluir = async (id) => {
+        const ok = await modal.confirm('Deseja excluir esta Conta Fixa?', '🗑️ Excluir', { confirmLabel: 'Sim', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
+        if (ok) removerSetup('contasFixas', id);
     };
 
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24 relative">
-
-            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
-            <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
-                <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🔄 Obrigações e Recebíveis</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Automatize o registro financeiro de eventos que se repetem todos os meses.</p>
-                </header>
+        <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in relative">
+            <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
+                <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🔄 Contas Fixas</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Automatize despesas recorrentes (Internet, Água, Condomínio).</p>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit sticky top-32">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Nova Obrigação Mensal</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit lg:sticky top-32 z-10">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Nova Despesa</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo da Conta</label><select value={tipoRegistro} onChange={(e) => setTipoRegistro(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"><option value="despesa">Despesa (Água, Luz, Internet)</option><option value="renda">Renda (Salário, Aluguel Recebido)</option></select></div>
-                        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição</label><input name="nome" type="text" value={nomeConta} onChange={(e) => setNomeConta(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Conta de Luz" /></div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Fixo (R$)</label><input name="valorPadrao" type="number" step="0.01" min="0.01" value={valorConta} onChange={(e) => setValorConta(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0.00" /></div>
-                            <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia do Mês</label><input name={tipoRegistro === 'despesa' ? 'vencimento' : 'diaRecebimento'} type="number" min="1" max="31" value={diaVencimento} onChange={(e) => setDiaVencimento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10" /></div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição</label>
+                            <input name="nome" type="text" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500" placeholder="Ex: Conta de Luz" />
                         </div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">Adicionar à Lista Fixa</button>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Padrão (R$)</label>
+                            <input name="valorPadrao" type="text" inputMode="numeric" value={valorPadrao} onChange={(e) => handleCurrency(e, setValorPadrao)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Vencimento</label>
+                            <input name="vencimento" type="number" min="1" max="31" required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500" placeholder="Ex: 5" />
+                        </div>
+                        <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md mt-2">
+                            Salvar Conta Fixa
+                        </button>
                     </form>
                 </div>
 
-                <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 h-fit">
-                    <div>
-                        <h4 className="font-bold text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2"><span className="p-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-lg">🔻</span> Despesas Recorrentes</h4>
-                        <div className="space-y-3">
-                            {contasFixas.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Nenhuma despesa fixa.</p> : contasFixas.map(c => (
-                                <div key={c.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm flex justify-between items-center group">
-                                    <div><p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{c.nome}</p><p className="text-[10px] text-slate-500 uppercase">Dia {c.dia_vencimento || c.vencimento}</p></div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-black text-rose-600 dark:text-rose-400 text-sm">{formatarMoeda(c.valorpadrao || c.valor)}</span>
-                                        <div className="flex flex-col gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity border-l border-slate-100 dark:border-slate-700 pl-2">
-                                            <button onClick={() => handleEditar(c, 'despesa')} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
-                                            <button onClick={() => handleExcluir(c.id, 'despesa')} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>
+                <div className="lg:col-span-2 space-y-6">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Despesas Automatizadas</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {contasFixas.length === 0 ? (
+                            <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhuma conta fixa registrada.</div>
+                        ) : (
+                            contasFixas.map(c => (
+                                <div key={c.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm relative group hover:border-rose-300 dark:hover:border-rose-800/50 transition-colors">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h4 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                            <span className="text-rose-500">🔻</span> {c.nome}
+                                        </h4>
+                                        <button onClick={() => handleExcluir(c.id)} className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer opacity-100 md:opacity-0 group-hover:opacity-100">🗑️</button>
+                                    </div>
+                                    <div className="flex justify-between items-end bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <div>
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-0.5">Valor Padrão</p>
+                                            <p className="text-lg font-bold text-rose-700 dark:text-rose-400">{formatarMoeda(c.valorPadrao || c.valorpadrao)}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-0.5">Vencimento</p>
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Dia {c.vencimento}</p>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-emerald-600 dark:text-emerald-400 mb-4 flex items-center gap-2"><span className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">🚀</span> Rendas Recorrentes</h4>
-                        <div className="space-y-3">
-                            {rendasFixas.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Nenhuma renda fixa.</p> : rendasFixas.map(r => (
-                                <div key={r.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm flex justify-between items-center group">
-                                    <div><p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{r.nome}</p><p className="text-[10px] text-slate-500 uppercase">Dia {r.dia_recebimento || r.diaRecebimento}</p></div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{formatarMoeda(r.valorpadrao || r.valor)}</span>
-                                        <div className="flex flex-col gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity border-l border-slate-100 dark:border-slate-700 pl-2">
-                                            <button onClick={() => handleEditar(r, 'renda')} className="text-[10px] text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
-                                            <button onClick={() => handleExcluir(r.id, 'renda')} className="text-[10px] text-rose-500 hover:text-rose-700 cursor-pointer">🗑️</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

@@ -26,24 +26,38 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         if (res.ok) setState([...stateAtual, dados]);
     }, [API, getHeaders]);
 
+    // O tradutor da máscara bancária R$ para o Banco de Dados
+    const parseCurrency = (val) => { if (!val) return 0; return Number(String(val).replace(/\./g, '').replace(',', '.')); };
+
     const addCartao = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), limite: Number(fd.get('limite')), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); }), [processarSubmitComLoading, salvarConfig, cartoes]);
     const addCategoria = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); }), [processarSubmitComLoading, salvarConfig, categorias]);
     const addMetaRenda = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('metas-renda', { id: Date.now().toString(), nome: fd.get('nome'), valor: Number(fd.get('meta')) }, setMetasRenda, metasRenda); }), [processarSubmitComLoading, salvarConfig, metasRenda]);
-    const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('contas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), vencimento: Number(fd.get('vencimento')) }, setContasFixas, contasFixas); }), [processarSubmitComLoading, salvarConfig, contasFixas]);
-    const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('rendas-fixas', { id: Date.now().toString(), nome: fd.get('nome'), valorPadrao: Number(fd.get('valorPadrao')), diaRecebimento: Number(fd.get('diaRecebimento')) }, setRendasFixas, rendasFixas); }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
 
-    // 🔥 INTELIGÊNCIA MATEMÁTICA: Ajuste das parcelas iniciais descontando o Extrato atual
-    const parseCurrency = (val) => { if (!val) return 0; return Number(String(val).replace(/\./g, '').replace(',', '.')); };
+    // 🔥 ATUALIZADO: Agora usa parseCurrency e removemos a obrigatoriedade do 'Tipo'
+    const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
+        await salvarConfig('contas-fixas', {
+            id: Date.now().toString(),
+            nome: fd.get('nome'),
+            valorPadrao: parseCurrency(fd.get('valorPadrao')),
+            vencimento: Number(fd.get('vencimento'))
+        }, setContasFixas, contasFixas);
+    }), [processarSubmitComLoading, salvarConfig, contasFixas]);
+
+    // 🔥 ATUALIZADO: Agora usa parseCurrency e removemos a obrigatoriedade do 'Tipo'
+    const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
+        await salvarConfig('rendas-fixas', {
+            id: Date.now().toString(),
+            nome: fd.get('nome'),
+            valorPadrao: parseCurrency(fd.get('valorPadrao')),
+            diaRecebimento: Number(fd.get('diaRecebimento'))
+        }, setRendasFixas, rendasFixas);
+    }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
 
     const addDivida = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
         const totais = Number(fd.get('qtd_parcelas'));
         const restantes = Number(fd.get('parcelas_restantes'));
         const descricao = fd.get('descricao');
-
-        // Verifica se essa dívida (ex: Consórcio) já tem coisas pagas no Extrato, para não duplicar!
         const pagasNoExtratoAtuais = transacoes.filter(t => String(t.nomeContaFixa).toLowerCase() === String(descricao).toLowerCase() && t.status === 'pago').length;
-
-        // A matemática cravada: O que eu já paguei antes de usar o sistema (Totais - Restantes) menos o que eu já paguei e registrei no sistema
         const pagasIniciais = (totais - restantes) - pagasNoExtratoAtuais;
 
         await salvarConfig('dividas', {
@@ -74,41 +88,12 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, dividas]);
 
     const removerSetup = useCallback(async (banco, id = null) => {
-        if (!id) {
-            const mapNomes = { categoria: 'todas as Metas e Categorias', contaFixa: 'todas as Contas Fixas', cartao: 'todos os Cartões' };
-            const nomeAmigavel = mapNomes[banco];
-            const confirmacao = await modal.confirm(`Tem a certeza absoluta que deseja EXCLUIR ${nomeAmigavel}? Esta ação é destrutiva e não pode ser desfeita.`, '⚠️ Confirmação Destrutiva', { confirmColor: 'bg-red-600 hover:bg-red-700', confirmLabel: 'Sim, Excluir' });
-            if (!confirmacao) return;
-            const senha = await modal.prompt('Por motivos de segurança, digite a sua senha de acesso para confirmar a exclusão:', '', '🔒 Validação de Segurança', { inputType: 'password', confirmLabel: 'Validar e Excluir' });
-            if (!senha) return;
-            try {
-                const resVal = await fetch(`${API}/validar-senha`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ senha }) });
-                if (!resVal.ok) { await modal.alert('Senha incorreta. Ação abortada.', '❌ Acesso Negado'); return; }
-            } catch (err) { await modal.alert('Erro de rede.', '❌ Erro'); return; }
-
-            let rotaLimpar = banco;
-            if (banco === 'categoria') rotaLimpar = 'categorias';
-            if (banco === 'contaFixa') rotaLimpar = 'contas-fixas';
-            if (banco === 'cartao') rotaLimpar = 'cartoes';
-
-            try {
-                const res = await fetch(`${API}/${rotaLimpar}`, { method: 'DELETE', headers: getHeaders() });
-                if (res.ok) {
-                    if (banco === 'categoria') { setCategorias([]); setMetasRenda([]); }
-                    if (banco === 'contaFixa') { setContasFixas([]); setRendasFixas([]); }
-                    if (banco === 'cartao') setCartoes([]);
-                    await modal.alert(`${nomeAmigavel} excluídos com sucesso.`, '✅ Exclusão Concluída');
-                }
-            } catch (err) { console.error('Erro:', err); }
-            return;
-        }
-
         const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas', dividas: 'dividas' };
         await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'DELETE', headers: getHeaders() });
         const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas], dividas: [setDividas, dividas] };
         const [setter, state] = setters[banco];
         setter(state.filter(i => i.id !== id));
-    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, dividas, modal]);
+    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, dividas]);
 
     const gerarMesManual = useCallback(async () => {
         setGerandoMes(true);

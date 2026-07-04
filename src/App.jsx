@@ -11,6 +11,7 @@ import { Sidebar } from './components/Sidebar';
 import { Cartoes } from './components/Cartoes';
 import { MetasCategorias } from './components/MetasCategorias';
 import { ContasFixas } from './components/ContasFixas';
+import { RendasFixas } from './components/RendasFixas'; // 🔥 IMPORT DA TELA NOVA
 import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
 
@@ -107,9 +108,9 @@ function App() {
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
 
-    if (['contas_fixas', 'rendas_fixas'].includes(telaAtiva)) {
-      return <ContasFixas modo={telaAtiva} contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-    }
+    // 🔥 NOVIDADE: Separação rigorosa das Rotas
+    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} />;
     if (telaAtiva === 'garagem') return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
@@ -139,30 +140,13 @@ function App() {
     }
 
     return <Dashboard
-      nomeUsuario={auth.nomeUsuario}
-      transacoesGlobais={transacoes}
-      transacoesMes={transacoesMes}
-      cartoes={setup.cartoes}
-      dividas={setup.dividas}
-      garagem={garagem}
-      dataVis={dataVis}
-      mesAnterior={dashboardManager.mesAnterior}
-      mesProximo={dashboardManager.mesProximo}
-      totRendaPaga={dashboardManager.totRendaPaga}
-      totGastoReal={dashboardManager.totGastoReal}
-      totInvestido={dashboardManager.totInvestido}
-      totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto}
-      saldoAtual={dashboardManager.saldoAtual}
-      previstoFimMes={dashboardManager.previstoFimMes}
-      somarSaldoAnterior={dashboardManager.somarSaldoAnterior}
-      setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior}
-      categorias={dashboardManager.categoriasDinamicas}
-      gCat={dashboardManager.gCat}
-      abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria}
-      pendenciasPassadas={dashboardManager.pendenciasPassadas}
-      abrirModalPendencias={dashboardManager.abrirModalPendencias}
-      abrirResumoCard={dashboardManager.abrirResumoCard}
-      verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao}
+      nomeUsuario={auth.nomeUsuario} transacoesGlobais={transacoes} transacoesMes={transacoesMes} cartoes={setup.cartoes} dividas={setup.dividas} garagem={garagem}
+      dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga}
+      totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto}
+      saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior}
+      setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat}
+      abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias}
+      abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao}
     />;
   };
 
