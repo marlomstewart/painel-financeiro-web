@@ -3,46 +3,51 @@ import React, { useState } from 'react';
 export function Dividas({ dividas, transacoes, addDivida, removerSetup, modal }) {
     const [paraTerceiros, setParaTerceiros] = useState(false);
 
-    // ESTADOS PARA A MÁSCARA BANCÁRIA
-    const [valorDivida, setValorDivida] = useState('');
-    const [valorParcela, setValorParcela] = useState('');
+    // 🔥 ESTADOS INICIANDO EM 0,00 PARA A MÁSCARA FUNCIONAR COM PERFEIÇÃO
+    const [valorDivida, setValorDivida] = useState('0,00');
+    const [valorParcela, setValorParcela] = useState('0,00');
 
-    // 🔥 A VERDADEIRA MÁSCARA BANCÁRIA (Da direita para a esquerda)
+    // 🔥 O VERDADEIRO ALGORITMO BANCÁRIO (Empurrando os zeros da direita para a esquerda)
     const handleCurrency = (e, setter) => {
-        // Remove tudo o que não for número (letras, pontos, vírgulas antigas)
-        let val = e.target.value.replace(/\D/g, '');
+        // Pega no valor e arranca tudo o que não for número (vírgulas, pontos, letras)
+        let value = e.target.value.replace(/\D/g, '');
 
-        // Se o usuário apagar tudo, limpa o campo
-        if (!val) {
-            setter('');
-            return;
-        }
+        // Se o utilizador apagar tudo, volta ao zero
+        if (value === '') value = '0';
 
-        // Remove zeros à esquerda (para não acumular) e garante que nunca fique vazio
-        val = val.replace(/^0+/, '');
-        if (val === '') val = '0';
+        // Converte para número inteiro (Isso arranca fora os zeros à esquerda inúteis. Ex: "0005" vira 5)
+        const numericValue = parseInt(value, 10);
+        if (isNaN(numericValue)) return;
 
-        // O SEGREDO: Garante que existam sempre pelo menos 3 dígitos (1 pro inteiro, 2 pros centavos)
-        val = val.padStart(3, '0');
+        // Devolve para texto, mas garantindo que tem pelo menos 3 dígitos (para formar os centavos)
+        // Se for 5, vira "005"
+        const stringValue = numericValue.toString().padStart(3, '0');
 
-        // Isola os últimos 2 dígitos para serem os centavos
-        const inteiros = val.slice(0, -2);
-        const centavos = val.slice(-2);
+        // Corta a string em duas: O que é inteiro e os dois últimos que são os centavos
+        const inteiros = stringValue.slice(0, -2);
+        const centavos = stringValue.slice(-2);
 
-        // Coloca o ponto de milhar na parte dos inteiros (1000 -> 1.000)
-        const inteirosFormatados = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        // Pega na parte dos inteiros e coloca os pontos de milhar (1000 vira 1.000)
+        const inteirosFormatados = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-        // Junta tudo com a vírgula
+        // Junta tudo com a vírgula!
         setter(`${inteirosFormatados},${centavos}`);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Trava de segurança para não salvar parcela zerada
+        if (valorParcela === '0,00') {
+            modal.alert('O valor da parcela não pode ser zero.', 'Aviso');
+            return;
+        }
+
         await addDivida(e);
         e.target.reset();
         setParaTerceiros(false);
-        setValorDivida('');
-        setValorParcela('');
+        setValorDivida('0,00');
+        setValorParcela('0,00');
     };
 
     const handleExcluir = async (id) => {
