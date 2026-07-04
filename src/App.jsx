@@ -58,7 +58,7 @@ function App() {
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
 
-  // Motor Global de Inicialização do Modo Escuro (Sem botão flutuante)
+  // Motor Global de Inicialização do Modo Escuro
   useEffect(() => {
     const applyTheme = () => {
       const tema = localStorage.getItem('theme') || 'sistema';
@@ -76,7 +76,7 @@ function App() {
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      if (!localStorage.getItem('theme') || localStorage.getItem('theme') === 'sistema') applyTheme();
+        if (!localStorage.getItem('theme') || localStorage.getItem('theme') === 'sistema') applyTheme();
     };
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
@@ -110,7 +110,7 @@ function App() {
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
     if (telaAtiva === 'dividas') {
-      return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
+        return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
     }
 
     if (['contas_fixas', 'rendas_fixas'].includes(telaAtiva)) {
@@ -163,7 +163,8 @@ function App() {
       );
     }
 
-    return <Dashboard nomeUsuario={auth.nomeUsuario} transacoesMes={transacoesMes} garagem={garagem} dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} />;
+    // 🔥 ATUALIZAÇÃO AQUI: As propriedades transacoesGlobais e cartoes foram devidamente adicionadas!
+    return <Dashboard nomeUsuario={auth.nomeUsuario} transacoesGlobais={transacoes} cartoes={setup.cartoes} transacoesMes={transacoesMes} garagem={garagem} dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga} totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto} saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior} setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat} abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias} abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao} />;
   };
 
   return (
