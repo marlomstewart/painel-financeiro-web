@@ -214,7 +214,7 @@ export function Lancamentos({
                                                 name="thirdPartyName" type="text" required
                                                 value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
                                                 className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                                                placeholder="Ex: Maiara, Irmão..."
+                                                placeholder="Ex: Mayara, João..."
                                             />
                                         </div>
                                         <div>
