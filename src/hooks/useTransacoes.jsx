@@ -165,10 +165,23 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
     };
 
     /**
-     * Utilitário para rastrear parcelamentos utilizando Regex no formato '(X/Y)'
-     * Essencial para localizar parcelas antigas que não foram salvas com o padrão de ID concatenado.
+     * Utilitário para rastrear parcelamentos.
+     * PRIORIDADE 1: Busca pelo ID único do grupo (para transações novas).
+     * PRIORIDADE 2: Fallback para Regex buscando pelo texto '(X/Y)' (para legados sem underline).
      */
     const getTransacoesRelacionadas = (tTarget) => {
+        // 🔥 1. PRIORIDADE MÁXIMA: Transações novas agrupadas por ID único (ex: timestamp_0)
+        if (tTarget.id && String(tTarget.id).includes('_')) {
+            const baseId = String(tTarget.id).split('_')[0];
+            const currentIndex = parseInt(String(tTarget.id).split('_')[1], 10) + 1; // +1 porque o banco inicia em 0
+
+            const encontradas = transacoes.filter(item => String(item.id).startsWith(baseId));
+            encontradas.sort((a, b) => new Date(a.dataCompra) - new Date(b.dataCompra));
+
+            return { isParcelado: true, relacionadas: encontradas, currentIndex };
+        }
+
+        // 🔥 2. FALLBACK LEGADO: Transações antigas que não têm '_' no ID, buscando pelo nome "Descricao (x/y)"
         const matchNome = String(tTarget.descricao).match(/^(.*?)\s*\((\d+)\/(\d+)\)$/);
 
         if (matchNome) {
@@ -179,22 +192,14 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`^${escapeRegExp(baseDescricao)}\\s*\\(\\d+\\/${totalParcelas}\\)$`);
 
-            const encontradas = transacoes.filter(item => regex.test(item.descricao));
+            // Adicionado filtro de categoria para evitar colisões entre lançamentos de nomes idênticos antigos
+            const encontradas = transacoes.filter(item => regex.test(item.descricao) && item.categoria === tTarget.categoria);
             encontradas.sort((a, b) => new Date(a.dataCompra) - new Date(b.dataCompra));
 
             return { isParcelado: true, relacionadas: encontradas, currentIndex };
         }
 
-        if (tTarget.id && String(tTarget.id).includes('_')) {
-            const baseId = String(tTarget.id).split('_')[0];
-            const currentIndex = parseInt(String(tTarget.id).split('_')[1], 10) + 1;
-
-            const encontradas = transacoes.filter(item => String(item.id).startsWith(baseId));
-            encontradas.sort((a, b) => new Date(a.dataCompra) - new Date(b.dataCompra));
-
-            return { isParcelado: true, relacionadas: encontradas, currentIndex };
-        }
-
+        // 3. NÃO É PARCELADO
         return { isParcelado: false, relacionadas: [tTarget], currentIndex: 1 };
     };
 
@@ -280,8 +285,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
                     descricao: novaDescricao,
                     dataCompra: novaData,
                     status: novoStatus,
-                    // 🔥 BLINDAGEM MÁXIMA DE MÊS/ANO DE REFERÊNCIA:
-                    // Impede o backend de recálcular competências e jogar faturas legadas para meses errados.
+                    // BLINDAGEM DE COMPETÊNCIA:
                     mesReferencia: oldTx.mesReferencia,
                     anoReferencia: oldTx.anoReferencia
                 };
