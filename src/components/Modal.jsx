@@ -49,7 +49,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
 
-      {/* 🔥 MÓDULO VISUAL: RESUMO DO PARCELAMENTO (MOSTRA O VALOR TOTAL) */}
       {infoParcelamento && (
         <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 p-3 rounded-lg flex justify-between items-center shadow-sm">
           <div>
@@ -85,7 +84,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         <div>
           <label className={labelCls}>Data</label>
           <input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} />
-          {/* 🔥 AVISO DE SEGURANÇA PARA A DATA */}
           {acaoEdicao && acaoEdicao !== 'unica' && (
             <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O mês/ano das outras parcelas serão preservados.</p>
           )}
@@ -96,7 +94,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             <option value="pendente">Pendente</option>
             <option value="pago">Pago / Recebido</option>
           </select>
-          {/* 🔥 AVISO DE SEGURANÇA PARA O STATUS */}
           {acaoEdicao && acaoEdicao !== 'unica' && (
             <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O status das outras parcelas NÃO será alterado.</p>
           )}
@@ -107,9 +104,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         <div>
           <label className={labelCls}>Natureza</label>
           <select value={tipo} onChange={e => setTipo(e.target.value)} className={inputCls}>
-            <option value="despesa">Despesa (Saída)</option>
-            <option value="renda">Renda (Entrada)</option>
-            <option value="investimento">Investimento</option>
+            <option value="despesa">🔻 Despesa (Saída)</option>
+            <option value="renda">💰 Renda (Entrada)</option>
+            <option value="investimento">📈 Investimento</option>
+            {/* 🔥 NOVA OPÇÃO DE ESTORNO */}
+            <option value="reembolso">🔄 Reembolso / Estorno</option>
           </select>
         </div>
         <div>
@@ -135,7 +134,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
               type="text" required
               value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
               className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-              placeholder="Ex: Mayara, João..."
+              placeholder="Ex: Maiara, Irmão, Amigo..."
             />
           </div>
         )}
@@ -350,7 +349,8 @@ export function Modal({ config, onClose }) {
               <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{config.transacao.categoria}</p>
                 <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{config.transacao.descricao}</h4>
-                <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : 'text-slate-800 dark:text-white'}`}>
+                {/* 🔥 COR ESPECIAL FÚCSIA/ROXO SE FOR UM REEMBOLSO! */}
+                <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'reembolso' ? 'text-fuchsia-500' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 {config.transacao.isThirdParty && (

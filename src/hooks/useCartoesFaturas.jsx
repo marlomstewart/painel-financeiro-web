@@ -6,7 +6,7 @@ const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
  * @file src/hooks/useCartoesFaturas.jsx
  * @description Hook Customizado para Gestão de Faturas de Cartão de Crédito.
  * Desacopla do componente principal a lógica de agrupamento financeiro,
- * pagamento em lote (Bulk Update) e reversão de status das compras feitas no crédito.
+ * pagamento em lote (Bulk Update), reversão de status e abatimento de estornos.
  */
 export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal }) {
 
@@ -55,7 +55,6 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         const porCartao = {};
         const cartaoIds = {};
 
-        // 🔥 OBJETO PARA AGRUPAR GASTOS DE TERCEIROS DENTRO DE CADA CARTÃO
         const gastosTerceiros = {};
 
         transacoesMes.forEach(t => {
@@ -69,24 +68,41 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
                 if (!gastosTerceiros[nomeCartao]) gastosTerceiros[nomeCartao] = {};
 
                 const valorAtual = Number(t.valorParcela) || 0;
-                porCartao[nomeCartao].total += valorAtual;
 
-                if (t.status === 'pago') {
-                    porCartao[nomeCartao].pago += valorAtual;
-                } else {
-                    porCartao[nomeCartao].pendente += valorAtual;
+                // 🔥 LÓGICA DE REEMBOLSO: Se for reembolso, SUBTRAI da fatura ao invés de somar
+                if (t.tipo === 'reembolso') {
+                    porCartao[nomeCartao].total -= valorAtual;
+
+                    if (t.status === 'pago') {
+                        porCartao[nomeCartao].pago -= valorAtual;
+                    } else {
+                        porCartao[nomeCartao].pendente -= valorAtual;
+                    }
+
+                    if (t.isThirdParty && t.thirdPartyName) {
+                        const nomeT = String(t.thirdPartyName).trim();
+                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) - valorAtual;
+                    }
                 }
+                // COMPRAS NORMAIS
+                else {
+                    porCartao[nomeCartao].total += valorAtual;
 
-                // 🔥 REGISTRA O GASTO SE FOR DE TERCEIRO
-                if (t.isThirdParty && t.thirdPartyName) {
-                    const nomeT = String(t.thirdPartyName).trim();
-                    gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorAtual;
+                    if (t.status === 'pago') {
+                        porCartao[nomeCartao].pago += valorAtual;
+                    } else {
+                        porCartao[nomeCartao].pendente += valorAtual;
+                    }
+
+                    if (t.isThirdParty && t.thirdPartyName) {
+                        const nomeT = String(t.thirdPartyName).trim();
+                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorAtual;
+                    }
                 }
             }
         });
 
         const itens = Object.entries(porCartao).map(([nome, v]) => {
-            // Converte o objeto de terceiros do cartão numa array
             const arrTerceiros = Object.entries(gastosTerceiros[nome]).map(([nomeT, valorT]) => ({ nome: nomeT, valor: valorT }));
             const totalTerceiros = arrTerceiros.reduce((acc, curr) => acc + curr.valor, 0);
 
