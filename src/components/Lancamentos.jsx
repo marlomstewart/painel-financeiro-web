@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 /**
  * @file src/components/Lancamentos.jsx
  * @description Componente visual responsável pela tela de "Novo Lançamento" e pelo "Extrato" de transações.
- * Inclui formulários, tabelas de auditoria, filtros avançados e paleta de cores dinâmica para valores.
+ * Atualizado para suportar a divisão fracionada (split) de valores com terceiros.
  */
 export function Lancamentos({
     modo = 'lancamentos',
@@ -34,6 +34,9 @@ export function Lancamentos({
     const [isThirdParty, setIsThirdParty] = useState(false);
     const [thirdPartyName, setThirdPartyName] = useState('');
 
+    // 🔥 NOVO ESTADO: Valor total fracionado do Terceiro
+    const [thirdPartyValueStr, setThirdPartyValueStr] = useState('0');
+
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
 
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -45,11 +48,27 @@ export function Lancamentos({
         setValorStr(val);
     };
 
+    const handleThirdValueChange = (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val === '') val = '0';
+        setThirdPartyValueStr(val);
+    };
+
     const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const displayThirdValue = (parseInt(thirdPartyValueStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+
+        const numericValue = parseInt(valorStr, 10) / 100;
+        let numericThirdValue = parseInt(thirdPartyValueStr, 10) / 100;
+
+        if (isThirdParty && numericThirdValue > numericValue) {
+            alert('Erro: O valor do terceiro não pode ser maior que o valor total da compra.');
+            setIsSubmitting(false);
+            return;
+        }
 
         const sucesso = await addTransacao(e);
 
@@ -58,7 +77,7 @@ export function Lancamentos({
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
             setFormaPagamento('pix'); setParcelas(1);
-            setIsThirdParty(false); setThirdPartyName('');
+            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0');
         }
 
         setIsSubmitting(false);
@@ -183,19 +202,34 @@ export function Lancamentos({
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                             <label className="flex items-center gap-2 cursor-pointer mb-3">
                                 <input type="checkbox" name="isThirdParty" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
-                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra de Terceiro</span>
+                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra Compartilhada / Terceiro</span>
                             </label>
 
                             {isThirdParty && (
                                 <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-3">
-                                    <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
-                                    <input
-                                        name="thirdPartyName" type="text" required
-                                        value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
-                                        className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                                        placeholder="Ex: Mãe, Irmão, Amigo..."
-                                    />
-                                    <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium">Estes gastos serão abatidos dos seus gráficos e contabilizados separadamente na fatura.</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Pessoa / Terceiro</label>
+                                            <input
+                                                name="thirdPartyName" type="text" required
+                                                value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
+                                                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                                                placeholder="Ex: Maiara, Irmão..."
+                                            />
+                                        </div>
+                                        <div>
+                                            {/* 🔥 NOVO INPUT PARA CAPTURAR A DIVISÃO NO ATO DO CADASTRO */}
+                                            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Valor TOTAL da Pessoa (R$)</label>
+                                            <input
+                                                name="thirdPartyValue" type="text"
+                                                value={displayThirdValue} onChange={handleThirdValueChange}
+                                                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
+                                        💡 Se a compra for parcelada, informe a dívida TOTAL da pessoa. O sistema fará a divisão por parcelas automaticamente. Deixe R$ 0,00 se a compra for 100% dela.
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -244,7 +278,6 @@ export function Lancamentos({
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                 </div>
                                 <div className="text-right flex flex-col items-end shrink-0">
-                                    {/* 🔥 CORES ATUALIZADAS: Renda (Verde), Invest (Azul), Despesa (Vermelho Rose), Reembolso (Branco/Default) */}
                                     <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {formatarMoeda(t.valorParcela)}
                                     </p>
@@ -377,7 +410,6 @@ export function Lancamentos({
                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            {/* 🔥 CORES ATUALIZADAS NO EXTRATO MOBILE */}
                                             <p className={`font-black text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>{formatarMoeda(t.valorParcela)}</p>
                                         </div>
                                     </div>
@@ -420,7 +452,6 @@ export function Lancamentos({
                                                 {t.status === 'pago' && t.data_pagamento && <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Pago em: {new Date(t.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>}
                                             </div>
                                         </td>
-                                        {/* 🔥 CORES ATUALIZADAS NO EXTRATO DESKTOP */}
                                         <td className={`p-3 text-right font-bold whitespace-nowrap ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>{formatarMoeda(t.valorParcela)}</td>
                                     </tr>
                                 ))

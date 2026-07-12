@@ -3,10 +3,19 @@ import { useCallback } from 'react';
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 /**
+ * Função Auxiliar para extrair a fração exata que pertence ao terceiro na parcela.
+ * Garante retrocompatibilidade: se não houver thirdPartyValue definido, assume 100%.
+ */
+const getValorTerceiro = (t) => {
+    const vp = Number(t.valorParcela) || 0;
+    if (!t.isThirdParty) return 0;
+    return t.thirdPartyValue !== null && t.thirdPartyValue !== undefined ? Number(t.thirdPartyValue) : vp;
+};
+
+/**
  * @file src/hooks/useCartoesFaturas.jsx
  * @description Hook Customizado para Gestão de Faturas de Cartão de Crédito.
- * Desacopla do componente principal a lógica de agrupamento financeiro,
- * pagamento em lote (Bulk Update), reversão de status e abatimento de estornos.
+ * Suporta abates de estornos (reembolsos) e o novo modelo de Split (divisão fracionada com terceiros).
  */
 export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal }) {
 
@@ -67,36 +76,38 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
                 if (!porCartao[nomeCartao]) porCartao[nomeCartao] = { total: 0, pago: 0, pendente: 0 };
                 if (!gastosTerceiros[nomeCartao]) gastosTerceiros[nomeCartao] = {};
 
-                const valorAtual = Number(t.valorParcela) || 0;
+                const valorTotalParcela = Number(t.valorParcela) || 0;
+                // 🔥 NOVA LÓGICA: Calcula a fração exata do terceiro
+                const valorDoTerceiro = getValorTerceiro(t);
 
-                // 🔥 LÓGICA DE REEMBOLSO: Se for reembolso, SUBTRAI da fatura ao invés de somar
                 if (t.tipo === 'reembolso') {
-                    porCartao[nomeCartao].total -= valorAtual;
+                    porCartao[nomeCartao].total -= valorTotalParcela;
 
                     if (t.status === 'pago') {
-                        porCartao[nomeCartao].pago -= valorAtual;
+                        porCartao[nomeCartao].pago -= valorTotalParcela;
                     } else {
-                        porCartao[nomeCartao].pendente -= valorAtual;
+                        porCartao[nomeCartao].pendente -= valorTotalParcela;
                     }
 
                     if (t.isThirdParty && t.thirdPartyName) {
                         const nomeT = String(t.thirdPartyName).trim();
-                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) - valorAtual;
+                        // Subtrai a fração do terceiro em caso de reembolso
+                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) - valorDoTerceiro;
                     }
                 }
-                // COMPRAS NORMAIS
                 else {
-                    porCartao[nomeCartao].total += valorAtual;
+                    porCartao[nomeCartao].total += valorTotalParcela;
 
                     if (t.status === 'pago') {
-                        porCartao[nomeCartao].pago += valorAtual;
+                        porCartao[nomeCartao].pago += valorTotalParcela;
                     } else {
-                        porCartao[nomeCartao].pendente += valorAtual;
+                        porCartao[nomeCartao].pendente += valorTotalParcela;
                     }
 
                     if (t.isThirdParty && t.thirdPartyName) {
                         const nomeT = String(t.thirdPartyName).trim();
-                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorAtual;
+                        // Soma a fração do terceiro na fatura
+                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorDoTerceiro;
                     }
                 }
             }
@@ -109,6 +120,7 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
             return {
                 nome,
                 ...v,
+                // 🔥 SEU GASTO PESSOAL: É a fatura total gerada pelo banco menos a soma das frações de dívida dos terceiros
                 gastoPessoal: v.total - totalTerceiros,
                 listaTerceiros: arrTerceiros
             };

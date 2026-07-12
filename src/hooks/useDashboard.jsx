@@ -1,19 +1,20 @@
 import React, { useState, useMemo, useCallback } from 'react';
 
-/**
- * Formata um valor numérico para o padrão monetário brasileiro (BRL).
- * @param {number|string} valor 
- * @returns {string} Valor formatado como moeda (ex: R$ 1.500,00).
- */
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 /**
- * Hook Customizado: useDashboard
- * Motor cognitivo e matemático da tela principal.
- * Processa saldos acumulados, filtragem de tabelas, rolagem de pendências e as 
- * previsões de inteligência artificial (Raio-X de categorias e Resumos de Cards).
+ * Função Auxiliar para calcular a fração (split) de uma compra compartilhada.
+ * Retorna apenas a parte do dinheiro que pertence ao próprio utilizador.
  */
+const getMeuValor = (t) => {
+    const vp = Number(t.valorParcela);
+    if (!t.isThirdParty) return vp;
+    // Se isThirdParty for true mas não tiver thirdPartyValue (ou for 0), assume que 100% da compra é do terceiro (legado).
+    const vt = t.thirdPartyValue !== null && t.thirdPartyValue !== undefined ? Number(t.thirdPartyValue) : vp;
+    return Math.max(0, vp - vt);
+};
+
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
@@ -29,21 +30,19 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
-        todasAteOMes.forEach(t => {
-            const v = Number(t.valorParcela);
 
-            // IGNORA GASTOS DE TERCEIROS NO CÁLCULO DE SALDO ANTERIOR
-            if (t.isThirdParty) return;
+        todasAteOMes.forEach(t => {
+            const meuValor = getMeuValor(t);
+            if (meuValor === 0) return; // Se a sua parte for 0, ignora completamente a transação do saldo
 
             if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                if (t.status === 'pago') rendaPaga += v;
+                if (t.status === 'pago') rendaPaga += meuValor;
             }
-            // 🔥 REGRA DE ESTORNO: Reembolsos reduzem o histórico de gastos
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= v;
+                if (t.status === 'pago') gastoPago -= meuValor;
             }
             else {
-                if (t.status === 'pago') gastoPago += v;
+                if (t.status === 'pago') gastoPago += meuValor;
             }
         });
         return rendaPaga - gastoPago;
@@ -90,9 +89,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return filtrados;
     }, [transacoesMes, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
-    // =========================================================================
-    // MATEMÁTICA GERAL DO DASHBOARD (CARDS)
-    // =========================================================================
     let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
     let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
@@ -101,54 +97,49 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let gastoSemCategoria = 0, gastoContasFixas = 0;
 
     transacoesMes.forEach(t => {
-        const v = Number(t.valorParcela);
+        const valorTotalIntegral = Number(t.valorParcela);
+        const meuValor = getMeuValor(t);
 
-        // IGNORAR TERCEIROS DOS GASTOS REAIS E DO GRÁFICO (EXCETO SE FOR NO CRÉDITO ABERTO)
-        if (t.isThirdParty) {
-            if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
-                totFaturaCreditoAberto += v; // Adiciona a dívida do terceiro na fatura
+        // 🔥 A FATURA DO CARTÃO SEMPRE CONSIDERA O VALOR TOTAL (SUA PARTE + A DO TERCEIRO), 
+        // POIS PARA O BANCO, QUEM DEVE O DINHEIRO É VOCÊ E NÃO O TERCEIRO.
+        if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+            if (t.tipo === 'reembolso') {
+                totFaturaCreditoAberto -= valorTotalIntegral;
+            } else if (t.tipo !== 'renda' && t.tipo !== 'investimento') {
+                totFaturaCreditoAberto += valorTotalIntegral;
             }
-            return; // Impede que o restante do bloco compute o gasto do terceiro no seu painel
         }
 
+        if (meuValor === 0) return; // Se a sua parte for R$ 0,00, não entra nos seus gráficos pessoais de gastos
+
         if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-            totRendaTotal += v;
-            if (t.status === 'pago') totRendaPaga += v;
-            else totRendaPendente += v;
+            totRendaTotal += meuValor;
+            if (t.status === 'pago') totRendaPaga += meuValor;
+            else totRendaPendente += meuValor;
         }
         else {
             if (t.tipo === 'investimento') {
-                totInvestido += v;
-                if (t.status === 'pago') totInvestidoPago += v;
-                else totInvestidoPendente += v;
+                totInvestido += meuValor;
+                if (t.status === 'pago') totInvestidoPago += meuValor;
+                else totInvestidoPendente += meuValor;
             }
-            // 🔥 LÓGICA DE REEMBOLSO: Abate matematicamente das despesas
             else if (t.tipo === 'reembolso') {
-                totGastoReal -= v;
-                if (t.status === 'pago') totGastoPago -= v;
-                else totGastoPendente -= v;
+                totGastoReal -= meuValor;
+                if (t.status === 'pago') totGastoPago -= meuValor;
+                else totGastoPendente -= meuValor;
 
-                if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
-                    totFaturaCreditoAberto -= v; // Reduz o valor da fatura em aberto
-                }
-
-                if (t.categoria === 'Contas Fixas') gastoContasFixas -= v;
-                else if (t.categoria === 'Sem Categoria') gastoSemCategoria -= v;
-                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] -= v;
+                if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
+                else if (t.categoria === 'Sem Categoria') gastoSemCategoria -= meuValor;
+                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] -= meuValor;
             }
-            // DESPESA NORMAL
             else if (t.tipo === 'despesa') {
-                totGastoReal += v;
-                if (t.status === 'pago') totGastoPago += v;
-                else totGastoPendente += v;
+                totGastoReal += meuValor;
+                if (t.status === 'pago') totGastoPago += meuValor;
+                else totGastoPendente += meuValor;
 
-                if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
-                    totFaturaCreditoAberto += v;
-                }
-
-                if (t.categoria === 'Contas Fixas') gastoContasFixas += v;
-                else if (t.categoria === 'Sem Categoria') gastoSemCategoria += v;
-                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += v;
+                if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
+                else if (t.categoria === 'Sem Categoria') gastoSemCategoria += meuValor;
+                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
             }
         }
     });
@@ -189,17 +180,17 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         modal.alert(<div className="space-y-3"><p className="text-sm"><b>{pendenciasPassadas.length}</b> pendência(s) antiga(s). Deseja importar para {nomesMeses[mesReal - 1]}?</p><div className="max-h-60 overflow-y-auto space-y-2 pr-2">{pendenciasPassadas.map(t => (<div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between"><div className="truncate"><p className="text-xs font-bold text-rose-800">{t.descricao}</p></div><span className="font-bold text-rose-700 text-sm">{formatarMoeda(t.valorParcela)}</span></div>))}</div><button type="button" onClick={() => { modal.close(); processarRolagemPendencias(); }} className="w-full mt-4 bg-rose-600 text-white font-bold py-3 rounded-lg shadow cursor-pointer">Importar</button></div>, '⚠️ Pendências');
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
-    // =========================================================================
-    // UI PREDITIVA E JANELAS DO DASHBOARD (Raio-X e Cards)
-    // =========================================================================
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && !t.isThirdParty);
+        // 🔥 Agora a categoria exibe apenas transações onde o SEU VALOR (Split) for maior que zero
+        const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
-        const maior = ts.reduce((max, t) => Number(t.valorParcela) > Number(max.valorParcela) ? t : max, ts[0]);
-        const menor = ts.reduce((min, t) => Number(t.valorParcela) < Number(min.valorParcela) ? t : min, ts[0]);
+
+        // 🔥 Maior e Menor valor calculados em cima do SEU gasto real, e não do valor total da nota fiscal
+        const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
+        const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
         let previsaoFimMes = vGasto;
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
@@ -224,14 +215,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">Total Atual vs Meta</p>
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">Seu Total Atual vs Meta</p>
                         <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatarMoeda(vGasto)} <span className="text-slate-400 font-normal">/</span></p>
                         <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">{formatarMoeda(vMeta)}</p>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">Média por Lançamento</p>
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">Média do Seu Gasto</p>
                         <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatarMoeda(med)}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">em {qtd}x</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">em {qtd}x transações</p>
                     </div>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
@@ -240,13 +231,13 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
-                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Maior Valor</p>
-                        <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(maior.valorParcela)}</p>
+                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Maior Gasto (Seu)</p>
+                        <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(getMeuValor(maior))}</p>
                         <p className="text-[9px] text-rose-500 dark:text-rose-400 mt-1 truncate" title={maior.descricao}>{new Date(maior.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maior.descricao}</p>
                     </div>
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
-                        <p className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold mb-1">Menor Valor</p>
-                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(menor.valorParcela)}</p>
+                        <p className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold mb-1">Menor Gasto (Seu)</p>
+                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(getMeuValor(menor))}</p>
                         <p className="text-[9px] text-emerald-500 dark:text-emerald-400 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
                     </div>
                 </div>
@@ -260,9 +251,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         modal.alert(conteudo, `Raio-X: ${nCat}`);
     }, [transacoes, dataVis, dataHoje, modal, nomeUsuario, garagem]);
 
-    // =========================================================================
-    // EXIBIÇÃO DE RELATÓRIO ANALÍTICO DOS CARDS SUPERIORES
-    // =========================================================================
     const abrirResumoCard = useCallback((tipo) => {
         let conteudo;
         let titulo;
@@ -283,8 +271,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
                 <div className="space-y-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros e Reembolsos/Estornos já foram abatidos para exibir o seu custo real de vida.</p>
-                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700"><span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês</span><span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span></div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros e Reembolsos já foram abatidos da sua fração para exibir o seu custo real de vida.</p>
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700"><span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês (Sua Parte)</span><span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span></div>
                     <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50"><span className="text-red-700 dark:text-red-400 font-semibold text-sm">✔ Já Descontado (Pago)</span><span className="font-bold text-red-800 dark:text-red-300">{formatarMoeda(totGastoPago)}</span></div>
                     <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800/50"><span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">⏳ A Descontar (Pendente)</span><span className="font-bold text-amber-800 dark:text-amber-300">{formatarMoeda(totGastoPendente)}</span></div>
                 </div>
@@ -306,7 +294,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaPaga)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Líquidos)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(totGastoPago)}</span></div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Sua Parte)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(totGastoPago)}</span></div>
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Investimentos Efetivados</span><span className="text-blue-600 dark:text-blue-400 font-bold">- {formatarMoeda(totInvestidoPago)}</span></div>
                     {somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>

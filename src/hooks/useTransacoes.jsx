@@ -3,14 +3,10 @@ import { useCallback } from 'react';
 /**
  * @file src/hooks/useTransacoes.jsx
  * @description Hook customizado para gerir o CRUD de transações financeiras.
- * Implementa inteligência de faturas, regras de cartões de crédito (melhor dia), 
- * edição e exclusão em lote de parcelamentos legados, além de compras de terceiros.
+ * Refatorado para suportar valores fracionados de Terceiros (Split).
  */
 export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
-    /**
-     * Sincroniza o estado global das transações com a base de dados.
-     */
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
@@ -19,10 +15,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         } catch (err) { console.error("Erro ao recarregar transações:", err); }
     }, [API, getHeaders, token, setTransacoes]);
 
-    /**
-     * Adiciona uma nova transação. 
-     * Processa a divisão de parcelas e as regras de fechamento de faturas de cartão de crédito.
-     */
     const addTransacao = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -39,6 +31,17 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
 
         const isThirdParty = formData.get('isThirdParty') === 'on' || formData.get('isThirdParty') === 'true';
         const thirdPartyName = isThirdParty ? formData.get('thirdPartyName') : null;
+
+        // 🔥 CAPTURA E FORMATA O VALOR TOTAL DO TERCEIRO
+        let thirdPartyTotalRaw = formData.get('thirdPartyValue');
+        let thirdPartyTotal = null;
+        if (isThirdParty && thirdPartyTotalRaw) {
+            if (typeof thirdPartyTotalRaw === 'string') {
+                thirdPartyTotal = parseFloat(thirdPartyTotalRaw.replace(/[R$\s.]/g, '').replace(',', '.'));
+            } else {
+                thirdPartyTotal = parseFloat(thirdPartyTotalRaw);
+            }
+        }
 
         let km_moto = formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null;
         let veiculo_id = null;
@@ -69,7 +72,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         let mesRefInicial = parseInt(mesStr, 10);
         let anoRefInicial = parseInt(anoStr, 10);
 
-        // Lógica de Melhor Dia de Compra do Cartão de Crédito
         if (formaPagamento.startsWith('credito_')) {
             const cartaoId = formaPagamento.split('_')[1];
             const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
@@ -92,6 +94,9 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         }
 
         const valorParcelaCalculado = Math.round((parseFloat(valorBruto) / numParcelas) * 100) / 100;
+
+        // 🔥 DIVIDE O VALOR DO TERCEIRO PELO NÚMERO DE PARCELAS
+        const thirdPartyValueCalculado = thirdPartyTotal ? Math.round((thirdPartyTotal / numParcelas) * 100) / 100 : null;
 
         const objBase = {
             id: Date.now().toString(),
@@ -124,6 +129,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
                 ...objBase,
                 id: `${objBase.id}_${i}`,
                 valorParcela: valorParcelaCalculado,
+                thirdPartyValue: thirdPartyValueCalculado, // 🔥 Injeta a fração do terceiro na parcela
                 mesReferencia: mesRef,
                 anoReferencia: anoRef,
                 descricao: numParcelas > 1 ? `${objBase.descricao} (${i + 1}/${numParcelas})` : objBase.descricao
@@ -146,9 +152,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         }
     };
 
-    /**
-     * Alterna rapidamente uma transação entre Pendente e Pago.
-     */
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
         try {
@@ -164,16 +167,10 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         } catch (err) { console.error("Erro ao mudar status:", err); }
     };
 
-    /**
-     * Utilitário para rastrear parcelamentos.
-     * PRIORIDADE 1: Busca pelo ID único do grupo (para transações novas).
-     * PRIORIDADE 2: Fallback para Regex buscando pelo texto '(X/Y)' (para legados sem underline).
-     */
     const getTransacoesRelacionadas = (tTarget) => {
-        // 🔥 1. PRIORIDADE MÁXIMA: Transações novas agrupadas por ID único (ex: timestamp_0)
         if (tTarget.id && String(tTarget.id).includes('_')) {
             const baseId = String(tTarget.id).split('_')[0];
-            const currentIndex = parseInt(String(tTarget.id).split('_')[1], 10) + 1; // +1 porque o banco inicia em 0
+            const currentIndex = parseInt(String(tTarget.id).split('_')[1], 10) + 1;
 
             const encontradas = transacoes.filter(item => String(item.id).startsWith(baseId));
             encontradas.sort((a, b) => new Date(a.dataCompra) - new Date(b.dataCompra));
@@ -181,7 +178,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             return { isParcelado: true, relacionadas: encontradas, currentIndex };
         }
 
-        // 🔥 2. FALLBACK LEGADO: Transações antigas que não têm '_' no ID, buscando pelo nome "Descricao (x/y)"
         const matchNome = String(tTarget.descricao).match(/^(.*?)\s*\((\d+)\/(\d+)\)$/);
 
         if (matchNome) {
@@ -192,22 +188,15 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
             const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`^${escapeRegExp(baseDescricao)}\\s*\\(\\d+\\/${totalParcelas}\\)$`);
 
-            // Adicionado filtro de categoria para evitar colisões entre lançamentos de nomes idênticos antigos
             const encontradas = transacoes.filter(item => regex.test(item.descricao) && item.categoria === tTarget.categoria);
             encontradas.sort((a, b) => new Date(a.dataCompra) - new Date(b.dataCompra));
 
             return { isParcelado: true, relacionadas: encontradas, currentIndex };
         }
 
-        // 3. NÃO É PARCELADO
         return { isParcelado: false, relacionadas: [tTarget], currentIndex: 1 };
     };
 
-    /**
-     * Motor principal de Edição de Transações. 
-     * Orquestra a edição em lote, mantendo a blindagem estrita de competências (mês/ano) e status
-     * para não bagunçar relatórios legados e extratos anteriores.
-     */
     const editarValor = async (t) => {
         const { isParcelado, relacionadas, currentIndex } = getTransacoesRelacionadas(t);
         let transacoesAEditar = [t];
@@ -215,10 +204,12 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         let infoParcelamento = null;
 
         if (isParcelado && relacionadas.length > 1) {
+            // 🔥 Adicionada verificação de thirdPartyValue original no parcelamento
             infoParcelamento = {
                 atual: currentIndex,
                 total: relacionadas.length,
-                valorTotal: relacionadas.reduce((acc, curr) => acc + Number(curr.valorParcela), 0)
+                valorTotal: relacionadas.reduce((acc, curr) => acc + Number(curr.valorParcela), 0),
+                valorTerceiroTotal: relacionadas.reduce((acc, curr) => acc + (Number(curr.thirdPartyValue) || 0), 0)
             };
 
             acao = await modal.options(
@@ -259,14 +250,12 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         try {
             const promessas = transacoesAEditar.map(oldTx => {
 
-                // Mágica 1: Preservar o prefixo e sufixo de parcelamento, ex: (1/10)
                 let novaDescricao = dadosEditados.descricao;
                 const sufixoMatch = oldTx.descricao.match(/\s?\(\d+\/\d+\)$/);
                 if (sufixoMatch && !novaDescricao.includes(sufixoMatch[0])) {
                     novaDescricao = `${novaDescricao.replace(/\s?\(\d+\/\d+\)$/, '')}${sufixoMatch[0]}`;
                 }
 
-                // Mágica 2: Alterar o dia da compra mas preservar o mês original do lançamento
                 let novaData = oldTx.dataCompra;
                 if (dadosEditados.dataCompra !== t.dataCompra) {
                     const novoDia = dadosEditados.dataCompra.split('-')[2];
@@ -274,7 +263,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
                     novaData = `${oldAno}-${oldMes}-${novoDia}`;
                 }
 
-                // Mágica 3: Blindagem de Status (Apenas altera se for a parcela de foco)
                 let novoStatus = oldTx.status;
                 if (oldTx.id === t.id) {
                     novoStatus = dadosEditados.status;
@@ -285,7 +273,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
                     descricao: novaDescricao,
                     dataCompra: novaData,
                     status: novoStatus,
-                    // BLINDAGEM DE COMPETÊNCIA:
                     mesReferencia: oldTx.mesReferencia,
                     anoReferencia: oldTx.anoReferencia
                 };
@@ -307,9 +294,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         }
     };
 
-    /**
-     * Elimina transações com detecção inteligente de vínculos de parcelamento.
-     */
     const deletarTransacao = async (t) => {
         const { isParcelado, relacionadas } = getTransacoesRelacionadas(t);
         let idsParaDeletar = [t.id];
@@ -355,9 +339,6 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         }
     };
 
-    /**
-     * Aplica uma ação em lote sobre múltiplas transações simultaneamente via checkboxes da UI.
-     */
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
         const ok = await modal.confirm(`Deseja realmente ${acoesNomes[acao]} os ${idsSelecionados.length} itens selecionados?`, '⚠️ Ação em Lote');

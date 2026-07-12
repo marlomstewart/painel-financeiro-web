@@ -21,26 +21,51 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   const [isThirdParty, setIsThirdParty] = useState(transacao.isThirdParty || false);
   const [thirdPartyName, setThirdPartyName] = useState(transacao.thirdPartyName || '');
 
+  // 🔥 NOVO: ESTADO PARA O VALOR FRACIONADO DO TERCEIRO NA EDIÇÃO
+  const initThirdValueStr = transacao.thirdPartyValue ? Math.round(Number(transacao.thirdPartyValue) * 100).toString() : '0';
+  const [thirdPartyValueStr, setThirdPartyValueStr] = useState(initThirdValueStr);
+
   const handleValorChange = (e) => {
     let val = e.target.value.replace(/\D/g, '');
     if (val === '') val = '0';
     setValorStr(val);
   };
 
+  const handleThirdValueChange = (e) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val === '') val = '0';
+    setThirdPartyValueStr(val);
+  };
+
   const formatarMoedaLocal = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const displayThirdValue = (parseInt(thirdPartyValueStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const numericValue = parseInt(valorStr, 10) / 100;
+
+    let numericThirdValue = null;
+    if (isThirdParty) {
+      numericThirdValue = parseInt(thirdPartyValueStr, 10) / 100;
+      if (numericThirdValue === 0) numericThirdValue = null; // Mantém retrocompatibilidade (100% terceiro) se zero
+    }
+
     if (numericValue <= 0) {
       alert('O valor deve ser maior que zero.');
       return;
     }
+
+    if (numericThirdValue !== null && numericThirdValue > numericValue) {
+      alert('O valor do terceiro não pode ser maior que o valor total da parcela.');
+      return;
+    }
+
     onConfirm({
       descricao, valorParcela: numericValue, dataCompra, tipo, status,
       categoria, formaPagamento, observacao,
-      isThirdParty, thirdPartyName: isThirdParty ? thirdPartyName : null
+      isThirdParty, thirdPartyName: isThirdParty ? thirdPartyName : null,
+      thirdPartyValue: numericThirdValue
     });
   };
 
@@ -59,6 +84,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
           <div className="text-right">
             <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-wider mb-0.5">Valor Original Total</p>
             <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">{formatarMoedaLocal(infoParcelamento.valorTotal)}</p>
+            {infoParcelamento.valorTerceiroTotal > 0 && (
+              <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
+                🤝 Terceiros: {formatarMoedaLocal(infoParcelamento.valorTerceiroTotal)}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -129,13 +159,29 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
         {isThirdParty && (
           <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-1 mt-2">
-            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
-            <input
-              type="text" required
-              value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
-              className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-              placeholder="Ex: Maiara, Irmão, Amigo..."
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
+                <input
+                  type="text" required
+                  value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                  placeholder="Ex: Maiara, Irmão..."
+                />
+              </div>
+              <div>
+                {/* 🔥 INPUT DE VALOR FRACIONADO */}
+                <label className="block text-[10px] font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider" title="Informe a dívida da pessoa na parcela atual">Valor da Pessoa (Nesta Parcela)</label>
+                <input
+                  type="text" required
+                  value={displayThirdValue} onChange={handleThirdValueChange}
+                  className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+            <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
+              Se você deixar R$ 0,00 o sistema assumirá que 100% desta parcela percente ao terceiro.
+            </p>
           </div>
         )}
       </div>
@@ -350,13 +396,16 @@ export function Modal({ config, onClose }) {
               <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{config.transacao.categoria}</p>
                 <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{config.transacao.descricao}</h4>
-                {/* 🔥 CORES ATUALIZADAS NO DETALHE DO MODAL */}
                 <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
+                {/* 🔥 EXIBIÇÃO DA FRAÇÃO DO TERCEIRO NOS DETALHES */}
                 {config.transacao.isThirdParty && (
-                  <span className="inline-block mt-3 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-amber-200 dark:border-amber-800">
-                    🤝 Compra de Terceiro: {config.transacao.thirdPartyName}
+                  <span className="inline-block mt-3 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border border-amber-200 dark:border-amber-800">
+                    🤝 Terceiro: {config.transacao.thirdPartyName}
+                    <br className="sm:hidden" />
+                    <span className="hidden sm:inline"> — </span>
+                    Responsável por {config.transacao.thirdPartyValue ? Number(config.transacao.thirdPartyValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '100%'}
                   </span>
                 )}
               </div>
