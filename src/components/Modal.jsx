@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * Componente Interno: FormularioEdicao
+ * Renderiza o formulário completo de edição de transação dentro do Modal.
  */
 function FormularioEdicao({ config, onConfirm, onCancel }) {
   const { transacao, categorias = [], cartoes = [], infoParcelamento, acaoEdicao } = config;
@@ -107,7 +108,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             <option value="despesa">🔻 Despesa (Saída)</option>
             <option value="renda">💰 Renda (Entrada)</option>
             <option value="investimento">📈 Investimento</option>
-            {/* 🔥 NOVA OPÇÃO DE ESTORNO */}
             <option value="reembolso">🔄 Reembolso / Estorno</option>
           </select>
         </div>
@@ -161,6 +161,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
 /**
  * Componente: Modal (Orquestrador Global)
+ * Centraliza e renderiza todos os Pop-ups do sistema.
  */
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
@@ -349,8 +350,8 @@ export function Modal({ config, onClose }) {
               <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{config.transacao.categoria}</p>
                 <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{config.transacao.descricao}</h4>
-                {/* 🔥 COR ESPECIAL FÚCSIA/ROXO SE FOR UM REEMBOLSO! */}
-                <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'reembolso' ? 'text-fuchsia-500' : 'text-slate-800 dark:text-white'}`}>
+                {/* 🔥 CORES ATUALIZADAS NO DETALHE DO MODAL */}
+                <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 {config.transacao.isThirdParty && (

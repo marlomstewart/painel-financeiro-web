@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 /**
  * @file src/components/Lancamentos.jsx
  * @description Componente visual responsável pela tela de "Novo Lançamento" e pelo "Extrato" de transações.
- * Inclui formulários, tabelas de auditoria, filtros avançados e ações em lote.
+ * Inclui formulários, tabelas de auditoria, filtros avançados e paleta de cores dinâmica para valores.
  */
 export function Lancamentos({
     modo = 'lancamentos',
@@ -148,7 +148,6 @@ export function Lancamentos({
                                     <option value="despesa">🔻 Despesa (Saída)</option>
                                     <option value="renda">💰 Renda (Entrada)</option>
                                     <option value="investimento">📈 Investimento</option>
-                                    {/* 🔥 INSERÇÃO DA OPÇÃO DE REEMBOLSO NA CRIAÇÃO */}
                                     <option value="reembolso">🔄 Reembolso / Estorno</option>
                                 </select>
                             </div>
@@ -245,8 +244,8 @@ export function Lancamentos({
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                 </div>
                                 <div className="text-right flex flex-col items-end shrink-0">
-                                    {/* 🔥 COR FÚCSIA PARA REEMBOLSOS NO RESUMO MOBILE */}
-                                    <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'reembolso' ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                                    {/* 🔥 CORES ATUALIZADAS: Renda (Verde), Invest (Azul), Despesa (Vermelho Rose), Reembolso (Branco/Default) */}
+                                    <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {formatarMoeda(t.valorParcela)}
                                     </p>
                                     <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
@@ -378,8 +377,8 @@ export function Lancamentos({
                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            {/* 🔥 COR FÚCSIA PARA REEMBOLSOS NO EXTRATO MOBILE */}
-                                            <p className={`font-black text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'reembolso' ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-800 dark:text-slate-100'}`}>{formatarMoeda(t.valorParcela)}</p>
+                                            {/* 🔥 CORES ATUALIZADAS NO EXTRATO MOBILE */}
+                                            <p className={`font-black text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>{formatarMoeda(t.valorParcela)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -421,8 +420,8 @@ export function Lancamentos({
                                                 {t.status === 'pago' && t.data_pagamento && <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Pago em: {new Date(t.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>}
                                             </div>
                                         </td>
-                                        {/* 🔥 COR FÚCSIA PARA REEMBOLSOS NO EXTRATO DESKTOP */}
-                                        <td className={`p-3 text-right font-bold whitespace-nowrap ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'reembolso' ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-800 dark:text-slate-200'}`}>{formatarMoeda(t.valorParcela)}</td>
+                                        {/* 🔥 CORES ATUALIZADAS NO EXTRATO DESKTOP */}
+                                        <td className={`p-3 text-right font-bold whitespace-nowrap ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>{formatarMoeda(t.valorParcela)}</td>
                                     </tr>
                                 ))
                             )}
