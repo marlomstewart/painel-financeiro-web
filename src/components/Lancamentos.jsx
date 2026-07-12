@@ -26,6 +26,10 @@ export function Lancamentos({
     const [observacao, setObservacao] = useState('');
     const [kmMoto, setKmMoto] = useState('');
 
+    // 🔥 NOVOS ESTADOS PARA A COMPRA DE TERCEIROS
+    const [isThirdParty, setIsThirdParty] = useState(false);
+    const [thirdPartyName, setThirdPartyName] = useState('');
+
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
 
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -50,6 +54,8 @@ export function Lancamentos({
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
             setFormaPagamento('pix'); setParcelas(1);
+            // 🔥 RESETA OS TERCEIROS APÓS ENVIAR
+            setIsThirdParty(false); setThirdPartyName('');
         }
 
         setIsSubmitting(false);
@@ -102,7 +108,7 @@ export function Lancamentos({
         return (
             <div className="p-4 md:p-8 space-y-6 w-full max-w-3xl mx-auto pb-24 overflow-x-hidden relative">
 
-                {/* CABEÇALHO FIXO */}
+                {/* CABEÇALHO ORIGINAL */}
                 <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
                     <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">➕ Novo Lançamento</h2>
@@ -171,6 +177,27 @@ export function Lancamentos({
                             </div>
                         )}
 
+                        {/* 🔥 BLOCO DA COMPRA DE TERCEIROS (TOGGLE + INPUT) */}
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <label className="flex items-center gap-2 cursor-pointer mb-3">
+                                <input type="checkbox" name="isThirdParty" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
+                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra para Terceiro</span>
+                            </label>
+
+                            {isThirdParty && (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-3">
+                                    <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
+                                    <input
+                                        name="thirdPartyName" type="text" required
+                                        value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                                        placeholder="Ex: Mayara, Cunhado, João..."
+                                    />
+                                    <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium">Estes gastos serão abatidos dos seus gráficos e contabilizados separadamente na fatura.</p>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelCls}>Forma de Pagamento</label>
@@ -208,7 +235,11 @@ export function Lancamentos({
                         {ultimosCinco.map(t => (
                             <div key={t.id} onClick={() => abrirDetalhes(t)} className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer group">
                                 <div className="flex-1 min-w-0 pr-2">
-                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{t.descricao}</p>
+                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                        {t.descricao}
+                                        {/* 🔥 BADGE NA LISTAGEM SE FOR TERCEIRO */}
+                                        {t.isThirdParty && <span className="ml-2 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block no-underline">🤝 {t.thirdPartyName}</span>}
+                                    </p>
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                 </div>
                                 <div className="text-right flex flex-col items-end shrink-0">
@@ -228,11 +259,10 @@ export function Lancamentos({
         );
     }
 
-    // EXTRATO VISÃO (Com cabeçalho fixo)
+    // EXTRATO VISÃO
     return (
         <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl mx-auto pb-24 overflow-x-hidden relative">
 
-            {/* CABEÇALHO FIXO COM SELETOR DE MESES */}
             <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
                 <header className="border-b border-slate-200 dark:border-slate-800 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -332,7 +362,12 @@ export function Lancamentos({
                                 </div>
                                 <div className="flex-1 min-w-0 p-4 cursor-pointer" onClick={() => abrirDetalhes(t)}>
                                     <div className="flex justify-between items-start gap-3 mb-2">
-                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate">{t.descricao}{t.observacao && <span className="ml-1 text-blue-500" title="Possui observação">💬</span>}</h4>
+                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate">
+                                            {t.descricao}
+                                            {/* 🔥 BADGE DE TERCEIRO NO EXTRATO MOBILE */}
+                                            {t.isThirdParty && <span className="ml-1 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block">🤝 {t.thirdPartyName}</span>}
+                                            {t.observacao && <span className="ml-1 text-blue-500" title="Possui observação">💬</span>}
+                                        </h4>
                                         <span className={`shrink-0 text-[9px] uppercase font-bold px-2 py-1 rounded-md ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>{t.status}</span>
                                     </div>
                                     <div className="flex justify-between items-end mt-4">
@@ -350,7 +385,7 @@ export function Lancamentos({
                     )}
                 </div>
 
-                <div className="hidden lg:block overflow-x-auto flex-1 w-full rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="hidden lg:block overflow-x-auto flex-1 w-full rounded-lg border border-slate-200 dark:border-slate-800 mt-4">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-extrabold tracking-wider whitespace-nowrap">
                             <tr>
@@ -370,7 +405,10 @@ export function Lancamentos({
                                         <td className="p-3 text-center whitespace-nowrap"><input type="checkbox" checked={transacoesSelecionadas.includes(t.id)} onChange={() => toggleSelecao(t.id)} className="cursor-pointer accent-blue-600 w-4 h-4" /></td>
                                         <td className="p-3 min-w-[140px]">
                                             <span onClick={() => abrirDetalhes(t)} className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-start gap-1 transition-colors break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>
-                                                {t.descricao} {t.observacao && <svg title="Possui Observação" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block flex-shrink-0 mt-0.5 cursor-help"><path fillRule="evenodd" d="M4.804 21.644A6.707 6.707 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337 4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785Z" clipRule="evenodd" /></svg>}
+                                                {t.descricao}
+                                                {/* 🔥 BADGE DE TERCEIRO NO EXTRATO DESKTOP */}
+                                                {t.isThirdParty && <span className="ml-2 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block no-underline">🤝 {t.thirdPartyName}</span>}
+                                                {t.observacao && <svg title="Possui Observação" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block flex-shrink-0 mt-0.5 cursor-help"><path fillRule="evenodd" d="M4.804 21.644A6.707 6.707 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337 4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785Z" clipRule="evenodd" /></svg>}
                                             </span>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </td>

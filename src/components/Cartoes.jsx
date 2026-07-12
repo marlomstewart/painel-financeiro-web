@@ -98,7 +98,12 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                     ) : (
                         cartoes.map(c => {
                             const transacoesCartao = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${c.id}`);
-                            const limiteUtilizado = transacoesCartao.reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
+
+                            // 🔥 DIVISÃO ENTRE GASTOS PESSOAIS E TERCEIROS
+                            const gastosPessoais = transacoesCartao.filter(t => !t.isThirdParty).reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
+                            const gastosTerceiros = transacoesCartao.filter(t => t.isThirdParty).reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
+
+                            const limiteUtilizado = gastosPessoais + gastosTerceiros;
                             const limiteTotal = Number(c.limite || 0);
                             const limiteRestante = limiteTotal - limiteUtilizado;
 
@@ -138,9 +143,18 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                                             ></div>
                                         </div>
 
-                                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400">
-                                            <span>Utilizado: <strong className="text-slate-200">{formatarMoeda(limiteUtilizado)}</strong></span>
-                                            <span>{pctUtilizado.toFixed(1)}%</span>
+                                        {/* 🔥 MOSTRA A DIVISÃO DOS GASTOS AQUI */}
+                                        <div className="flex flex-col gap-1 text-[10px] font-medium text-slate-400 bg-slate-800/40 p-2 rounded border border-slate-700">
+                                            <div className="flex justify-between items-center">
+                                                <span>Meus Gastos:</span>
+                                                <strong className="text-slate-200">{formatarMoeda(gastosPessoais)}</strong>
+                                            </div>
+                                            {gastosTerceiros > 0 && (
+                                                <div className="flex justify-between items-center text-amber-400">
+                                                    <span>De Terceiros:</span>
+                                                    <strong>{formatarMoeda(gastosTerceiros)}</strong>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

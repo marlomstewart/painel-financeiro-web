@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * Componente Interno: FormularioEdicao
- * Renderiza o formulário completo de edição de transação dentro do Modal
- * com a Máscara Bancária de digitação progressiva (direita para esquerda).
  */
 function FormularioEdicao({ config, onConfirm, onCancel }) {
-  const { transacao, categorias = [], cartoes = [] } = config;
+  const { transacao, categorias = [], cartoes = [], infoParcelamento, acaoEdicao } = config;
 
   const initValorStr = Math.round((transacao.valorParcela || 0) * 100).toString();
   const [valorStr, setValorStr] = useState(initValorStr);
@@ -19,12 +17,16 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   const [formaPagamento, setFormaPagamento] = useState(transacao.formaPagamento || 'pix');
   const [observacao, setObservacao] = useState(transacao.observacao || '');
 
+  const [isThirdParty, setIsThirdParty] = useState(transacao.isThirdParty || false);
+  const [thirdPartyName, setThirdPartyName] = useState(transacao.thirdPartyName || '');
+
   const handleValorChange = (e) => {
     let val = e.target.value.replace(/\D/g, '');
     if (val === '') val = '0';
     setValorStr(val);
   };
 
+  const formatarMoedaLocal = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const handleSubmit = (e) => {
@@ -34,7 +36,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
       alert('O valor deve ser maior que zero.');
       return;
     }
-    onConfirm({ descricao, valorParcela: numericValue, dataCompra, tipo, status, categoria, formaPagamento, observacao });
+    onConfirm({
+      descricao, valorParcela: numericValue, dataCompra, tipo, status,
+      categoria, formaPagamento, observacao,
+      isThirdParty, thirdPartyName: isThirdParty ? thirdPartyName : null
+    });
   };
 
   const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors";
@@ -42,8 +48,23 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+
+      {/* 🔥 MÓDULO VISUAL: RESUMO DO PARCELAMENTO (MOSTRA O VALOR TOTAL) */}
+      {infoParcelamento && (
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 p-3 rounded-lg flex justify-between items-center shadow-sm">
+          <div>
+            <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-wider mb-0.5">Compra Parcelada</p>
+            <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">Parcela {infoParcelamento.atual} de {infoParcelamento.total}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-wider mb-0.5">Valor Original Total</p>
+            <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">{formatarMoedaLocal(infoParcelamento.valorTotal)}</p>
+          </div>
+        </div>
+      )}
+
       <div>
-        <label className={labelCls}>Valor (R$)</label>
+        <label className={labelCls}>{infoParcelamento ? 'Valor DESTA Parcela (R$)' : 'Valor (R$)'}</label>
         <input
           type="text"
           value={displayValor}
@@ -51,18 +72,34 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
           autoFocus
           className="w-full bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 text-3xl font-black text-blue-700 dark:text-blue-400 text-center outline-none focus:border-blue-500 transition-colors shadow-inner"
         />
+        {infoParcelamento && (
+          <p className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mt-2 text-center leading-tight">
+            💡 Só edite o valor se esta parcela específica sofreu juros ou desconto.
+          </p>
+        )}
       </div>
 
       <div><label className={labelCls}>Descrição</label><input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className={inputCls} /></div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelCls}>Data</label><input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} /></div>
+        <div>
+          <label className={labelCls}>Data</label>
+          <input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} />
+          {/* 🔥 AVISO DE SEGURANÇA PARA A DATA */}
+          {acaoEdicao && acaoEdicao !== 'unica' && (
+            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O mês/ano das outras parcelas serão preservados.</p>
+          )}
+        </div>
         <div>
           <label className={labelCls}>Status</label>
           <select value={status} onChange={e => setStatus(e.target.value)} className={inputCls}>
             <option value="pendente">Pendente</option>
             <option value="pago">Pago / Recebido</option>
           </select>
+          {/* 🔥 AVISO DE SEGURANÇA PARA O STATUS */}
+          {acaoEdicao && acaoEdicao !== 'unica' && (
+            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O status das outras parcelas NÃO será alterado.</p>
+          )}
         </div>
       </div>
 
@@ -83,6 +120,25 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
           </select>
         </div>
+      </div>
+
+      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <label className="flex items-center gap-2 cursor-pointer mb-3">
+          <input type="checkbox" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra de Terceiro</span>
+        </label>
+
+        {isThirdParty && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-1 mt-2">
+            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
+            <input
+              type="text" required
+              value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
+              className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+              placeholder="Ex: Maiara, Cunhado..."
+            />
+          </div>
+        )}
       </div>
 
       <div>
@@ -106,7 +162,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
 /**
  * Componente: Modal (Orquestrador Global)
- * Centraliza e renderiza todos os Pop-ups do sistema.
  */
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
@@ -191,9 +246,6 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* ----------------------------------------------------------------------------------- */}
-          {/* RENDERIZAÇÃO: MODAL DE FATURAS DE CARTÃO DE CRÉDITO */}
-          {/* ----------------------------------------------------------------------------------- */}
           {type === 'faturas' && config.itens && (
             <div className="space-y-4">
               <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Gerencie as faturas fechadas ou em aberto deste mês. Apenas transações pendentes podem ser pagas em lote.</p>
@@ -224,6 +276,24 @@ export function Modal({ config, onClose }) {
                         </div>
                       </div>
 
+                      <div className="mb-4 bg-slate-100 dark:bg-slate-900 p-3 rounded border border-slate-200 dark:border-slate-700 text-xs">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold text-slate-600 dark:text-slate-400">Meus Gastos (Pessoais):</span>
+                          <strong className="text-slate-800 dark:text-slate-200">{Number(item.gastoPessoal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                        </div>
+                        {item.listaTerceiros && item.listaTerceiros.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                            <span className="block font-bold text-[10px] uppercase text-amber-600 dark:text-amber-500 mb-1">Gastos de Terceiros:</span>
+                            {item.listaTerceiros.map((terceiro, idx) => (
+                              <div key={idx} className="flex justify-between items-center pl-2">
+                                <span className="text-amber-700 dark:text-amber-400 font-medium">🤝 {terceiro.nome}</span>
+                                <strong className="text-amber-700 dark:text-amber-400">{Number(terceiro.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       <div className="flex gap-2">
                         <button onClick={() => config.pagarFatura(cId)} disabled={item.pendente <= 0} className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1 ${item.pendente > 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-70'}`}>
                           ✅ Pagar Fatura
@@ -239,9 +309,6 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* ----------------------------------------------------------------------------------- */}
-          {/* RENDERIZAÇÃO: MODAL DO CALENDÁRIO DA GARAGEM */}
-          {/* ----------------------------------------------------------------------------------- */}
           {type === 'calendario' && (
             <div className="space-y-4">
               <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
@@ -258,9 +325,7 @@ export function Modal({ config, onClose }) {
                   const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                   const isMarcado = config.diasMarcados?.includes(dataStr);
 
-                  // Verifica qual é o dia da semana no mês exibido
                   const diaSemana = new Date(config.ano, config.mes - 1, dia).getDay();
-                  // Dias de trabalho na moto: Segunda(1), Quarta(3), Sexta(5)
                   const isDiaTrabalho = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
 
                   return (
@@ -280,9 +345,6 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {/* ----------------------------------------------------------------------------------- */}
-          {/* RENDERIZAÇÃO: MODAL DE DETALHES DE TRANSAÇÃO */}
-          {/* ----------------------------------------------------------------------------------- */}
           {type === 'detalhes' && config.transacao && (
             <div className="space-y-6">
               <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
@@ -291,6 +353,11 @@ export function Modal({ config, onClose }) {
                 <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
+                {config.transacao.isThirdParty && (
+                  <span className="inline-block mt-3 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-amber-200 dark:border-amber-800">
+                    🤝 Compra de Terceiro: {config.transacao.thirdPartyName}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">

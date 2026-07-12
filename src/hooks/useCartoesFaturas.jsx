@@ -8,23 +8,9 @@ const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
  * Desacopla do componente principal a lógica de agrupamento financeiro,
  * pagamento em lote (Bulk Update) e reversão de status das compras feitas no crédito.
  */
-export function useCartoesFaturas({
-    transacoes,
-    setTransacoes,
-    transacoesMes,
-    cartoes,
-    dataVis,
-    API,
-    getHeaders,
-    modal
-}) {
+export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal }) {
 
-    /**
-     * Marca todas as transações pendentes de um cartão específico no mês atual como "pago".
-     * Funciona através de Promise.all para requisições assíncronas paralelas.
-     */
     const pagarFaturaCartao = useCallback(async (cartaoId) => {
-        // CORREÇÃO: Comparação convertida para String para evitar falsos negativos (ex: 123 === "123")
         const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
         if (!cartao) return;
 
@@ -34,7 +20,6 @@ export function useCartoesFaturas({
         const pendentes = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
 
         try {
-            // CORREÇÃO: Endpoint apontado para '/status' para que o backend grave a data do pagamento
             const promessas = pendentes.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago' }) }));
             await Promise.all(promessas);
 
@@ -46,9 +31,6 @@ export function useCartoesFaturas({
         } catch (err) { modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro'); }
     }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes]);
 
-    /**
-     * Reverte todas as transações pagas de um cartão específico no mês atual de volta para "pendente".
-     */
     const reverterFaturaCartao = useCallback(async (cartaoId) => {
         const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
         if (!cartao) return;
@@ -69,39 +51,52 @@ export function useCartoesFaturas({
         } catch (err) { modal.alert('Erro na reversão.', '❌ Erro'); }
     }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes]);
 
-    /**
-     * Agrupa e soma os lançamentos do mês dividindo-os por cartão de crédito e por status (pago vs pendente).
-     * Configura e dispara o modal UI com as opções de pagamento.
-     */
     const verFaturasPorCartao = useCallback(() => {
         const porCartao = {};
         const cartaoIds = {};
 
+        // 🔥 OBJETO PARA AGRUPAR GASTOS DE TERCEIROS DENTRO DE CADA CARTÃO
+        const gastosTerceiros = {};
+
         transacoesMes.forEach(t => {
             if (t.formaPagamento && String(t.formaPagamento).startsWith('credito_')) {
                 const cartaoId = String(t.formaPagamento).split('_')[1];
-
-                // CORREÇÃO MESTRA: Buscar sempre utilizando String para impedir bloqueio de Modal
                 const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
-                const nome = cartao ? cartao.nome : 'Cartão Excluído / Desconhecido';
+                const nomeCartao = cartao ? cartao.nome : 'Cartão Excluído / Desconhecido';
+                cartaoIds[nomeCartao] = cartao ? cartao.id : cartaoId;
 
-                // Salvar forçadamente o ID para os botões de ação serem desenhados corretamente
-                cartaoIds[nome] = cartao ? cartao.id : cartaoId;
-
-                if (!porCartao[nome]) porCartao[nome] = { total: 0, pago: 0, pendente: 0 };
+                if (!porCartao[nomeCartao]) porCartao[nomeCartao] = { total: 0, pago: 0, pendente: 0 };
+                if (!gastosTerceiros[nomeCartao]) gastosTerceiros[nomeCartao] = {};
 
                 const valorAtual = Number(t.valorParcela) || 0;
-                porCartao[nome].total += valorAtual;
+                porCartao[nomeCartao].total += valorAtual;
 
                 if (t.status === 'pago') {
-                    porCartao[nome].pago += valorAtual;
+                    porCartao[nomeCartao].pago += valorAtual;
                 } else {
-                    porCartao[nome].pendente += valorAtual;
+                    porCartao[nomeCartao].pendente += valorAtual;
+                }
+
+                // 🔥 REGISTRA O GASTO SE FOR DE TERCEIRO
+                if (t.isThirdParty && t.thirdPartyName) {
+                    const nomeT = String(t.thirdPartyName).trim();
+                    gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorAtual;
                 }
             }
         });
 
-        const itens = Object.entries(porCartao).map(([nome, v]) => ({ nome, ...v }));
+        const itens = Object.entries(porCartao).map(([nome, v]) => {
+            // Converte o objeto de terceiros do cartão numa array
+            const arrTerceiros = Object.entries(gastosTerceiros[nome]).map(([nomeT, valorT]) => ({ nome: nomeT, valor: valorT }));
+            const totalTerceiros = arrTerceiros.reduce((acc, curr) => acc + curr.valor, 0);
+
+            return {
+                nome,
+                ...v,
+                gastoPessoal: v.total - totalTerceiros,
+                listaTerceiros: arrTerceiros
+            };
+        });
 
         modal.setConfig({
             type: 'faturas',

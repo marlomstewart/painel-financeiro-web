@@ -31,6 +31,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         let rendaPaga = 0, gastoPago = 0;
         todasAteOMes.forEach(t => {
             const v = Number(t.valorParcela);
+            // 🔥 IGNORA GASTOS DE TERCEIROS NO CÁLCULO DE SALDO ANTERIOR
+            if (t.isThirdParty) return;
+
             if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { if (t.status === 'pago') rendaPaga += v; }
             else { if (t.status === 'pago') gastoPago += v; }
         });
@@ -90,6 +93,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     transacoesMes.forEach(t => {
         const v = Number(t.valorParcela);
+
+        // 🔥 REGRA 3: IGNORAR TERCEIROS DOS GASTOS REAIS E DO GRÁFICO (EXCETO SE FOR NO CRÉDITO ABERTO)
+        if (t.isThirdParty) {
+            if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+                totFaturaCreditoAberto += v;
+            }
+            return; // Impede que o restante do bloco compute o gasto do terceiro no seu painel
+        }
+
         if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
             totRendaTotal += v;
             if (t.status === 'pago') totRendaPaga += v;
@@ -153,7 +165,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     // UI PREDITIVA E JANELAS DO DASHBOARD (Raio-X e Cards)
     // =========================================================================
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
+        const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && !t.isThirdParty); // Garante que a previsão ignore terceiros
         if (ts.length === 0) return;
 
         const qtd = ts.length;
@@ -220,7 +232,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         modal.alert(conteudo, `Raio-X: ${nCat}`);
     }, [transacoes, dataVis, dataHoje, modal, nomeUsuario, garagem]);
 
-
     // =========================================================================
     // EXIBIÇÃO DE RELATÓRIO ANALÍTICO DOS CARDS SUPERIORES
     // =========================================================================
@@ -228,7 +239,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         let conteudo;
         let titulo;
 
-        // Calcula a quantidade exata de dias do mês/ano que o usuário está visualizando
         const ultimoDiaDoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
 
         if (tipo === 'rendas') {
@@ -240,11 +250,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800/50"><span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">⏳ A Receber (Pendente)</span><span className="font-bold text-amber-800 dark:text-amber-300">{formatarMoeda(totRendaPendente)}</span></div>
                 </div>
             );
-        } 
+        }
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
                 <div className="space-y-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros foram filtrados para exibir o seu custo real de vida.</p>
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700"><span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Total do Mês</span><span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span></div>
                     <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50"><span className="text-red-700 dark:text-red-400 font-semibold text-sm">✔ Já Descontado (Pago)</span><span className="font-bold text-red-800 dark:text-red-300">{formatarMoeda(totGastoPago)}</span></div>
                     <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800/50"><span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">⏳ A Descontar (Pendente)</span><span className="font-bold text-amber-800 dark:text-amber-300">{formatarMoeda(totGastoPendente)}</span></div>
@@ -267,7 +278,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaPaga)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(totGastoPago)}</span></div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Pessoais)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(totGastoPago)}</span></div>
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Investimentos Efetivados</span><span className="text-blue-600 dark:text-blue-400 font-bold">- {formatarMoeda(totInvestidoPago)}</span></div>
                     {somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>
@@ -284,7 +295,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Simulação inteligente: considera todo o seu teto orçamentário (metas estipuladas e contas fixas), abatendo da sua renda bruta para prever se sobrará dinheiro ou se você fechará o mês no negativo.</p>
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas (Pagas + Pendentes)</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaTotal)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Custo de Vida Previsto (Teto)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(custoPrevisto)}</span></div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Custo Pessoal Previsto (Teto)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(custoPrevisto)}</span></div>
                     {somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Acúmulo de Meses Anteriores</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>
                     )}
@@ -301,10 +312,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas, 
+        categoriasDinamicas, gCat, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
