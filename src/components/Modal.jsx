@@ -21,7 +21,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   const [isThirdParty, setIsThirdParty] = useState(transacao.isThirdParty || false);
   const [thirdPartyName, setThirdPartyName] = useState(transacao.thirdPartyName || '');
 
-  // 🔥 NOVO: ESTADO PARA O VALOR FRACIONADO DO TERCEIRO NA EDIÇÃO
   const initThirdValueStr = transacao.thirdPartyValue ? Math.round(Number(transacao.thirdPartyValue) * 100).toString() : '0';
   const [thirdPartyValueStr, setThirdPartyValueStr] = useState(initThirdValueStr);
 
@@ -48,7 +47,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
     let numericThirdValue = null;
     if (isThirdParty) {
       numericThirdValue = parseInt(thirdPartyValueStr, 10) / 100;
-      if (numericThirdValue === 0) numericThirdValue = null; // Mantém retrocompatibilidade (100% terceiro) se zero
+      if (numericThirdValue === 0) numericThirdValue = null;
     }
 
     if (numericValue <= 0) {
@@ -71,6 +70,10 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
   const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors";
   const labelCls = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider";
+
+  // Lógica para mudar o título dependendo de ser lote ou único
+  const editandoEmLote = infoParcelamento && acaoEdicao && acaoEdicao !== 'unica';
+  const labelTerceiroValor = editandoEmLote ? 'VALOR DA PESSOA (POR PARCELA)' : 'VALOR DA PESSOA (NESTA PARCELA)';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,7 +118,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         <div>
           <label className={labelCls}>Data</label>
           <input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} />
-          {acaoEdicao && acaoEdicao !== 'unica' && (
+          {editandoEmLote && (
             <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O mês/ano das outras parcelas serão preservados.</p>
           )}
         </div>
@@ -125,7 +128,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             <option value="pendente">Pendente</option>
             <option value="pago">Pago / Recebido</option>
           </select>
-          {acaoEdicao && acaoEdicao !== 'unica' && (
+          {editandoEmLote && (
             <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O status das outras parcelas NÃO será alterado.</p>
           )}
         </div>
@@ -166,12 +169,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
                   type="text" required
                   value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
                   className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                  placeholder="Ex: Mayara, João..."
+                  placeholder="Ex: Maiara, Irmão..."
                 />
               </div>
               <div>
-                {/* 🔥 INPUT DE VALOR FRACIONADO */}
-                <label className="block text-[10px] font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider" title="Informe a dívida da pessoa na parcela atual">Valor da Pessoa (Nesta Parcela)</label>
+                <label className="block text-[10px] font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">{labelTerceiroValor}</label>
                 <input
                   type="text" required
                   value={displayThirdValue} onChange={handleThirdValueChange}
@@ -179,9 +181,16 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
                 />
               </div>
             </div>
-            <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
-              Se você deixar R$ 0,00 o sistema assumirá que 100% desta parcela percente ao terceiro.
-            </p>
+
+            {editandoEmLote ? (
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
+                💡 <strong>Atenção:</strong> Como você está a editar em lote, o valor de R$ {displayThirdValue} será aplicado a <strong>cada uma</strong> das parcelas selecionadas.
+              </p>
+            ) : (
+              <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
+                Se você deixar R$ 0,00 o sistema assumirá que 100% desta parcela percente ao terceiro.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -399,7 +408,6 @@ export function Modal({ config, onClose }) {
                 <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
-                {/* 🔥 EXIBIÇÃO DA FRAÇÃO DO TERCEIRO NOS DETALHES */}
                 {config.transacao.isThirdParty && (
                   <span className="inline-block mt-3 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border border-amber-200 dark:border-amber-800">
                     🤝 Terceiro: {config.transacao.thirdPartyName}
