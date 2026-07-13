@@ -71,7 +71,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors";
   const labelCls = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider";
 
-  // Lógica para mudar o título dependendo de ser lote ou único
   const editandoEmLote = infoParcelamento && acaoEdicao && acaoEdicao !== 'unica';
   const labelTerceiroValor = editandoEmLote ? 'VALOR DA PESSOA (POR PARCELA)' : 'VALOR DA PESSOA (NESTA PARCELA)';
 
@@ -169,7 +168,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
                   type="text" required
                   value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
                   className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                  placeholder="Ex: Maria, João..."
+                  placeholder="Ex: Maiara, Irmão..."
                 />
               </div>
               <div>
@@ -368,26 +367,60 @@ export function Modal({ config, onClose }) {
             <div className="space-y-4">
               <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
                 <p className="text-sm text-indigo-800 dark:text-indigo-300 text-center font-medium leading-tight">
-                  Selecione os dias em que você <strong>NÃO</strong> utilizou a moto para trabalhar. Isso abaterá a meta de gasolina automaticamente.
+                  Ajuste sua rotina (Padrão: Seg, Qua, Sex).<br />
+                  Clique para registrar <strong className="text-rose-600">faltas</strong> ou <strong className="text-blue-600">dias extras</strong> rodados.
                 </p>
               </div>
               <div className="grid grid-cols-7 gap-1 text-center mb-1">
                 {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => <div key={i} className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{d}</div>)}
               </div>
               <div className="grid grid-cols-7 gap-1.5">
+
+                {/* 🔥 GERA OS ESPAÇOS VAZIOS PARA ALINHAR O DIA 1 CORRETAMENTE NA SEMANA */}
+                {Array.from({ length: new Date(config.ano, config.mes - 1, 1).getDay() }).map((_, i) => (
+                  <div key={`empty-${i}`} className="p-2" />
+                ))}
+
+                {/* 🔥 GERA OS DIAS DO MÊS COM AS CORES CORRETAS DE EXCEÇÃO */}
                 {Array.from({ length: new Date(config.ano, config.mes, 0).getDate() }).map((_, i) => {
                   const dia = i + 1;
                   const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                   const isMarcado = config.diasMarcados?.includes(dataStr);
 
                   const diaSemana = new Date(config.ano, config.mes - 1, dia).getDay();
-                  const isDiaTrabalho = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
+                  const isDiaTrabalho = diaSemana === 1 || diaSemana === 3 || diaSemana === 5; // Segunda(1), Quarta(3), Sexta(5)
+
+                  let btnClass = '';
+                  let titleHint = '';
+
+                  if (isDiaTrabalho) {
+                    if (isMarcado) {
+                      // Era pra rodar, mas FALTOU (Vermelho) -> Abate R$ 23
+                      btnClass = 'bg-rose-500 text-white shadow-inner scale-95 border border-rose-600';
+                      titleHint = 'Faltou (Abate R$ 23)';
+                    } else {
+                      // Padrão: VAI RODAR (Azul Claro)
+                      btnClass = 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800/50';
+                      titleHint = 'Rodou (Padrão)';
+                    }
+                  } else {
+                    if (isMarcado) {
+                      // Não era pra rodar, mas RODOU EXTRA (Azul Forte) -> Soma R$ 23
+                      btnClass = 'bg-blue-600 text-white shadow-inner scale-95 border border-blue-700';
+                      titleHint = 'Rodou Extra (Soma R$ 23)';
+                    } else {
+                      // Padrão: FOLGA (Cinza)
+                      btnClass = 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 border border-transparent hover:bg-slate-200 dark:hover:bg-slate-700/50';
+                      titleHint = 'Folga (Padrão)';
+                    }
+                  }
 
                   return (
                     <button
                       key={dia}
+                      title={titleHint}
                       onClick={() => config.onToggle(dataStr)}
-                      className={`p-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${isMarcado ? 'bg-rose-500 text-white shadow-inner scale-95 border border-rose-600' : isDiaTrabalho ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/50' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 border border-transparent'}`}
+                      className={`p-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${btnClass}`}
                     >
                       {dia}
                     </button>
