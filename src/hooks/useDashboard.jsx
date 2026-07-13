@@ -15,6 +15,11 @@ const getMeuValor = (t) => {
     return Math.max(0, vp - vt);
 };
 
+/**
+ * @file src/hooks/useDashboard.jsx
+ * @description Hook customizado responsável pelos cálculos matemáticos do Dashboard.
+ * Gerencia totais de rendas, gastos reais (descontando terceiros/reembolsos) e previsão de saldo.
+ */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
@@ -100,8 +105,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const valorTotalIntegral = Number(t.valorParcela);
         const meuValor = getMeuValor(t);
 
-        // 🔥 A FATURA DO CARTÃO SEMPRE CONSIDERA O VALOR TOTAL (SUA PARTE + A DO TERCEIRO), 
-        // POIS PARA O BANCO, QUEM DEVE O DINHEIRO É VOCÊ E NÃO O TERCEIRO.
+        // 🔥 A FATURA DO CARTÃO SEMPRE CONSIDERA O VALOR TOTAL (SUA PARTE + A DO TERCEIRO)
         if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
             if (t.tipo === 'reembolso') {
                 totFaturaCreditoAberto -= valorTotalIntegral;
@@ -145,7 +149,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     });
 
     const categoriasDinamicas = useMemo(() => {
-        return categorias.map(c => c.nome === 'Gasolina' && nomeUsuario.toLowerCase() === 'stewart' ? { ...c, meta: garagem.calcularMetaGasolina(dataVis.mes, dataVis.ano) } : c);
+        // 🔥 Correção: toLowerCase() e Optional Chaining no objeto garagem
+        return categorias.map(c => c.nome === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
     }, [categorias, nomeUsuario, garagem, dataVis]);
 
     let custoPrevisto = gastoSemCategoria + gastoContasFixas;
@@ -181,14 +186,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        // 🔥 Agora a categoria exibe apenas transações onde o SEU VALOR (Split) for maior que zero
+        // 🔥 A categoria exibe apenas transações onde o SEU VALOR (Split) for maior que zero
         const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
 
-        // 🔥 Maior e Menor valor calculados em cima do SEU gasto real, e não do valor total da nota fiscal
+        // 🔥 Maior e Menor valor calculados em cima do SEU gasto real
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
@@ -241,8 +246,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-[9px] text-emerald-500 dark:text-emerald-400 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
                     </div>
                 </div>
-                {nCat === 'Gasolina' && nomeUsuario === 'stewart' && (
-                    <button type="button" onClick={(e) => garagem.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md cursor-pointer">
+                {/* 🔥 CORREÇÃO DE CASE SENSITIVITY NA VISUALIZAÇÃO DO BOTÃO */}
+                {nCat === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' && (
+                    <button type="button" onClick={(e) => garagem?.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md cursor-pointer">
                         📅 Ajustar Dias Não Rodados
                     </button>
                 )}
