@@ -10,7 +10,6 @@ const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
 const getMeuValor = (t) => {
     const vp = Number(t.valorParcela);
     if (!t.isThirdParty) return vp;
-    // Se isThirdParty for true mas não tiver thirdPartyValue (ou for 0), assume que 100% da compra é do terceiro (legado).
     const vt = t.thirdPartyValue !== null && t.thirdPartyValue !== undefined ? Number(t.thirdPartyValue) : vp;
     return Math.max(0, vp - vt);
 };
@@ -18,7 +17,7 @@ const getMeuValor = (t) => {
 /**
  * @file src/hooks/useDashboard.jsx
  * @description Hook customizado responsável pelos cálculos matemáticos do Dashboard.
- * Gerencia totais de rendas, gastos reais (descontando terceiros/reembolsos) e previsão de saldo.
+ * Agora com separação estrita entre Fluxo de Caixa Real (Saldo do Banco) e Orçamento Pessoal (Gráficos).
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
@@ -32,22 +31,27 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
+    /**
+     * 🔥 CORREÇÃO: O Saldo Acumulado (Dinheiro no Banco) não pode ignorar compras de terceiros.
+     * Se você pagou a fatura, o dinheiro saiu da sua conta, mesmo que seja dívida de outro.
+     * Portanto, usamos o valor REAL integral da transação (valorParcela).
+     */
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
 
         todasAteOMes.forEach(t => {
-            const meuValor = getMeuValor(t);
-            if (meuValor === 0) return; // Se a sua parte for 0, ignora completamente a transação do saldo
+            const valorIntegral = Number(t.valorParcela); // Usa o valor cheio que sai/entra da conta
 
             if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                if (t.status === 'pago') rendaPaga += meuValor;
+                if (t.status === 'pago') rendaPaga += valorIntegral;
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= meuValor;
+                if (t.status === 'pago') gastoPago -= valorIntegral; // Reembolso devolve dinheiro para a conta
             }
             else {
-                if (t.status === 'pago') gastoPago += meuValor;
+                // Despesas e Investimentos
+                if (t.status === 'pago') gastoPago += valorIntegral;
             }
         });
         return rendaPaga - gastoPago;
@@ -94,6 +98,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return filtrados;
     }, [transacoesMes, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
+    // Variáveis de Orçamento (Ignoram gastos de terceiros)
     let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
     let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
@@ -101,11 +106,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
     let gastoSemCategoria = 0, gastoContasFixas = 0;
 
+    // 🔥 Variáveis de Fluxo de Caixa da Conta (Incluem tudo o que foi pago fisicamente)
+    let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
+
     transacoesMes.forEach(t => {
         const valorTotalIntegral = Number(t.valorParcela);
         const meuValor = getMeuValor(t);
 
-        // 🔥 A FATURA DO CARTÃO SEMPRE CONSIDERA O VALOR TOTAL (SUA PARTE + A DO TERCEIRO)
+        // 1. FATURA DO CARTÃO (usa valor integral, pois o banco cobra tudo)
         if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
             if (t.tipo === 'reembolso') {
                 totFaturaCreditoAberto -= valorTotalIntegral;
@@ -114,7 +122,21 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }
         }
 
-        if (meuValor === 0) return; // Se a sua parte for R$ 0,00, não entra nos seus gráficos pessoais de gastos
+        // 2. SALDO BANCÁRIO REAL DO MÊS (Cash Flow)
+        if (t.status === 'pago') {
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
+                rendaPagaConta += valorTotalIntegral;
+            } else if (t.tipo === 'investimento') {
+                investidoPagoConta += valorTotalIntegral;
+            } else if (t.tipo === 'reembolso') {
+                gastoPagoConta -= valorTotalIntegral;
+            } else {
+                gastoPagoConta += valorTotalIntegral;
+            }
+        }
+
+        // 3. ORÇAMENTO PESSOAL (Gráficos de Gastos)
+        if (meuValor === 0) return; // Abate a fração do terceiro do seu Orçamento
 
         if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
             totRendaTotal += meuValor;
@@ -149,15 +171,17 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     });
 
     const categoriasDinamicas = useMemo(() => {
-        // 🔥 Correção: toLowerCase() e Optional Chaining no objeto garagem
         return categorias.map(c => c.nome === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
     }, [categorias, nomeUsuario, garagem, dataVis]);
 
     let custoPrevisto = gastoSemCategoria + gastoContasFixas;
     categoriasDinamicas.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
 
-    const saldoMesAtual = totRendaPaga - (totGastoPago + totInvestidoPago);
+    // 🔥 O Saldo atual baseia-se no Fluxo de Caixa (Variáveis da Conta)
+    const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
+
+    // A Previsão Fim Mês baseia-se no seu Orçamento (Variáveis do seu Gasto)
     const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
 
     const dataHoje = new Date();
@@ -186,14 +210,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        // 🔥 A categoria exibe apenas transações onde o SEU VALOR (Split) for maior que zero
         const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
 
-        // 🔥 Maior e Menor valor calculados em cima do SEU gasto real
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
@@ -246,7 +268,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-[9px] text-emerald-500 dark:text-emerald-400 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
                     </div>
                 </div>
-                {/* 🔥 CORREÇÃO DE CASE SENSITIVITY NA VISUALIZAÇÃO DO BOTÃO */}
                 {nCat === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' && (
                     <button type="button" onClick={(e) => garagem?.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md cursor-pointer">
                         📅 Ajustar Dias Não Rodados
@@ -299,9 +320,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaPaga)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Sua Parte)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(totGastoPago)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Investimentos Efetivados</span><span className="text-blue-600 dark:text-blue-400 font-bold">- {formatarMoeda(totInvestidoPago)}</span></div>
+                    {/* 🔥 CORREÇÃO: O modal de Saldo agora exibe o valor bruto que saiu da conta, alterando o label para "Totais" */}
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(rendaPagaConta)}</span></div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Totais)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(gastoPagoConta)}</span></div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Investimentos Efetivados</span><span className="text-blue-600 dark:text-blue-400 font-bold">- {formatarMoeda(investidoPagoConta)}</span></div>
                     {somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>
                     )}
@@ -329,7 +351,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto]);
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
