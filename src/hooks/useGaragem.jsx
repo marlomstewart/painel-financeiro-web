@@ -5,6 +5,8 @@ import { useState, useCallback, useMemo } from 'react';
  * Gerencia a lógica de negócio atrelada à frota de veículos automotores.
  */
 export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes, showToast }) {
+    // Nota: O estado chama-se "diasNaoRodados" por herança do Back-end, mas conceitualmente
+    // atua como um array de "Exceções à Regra" (Faltas em dias úteis ou Extras em dias de folga).
     const [veiculosGaragem, setVeiculosGaragem] = useState([]);
     const [diasNaoRodados, setDiasNaoRodados] = useState([]);
 
@@ -41,16 +43,39 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes, sh
         } catch (err) { console.error('Erro ao verificar desgaste:', err); }
     }, [API, getHeaders, modal]);
 
+    /**
+     * Calcula a Meta de Gasolina usando Lógica Bidirecional de Exceções.
+     * Dias base (Seg, Qua, Sex): somam R$ 23 por padrão. Se marcados, abatem R$ 23.
+     * Dias de folga (Ter, Qui, Sab, Dom): não somam por padrão. Se marcados, somam R$ 23.
+     */
     const calcularMetaGasolina = useCallback((mes, ano) => {
-        let diasDeAbastecimento = 0;
+        let metaCalculada = 0;
         const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
+
         for (let dia = 1; dia <= ultimoDiaDoMes; dia++) {
             const dataAtual = new Date(ano, mes - 1, dia);
             const diaDaSemana = dataAtual.getDay();
             const dataString = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-            if ((diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5) && !diasNaoRodados.includes(dataString)) diasDeAbastecimento++;
+
+            const isMarcadoComoExcecao = diasNaoRodados.includes(dataString);
+            const isDiaTrabalhoBase = (diaDaSemana === 1 || diaDaSemana === 3 || diaDaSemana === 5); // Segunda, Quarta, Sexta
+
+            if (isDiaTrabalhoBase) {
+                // Se é dia de trabalho padrão e NÃO está marcado, soma 23.
+                // Se está marcado (falta), não soma nada.
+                if (!isMarcadoComoExcecao) {
+                    metaCalculada += 23;
+                }
+            } else {
+                // Se é dia de folga e ESTÁ marcado, soma 23 (rodei extra).
+                // Se não está marcado, não soma nada.
+                if (isMarcadoComoExcecao) {
+                    metaCalculada += 23;
+                }
+            }
         }
-        return diasDeAbastecimento * 23;
+
+        return metaCalculada;
     }, [diasNaoRodados]);
 
     const alertaMoto = useMemo(() => {
