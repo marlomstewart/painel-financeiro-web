@@ -17,7 +17,8 @@ const getMeuValor = (t) => {
 /**
  * @file src/hooks/useDashboard.jsx
  * @description Hook customizado responsável pelos cálculos matemáticos do Dashboard.
- * Agora com separação estrita entre Fluxo de Caixa Real (Saldo do Banco) e Orçamento Pessoal (Gráficos).
+ * Agora com separação estrita entre Fluxo de Caixa Real (Saldo do Banco) e Orçamento Pessoal (Gráficos),
+ * além de tratamento visual inteligente para valores absolutos (evitando duplos sinais negativos).
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
@@ -31,26 +32,20 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
-    /**
-     * 🔥 CORREÇÃO: O Saldo Acumulado (Dinheiro no Banco) não pode ignorar compras de terceiros.
-     * Se você pagou a fatura, o dinheiro saiu da sua conta, mesmo que seja dívida de outro.
-     * Portanto, usamos o valor REAL integral da transação (valorParcela).
-     */
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
 
         todasAteOMes.forEach(t => {
-            const valorIntegral = Number(t.valorParcela); // Usa o valor cheio que sai/entra da conta
+            const valorIntegral = Number(t.valorParcela);
 
             if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
                 if (t.status === 'pago') rendaPaga += valorIntegral;
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral; // Reembolso devolve dinheiro para a conta
+                if (t.status === 'pago') gastoPago -= valorIntegral;
             }
             else {
-                // Despesas e Investimentos
                 if (t.status === 'pago') gastoPago += valorIntegral;
             }
         });
@@ -106,14 +101,13 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
     let gastoSemCategoria = 0, gastoContasFixas = 0;
 
-    // 🔥 Variáveis de Fluxo de Caixa da Conta (Incluem tudo o que foi pago fisicamente)
+    // Variáveis de Fluxo de Caixa da Conta (Incluem tudo o que foi pago fisicamente)
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
 
     transacoesMes.forEach(t => {
         const valorTotalIntegral = Number(t.valorParcela);
         const meuValor = getMeuValor(t);
 
-        // 1. FATURA DO CARTÃO (usa valor integral, pois o banco cobra tudo)
         if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
             if (t.tipo === 'reembolso') {
                 totFaturaCreditoAberto -= valorTotalIntegral;
@@ -122,7 +116,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }
         }
 
-        // 2. SALDO BANCÁRIO REAL DO MÊS (Cash Flow)
         if (t.status === 'pago') {
             if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
                 rendaPagaConta += valorTotalIntegral;
@@ -135,8 +128,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }
         }
 
-        // 3. ORÇAMENTO PESSOAL (Gráficos de Gastos)
-        if (meuValor === 0) return; // Abate a fração do terceiro do seu Orçamento
+        if (meuValor === 0) return;
 
         if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
             totRendaTotal += meuValor;
@@ -177,11 +169,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let custoPrevisto = gastoSemCategoria + gastoContasFixas;
     categoriasDinamicas.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
 
-    // 🔥 O Saldo atual baseia-se no Fluxo de Caixa (Variáveis da Conta)
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
-
-    // A Previsão Fim Mês baseia-se no seu Orçamento (Variáveis do seu Gasto)
     const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
 
     const dataHoje = new Date();
@@ -300,8 +289,19 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros e Reembolsos já foram abatidos da sua fração para exibir o seu custo real de vida.</p>
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700"><span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês (Sua Parte)</span><span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span></div>
-                    <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50"><span className="text-red-700 dark:text-red-400 font-semibold text-sm">✔ Já Descontado (Pago)</span><span className="font-bold text-red-800 dark:text-red-300">{formatarMoeda(totGastoPago)}</span></div>
-                    <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800/50"><span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">⏳ A Descontar (Pendente)</span><span className="font-bold text-amber-800 dark:text-amber-300">{formatarMoeda(totGastoPendente)}</span></div>
+                    {/* 🔥 CORREÇÃO VISUAL AQUI TAMBÉM */}
+                    <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50">
+                        <span className="text-red-700 dark:text-red-400 font-semibold text-sm">✔ Já Descontado (Pago)</span>
+                        <span className={`font-bold ${totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                            {totGastoPago >= 0 ? '' : '+ '}{formatarMoeda(Math.abs(totGastoPago))}
+                        </span>
+                    </div>
+                    <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800/50">
+                        <span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">⏳ A Descontar (Pendente)</span>
+                        <span className={`font-bold ${totGastoPendente >= 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                            {totGastoPendente >= 0 ? '' : '+ '}{formatarMoeda(Math.abs(totGastoPendente))}
+                        </span>
+                    </div>
                 </div>
             );
         }
@@ -320,15 +320,34 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
-                    {/* 🔥 CORREÇÃO: O modal de Saldo agora exibe o valor bruto que saiu da conta, alterando o label para "Totais" */}
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(rendaPagaConta)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Totais)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(gastoPagoConta)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Investimentos Efetivados</span><span className="text-blue-600 dark:text-blue-400 font-bold">- {formatarMoeda(investidoPagoConta)}</span></div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(rendaPagaConta)}</span>
+                    </div>
+                    {/* 🔥 CORREÇÃO VISUAL: Tratamento do sinal duplo e mudança de cor para reembolsos excedentes */}
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Totais)</span>
+                        <span className={`font-bold ${gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {gastoPagoConta >= 0 ? '-' : '+'} {formatarMoeda(Math.abs(gastoPagoConta))}
+                        </span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Investimentos Efetivados</span>
+                        <span className={`font-bold ${investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {investidoPagoConta >= 0 ? '-' : '+'} {formatarMoeda(Math.abs(investidoPagoConta))}
+                        </span>
+                    </div>
                     {somarSaldoAnterior && (
-                        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>
+                        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                            <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                                {saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}
+                            </span>
+                        </div>
                     )}
                     <div className="flex justify-between items-center bg-slate-800 dark:bg-slate-900 p-3 rounded-lg shadow-sm border border-slate-700 mt-2">
-                        <span className="text-slate-200 font-bold text-sm">Líquido na Conta</span><span className="font-bold text-white text-lg">{formatarMoeda(saldoAtual)}</span>
+                        <span className="text-slate-200 font-bold text-sm">Líquido na Conta</span>
+                        <span className="font-bold text-white text-lg">{formatarMoeda(saldoAtual)}</span>
                     </div>
                 </div>
             );
