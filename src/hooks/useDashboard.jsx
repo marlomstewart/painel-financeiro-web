@@ -76,11 +76,9 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 
 /**
  * @file src/hooks/useDashboard.jsx
- * @description Hook customizado responsável pelos cálculos matemáticos do Dashboard.
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
-    // 🔥 FILTROS DO ORÇAMENTO (Ignora terceiros)
     const transacoesVisiveis = useMemo(() => transacoes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoes]);
     const transacoesMesVisiveis = useMemo(() => transacoesMes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoesMes]);
 
@@ -94,7 +92,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
-    // 🔥 CÁLCULO DE BANCO REAL (Usa transacoes brutas para contar todo o dinheiro que saiu e entrou)
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
@@ -121,7 +118,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         setOrdenacao(prev => ({ coluna, direcao: prev.coluna === coluna ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc' }));
     }, []);
 
-    // A tabela mostra apenas o Orçamento Visível
     let dadosTabela = useMemo(() => {
         let filtrados = transacoesMesVisiveis.filter(t => {
             const atendeStatus = filtroStatus === 'todos' || t.status === filtroStatus;
@@ -156,7 +152,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return filtrados;
     }, [transacoesMesVisiveis, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
-    // 🔥 LOOP 1: CÁLCULOS DO BANCO REAL (Lê transações brutas)
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
     let totFaturaCreditoAberto = 0;
 
@@ -184,7 +179,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
     });
 
-    // 🔥 LOOP 2: CÁLCULOS DO ORÇAMENTO PESSOAL (Ignora os terceiros)
     let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
     let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
@@ -206,27 +200,30 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
                 
+                // 🔥 FIX: Categorias Órfãs vão para "Sem Categoria"
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
-                else if (t.categoria === 'Sem Categoria') gastoSemCategoria += meuValor;
-                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
+                else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
+                else gCat[t.categoria] += meuValor;
             }
             else if (t.tipo === 'reembolso') {
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor;
                 
+                // 🔥 FIX: Categorias Órfãs vão para "Sem Categoria"
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
-                else if (t.categoria === 'Sem Categoria') gastoSemCategoria -= meuValor;
-                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] -= meuValor;
+                else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
+                else gCat[t.categoria] -= meuValor;
             }
             else if (t.tipo === 'despesa') {
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
                 
+                // 🔥 FIX: Categorias Órfãs vão para "Sem Categoria"
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
-                else if (t.categoria === 'Sem Categoria') gastoSemCategoria += meuValor;
-                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
+                else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
+                else gCat[t.categoria] += meuValor;
             }
         }
     });
@@ -246,7 +243,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesReal = dataHoje.getMonth() + 1;
     const anoReal = dataHoje.getFullYear();
 
-    // Importações de meses passados precisam puxar inclusive dívidas de terceiros esquecidas
     const pendenciasPassadas = useMemo(() => {
         return transacoes.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
     }, [transacoes, anoReal, mesReal]);
@@ -357,12 +353,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             isDestaque: t.tipo === 'reembolso'
         }));
 
-        // Saldo lê o mundo real (transacoesMes brutas)
         const listRendaPagaConta = transacoesMes.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
         const listGastoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
         const listInvestidoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo === 'investimento');
 
-        // Orçamento lê as filtradas (transacoesMesVisiveis)
         const listRendaPagaMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
         const listRendaPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
         const listGastoPagoMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
@@ -380,24 +374,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Total Bruto do Mês</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totRendaTotal)}</span>
                     </div>
-                    
-                    <CardAcordeao 
-                        titulo="✔ Já Recebido (Paga)"
-                        valorStr={formatarMoeda(totRendaPaga)}
-                        textColor="text-emerald-800 dark:text-emerald-300"
-                        bgColor="bg-emerald-50 dark:bg-emerald-900/20"
-                        borderColor="border-emerald-200 dark:border-emerald-800/50"
-                        itens={mapMeu(listRendaPagaMeu)}
-                    />
-                    
-                    <CardAcordeao 
-                        titulo="⏳ A Receber (Pendente)"
-                        valorStr={formatarMoeda(totRendaPendente)}
-                        textColor="text-amber-800 dark:text-amber-300"
-                        bgColor="bg-amber-50 dark:bg-amber-900/20"
-                        borderColor="border-amber-200 dark:border-amber-800/50"
-                        itens={mapMeu(listRendaPendenteMeu)}
-                    />
+                    <CardAcordeao titulo="✔ Já Recebido (Paga)" valorStr={formatarMoeda(totRendaPaga)} textColor="text-emerald-800 dark:text-emerald-300" bgColor="bg-emerald-50 dark:bg-emerald-900/20" borderColor="border-emerald-200 dark:border-emerald-800/50" itens={mapMeu(listRendaPagaMeu)} />
+                    <CardAcordeao titulo="⏳ A Receber (Pendente)" valorStr={formatarMoeda(totRendaPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapMeu(listRendaPendenteMeu)} />
                 </div>
             );
         } 
@@ -406,31 +384,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros e Reembolsos já foram abatidos da sua fração para exibir o seu custo real de vida.</p>
-                    
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês (Sua Parte)</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span>
                     </div>
-                    
-                    <CardAcordeao 
-                        titulo="✔ Já Descontado (Pago)"
-                        valorStr={formatarMoeda(Math.abs(totGastoPago))}
-                        textColor={totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'}
-                        bgColor="bg-red-50 dark:bg-red-900/20"
-                        borderColor="border-red-200 dark:border-red-800/50"
-                        sinal={totGastoPago >= 0 ? '' : '+ '}
-                        itens={mapMeu(listGastoPagoMeu)}
-                    />
-                    
-                    <CardAcordeao 
-                        titulo="⏳ A Descontar (Pendente)"
-                        valorStr={formatarMoeda(Math.abs(totGastoPendente))}
-                        textColor={totGastoPendente >= 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'}
-                        bgColor="bg-amber-50 dark:bg-amber-900/20"
-                        borderColor="border-amber-200 dark:border-amber-800/50"
-                        sinal={totGastoPendente >= 0 ? '' : '+ '}
-                        itens={mapMeu(listGastoPendenteMeu)}
-                    />
+                    <CardAcordeao titulo="✔ Já Descontado (Pago)" valorStr={formatarMoeda(Math.abs(totGastoPago))} textColor={totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'} bgColor="bg-red-50 dark:bg-red-900/20" borderColor="border-red-200 dark:border-red-800/50" sinal={totGastoPago >= 0 ? '' : '+ '} itens={mapMeu(listGastoPagoMeu)} />
+                    <CardAcordeao titulo="⏳ A Descontar (Pendente)" valorStr={formatarMoeda(Math.abs(totGastoPendente))} textColor={totGastoPendente >= 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'} bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" sinal={totGastoPendente >= 0 ? '' : '+ '} itens={mapMeu(listGastoPendenteMeu)} />
                 </div>
             );
         }
@@ -442,24 +401,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Aportes Totais do Mês</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totInvestido)}</span>
                     </div>
-                    
-                    <CardAcordeao 
-                        titulo="✔ Aportes Efetivados"
-                        valorStr={formatarMoeda(totInvestidoPago)}
-                        textColor="text-blue-800 dark:text-blue-300"
-                        bgColor="bg-blue-50 dark:bg-blue-900/20"
-                        borderColor="border-blue-200 dark:border-blue-800/50"
-                        itens={mapMeu(listInvestidoPagoMeu)}
-                    />
-                    
-                    <CardAcordeao 
-                        titulo="⏳ Aportes Pendentes"
-                        valorStr={formatarMoeda(totInvestidoPendente)}
-                        textColor="text-amber-800 dark:text-amber-300"
-                        bgColor="bg-amber-50 dark:bg-amber-900/20"
-                        borderColor="border-amber-200 dark:border-amber-800/50"
-                        itens={mapMeu(listInvestidoPendenteMeu)}
-                    />
+                    <CardAcordeao titulo="✔ Aportes Efetivados" valorStr={formatarMoeda(totInvestidoPago)} textColor="text-blue-800 dark:text-blue-300" bgColor="bg-blue-50 dark:bg-blue-900/20" borderColor="border-blue-200 dark:border-blue-800/50" itens={mapMeu(listInvestidoPagoMeu)} />
+                    <CardAcordeao titulo="⏳ Aportes Pendentes" valorStr={formatarMoeda(totInvestidoPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapMeu(listInvestidoPendenteMeu)} />
                 </div>
             );
         }
@@ -468,37 +411,13 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
-                    
-                    <RowAcordeao 
-                        titulo="Rendas Pagas"
-                        valorStr={formatarMoeda(rendaPagaConta)}
-                        textColor="text-emerald-600 dark:text-emerald-400"
-                        sinal="+"
-                        itens={mapConta(listRendaPagaConta)}
-                    />
-                    
-                    <RowAcordeao 
-                        titulo="Gastos Pagos (Totais)"
-                        valorStr={formatarMoeda(Math.abs(gastoPagoConta))}
-                        textColor={gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}
-                        sinal={gastoPagoConta >= 0 ? '-' : '+'}
-                        itens={mapConta(listGastoPagoConta)}
-                    />
-                    
-                    <RowAcordeao 
-                        titulo="Investimentos Efetivados"
-                        valorStr={formatarMoeda(Math.abs(investidoPagoConta))}
-                        textColor={investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}
-                        sinal={investidoPagoConta >= 0 ? '-' : '+'}
-                        itens={mapConta(listInvestidoPagoConta)}
-                    />
-
+                    <RowAcordeao titulo="Rendas Pagas" valorStr={formatarMoeda(rendaPagaConta)} textColor="text-emerald-600 dark:text-emerald-400" sinal="+" itens={mapConta(listRendaPagaConta)} />
+                    <RowAcordeao titulo="Gastos Pagos (Totais)" valorStr={formatarMoeda(Math.abs(gastoPagoConta))} textColor={gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={gastoPagoConta >= 0 ? '-' : '+'} itens={mapConta(listGastoPagoConta)} />
+                    <RowAcordeao titulo="Investimentos Efetivados" valorStr={formatarMoeda(Math.abs(investidoPagoConta))} textColor={investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={investidoPagoConta >= 0 ? '-' : '+'} itens={mapConta(listInvestidoPagoConta)} />
                     {somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                             <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span>
-                            <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                                {saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}
-                            </span>
+                            <span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span>
                         </div>
                     )}
                     <div className="flex justify-between items-center bg-slate-800 dark:bg-slate-900 p-3 rounded-lg shadow-sm border border-slate-700 mt-2">
