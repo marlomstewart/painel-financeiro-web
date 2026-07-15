@@ -14,7 +14,7 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
         <div className="border-b border-slate-200 dark:border-slate-700">
-            <div
+            <div 
                 className="flex justify-between items-center py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded transition-colors"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -27,15 +27,15 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
             </div>
             {aberto && (
                 <div className="pb-2 px-2 space-y-1 animate-fade-in max-h-40 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded mt-1">
-                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                        <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                            <div className="flex flex-col overflow-hidden">
+                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                         <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                             <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                 <span className="text-[9px] text-slate-500">{item.data}</span>
-                            </div>
-                            <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                        </div>
-                    ))}
+                             </div>
+                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                         </div>
+                     ))}
                 </div>
             )}
         </div>
@@ -46,7 +46,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
     const [aberto, setAberto] = useState(false);
     return (
         <div className={`rounded border ${borderColor} ${bgColor} overflow-hidden transition-all`}>
-            <div
+            <div 
                 className="flex justify-between items-center p-3 cursor-pointer hover:brightness-95 transition-all"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -59,15 +59,15 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
             </div>
             {aberto && (
                 <div className="bg-white/50 dark:bg-slate-950/30 border-t border-black/5 dark:border-white/5 p-2 space-y-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                        <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                            <div className="flex flex-col overflow-hidden">
+                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                         <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                             <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                 <span className="text-[9px] text-slate-500">{item.data}</span>
-                            </div>
-                            <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                        </div>
-                    ))}
+                             </div>
+                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                         </div>
+                     ))}
                 </div>
             )}
         </div>
@@ -80,7 +80,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
-    // 🔥 FILTRO MESTRE: Remove Dívidas 100% de Terceiros do Dashboard Principal
+    // 🔥 FILTROS DO ORÇAMENTO (Ignora terceiros)
     const transacoesVisiveis = useMemo(() => transacoes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoes]);
     const transacoesMesVisiveis = useMemo(() => transacoesMes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoesMes]);
 
@@ -94,25 +94,25 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
+    // 🔥 CÁLCULO DE BANCO REAL (Usa transacoes brutas para contar todo o dinheiro que saiu e entrou)
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
-        const todasAteOMes = transacoesVisiveis.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
+        const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
-
+        
         todasAteOMes.forEach(t => {
             const valorIntegral = Number(t.valorParcela);
-
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                if (t.status === 'pago') rendaPaga += valorIntegral;
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { 
+                if (t.status === 'pago') rendaPaga += valorIntegral; 
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral;
+                if (t.status === 'pago') gastoPago -= valorIntegral; 
             }
-            else {
-                if (t.status === 'pago') gastoPago += valorIntegral;
+            else { 
+                if (t.status === 'pago') gastoPago += valorIntegral; 
             }
         });
         return rendaPaga - gastoPago;
-    }, [transacoesVisiveis]);
+    }, [transacoes]);
 
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
     const saldoMesAnterior = useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
@@ -121,6 +121,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         setOrdenacao(prev => ({ coluna, direcao: prev.coluna === coluna ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc' }));
     }, []);
 
+    // A tabela mostra apenas o Orçamento Visível
     let dadosTabela = useMemo(() => {
         let filtrados = transacoesMesVisiveis.filter(t => {
             const atendeStatus = filtroStatus === 'todos' || t.status === filtroStatus;
@@ -155,18 +156,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return filtrados;
     }, [transacoesMesVisiveis, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
-    let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
-    let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
-    let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
-    let totFaturaCreditoAberto = 0;
-    let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
-    let gastoSemCategoria = 0, gastoContasFixas = 0;
-
+    // 🔥 LOOP 1: CÁLCULOS DO BANCO REAL (Lê transações brutas)
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
+    let totFaturaCreditoAberto = 0;
 
-    transacoesMesVisiveis.forEach(t => {
+    transacoesMes.forEach(t => {
         const valorTotalIntegral = Number(t.valorParcela);
-        const meuValor = getMeuValor(t);
 
         if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
             if (t.tipo === 'reembolso') {
@@ -187,8 +182,18 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 gastoPagoConta += valorTotalIntegral;
             }
         }
+    });
 
-        if (meuValor === 0) return;
+    // 🔥 LOOP 2: CÁLCULOS DO ORÇAMENTO PESSOAL (Ignora os terceiros)
+    let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
+    let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
+    let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
+    let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
+    let gastoSemCategoria = 0, gastoContasFixas = 0;
+
+    transacoesMesVisiveis.forEach(t => {
+        const meuValor = getMeuValor(t);
+        if (meuValor === 0) return; 
 
         if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
             totRendaTotal += meuValor;
@@ -200,7 +205,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totInvestido += meuValor;
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria') gastoSemCategoria += meuValor;
                 else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
@@ -209,7 +214,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
                 else if (t.categoria === 'Sem Categoria') gastoSemCategoria -= meuValor;
                 else if (gCat[t.categoria] !== undefined) gCat[t.categoria] -= meuValor;
@@ -218,7 +223,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria') gastoSemCategoria += meuValor;
                 else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
@@ -241,9 +246,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesReal = dataHoje.getMonth() + 1;
     const anoReal = dataHoje.getFullYear();
 
+    // Importações de meses passados precisam puxar inclusive dívidas de terceiros esquecidas
     const pendenciasPassadas = useMemo(() => {
-        return transacoesVisiveis.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
-    }, [transacoesVisiveis, anoReal, mesReal]);
+        return transacoes.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
+    }, [transacoes, anoReal, mesReal]);
 
     const processarRolagemPendencias = useCallback(async () => {
         try {
@@ -263,12 +269,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoesVisiveis.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
+        const ts = transacoesVisiveis.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0); 
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
-
+        
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
@@ -351,10 +357,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             isDestaque: t.tipo === 'reembolso'
         }));
 
-        const listRendaPagaConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
-        const listGastoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
-        const listInvestidoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo === 'investimento');
+        // Saldo lê o mundo real (transacoesMes brutas)
+        const listRendaPagaConta = transacoesMes.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
+        const listGastoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
+        const listInvestidoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo === 'investimento');
 
+        // Orçamento lê as filtradas (transacoesMesVisiveis)
         const listRendaPagaMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
         const listRendaPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
         const listGastoPagoMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
@@ -372,8 +380,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Total Bruto do Mês</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totRendaTotal)}</span>
                     </div>
-
-                    <CardAcordeao
+                    
+                    <CardAcordeao 
                         titulo="✔ Já Recebido (Paga)"
                         valorStr={formatarMoeda(totRendaPaga)}
                         textColor="text-emerald-800 dark:text-emerald-300"
@@ -381,8 +389,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         borderColor="border-emerald-200 dark:border-emerald-800/50"
                         itens={mapMeu(listRendaPagaMeu)}
                     />
-
-                    <CardAcordeao
+                    
+                    <CardAcordeao 
                         titulo="⏳ A Receber (Pendente)"
                         valorStr={formatarMoeda(totRendaPendente)}
                         textColor="text-amber-800 dark:text-amber-300"
@@ -392,19 +400,19 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     />
                 </div>
             );
-        }
+        } 
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros e Reembolsos já foram abatidos da sua fração para exibir o seu custo real de vida.</p>
-
+                    
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês (Sua Parte)</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span>
                     </div>
-
-                    <CardAcordeao
+                    
+                    <CardAcordeao 
                         titulo="✔ Já Descontado (Pago)"
                         valorStr={formatarMoeda(Math.abs(totGastoPago))}
                         textColor={totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'}
@@ -413,8 +421,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         sinal={totGastoPago >= 0 ? '' : '+ '}
                         itens={mapMeu(listGastoPagoMeu)}
                     />
-
-                    <CardAcordeao
+                    
+                    <CardAcordeao 
                         titulo="⏳ A Descontar (Pendente)"
                         valorStr={formatarMoeda(Math.abs(totGastoPendente))}
                         textColor={totGastoPendente >= 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'}
@@ -434,8 +442,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Aportes Totais do Mês</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totInvestido)}</span>
                     </div>
-
-                    <CardAcordeao
+                    
+                    <CardAcordeao 
                         titulo="✔ Aportes Efetivados"
                         valorStr={formatarMoeda(totInvestidoPago)}
                         textColor="text-blue-800 dark:text-blue-300"
@@ -443,8 +451,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         borderColor="border-blue-200 dark:border-blue-800/50"
                         itens={mapMeu(listInvestidoPagoMeu)}
                     />
-
-                    <CardAcordeao
+                    
+                    <CardAcordeao 
                         titulo="⏳ Aportes Pendentes"
                         valorStr={formatarMoeda(totInvestidoPendente)}
                         textColor="text-amber-800 dark:text-amber-300"
@@ -460,24 +468,24 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
-
-                    <RowAcordeao
+                    
+                    <RowAcordeao 
                         titulo="Rendas Pagas"
                         valorStr={formatarMoeda(rendaPagaConta)}
                         textColor="text-emerald-600 dark:text-emerald-400"
                         sinal="+"
                         itens={mapConta(listRendaPagaConta)}
                     />
-
-                    <RowAcordeao
+                    
+                    <RowAcordeao 
                         titulo="Gastos Pagos (Totais)"
                         valorStr={formatarMoeda(Math.abs(gastoPagoConta))}
                         textColor={gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}
                         sinal={gastoPagoConta >= 0 ? '-' : '+'}
                         itens={mapConta(listGastoPagoConta)}
                     />
-
-                    <RowAcordeao
+                    
+                    <RowAcordeao 
                         titulo="Investimentos Efetivados"
                         valorStr={formatarMoeda(Math.abs(investidoPagoConta))}
                         textColor={investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}
@@ -518,15 +526,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMesVisiveis]);
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesMesVisiveis]); 
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas,
+        categoriasDinamicas, gCat, pendenciasPassadas, 
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
