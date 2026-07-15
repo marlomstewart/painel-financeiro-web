@@ -17,8 +17,6 @@ const getMeuValor = (t) => {
 /**
  * @file src/hooks/useDashboard.jsx
  * @description Hook customizado responsável pelos cálculos matemáticos do Dashboard.
- * Agora com separação estrita entre Fluxo de Caixa Real (Saldo do Banco) e Orçamento Pessoal (Gráficos),
- * além de tratamento visual inteligente para valores absolutos (evitando duplos sinais negativos).
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
@@ -93,7 +91,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return filtrados;
     }, [transacoesMes, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
-    // Variáveis de Orçamento (Ignoram gastos de terceiros)
+    // Variáveis de Orçamento
     let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
     let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
@@ -101,7 +99,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
     let gastoSemCategoria = 0, gastoContasFixas = 0;
 
-    // Variáveis de Fluxo de Caixa da Conta (Incluem tudo o que foi pago fisicamente)
+    // Variáveis de Fluxo de Caixa da Conta
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
 
     transacoesMes.forEach(t => {
@@ -140,6 +138,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totInvestido += meuValor;
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
+
+                // 🔥 CORREÇÃO: Investimentos agora alimentam as barras de progresso (Categorias)
+                if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
+                else if (t.categoria === 'Sem Categoria') gastoSemCategoria += meuValor;
+                else if (gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
             }
             else if (t.tipo === 'reembolso') {
                 totGastoReal -= meuValor;
@@ -289,7 +292,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Gastos de terceiros e Reembolsos já foram abatidos da sua fração para exibir o seu custo real de vida.</p>
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700"><span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês (Sua Parte)</span><span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span></div>
-                    {/* 🔥 CORREÇÃO VISUAL AQUI TAMBÉM */}
                     <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50">
                         <span className="text-red-700 dark:text-red-400 font-semibold text-sm">✔ Já Descontado (Pago)</span>
                         <span className={`font-bold ${totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
@@ -324,7 +326,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pagas</span>
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(rendaPagaConta)}</span>
                     </div>
-                    {/* 🔥 CORREÇÃO VISUAL: Tratamento do sinal duplo e mudança de cor para reembolsos excedentes */}
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Gastos Pagos (Totais)</span>
                         <span className={`font-bold ${gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
