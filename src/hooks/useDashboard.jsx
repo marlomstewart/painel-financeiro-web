@@ -79,6 +79,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
+    // 🔥 FILTRO MESTRE: Ignora 100% de terceiros em TODA a matemática (Banco e Orçamento)
     const transacoesVisiveis = useMemo(() => transacoes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoes]);
     const transacoesMesVisiveis = useMemo(() => transacoesMes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoesMes]);
 
@@ -92,8 +93,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
+    // 🔥 O Saldo do Mês Anterior agora respeita a regra do Fantasma
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
-        const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
+        const todasAteOMes = transacoesVisiveis.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
         
         todasAteOMes.forEach(t => {
@@ -109,7 +111,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }
         });
         return rendaPaga - gastoPago;
-    }, [transacoes]);
+    }, [transacoesVisiveis]);
 
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
     const saldoMesAnterior = useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
@@ -154,38 +156,31 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
     let totFaturaCreditoAberto = 0;
-
-    transacoesMes.forEach(t => {
-        const valorTotalIntegral = Number(t.valorParcela);
-
-        if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
-            if (t.tipo === 'reembolso') {
-                totFaturaCreditoAberto -= valorTotalIntegral;
-            } else if (t.tipo !== 'renda' && t.tipo !== 'investimento') {
-                totFaturaCreditoAberto += valorTotalIntegral;
-            }
-        }
-
-        if (t.status === 'pago') {
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                rendaPagaConta += valorTotalIntegral;
-            } else if (t.tipo === 'investimento') {
-                investidoPagoConta += valorTotalIntegral;
-            } else if (t.tipo === 'reembolso') {
-                gastoPagoConta -= valorTotalIntegral;
-            } else {
-                gastoPagoConta += valorTotalIntegral;
-            }
-        }
-    });
-
     let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
     let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
     let gastoSemCategoria = 0, gastoContasFixas = 0;
 
+    // 🔥 Loop Único usando transacoesMesVisiveis (Resolve o problema do Saldo Líquido e Orçamento juntos)
     transacoesMesVisiveis.forEach(t => {
+        
+        // --- 1. MATEMÁTICA DO BANCO (Lê o valor total da nota) ---
+        const valorTotalIntegral = Number(t.valorParcela);
+
+        if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+            if (t.tipo === 'reembolso') totFaturaCreditoAberto -= valorTotalIntegral;
+            else if (t.tipo !== 'renda' && t.tipo !== 'investimento') totFaturaCreditoAberto += valorTotalIntegral;
+        }
+
+        if (t.status === 'pago') {
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') rendaPagaConta += valorTotalIntegral;
+            else if (t.tipo === 'investimento') investidoPagoConta += valorTotalIntegral;
+            else if (t.tipo === 'reembolso') gastoPagoConta -= valorTotalIntegral;
+            else gastoPagoConta += valorTotalIntegral;
+        }
+
+        // --- 2. MATEMÁTICA DO ORÇAMENTO (Lê apenas a sua fração) ---
         const meuValor = getMeuValor(t);
         if (meuValor === 0) return; 
 
@@ -200,7 +195,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
                 
-                // 🔥 FIX: Categorias Órfãs vão para "Sem Categoria"
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -210,7 +204,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor;
                 
-                // 🔥 FIX: Categorias Órfãs vão para "Sem Categoria"
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
                 else gCat[t.categoria] -= meuValor;
@@ -220,7 +213,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
                 
-                // 🔥 FIX: Categorias Órfãs vão para "Sem Categoria"
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -243,6 +235,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesReal = dataHoje.getMonth() + 1;
     const anoReal = dataHoje.getFullYear();
 
+    // 🔥 ALERTAS: Aqui mantemos a lista bruta (transacoes) para garantir que o painel lembre você de cobrar as dívidas!
     const pendenciasPassadas = useMemo(() => {
         return transacoes.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
     }, [transacoes, anoReal, mesReal]);
@@ -353,9 +346,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             isDestaque: t.tipo === 'reembolso'
         }));
 
-        const listRendaPagaConta = transacoesMes.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
-        const listGastoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
-        const listInvestidoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo === 'investimento');
+        // 🔥 As listas do banco agora também usam a lista visível (ignorando terceiros)
+        const listRendaPagaConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
+        const listGastoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
+        const listInvestidoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo === 'investimento');
 
         const listRendaPagaMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
         const listRendaPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
@@ -445,7 +439,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesMesVisiveis]); 
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMesVisiveis]); 
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
