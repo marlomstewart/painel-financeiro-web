@@ -10,7 +10,6 @@ const getMeuValor = (t) => {
     return Math.max(0, vp - vt);
 };
 
-// 🔥 NOVO: Componente para linhas interativas (Usado no Modal de Saldo)
 const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
@@ -43,7 +42,6 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     )
 }
 
-// 🔥 NOVO: Componente para cards interativos (Usado nos Modais de Renda, Gasto e Investimento)
 const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
@@ -82,6 +80,10 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
+    // 🔥 FILTRO MESTRE: Remove Dívidas 100% de Terceiros do Dashboard Principal
+    const transacoesVisiveis = useMemo(() => transacoes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoes]);
+    const transacoesMesVisiveis = useMemo(() => transacoesMes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoesMes]);
+
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
     const [ordenacao, setOrdenacao] = useState({ coluna: 'data', direcao: 'desc' });
@@ -93,7 +95,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
-        const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
+        const todasAteOMes = transacoesVisiveis.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
 
         todasAteOMes.forEach(t => {
@@ -110,7 +112,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }
         });
         return rendaPaga - gastoPago;
-    }, [transacoes]);
+    }, [transacoesVisiveis]);
 
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
     const saldoMesAnterior = useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
@@ -120,7 +122,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, []);
 
     let dadosTabela = useMemo(() => {
-        let filtrados = transacoesMes.filter(t => {
+        let filtrados = transacoesMesVisiveis.filter(t => {
             const atendeStatus = filtroStatus === 'todos' || t.status === filtroStatus;
             const atendeBusca = t.descricao.toLowerCase().includes(buscaTexto.toLowerCase());
             let atendeAvancado = true;
@@ -151,7 +153,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             });
         }
         return filtrados;
-    }, [transacoesMes, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
+    }, [transacoesMesVisiveis, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
     let totRendaTotal = 0, totRendaPaga = 0, totRendaPendente = 0;
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
@@ -162,7 +164,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
 
-    transacoesMes.forEach(t => {
+    transacoesMesVisiveis.forEach(t => {
         const valorTotalIntegral = Number(t.valorParcela);
         const meuValor = getMeuValor(t);
 
@@ -240,8 +242,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const anoReal = dataHoje.getFullYear();
 
     const pendenciasPassadas = useMemo(() => {
-        return transacoes.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
-    }, [transacoes, anoReal, mesReal]);
+        return transacoesVisiveis.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
+    }, [transacoesVisiveis, anoReal, mesReal]);
 
     const processarRolagemPendencias = useCallback(async () => {
         try {
@@ -261,7 +263,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
+        const ts = transacoesVisiveis.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
         if (ts.length === 0) return;
 
         const qtd = ts.length;
@@ -327,13 +329,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoes, dataVis, dataHoje, modal, nomeUsuario, garagem]);
+    }, [transacoesVisiveis, dataVis, dataHoje, modal, nomeUsuario, garagem]);
 
     const abrirResumoCard = useCallback((tipo) => {
         let conteudo;
         let titulo;
 
-        // 🔥 FUNÇÕES DE MAPEAMENTO PARA AS LISTAS DO ACORDEÃO
         const mapConta = (list) => list.map(t => ({
             id: t.id,
             data: new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
@@ -350,18 +351,16 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             isDestaque: t.tipo === 'reembolso'
         }));
 
-        // 🔥 FILTRAGENS PARA O CAIXA BANCÁRIO (SALDO)
-        const listRendaPagaConta = transacoesMes.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
-        const listGastoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
-        const listInvestidoPagoConta = transacoesMes.filter(t => t.status === 'pago' && t.tipo === 'investimento');
+        const listRendaPagaConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
+        const listGastoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
+        const listInvestidoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo === 'investimento');
 
-        // 🔥 FILTRAGENS PARA O ORÇAMENTO (SUA PARTE)
-        const listRendaPagaMeu = transacoesMes.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
-        const listRendaPendenteMeu = transacoesMes.filter(t => t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
-        const listGastoPagoMeu = transacoesMes.filter(t => t.status === 'pago' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
-        const listGastoPendenteMeu = transacoesMes.filter(t => t.status === 'pendente' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
-        const listInvestidoPagoMeu = transacoesMes.filter(t => t.status === 'pago' && t.tipo === 'investimento' && getMeuValor(t) > 0);
-        const listInvestidoPendenteMeu = transacoesMes.filter(t => t.status === 'pendente' && t.tipo === 'investimento' && getMeuValor(t) > 0);
+        const listRendaPagaMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
+        const listRendaPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
+        const listGastoPagoMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
+        const listGastoPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
+        const listInvestidoPagoMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo === 'investimento' && getMeuValor(t) > 0);
+        const listInvestidoPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && t.tipo === 'investimento' && getMeuValor(t) > 0);
 
         const ultimoDiaDoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
 
@@ -519,7 +518,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]); // 🔥 DEPENDENCIA ATUALIZADA AQUI
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMesVisiveis]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
