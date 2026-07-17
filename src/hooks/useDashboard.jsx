@@ -10,11 +10,17 @@ const getMeuValor = (t) => {
     return Math.max(0, vp - vt);
 };
 
+// 🔥 FUNÇÃO BLINDADA: Detecta se é um empréstimo oriundo do módulo de dívidas
+const isDividaTerceiro = (t) => {
+    if (!t.categoria) return false;
+    return t.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'divida de terceiros';
+};
+
 const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
         <div className="border-b border-slate-200 dark:border-slate-700">
-            <div 
+            <div
                 className="flex justify-between items-center py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded transition-colors"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -27,15 +33,15 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
             </div>
             {aberto && (
                 <div className="pb-2 px-2 space-y-1 animate-fade-in max-h-40 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded mt-1">
-                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                         <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                             <div className="flex flex-col overflow-hidden">
+                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                        <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                            <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                 <span className="text-[9px] text-slate-500">{item.data}</span>
-                             </div>
-                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                         </div>
-                     ))}
+                            </div>
+                            <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
@@ -46,7 +52,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
     const [aberto, setAberto] = useState(false);
     return (
         <div className={`rounded border ${borderColor} ${bgColor} overflow-hidden transition-all`}>
-            <div 
+            <div
                 className="flex justify-between items-center p-3 cursor-pointer hover:brightness-95 transition-all"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -59,15 +65,15 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
             </div>
             {aberto && (
                 <div className="bg-white/50 dark:bg-slate-950/30 border-t border-black/5 dark:border-white/5 p-2 space-y-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                         <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                             <div className="flex flex-col overflow-hidden">
+                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                        <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                            <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                 <span className="text-[9px] text-slate-500">{item.data}</span>
-                             </div>
-                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                         </div>
-                     ))}
+                            </div>
+                            <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
@@ -79,10 +85,6 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
  */
 export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
 
-    // 🔥 FILTRO MESTRE: Ignora 100% de terceiros em TODA a matemática (Banco e Orçamento)
-    const transacoesVisiveis = useMemo(() => transacoes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoes]);
-    const transacoesMesVisiveis = useMemo(() => transacoesMes.filter(t => !(t.isThirdParty && getMeuValor(t) === 0)), [transacoesMes]);
-
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
     const [ordenacao, setOrdenacao] = useState({ coluna: 'data', direcao: 'desc' });
@@ -93,25 +95,26 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
-    // 🔥 O Saldo do Mês Anterior agora respeita a regra do Fantasma
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
-        const todasAteOMes = transacoesVisiveis.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
+        const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
-        
+
         todasAteOMes.forEach(t => {
+            if (isDividaTerceiro(t)) return; // IGNORA DÍVIDAS DE TERCEIROS NO SALDO HISTÓRICO
+
             const valorIntegral = Number(t.valorParcela);
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { 
-                if (t.status === 'pago') rendaPaga += valorIntegral; 
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
+                if (t.status === 'pago') rendaPaga += valorIntegral;
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral; 
+                if (t.status === 'pago') gastoPago -= valorIntegral;
             }
-            else { 
-                if (t.status === 'pago') gastoPago += valorIntegral; 
+            else {
+                if (t.status === 'pago') gastoPago += valorIntegral;
             }
         });
         return rendaPaga - gastoPago;
-    }, [transacoesVisiveis]);
+    }, [transacoes]);
 
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
     const saldoMesAnterior = useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
@@ -120,8 +123,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         setOrdenacao(prev => ({ coluna, direcao: prev.coluna === coluna ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc' }));
     }, []);
 
+    // Tabela: Deixamos TUDO visível aqui, para você ver os empréstimos e poder clicar em "Pago"
     let dadosTabela = useMemo(() => {
-        let filtrados = transacoesMesVisiveis.filter(t => {
+        let filtrados = transacoesMes.filter(t => {
             const atendeStatus = filtroStatus === 'todos' || t.status === filtroStatus;
             const atendeBusca = t.descricao.toLowerCase().includes(buscaTexto.toLowerCase());
             let atendeAvancado = true;
@@ -152,7 +156,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             });
         }
         return filtrados;
-    }, [transacoesMesVisiveis, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
+    }, [transacoesMes, filtroStatus, buscaTexto, mostrarFiltrosAvancados, filtrosAvancados, ordenacao]);
 
     let rendaPagaConta = 0, gastoPagoConta = 0, investidoPagoConta = 0;
     let totFaturaCreditoAberto = 0;
@@ -162,27 +166,29 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
     let gastoSemCategoria = 0, gastoContasFixas = 0;
 
-    // 🔥 Loop Único usando transacoesMesVisiveis (Resolve o problema do Saldo Líquido e Orçamento juntos)
-    transacoesMesVisiveis.forEach(t => {
-        
+    transacoesMes.forEach(t => {
         // --- 1. MATEMÁTICA DO BANCO (Lê o valor total da nota) ---
-        const valorTotalIntegral = Number(t.valorParcela);
+        if (!isDividaTerceiro(t)) {
+            const valorTotalIntegral = Number(t.valorParcela);
 
-        if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
-            if (t.tipo === 'reembolso') totFaturaCreditoAberto -= valorTotalIntegral;
-            else if (t.tipo !== 'renda' && t.tipo !== 'investimento') totFaturaCreditoAberto += valorTotalIntegral;
-        }
+            if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+                if (t.tipo === 'reembolso') totFaturaCreditoAberto -= valorTotalIntegral;
+                else if (t.tipo !== 'renda' && t.tipo !== 'investimento') totFaturaCreditoAberto += valorTotalIntegral;
+            }
 
-        if (t.status === 'pago') {
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') rendaPagaConta += valorTotalIntegral;
-            else if (t.tipo === 'investimento') investidoPagoConta += valorTotalIntegral;
-            else if (t.tipo === 'reembolso') gastoPagoConta -= valorTotalIntegral;
-            else gastoPagoConta += valorTotalIntegral;
+            if (t.status === 'pago') {
+                if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') rendaPagaConta += valorTotalIntegral;
+                else if (t.tipo === 'investimento') investidoPagoConta += valorTotalIntegral;
+                else if (t.tipo === 'reembolso') gastoPagoConta -= valorTotalIntegral;
+                else gastoPagoConta += valorTotalIntegral;
+            }
         }
 
         // --- 2. MATEMÁTICA DO ORÇAMENTO (Lê apenas a sua fração) ---
+        if (isDividaTerceiro(t)) return; // IGNORA NO ORÇAMENTO
+
         const meuValor = getMeuValor(t);
-        if (meuValor === 0) return; 
+        if (meuValor === 0) return; // Se for compra normal marcada como 100% terceiro, também ignora no orçamento.
 
         if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
             totRendaTotal += meuValor;
@@ -194,7 +200,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totInvestido += meuValor;
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
-                
+
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -203,7 +209,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor;
-                
+
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
                 else gCat[t.categoria] -= meuValor;
@@ -212,7 +218,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
-                
+
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -235,7 +241,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesReal = dataHoje.getMonth() + 1;
     const anoReal = dataHoje.getFullYear();
 
-    // 🔥 ALERTAS: Aqui mantemos a lista bruta (transacoes) para garantir que o painel lembre você de cobrar as dívidas!
     const pendenciasPassadas = useMemo(() => {
         return transacoes.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
     }, [transacoes, anoReal, mesReal]);
@@ -258,12 +263,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoesVisiveis.filter(t => t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0); 
+        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
-        
+
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
@@ -324,7 +329,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoesVisiveis, dataVis, dataHoje, modal, nomeUsuario, garagem]);
+    }, [transacoes, dataVis, dataHoje, modal, nomeUsuario, garagem]);
 
     const abrirResumoCard = useCallback((tipo) => {
         let conteudo;
@@ -346,17 +351,17 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             isDestaque: t.tipo === 'reembolso'
         }));
 
-        // 🔥 As listas do banco agora também usam a lista visível (ignorando terceiros)
-        const listRendaPagaConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
-        const listGastoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
-        const listInvestidoPagoConta = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo === 'investimento');
+        // 🔥 FILTRO APLICADO NAS LISTAS DO ACORDEÃO PARA EXPURGAR DÍVIDAS DE TERCEIROS
+        const listRendaPagaConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
+        const listGastoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
+        const listInvestidoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo === 'investimento');
 
-        const listRendaPagaMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
-        const listRendaPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
-        const listGastoPagoMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
-        const listGastoPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
-        const listInvestidoPagoMeu = transacoesMesVisiveis.filter(t => t.status === 'pago' && t.tipo === 'investimento' && getMeuValor(t) > 0);
-        const listInvestidoPendenteMeu = transacoesMesVisiveis.filter(t => t.status === 'pendente' && t.tipo === 'investimento' && getMeuValor(t) > 0);
+        const listRendaPagaMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
+        const listRendaPendenteMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
+        const listGastoPagoMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
+        const listGastoPendenteMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pendente' && (t.tipo === 'despesa' || t.tipo === 'reembolso') && getMeuValor(t) > 0);
+        const listInvestidoPagoMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo === 'investimento' && getMeuValor(t) > 0);
+        const listInvestidoPendenteMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pendente' && t.tipo === 'investimento' && getMeuValor(t) > 0);
 
         const ultimoDiaDoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
 
@@ -372,7 +377,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <CardAcordeao titulo="⏳ A Receber (Pendente)" valorStr={formatarMoeda(totRendaPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapMeu(listRendaPendenteMeu)} />
                 </div>
             );
-        } 
+        }
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
@@ -439,15 +444,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMesVisiveis]); 
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas, 
+        categoriasDinamicas, gCat, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
