@@ -20,7 +20,7 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
         <div className="border-b border-slate-200 dark:border-slate-700">
-            <div
+            <div 
                 className="flex justify-between items-center py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded transition-colors"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -33,15 +33,15 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
             </div>
             {aberto && (
                 <div className="pb-2 px-2 space-y-1 animate-fade-in max-h-40 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded mt-1">
-                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                        <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                            <div className="flex flex-col overflow-hidden">
+                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                         <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                             <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                 <span className="text-[9px] text-slate-500">{item.data}</span>
-                            </div>
-                            <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                        </div>
-                    ))}
+                             </div>
+                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                         </div>
+                     ))}
                 </div>
             )}
         </div>
@@ -52,7 +52,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
     const [aberto, setAberto] = useState(false);
     return (
         <div className={`rounded border ${borderColor} ${bgColor} overflow-hidden transition-all`}>
-            <div
+            <div 
                 className="flex justify-between items-center p-3 cursor-pointer hover:brightness-95 transition-all"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -65,15 +65,15 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
             </div>
             {aberto && (
                 <div className="bg-white/50 dark:bg-slate-950/30 border-t border-black/5 dark:border-white/5 p-2 space-y-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                        <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                            <div className="flex flex-col overflow-hidden">
+                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                         <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                             <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                 <span className="text-[9px] text-slate-500">{item.data}</span>
-                            </div>
-                            <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                        </div>
-                    ))}
+                             </div>
+                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                         </div>
+                     ))}
                 </div>
             )}
         </div>
@@ -98,19 +98,19 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
-
+        
         todasAteOMes.forEach(t => {
             if (isDividaTerceiro(t)) return; // IGNORA DÍVIDAS DE TERCEIROS NO SALDO HISTÓRICO
-
+            
             const valorIntegral = Number(t.valorParcela);
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                if (t.status === 'pago') rendaPaga += valorIntegral;
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { 
+                if (t.status === 'pago') rendaPaga += valorIntegral; 
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral;
+                if (t.status === 'pago') gastoPago -= valorIntegral; 
             }
-            else {
-                if (t.status === 'pago') gastoPago += valorIntegral;
+            else { 
+                if (t.status === 'pago') gastoPago += valorIntegral; 
             }
         });
         return rendaPaga - gastoPago;
@@ -200,7 +200,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totInvestido += meuValor;
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -208,8 +208,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             else if (t.tipo === 'reembolso') {
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
-                else totGastoPendente -= meuValor;
-
+                else totGastoPendente -= meuValor; // Reembolso pendente abate do gasto pendente
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
                 else gCat[t.categoria] -= meuValor;
@@ -218,7 +218,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -230,12 +230,22 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return categorias.map(c => c.nome === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
     }, [categorias, nomeUsuario, garagem, dataVis]);
 
-    let custoPrevisto = gastoSemCategoria + gastoContasFixas;
-    categoriasDinamicas.forEach(c => custoPrevisto += Math.max(c.meta, gCat[c.nome] || 0));
+    // 🔥 NOVA FÓRMULA DE PREVISÃO (Visão Baseada no Saldo Real do Caixa)
+    let metaNaoComprometida = 0;
+    categoriasDinamicas.forEach(c => {
+        // Se a meta é maior que o gasto, soma o que ainda falta gastar.
+        metaNaoComprometida += Math.max(0, c.meta - (gCat[c.nome] || 0));
+    });
 
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
-    const previstoFimMes = totRendaTotal - custoPrevisto + (somarSaldoAnterior ? saldoMesAnterior : 0);
+
+    // O que eu ainda vou precisar tirar do meu bolso este mês?
+    // Gastos pendentes + Investimentos pendentes + O dinheiro que eu reservei nas minhas metas
+    const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;
+
+    // Novo cálculo de Sobra: O dinheiro que tenho na mão + o que vai entrar - o que falta sair.
+    const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
 
     const dataHoje = new Date();
     const mesReal = dataHoje.getMonth() + 1;
@@ -263,31 +273,31 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
+        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0); 
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
-
+        
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
-        let previsaoFimMes = vGasto;
+        let previsaoFimMesCat = vGasto;
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
 
         if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
             const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
             const diaHoje = dataHoje.getDate();
-            previsaoFimMes = (vGasto / diaHoje) * diasNoMes;
+            previsaoFimMesCat = (vGasto / diaHoje) * diasNoMes;
 
             if (tCat === 'despesa' || tCat === 'Gasto' || tCat === 'gasto') {
-                if (vGasto > vMeta) analiseIA = `🔴 Alerta! O limite de ${formatarMoeda(vMeta)} já foi estourado. Se mantiver o ritmo atual, fechará o mês com ${formatarMoeda(previsaoFimMes)} (gastando a mais ${formatarMoeda(previsaoFimMes - vMeta)}).`;
-                else if (previsaoFimMes > vMeta) analiseIA = `⚠️ Cuidado! No ritmo atual, a previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, estourando o limite de ${formatarMoeda(vMeta)} (gastando a mais ${formatarMoeda(previsaoFimMes - vMeta)}).`;
-                else analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, economizando ${formatarMoeda(vMeta - previsaoFimMes)} do seu limite de ${formatarMoeda(vMeta)}.`;
+                if (vGasto > vMeta) analiseIA = `🔴 Alerta! O limite de ${formatarMoeda(vMeta)} já foi estourado. Se mantiver o ritmo atual, fechará o mês com ${formatarMoeda(previsaoFimMesCat)} (gastando a mais ${formatarMoeda(previsaoFimMesCat - vMeta)}).`;
+                else if (previsaoFimMesCat > vMeta) analiseIA = `⚠️ Cuidado! No ritmo atual, a previsão é fechar o mês com ${formatarMoeda(previsaoFimMesCat)}, estourando o limite de ${formatarMoeda(vMeta)} (gastando a mais ${formatarMoeda(previsaoFimMesCat - vMeta)}).`;
+                else analiseIA = `✅ Ritmo controlado! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMesCat)}, economizando ${formatarMoeda(vMeta - previsaoFimMesCat)} do seu limite de ${formatarMoeda(vMeta)}.`;
             } else {
-                if (vGasto >= vMeta) analiseIA = `🏆 Meta alcançada! Você já atingiu os ${formatarMoeda(vMeta)}. Mantendo o ritmo, fechará o mês com ${formatarMoeda(previsaoFimMes)} (superando em ${formatarMoeda(previsaoFimMes - vMeta)}).`;
-                else if (previsaoFimMes < vMeta) analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMes)}, faltando ${formatarMoeda(vMeta - previsaoFimMes)} para atingir a sua meta de ${formatarMoeda(vMeta)}.`;
-                else analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMes)}, superando a sua meta de ${formatarMoeda(vMeta)} em ${formatarMoeda(previsaoFimMes - vMeta)}!`;
+                if (vGasto >= vMeta) analiseIA = `🏆 Meta alcançada! Você já atingiu os ${formatarMoeda(vMeta)}. Mantendo o ritmo, fechará o mês com ${formatarMoeda(previsaoFimMesCat)} (superando em ${formatarMoeda(previsaoFimMesCat - vMeta)}).`;
+                else if (previsaoFimMesCat < vMeta) analiseIA = `⚠️ Ritmo lento! No ritmo atual, a previsão é guardar apenas ${formatarMoeda(previsaoFimMesCat)}, faltando ${formatarMoeda(vMeta - previsaoFimMesCat)} para atingir a sua meta de ${formatarMoeda(vMeta)}.`;
+                else analiseIA = `✅ Excelente! A previsão é fechar o mês com ${formatarMoeda(previsaoFimMesCat)}, superando a sua meta de ${formatarMoeda(vMeta)} em ${formatarMoeda(previsaoFimMesCat - vMeta)}!`;
             }
         }
 
@@ -351,7 +361,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             isDestaque: t.tipo === 'reembolso'
         }));
 
-        // 🔥 FILTRO APLICADO NAS LISTAS DO ACORDEÃO PARA EXPURGAR DÍVIDAS DE TERCEIROS
         const listRendaPagaConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
         const listGastoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
         const listInvestidoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo === 'investimento');
@@ -377,7 +386,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <CardAcordeao titulo="⏳ A Receber (Pendente)" valorStr={formatarMoeda(totRendaPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapMeu(listRendaPendenteMeu)} />
                 </div>
             );
-        }
+        } 
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
@@ -428,31 +437,50 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
         else if (tipo === 'previsao') {
             titulo = 'Composição da Previsão Fim Mês';
+            
+            // 🔥 MODAL ATUALIZADO PARA EXPLICAR O NOVO CÁLCULO BASEADO NO CAIXA REAL
             conteudo = (
                 <div className="space-y-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Simulação inteligente: considera todo o seu teto orçamentário (metas estipuladas e contas fixas), abatendo da sua renda bruta para prever se sobrará dinheiro ou se você fechará o mês no negativo.</p>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Rendas (Pagas + Pendentes)</span><span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaTotal)}</span></div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Custo Pessoal Previsto (Teto)</span><span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(custoPrevisto)}</span></div>
-                    {somarSaldoAnterior && (
-                        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2"><span className="text-slate-600 dark:text-slate-300 text-sm">Acúmulo de Meses Anteriores</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span></div>
-                    )}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Simulação estrita baseada no seu <b>caixa real atual</b>. Considera o dinheiro vivo que você tem nas mãos hoje e subtrai tudo o que ainda falta pagar ou atingir nas suas metas.</p>
+                    
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Líquido Atual</span>
+                        <span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoAtual >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoAtual))}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pendentes (A Receber)</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaPendente)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Despesas Pendentes a Pagar</span>
+                        <span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(Math.abs(totGastoPendente) + Math.abs(totInvestidoPendente))}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">Verba Restante das Metas</span>
+                        <span className="text-orange-600 dark:text-orange-400 font-bold">- {formatarMoeda(Math.abs(metaNaoComprometida))}</span>
+                    </div>
+                    
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 mt-2">
-                        <span className="text-slate-800 dark:text-slate-200 font-bold text-sm">Sobra Estimada no dia {ultimoDiaDoMes}</span><span className={`font-bold text-lg ${previstoFimMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-bold text-sm">Sobra Estimada no dia {ultimoDiaDoMes}</span>
+                        <span className={`font-bold text-lg ${previstoFimMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</span>
                     </div>
                 </div>
             );
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, custoPrevisto, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]);
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]); 
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas,
+        categoriasDinamicas, gCat, pendenciasPassadas, 
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
