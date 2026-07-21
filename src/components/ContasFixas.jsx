@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 
-export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSetup, modal }) {
+/**
+ * @function ContasFixas
+ * @description Componente de gestão das despesas recorrentes automatizadas (Contas Fixas).
+ * @param {Object} props
+ * @returns {JSX.Element}
+ */
+export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSetup, removerSetup, modal }) {
     const [editandoId, setEditandoId] = useState(null);
     const [nome, setNome] = useState('');
     const [valorPadrao, setValorPadrao] = useState('0,00');
     const [vencimento, setVencimento] = useState('');
+    const [formaPagamento, setFormaPagamento] = useState('pix');
 
+    /**
+     * @function handleCurrency
+     * @description Máscara de moeda em tempo real para R$.
+     */
     const handleCurrency = (e, setter) => {
         let value = e.target.value.replace(/\D/g, '');
         if (value === '') value = '0';
@@ -18,21 +29,35 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
         setter(`${inteirosFormatados},${centavos}`);
     };
 
+    /**
+     * @function handleEditar
+     * @description Carrega os dados da conta fixa no formulário para edição.
+     */
     const handleEditar = (c) => {
         setEditandoId(c.id);
         setNome(c.nome);
         setValorPadrao(Number(c.valorPadrao || c.valorpadrao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         setVencimento(c.vencimento);
+        setFormaPagamento(c.formaPagamento || c.forma_pagamento || 'pix');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    /**
+     * @function cancelarEdicao
+     * @description Limpa o formulário e sai do modo de edição.
+     */
     const cancelarEdicao = () => {
         setEditandoId(null);
         setNome('');
         setValorPadrao('0,00');
         setVencimento('');
+        setFormaPagamento('pix');
     };
 
+    /**
+     * @function handleSubmit
+     * @description Intercepta o envio do formulário para validar e despachar a ação (Criar ou Editar).
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (valorPadrao === '0,00') {
@@ -45,7 +70,8 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
             const sucesso = await editarSetup('contasFixas', editandoId, {
                 nome,
                 valorPadrao: parseCurrency(valorPadrao),
-                vencimento: Number(vencimento)
+                vencimento: Number(vencimento),
+                forma_pagamento: formaPagamento
             });
             if (sucesso) {
                 cancelarEdicao();
@@ -57,12 +83,31 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
         }
     };
 
+    /**
+     * @function handleExcluir
+     * @description Solicita confirmação antes de excluir a automação da conta.
+     */
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta Conta Fixa?', '🗑️ Excluir', { confirmLabel: 'Sim', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
         if (ok) removerSetup('contasFixas', id);
     };
 
     const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    /**
+     * @function obterNomePagamento
+     * @description Traduz o código de formaPagamento para um rótulo visual amigável.
+     */
+    const obterNomePagamento = (forma) => {
+        if (!forma || forma === 'pix') return 'PIX / Dinheiro';
+        if (forma === 'debito') return 'Débito';
+        if (forma.startsWith('credito_')) {
+            const cartaoId = forma.split('_')[1];
+            const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
+            return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
+        }
+        return forma;
+    };
 
     return (
         <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in relative">
@@ -87,11 +132,22 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Padrão (R$)</label>
                             <input name="valorPadrao" type="text" inputMode="numeric" value={valorPadrao} onChange={(e) => handleCurrency(e, setValorPadrao)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500" />
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Vencimento</label>
-                            <input name="vencimento" type="number" min="1" max="31" value={vencimento} onChange={e => setVencimento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500" placeholder="Ex: 5" />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Vencimento</label>
+                                <input name="vencimento" type="number" min="1" max="31" value={vencimento} onChange={e => setVencimento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500" placeholder="Ex: 5" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forma Pagamento</label>
+                                <select name="forma_pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500">
+                                    <option value="pix">PIX / Dinheiro</option>
+                                    <option value="debito">Débito</option>
+                                    {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}
+                                </select>
+                            </div>
                         </div>
-                        
+
                         {editandoId ? (
                             <div className="flex gap-2 pt-2">
                                 <button type="button" onClick={cancelarEdicao} className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer">
@@ -132,8 +188,9 @@ export function ContasFixas({ contasFixas, addContaFixa, editarSetup, removerSet
                                             <p className="text-lg font-bold text-rose-700 dark:text-rose-400">{formatarMoeda(c.valorPadrao || c.valorpadrao)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-0.5">Vencimento</p>
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-0.5">Vencimento / Forma</p>
                                             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Dia {c.vencimento}</p>
+                                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mt-0.5 truncate max-w-[100px]">{obterNomePagamento(c.formaPagamento || c.forma_pagamento)}</p>
                                         </div>
                                     </div>
                                 </div>

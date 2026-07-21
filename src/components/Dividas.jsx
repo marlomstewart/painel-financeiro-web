@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 
-export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSetup, modal }) {
+/**
+ * @function Dividas
+ * @description Componente para gestão de parcelamentos, financiamentos e repasses a terceiros.
+ * @param {Object} props
+ * @returns {JSX.Element}
+ */
+export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSetup, removerSetup, modal }) {
     const [editandoId, setEditandoId] = useState(null);
     const [descricao, setDescricao] = useState('');
     const [valorDivida, setValorDivida] = useState('0,00');
@@ -8,9 +14,14 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
     const [qtdParcelas, setQtdParcelas] = useState('');
     const [parcelasRestantes, setParcelasRestantes] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
+    const [formaPagamento, setFormaPagamento] = useState('pix');
     const [paraTerceiros, setParaTerceiros] = useState(false);
     const [nomeTerceiro, setNomeTerceiro] = useState('');
 
+    /**
+     * @function handleCurrency
+     * @description Formata valores numéricos para máscara monetária de R$ enquanto o usuário digita.
+     */
     const handleCurrency = (e, setter) => {
         let value = e.target.value.replace(/\D/g, '');
         if (value === '') value = '0';
@@ -23,6 +34,10 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
         setter(`${inteirosFormatados},${centavos}`);
     };
 
+    /**
+     * @function handleEditar
+     * @description Preenche o formulário com os dados do contrato selecionado para edição.
+     */
     const handleEditar = (d) => {
         setEditandoId(d.id);
         setDescricao(d.descricao);
@@ -37,12 +52,17 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
 
         setParcelasRestantes(d.qtd_parcelas - parcelasPagasTotal);
         setDiaVencimento(d.dia_vencimento);
+        setFormaPagamento(d.formaPagamento || d.forma_pagamento || 'pix');
         setParaTerceiros(d.para_terceiros === 1);
         setNomeTerceiro(d.nome_terceiro || '');
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    /**
+     * @function cancelarEdicao
+     * @description Aborta o modo de edição e limpa os campos.
+     */
     const cancelarEdicao = () => {
         setEditandoId(null);
         setDescricao('');
@@ -51,10 +71,15 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
         setQtdParcelas('');
         setParcelasRestantes('');
         setDiaVencimento('');
+        setFormaPagamento('pix');
         setParaTerceiros(false);
         setNomeTerceiro('');
     };
 
+    /**
+     * @function handleSubmit
+     * @description Valida os inputs e despacha a submissão via POST (criar) ou PUT (editar).
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -79,6 +104,7 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
                 qtd_parcelas: totais,
                 parcelas_pagas_iniciais: pagasIniciais,
                 dia_vencimento: Number(diaVencimento),
+                forma_pagamento: formaPagamento,
                 para_terceiros: paraTerceiros ? 1 : 0,
                 nome_terceiro: nomeTerceiro || ''
             });
@@ -93,12 +119,31 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
         }
     };
 
+    /**
+     * @function handleExcluir
+     * @description Remove o contrato do sistema sem deletar o histórico contábil retroativo.
+     */
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta dívida? As parcelas que já foram pagas no extrato não serão afetadas, mas o sistema deixará de gerar as próximas automaticamente.', '🗑️ Excluir Dívida', { confirmLabel: 'Sim, Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
         if (ok) removerSetup('dividas', id);
     };
 
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    /**
+     * @function obterNomePagamento
+     * @description Traduz a string interna do sistema para um texto amigável na UI.
+     */
+    const obterNomePagamento = (forma) => {
+        if (!forma || forma === 'pix') return 'PIX / Dinheiro';
+        if (forma === 'debito') return 'Débito';
+        if (forma.startsWith('credito_')) {
+            const cartaoId = forma.split('_')[1];
+            const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
+            return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
+        }
+        return forma;
+    };
 
     return (
         <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in relative">
@@ -142,9 +187,19 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia de Vencimento Mensal</label>
-                            <input name="dia_vencimento" type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Vencimento</label>
+                                <input name="dia_vencimento" type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 10" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forma Pagamento</label>
+                                <select name="forma_pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500">
+                                    <option value="pix">PIX / Dinheiro</option>
+                                    <option value="debito">Débito</option>
+                                    {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}
+                                </select>
+                            </div>
                         </div>
 
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -220,8 +275,9 @@ export function Dividas({ dividas, transacoes, addDivida, editarSetup, removerSe
                                                 {d.valor_total > 0 && <p className="text-[9px] text-slate-400 mt-0.5">Total Recebido: {formatarMoeda(d.valor_total)}</p>}
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mb-0.5">Vencimento</p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mb-0.5">Vencimento / Forma</p>
                                                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Dia {d.dia_vencimento}</p>
+                                                <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mt-0.5 truncate max-w-[120px]">{obterNomePagamento(d.formaPagamento || d.forma_pagamento)}</p>
                                             </div>
                                         </div>
 

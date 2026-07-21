@@ -124,10 +124,13 @@ function App() {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-    if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} addDivida={setup.addDivida} removerSetup={setup.removerSetup} modal={modal} />;
 
-    // 🔥 CAMINHO PERFEITAMENTE SEPARADO:
-    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    // 🔥 ATUALIZADO: Injetando 'cartoes' e 'editarSetup' em Dívidas
+    if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} cartoes={setup.cartoes} addDivida={setup.addDivida} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+
+    // 🔥 ATUALIZADO: Injetando 'cartoes' em Contas Fixas
+    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} />;
