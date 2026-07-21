@@ -2,6 +2,12 @@ import { useState, useCallback } from 'react';
 
 const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
+/**
+ * @function useSetup
+ * @description Hook customizado responsável pela orquestração de entidades estáticas (Metas, Cartões, Contas, Rendas e Dívidas).
+ * @param {Object} props
+ * @returns {Object} Estados e métodos de manipulação.
+ */
 export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) {
     const [cartoes, setCartoes] = useState([]);
     const [categorias, setCategorias] = useState([]);
@@ -11,6 +17,10 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const [dividas, setDividas] = useState([]);
     const [gerandoMes, setGerandoMes] = useState(false);
 
+    /**
+     * @function processarSubmitComLoading
+     * @description Trava o formulário visualmente e injeta um SVG de loading enquanto o POST ocorre.
+     */
     const processarSubmitComLoading = useCallback(async (e, acaoData) => {
         e.preventDefault();
         const form = e.target;
@@ -86,9 +96,18 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, dividas]);
 
     const removerSetup = useCallback(async (banco, id = null) => {
+        // Fluxo de Deleção em Lote (ZONA DE PERIGO)
         if (!id) {
-            const mapNomes = { categoria: 'todas as Metas e Categorias', contaFixa: 'todas as Contas Fixas', cartao: 'todos os Cartões', rendaFixa: 'todas as Rendas Fixas' };
-            const nomeAmigavel = mapNomes[banco];
+            // CORREÇÃO: Adicionada a chave 'divida' e 'dividas' ao mapeamento
+            const mapNomes = {
+                categoria: 'todas as Metas e Categorias',
+                contaFixa: 'todas as Contas Fixas',
+                cartao: 'todos os Cartões',
+                rendaFixa: 'todas as Rendas Fixas',
+                divida: 'todas as Dívidas',
+                dividas: 'todas as Dívidas'
+            };
+            const nomeAmigavel = mapNomes[banco] || banco;
             const confirmacao = await modal.confirm(`Tem a certeza absoluta que deseja EXCLUIR ${nomeAmigavel}? Esta ação é destrutiva e não pode ser desfeita.`, '⚠️ Confirmação Destrutiva', { confirmColor: 'bg-red-600 hover:bg-red-700', confirmLabel: 'Sim, Excluir' });
             if (!confirmacao) return;
             const senha = await modal.prompt('Por motivos de segurança, digite a sua senha de acesso para confirmar a exclusão:', '', '🔒 Validação de Segurança', { inputType: 'password', confirmLabel: 'Validar e Excluir' });
@@ -103,6 +122,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             if (banco === 'contaFixa') rotaLimpar = 'contas-fixas';
             if (banco === 'rendaFixa') rotaLimpar = 'rendas-fixas';
             if (banco === 'cartao') rotaLimpar = 'cartoes';
+            if (banco === 'divida' || banco === 'dividas') rotaLimpar = 'dividas';
 
             try {
                 const res = await fetch(`${API}/${rotaLimpar}`, { method: 'DELETE', headers: getHeaders() });
@@ -111,12 +131,14 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
                     if (banco === 'contaFixa') { setContasFixas([]); }
                     if (banco === 'rendaFixa') { setRendasFixas([]); }
                     if (banco === 'cartao') setCartoes([]);
+                    if (banco === 'divida' || banco === 'dividas') setDividas([]);
                     await modal.alert(`${nomeAmigavel} excluídos com sucesso.`, '✅ Exclusão Concluída');
                 }
             } catch (err) { console.error('Erro:', err); }
             return;
         }
 
+        // Fluxo de Deleção Individual
         const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas', dividas: 'dividas' };
         await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'DELETE', headers: getHeaders() });
         const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas], dividas: [setDividas, dividas] };
@@ -137,7 +159,58 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         } catch (err) { await modal.alert('Erro ao gerar lançamentos.', '❌ Erro'); } finally { setGerandoMes(false); }
     }, [API, getHeaders, modal, setTransacoes]);
 
-    const exportarCSV = useCallback(() => { /* ... */ }, [transacoes, modal]);
+    /**
+     * @function exportarCSV
+     * @description Gera e realiza o download de um arquivo CSV contendo todas as transações, compatível com MS Excel (UTF-8 com BOM).
+     */
+    const exportarCSV = useCallback(() => {
+        if (!transacoes || transacoes.length === 0) {
+            modal.alert('Não há dados de lançamentos para exportar.', '⚠️ Aviso');
+            return;
+        }
+
+        // Cabeçalhos das colunas
+        const cabecalho = [
+            'ID', 'Mes/Ano Ref', 'Data Compra', 'Descrição', 'Categoria',
+            'Natureza', 'Status', 'Forma Pagamento', 'Valor Parcela (R$)',
+            'Terceiro (Sim/Não)', 'Nome Terceiro', 'Valor Terceiro (R$)', 'Observação'
+        ];
+
+        // Formatação das linhas
+        const linhas = transacoes.map(t => {
+            const dataRef = `${String(t.mesReferencia).padStart(2, '0')}/${t.anoReferencia}`;
+            const dataC = t.dataCompra ? new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '';
+            // Substituição de aspas duplas por duplicadas e envelopamento em aspas para não quebrar CSV (RFC 4180)
+            const desc = `"${(t.descricao || '').replace(/"/g, '""')}"`;
+            const cat = `"${(t.categoria || '').replace(/"/g, '""')}"`;
+            const nat = t.tipo || '';
+            const status = t.status || '';
+            const fp = `"${(t.formaPagamento || '').replace(/"/g, '""')}"`;
+            const vp = Number(t.valorParcela || 0).toFixed(2).replace('.', ',');
+            const isT = t.isThirdParty ? 'Sim' : 'Não';
+            const nT = `"${(t.thirdPartyName || '').replace(/"/g, '""')}"`;
+            const vT = t.thirdPartyValue ? Number(t.thirdPartyValue).toFixed(2).replace('.', ',') : '0,00';
+            const obs = `"${(t.observacao || '').replace(/"/g, '""')}"`;
+
+            return [t.id, dataRef, dataC, desc, cat, nat, status, fp, vp, isT, nT, vT, obs].join(';');
+        });
+
+        // Adição do prefixo \uFEFF (Byte Order Mark) garante que o Excel force leitura em UTF-8
+        const csvContent = "\uFEFF" + [cabecalho.join(';'), ...linhas].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `extrato_financeiro_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        modal.alert('O download do seu Extrato Financeiro foi iniciado.', '✅ Exportação Concluída');
+    }, [transacoes, modal]);
 
     return {
         cartoes, setCartoes, categorias, setCategorias, metasRenda, setMetasRenda,

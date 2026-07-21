@@ -26,10 +26,17 @@ import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
 import { DashboardSkeleton } from './components/Skeleton';
 
-const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
+/**
+ * @constant {string} API
+ * @description URL base da API consumida pela aplicação. 
+ * Centralizada estritamente na variável de ambiente do Vite para evitar hardcoding e vazamento de ambiente de produção.
+ */
+const API = import.meta.env.VITE_API_URL;
 
 /**
- * Hook Customizado: useModal
+ * @function useModal
+ * @description Hook Customizado que orquestra os estados e chamadas de janelas modais (Alertas, Confirmações, Prompts e Opções).
+ * @returns {Object} Configuração atual do modal e funções disparadoras.
  */
 function useModal() {
   const [config, setConfig] = useState(null);
@@ -41,6 +48,12 @@ function useModal() {
   return { config, close, setConfig, alert, confirm, prompt, options };
 }
 
+/**
+ * @function App
+ * @description Raiz da aplicação React. Gerencia o roteamento interno (telaAtiva), instância de hooks globais, 
+ * autenticação de usuários, sincronização inicial com a API e renderização condicional do layout principal.
+ * @returns {JSX.Element} Estrutura principal da SPA.
+ */
 function App() {
   const modal = useModal();
   const { toast, showToast } = useToast();
@@ -102,6 +115,11 @@ function App() {
   if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /></>;
   if (auth.token && !carregouAPI) return <><DashboardSkeleton /><Toast toast={toast} /></>;
 
+  /**
+   * @function renderizarConteudoAtivo
+   * @description Switch principal de roteamento da SPA que renderiza o componente correto com base na variável `telaAtiva`.
+   * @returns {JSX.Element}
+   */
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} />;
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;

@@ -1,11 +1,22 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
 
-const API = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
+/**
+ * @constant {string} API
+ * @description URL base da API consumida pela aplicação. 
+ * Centralizada estritamente na variável de ambiente do Vite.
+ */
+const API = import.meta.env.VITE_API_URL;
 
 const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
 
+/**
+ * @function Garagem
+ * @description Componente visual para a gestão da frota de veículos, incluindo odômetros, manutenções 
+ * manuais e rastreio automatizado de lançamentos financeiros atrelados aos veículos.
+ * @returns {JSX.Element}
+ */
 export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, modalConfig, modalClose, garagem }) {
 
     const [veiculosLocais, setVeiculosLocais] = useState([]);
