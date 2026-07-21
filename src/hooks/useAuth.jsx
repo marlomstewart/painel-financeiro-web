@@ -3,9 +3,9 @@ import { useState, useCallback } from 'react';
 const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
 /**
- * Hook Customizado: useAuth
- * Gere token JWT e fluxos de login com prevenção visual de múltiplos disparos.
- * Atualizado para blindar o "usuario" (login) e gerir os dados visuais do Perfil.
+ * @function useAuth
+ * @description Hook Customizado: Gere token JWT, fluxos de login, perfis e controle de acesso granular.
+ * @updated Inclui a captura e persistência da flag 'temGaragem' para isolamento de módulos.
  */
 export function useAuth({ API, modal, setCarregouAPI }) {
     const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
@@ -15,6 +15,10 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     // O nome visual agora é baseado no nome de exibição (isolado do login)
     const [nomeUsuario, setNomeUsuario] = useState(localStorage.getItem('nomeUsuario') || '');
     const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdminPainel') === 'true');
+
+    // 🔥 NOVO ESTADO: Controle de acesso ao módulo garagem
+    const [temGaragem, setTemGaragem] = useState(localStorage.getItem('temGaragem') === 'true');
+
     const [usuarios, setUsuarios] = useState([]);
 
     const [usuarioLogin, setUsuarioLogin] = useState('');
@@ -47,7 +51,6 @@ export function useAuth({ API, modal, setCarregouAPI }) {
             const data = await res.json();
 
             if (res.ok && data.auth) {
-                // CORREÇÃO: Lê o nomeExibicao enviado pela nova versão da API
                 const nomeVisual = data.nomeExibicao || usuarioLogin;
 
                 if (data.precisaTrocar) {
@@ -58,9 +61,13 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     localStorage.setItem('isAdminPainel', data.is_admin ? 'true' : 'false');
                     localStorage.setItem('nomeUsuario', nomeVisual);
 
+                    // 🔥 ATUALIZAÇÃO: Persiste a permissão da garagem localmente
+                    localStorage.setItem('temGaragem', data.tem_garagem ? 'true' : 'false');
+
                     setToken(data.token);
                     setIsAdmin(data.is_admin === true);
                     setNomeUsuario(nomeVisual);
+                    setTemGaragem(data.tem_garagem === true);
                 }
             } else {
                 setErroLogin(data.message || 'Erro de credenciais.');
@@ -76,6 +83,8 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         localStorage.removeItem('tokenPainel');
         localStorage.removeItem('nomeUsuario');
         localStorage.removeItem('isAdminPainel');
+        // 🔥 Limpa a permissão ao deslogar
+        localStorage.removeItem('temGaragem');
 
         setToken(null);
         setTokenTemp(null);
@@ -83,6 +92,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         setCarregouAPI(false);
         setNomeUsuario('');
         setIsAdmin(false);
+        setTemGaragem(false);
         setUsuarios([]);
         setUsuarioLogin('');
         setSenhaLogin('');
@@ -101,7 +111,6 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Atualizando...`; }
 
         try {
-            // CORREÇÃO: Envia a senha atual no payload em conformidade com a nova rota
             const res = await fetch(`${API}/mudar-senha`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -111,7 +120,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
 
             if (res.ok) {
                 localStorage.setItem('tokenPainel', tokenTemp);
-                localStorage.setItem('nomeUsuario', usuarioLogin); // Nome provisório até atualizar perfil
+                localStorage.setItem('nomeUsuario', usuarioLogin);
                 setToken(tokenTemp);
                 setNomeUsuario(usuarioLogin);
                 setTokenTemp(null);
@@ -119,6 +128,9 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                 setSenhaLogin('');
                 setNovaSenha('');
                 setConfirmarSenha('');
+
+                // NOTA: Como não estamos fazendo um login limpo neste fluxo, o usuário precisará fazer logoff e login
+                // para puxar flags atualizadas. No entanto, para segurança, desativamos permissões no primeiro acesso.
             } else {
                 setErroTrocaSenha(data.message || "Erro ao atualizar a senha no servidor.");
             }
@@ -182,11 +194,14 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); const data = await res.json(); await modal.alert(data.message, res.ok ? '✅ Resetada' : '❌ Erro'); };
     const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const acao = atualIsAdmin ? 'remover admin' : 'promover a admin'; const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
 
+    // 🔥 NOVA AÇÃO: Ligar/Desligar acesso à Garagem
+    const toggleGaragem = async (id, nomeU, atualTemGaragem) => { const acao = atualTemGaragem ? 'REVOGAR o acesso à Garagem' : 'LIBERAR o acesso à Garagem'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '🏍️ Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-garagem`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
+
     return {
-        token, precisaTrocarSenha, nomeUsuario, isAdmin, usuarios, getHeaders,
+        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
-        fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin,
+        fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem,
         atualizarPerfil, alterarSenha
     };
 }

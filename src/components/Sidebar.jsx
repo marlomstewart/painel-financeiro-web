@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 /**
  * @file src/components/Sidebar.jsx
  * @description Componente de Navegação Lateral Principal.
- * Suporta menus expansíveis, renderização condicional baseada em permissões e controlo de estado mobile.
+ * Suporta menus expansíveis, renderização condicional baseada em permissões (Admin e Garagem) e controlo de estado mobile.
  */
-export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen }) {
+export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen }) {
 
     // Estados para controlar o colapso dos menus expansíveis
     const [openMenus, setOpenMenus] = useState({
@@ -108,7 +108,12 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsu
                     <MenuItem id="rendas_fixas" icone="💰" titulo="Rendas Fixas" />
                     <MenuItem id="metas_categorias" icone="🎯" titulo="Metas & Categorias" />
                     <MenuItem id="investimentos" icone="📈" titulo="Investimentos" />
-                    <MenuItem id="garagem" icone="🏍️" titulo="Garagem" />
+
+                    {/* 🔥 RENDERIZAÇÃO CONDICIONAL: Só exibe se o usuário tiver a flag temGaragem verdadeira */}
+                    {temGaragem && (
+                        <MenuItem id="garagem" icone="🏍️" titulo="Garagem" />
+                    )}
+
                     <MenuItem id="configuracoes" icone="⚙️" titulo="Configurações" />
 
                     {isAdmin && (
@@ -121,7 +126,6 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, fazerLogout, nomeUsu
 
                 {/* Footer / Logout */}
                 <div className="p-4 border-t border-slate-800/60 mt-auto">
-                    {/* Botão de Modo Escuro removido daqui. Função migrada para a aba Configurações. */}
                     <button
                         type="button"
                         onClick={fazerLogout}
