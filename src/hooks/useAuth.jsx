@@ -5,7 +5,7 @@ const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current in
 /**
  * @function useAuth
  * @description Hook Customizado: Gere token JWT, fluxos de login, perfis e controle de acesso granular.
- * @updated Inclui a captura e persistência da flag 'temGaragem' para isolamento de módulos.
+ * @updated Inclui a captura e persistência do 'telegram_chat_id' para alertas preditivos.
  */
 export function useAuth({ API, modal, setCarregouAPI }) {
     const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
@@ -16,8 +16,9 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const [nomeUsuario, setNomeUsuario] = useState(localStorage.getItem('nomeUsuario') || '');
     const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdminPainel') === 'true');
 
-    // 🔥 NOVO ESTADO: Controle de acesso ao módulo garagem
+    // Controle de acesso ao módulo garagem e notificações preditivas
     const [temGaragem, setTemGaragem] = useState(localStorage.getItem('temGaragem') === 'true');
+    const [telegramChatId, setTelegramChatId] = useState(localStorage.getItem('telegramChatId') || '');
 
     const [usuarios, setUsuarios] = useState([]);
 
@@ -60,14 +61,14 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     localStorage.setItem('tokenPainel', data.token);
                     localStorage.setItem('isAdminPainel', data.is_admin ? 'true' : 'false');
                     localStorage.setItem('nomeUsuario', nomeVisual);
-
-                    // 🔥 ATUALIZAÇÃO: Persiste a permissão da garagem localmente
                     localStorage.setItem('temGaragem', data.tem_garagem ? 'true' : 'false');
+                    localStorage.setItem('telegramChatId', data.telegram_chat_id || '');
 
                     setToken(data.token);
                     setIsAdmin(data.is_admin === true);
                     setNomeUsuario(nomeVisual);
                     setTemGaragem(data.tem_garagem === true);
+                    setTelegramChatId(data.telegram_chat_id || '');
                 }
             } else {
                 setErroLogin(data.message || 'Erro de credenciais.');
@@ -83,8 +84,8 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         localStorage.removeItem('tokenPainel');
         localStorage.removeItem('nomeUsuario');
         localStorage.removeItem('isAdminPainel');
-        // 🔥 Limpa a permissão ao deslogar
         localStorage.removeItem('temGaragem');
+        localStorage.removeItem('telegramChatId');
 
         setToken(null);
         setTokenTemp(null);
@@ -93,6 +94,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         setNomeUsuario('');
         setIsAdmin(false);
         setTemGaragem(false);
+        setTelegramChatId('');
         setUsuarios([]);
         setUsuarioLogin('');
         setSenhaLogin('');
@@ -128,9 +130,6 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                 setSenhaLogin('');
                 setNovaSenha('');
                 setConfirmarSenha('');
-
-                // NOTA: Como não estamos fazendo um login limpo neste fluxo, o usuário precisará fazer logoff e login
-                // para puxar flags atualizadas. No entanto, para segurança, desativamos permissões no primeiro acesso.
             } else {
                 setErroTrocaSenha(data.message || "Erro ao atualizar a senha no servidor.");
             }
@@ -141,9 +140,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         }
     };
 
-    /**
-     * Atualiza os dados visuais do Perfil na Base de Dados e atualiza a Sessão Local.
-     */
+    /** Atualiza os dados visuais do Perfil */
     const atualizarPerfil = async (dados) => {
         try {
             const res = await fetch(`${API}/perfil`, {
@@ -164,9 +161,28 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         }
     };
 
-    /**
-     * Envia a requisição de alteração de senha a partir da aba de Configurações, validando a senha atual.
-     */
+    /** Atualiza o ID do Telegram para Notificações */
+    const atualizarTelegram = async (dados) => {
+        try {
+            const res = await fetch(`${API}/telegram`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(dados)
+            });
+            if (res.ok) {
+                localStorage.setItem('telegramChatId', dados.telegram_chat_id);
+                setTelegramChatId(dados.telegram_chat_id);
+                await modal.alert('O seu Chat ID foi salvo com sucesso! Você passará a receber notificações preditivas.', '✅ Alertas Ativados');
+            } else {
+                await modal.alert('Não foi possível salvar o seu ID do Telegram. Tente novamente.', '❌ Erro');
+            }
+        } catch (err) {
+            console.error("Erro ao atualizar telegram:", err);
+            await modal.alert('Erro de conexão com o servidor.', '❌ Erro de Rede');
+        }
+    };
+
+    /** Envia a requisição de alteração de senha a partir das Configurações */
     const alterarSenha = async (dados) => {
         try {
             const res = await fetch(`${API}/mudar-senha`, {
@@ -193,15 +209,13 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const deletarUsuario = async (id, nome) => { const ok = await modal.confirm(`Tem a certeza que deseja EXCLUIR o utilizador "${nome}"?`, '🗑️ Excluir', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() }); const data = await res.json(); if (res.ok) { await modal.alert(data.message, '✅ Excluído'); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro'); };
     const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); const data = await res.json(); await modal.alert(data.message, res.ok ? '✅ Resetada' : '❌ Erro'); };
     const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const acao = atualIsAdmin ? 'remover admin' : 'promover a admin'; const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
-
-    // 🔥 NOVA AÇÃO: Ligar/Desligar acesso à Garagem
     const toggleGaragem = async (id, nomeU, atualTemGaragem) => { const acao = atualTemGaragem ? 'REVOGAR o acesso à Garagem' : 'LIBERAR o acesso à Garagem'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '🏍️ Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-garagem`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
 
     return {
-        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, usuarios, getHeaders,
+        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, telegramChatId, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
         fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem,
-        atualizarPerfil, alterarSenha
+        atualizarPerfil, atualizarTelegram, alterarSenha
     };
 }

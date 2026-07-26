@@ -3,91 +3,73 @@ import React, { useState, useEffect } from 'react';
 /**
  * @file src/components/Configuracoes.jsx
  * @description Painel de controlo central do utilizador.
- * Gere os dados de perfil, segurança, aparência (Modo Escuro), backups e ações destrutivas.
+ * Gere os dados de perfil, segurança, notificações, aparência (Modo Escuro), backups e ações destrutivas.
  */
-export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha }) {
+export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, telegramChatId, atualizarTelegram, alterarSenha }) {
 
-    // Estados do Perfil de Utilizador
+    // Estados do Perfil e Notificações
     const [nomeCompleto, setNomeCompleto] = useState('');
     const [nomeExibicao, setNomeExibicao] = useState('');
+    const [chatIdInput, setChatIdInput] = useState('');
 
-    // Estados de Segurança (Alteração de Senha)
+    // Estados de Segurança
     const [senhaAtual, setSenhaAtual] = useState('');
     const [novaSenha, setNovaSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
 
-    // Estado de Aparência (Modo Escuro)
+    // Estado de Aparência
     const [tema, setTema] = useState(localStorage.getItem('theme') || 'sistema');
 
-    // Sincroniza a propriedade herdada assim que a API a fornece
+    // Sincroniza as propriedades herdadas
     useEffect(() => {
         if (nomeUsuario) setNomeExibicao(nomeUsuario);
-    }, [nomeUsuario]);
+        if (telegramChatId) setChatIdInput(telegramChatId);
+    }, [nomeUsuario, telegramChatId]);
 
     // Lógica do Motor do Tema (Dark Mode)
     useEffect(() => {
         const root = window.document.documentElement;
-
         if (tema === 'sistema') {
             localStorage.removeItem('theme');
-            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.classList.add('dark');
+            else root.classList.remove('dark');
         } else {
             localStorage.setItem('theme', tema);
-            if (tema === 'escuro') {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
+            if (tema === 'escuro') root.classList.add('dark');
+            else root.classList.remove('dark');
         }
     }, [tema]);
 
-    // Escuta as mudanças nativas do sistema (Windows/Android/iOS) em tempo real
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const handleChange = (e) => {
             if (tema === 'sistema') {
                 const root = window.document.documentElement;
-                if (e.matches) {
-                    root.classList.add('dark');
-                } else {
-                    root.classList.remove('dark');
-                }
+                if (e.matches) root.classList.add('dark');
+                else root.classList.remove('dark');
             }
         };
         mediaQuery.addEventListener('change', handleChange);
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, [tema]);
 
-    /** Interceta a submissão do formulário de Perfil */
     const handleSalvarPerfil = (e) => {
         e.preventDefault();
-        if (atualizarPerfil) {
-            atualizarPerfil({ nomeCompleto, nomeExibicao });
-        } else {
-            alert('A rota de atualização do perfil será ativada na próxima etapa do backend.');
-        }
+        if (atualizarPerfil) atualizarPerfil({ nomeCompleto, nomeExibicao });
     };
 
-    /** Interceta a submissão do formulário de Segurança */
+    const handleSalvarTelegram = (e) => {
+        e.preventDefault();
+        if (atualizarTelegram) atualizarTelegram({ telegram_chat_id: chatIdInput });
+    };
+
     const handleAlterarSenha = (e) => {
         e.preventDefault();
-        if (novaSenha !== confirmarSenha) {
-            alert('As senhas não coincidem. Verifique e tente novamente.');
-            return;
-        }
-        if (novaSenha.length < 6) {
-            alert('A nova senha deve conter pelo menos 6 caracteres.');
-            return;
-        }
+        if (novaSenha !== confirmarSenha) return alert('As senhas não coincidem. Verifique e tente novamente.');
+        if (novaSenha.length < 6) return alert('A nova senha deve conter pelo menos 6 caracteres.');
         if (alterarSenha) {
             alterarSenha({ senhaAtual, novaSenha });
             setSenhaAtual(''); setNovaSenha(''); setConfirmarSenha('');
-        } else {
-            alert('A rota de segurança será ativada na próxima etapa do backend.');
         }
     };
 
@@ -101,17 +83,17 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
             <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
                 <div className="border-b border-slate-200 dark:border-slate-800 pb-2">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">⚙️ Configurações</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Preferências, segurança, exportação de dados e gestão estrutural da conta.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Preferências, segurança, exportação de dados e notificações.</p>
                 </div>
             </div>
 
-            {/* ================= BLOCO 1: PERFIL DO UTILIZADOR ================= */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-                <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1">👤 Perfil do Utilizador</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Personalize os seus dados e defina como o sistema se dirige a si.</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* ================= BLOCO 1: PERFIL DO UTILIZADOR ================= */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1">👤 Perfil do Utilizador</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Personalize os seus dados e defina como o sistema se dirige a si.</p>
 
-                <form onSubmit={handleSalvarPerfil} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form onSubmit={handleSalvarPerfil} className="space-y-4 flex flex-col flex-1">
                         <div>
                             <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Nome Completo</label>
                             <input type="text" value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: Marlom Stewart Souza" className={inputCls} />
@@ -120,16 +102,37 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                             <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Como quer ser chamado</label>
                             <input type="text" value={nomeExibicao} onChange={(e) => setNomeExibicao(e.target.value)} placeholder="Ex: Marlom" required className={inputCls} />
                         </div>
+                        <div className="flex justify-end pt-2 mt-auto">
+                            <button type="submit" className={btnSalvarCls}>Salvar Perfil</button>
+                        </div>
+                    </form>
+                </div>
+
+                {/* ================= BLOCO 1.5: NOTIFICAÇÕES (TELEGRAM) ================= */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <span className="text-8xl">💬</span>
                     </div>
-                    <div className="flex justify-end pt-2">
-                        <button type="submit" className={btnSalvarCls}>Salvar Perfil</button>
-                    </div>
-                </form>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 relative z-10">📱 Notificações (Telegram)</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 relative z-10">Receba alertas de contas próximas do vencimento no telemóvel.</p>
+
+                    <form onSubmit={handleSalvarTelegram} className="space-y-4 flex flex-col flex-1 relative z-10">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Chat ID do Telegram</label>
+                            <input type="text" value={chatIdInput} onChange={(e) => setChatIdInput(e.target.value)} placeholder="Ex: 123456789" className={inputCls} />
+                            <p className="text-[10px] mt-2 text-slate-500 dark:text-slate-500">
+                                Não sabe o seu ID? Crie o seu assistente no <strong>@BotFather</strong>, inicie a conversa e pegue o seu identificador usando o bot <strong>@userinfobot</strong>.
+                            </p>
+                        </div>
+                        <div className="flex justify-end pt-2 mt-auto">
+                            <button type="submit" className={btnSalvarCls}>Salvar ID do Chat</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                {/* ================= BLOCO 2: APARÊNCIA (NOVO) ================= */}
+                {/* ================= BLOCO 2: APARÊNCIA ================= */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
                     <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1">🎨 Aparência</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Personalize o tema visual do sistema para maior conforto.</p>
@@ -174,7 +177,6 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                         </div>
                     </form>
                 </div>
-
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
