@@ -1,13 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
-const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-
-/**
- * @function useSetup
- * @description Hook customizado responsável pela orquestração de entidades estáticas (Metas, Cartões, Contas, Rendas e Dívidas).
- * @param {Object} props
- * @returns {Object} Estados e métodos de manipulação.
- */
 export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) {
     const [cartoes, setCartoes] = useState([]);
     const [categorias, setCategorias] = useState([]);
@@ -15,207 +7,214 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const [contasFixas, setContasFixas] = useState([]);
     const [rendasFixas, setRendasFixas] = useState([]);
     const [dividas, setDividas] = useState([]);
+
     const [gerandoMes, setGerandoMes] = useState(false);
 
-    /**
-     * @function processarSubmitComLoading
-     * @description Trava o formulário visualmente e injeta um SVG de loading enquanto o POST ocorre.
-     */
-    const processarSubmitComLoading = useCallback(async (e, acaoData) => {
+    const parseCurrency = (val) => Number(String(val).replace(/\./g, '').replace(',', '.'));
+
+    const addCartao = async (e) => {
         e.preventDefault();
-        const form = e.target;
-        const btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
-        const originalText = btn ? btn.innerHTML : '';
-        if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-wait'); btn.innerHTML = `${loadingIcon} Salvando...`; }
-        try { await acaoData(new FormData(form)); } catch (err) { console.error("Erro no processamento:", err); }
-        finally { if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-wait'); btn.innerHTML = originalText; } }
-    }, []);
+        const fd = new FormData(e.target);
+        const dados = { id: `card_${Date.now()}`, nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')), limite: parseCurrency(fd.get('limite')) };
+        const res = await fetch(`${API}/cartoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+        if (res.ok) { setCartoes([...cartoes, dados]); e.target.reset(); modal.alert('Cartão adicionado com sucesso!', '✅ Sucesso'); }
+    };
 
-    const salvarConfig = useCallback(async (rota, dados, setState, stateAtual) => {
-        const res = await fetch(`${API}/${rota}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
-        if (res.ok) setState([...stateAtual, dados]);
-    }, [API, getHeaders]);
+    const addCategoria = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dados = { id: `cat_${Date.now()}`, nome: fd.get('nome'), meta: parseCurrency(fd.get('meta')), tipo: fd.get('tipo'), categoria_pai: fd.get('categoria_pai') || null };
+        const res = await fetch(`${API}/categorias`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+        if (res.ok) { setCategorias([...categorias, dados]); e.target.reset(); modal.alert('Categoria adicionada!', '✅ Sucesso'); }
+    };
 
-    // 🔥 Tradutor da máscara bancária R$ para o Banco de Dados
-    const parseCurrency = (val) => { if (!val) return 0; return Number(String(val).replace(/\./g, '').replace(',', '.')); };
+    const addMetaRenda = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dados = { id: `meta_${Date.now()}`, nome: fd.get('nome'), valor: parseCurrency(fd.get('valor')) };
+        const res = await fetch(`${API}/metas-renda`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+        if (res.ok) { setMetasRenda([...metasRenda, dados]); e.target.reset(); modal.alert('Meta adicionada!', '✅ Sucesso'); }
+    };
 
-    const addCartao = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('cartoes', { id: Date.now().toString(), nome: fd.get('nome'), limite: Number(fd.get('limite')), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')) }, setCartoes, cartoes); }), [processarSubmitComLoading, salvarConfig, cartoes]);
-    const addCategoria = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('categorias', { id: Date.now().toString(), nome: fd.get('nome'), meta: Number(fd.get('meta')), tipo: fd.get('tipo') }, setCategorias, categorias); }), [processarSubmitComLoading, salvarConfig, categorias]);
-    const addMetaRenda = useCallback((e) => processarSubmitComLoading(e, async (fd) => { await salvarConfig('metas-renda', { id: Date.now().toString(), nome: fd.get('nome'), valor: Number(fd.get('meta')) }, setMetasRenda, metasRenda); }), [processarSubmitComLoading, salvarConfig, metasRenda]);
-
-    const addContaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
-        await salvarConfig('contas-fixas', {
-            id: Date.now().toString(),
+    // 🔥 CORREÇÃO: Lendo a forma de pagamento do FormData
+    const addContaFixa = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dados = {
+            id: `cf_${Date.now()}`,
             nome: fd.get('nome'),
             valorPadrao: parseCurrency(fd.get('valorPadrao')),
-            vencimento: Number(fd.get('vencimento'))
-        }, setContasFixas, contasFixas);
-    }), [processarSubmitComLoading, salvarConfig, contasFixas]);
+            vencimento: Number(fd.get('vencimento')),
+            forma_pagamento: fd.get('forma_pagamento') || 'pix'
+        };
+        const res = await fetch(`${API}/contas-fixas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+        if (res.ok) { setContasFixas([...contasFixas, dados]); e.target.reset(); modal.alert('Conta Fixa adicionada com sucesso!', '✅ Sucesso'); }
+    };
 
-    const addRendaFixa = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
-        await salvarConfig('rendas-fixas', {
-            id: Date.now().toString(),
-            nome: fd.get('nome'),
-            valorPadrao: parseCurrency(fd.get('valorPadrao')),
-            diaRecebimento: Number(fd.get('diaRecebimento'))
-        }, setRendasFixas, rendasFixas);
-    }), [processarSubmitComLoading, salvarConfig, rendasFixas]);
+    const addRendaFixa = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dados = { id: `rf_${Date.now()}`, nome: fd.get('nome'), valorPadrao: parseCurrency(fd.get('valorPadrao')), diaRecebimento: Number(fd.get('diaRecebimento')) };
+        const res = await fetch(`${API}/rendas-fixas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+        if (res.ok) { setRendasFixas([...rendasFixas, dados]); e.target.reset(); modal.alert('Renda Fixa adicionada!', '✅ Sucesso'); }
+    };
 
-    const addDivida = useCallback((e) => processarSubmitComLoading(e, async (fd) => {
-        const totais = Number(fd.get('qtd_parcelas'));
-        const restantes = Number(fd.get('parcelas_restantes'));
-        const descricao = fd.get('descricao');
-        const pagasNoExtratoAtuais = transacoes.filter(t => String(t.nomeContaFixa).toLowerCase() === String(descricao).toLowerCase() && t.status === 'pago').length;
-        const pagasIniciais = (totais - restantes) - pagasNoExtratoAtuais;
+    // 🔥 CORREÇÃO: Lendo a forma de pagamento e suportando envio direto do objeto
+    const addDivida = async (e, objDireto = null) => {
+        if (e && e.preventDefault) e.preventDefault();
 
-        await salvarConfig('dividas', {
-            id: Date.now().toString(),
-            descricao: descricao,
-            valor_total: parseCurrency(fd.get('valor_total')),
-            valor_parcela: parseCurrency(fd.get('valor_parcela')),
-            qtd_parcelas: totais,
-            parcelas_pagas_iniciais: pagasIniciais,
-            dia_vencimento: Number(fd.get('dia_vencimento')),
-            para_terceiros: fd.get('para_terceiros') === 'on' ? 1 : 0,
-            nome_terceiro: fd.get('nome_terceiro') || ''
-        }, setDividas, dividas);
-    }), [processarSubmitComLoading, salvarConfig, dividas, transacoes]);
-
-    const editarSetup = useCallback(async (banco, id, dadosAtualizados) => {
-        const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas', dividas: 'dividas' };
-        try {
-            const res = await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(dadosAtualizados) });
-            if (res.ok) {
-                const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas], dividas: [setDividas, dividas] };
-                const [setter, state] = setters[banco];
-                setter(state.map(i => i.id === id ? { ...i, ...dadosAtualizados } : i));
-                return true;
-            }
-            return false;
-        } catch (err) { console.error("Erro ao editar setup:", err); return false; }
-    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, dividas]);
-
-    const removerSetup = useCallback(async (banco, id = null) => {
-        // Fluxo de Deleção em Lote (ZONA DE PERIGO)
-        if (!id) {
-            // CORREÇÃO: Adicionada a chave 'divida' e 'dividas' ao mapeamento
-            const mapNomes = {
-                categoria: 'todas as Metas e Categorias',
-                contaFixa: 'todas as Contas Fixas',
-                cartao: 'todos os Cartões',
-                rendaFixa: 'todas as Rendas Fixas',
-                divida: 'todas as Dívidas',
-                dividas: 'todas as Dívidas'
+        let dados = objDireto;
+        if (!dados) {
+            const fd = new FormData(e.target);
+            dados = {
+                descricao: fd.get('descricao'),
+                valor_total: parseCurrency(fd.get('valorTotal')),
+                valor_parcela: parseCurrency(fd.get('valorParcela')),
+                qtd_parcelas: Number(fd.get('qtdParcelas')),
+                dia_vencimento: Number(fd.get('diaVencimento')),
+                parcelas_pagas_iniciais: Number(fd.get('parcelasPagasIniciais') || 0),
+                forma_pagamento: fd.get('forma_pagamento') || 'pix',
+                para_terceiros: fd.get('para_terceiros') ? 1 : 0,
+                nome_terceiro: fd.get('nome_terceiro') || null
             };
-            const nomeAmigavel = mapNomes[banco] || banco;
-            const confirmacao = await modal.confirm(`Tem a certeza absoluta que deseja EXCLUIR ${nomeAmigavel}? Esta ação é destrutiva e não pode ser desfeita.`, '⚠️ Confirmação Destrutiva', { confirmColor: 'bg-red-600 hover:bg-red-700', confirmLabel: 'Sim, Excluir' });
-            if (!confirmacao) return;
-            const senha = await modal.prompt('Por motivos de segurança, digite a sua senha de acesso para confirmar a exclusão:', '', '🔒 Validação de Segurança', { inputType: 'password', confirmLabel: 'Validar e Excluir' });
-            if (!senha) return;
-            try {
-                const resVal = await fetch(`${API}/validar-senha`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ senha }) });
-                if (!resVal.ok) { await modal.alert('Senha incorreta. Ação abortada.', '❌ Acesso Negado'); return; }
-            } catch (err) { await modal.alert('Erro de rede.', '❌ Erro'); return; }
-
-            let rotaLimpar = banco;
-            if (banco === 'categoria') rotaLimpar = 'categorias';
-            if (banco === 'contaFixa') rotaLimpar = 'contas-fixas';
-            if (banco === 'rendaFixa') rotaLimpar = 'rendas-fixas';
-            if (banco === 'cartao') rotaLimpar = 'cartoes';
-            if (banco === 'divida' || banco === 'dividas') rotaLimpar = 'dividas';
-
-            try {
-                const res = await fetch(`${API}/${rotaLimpar}`, { method: 'DELETE', headers: getHeaders() });
-                if (res.ok) {
-                    if (banco === 'categoria') { setCategorias([]); setMetasRenda([]); }
-                    if (banco === 'contaFixa') { setContasFixas([]); }
-                    if (banco === 'rendaFixa') { setRendasFixas([]); }
-                    if (banco === 'cartao') setCartoes([]);
-                    if (banco === 'divida' || banco === 'dividas') setDividas([]);
-                    await modal.alert(`${nomeAmigavel} excluídos com sucesso.`, '✅ Exclusão Concluída');
-                }
-            } catch (err) { console.error('Erro:', err); }
-            return;
         }
+        if (!dados.id) dados.id = `div_${Date.now()}`;
 
-        // Fluxo de Deleção Individual
-        const rotas = { cartoes: 'cartoes', categorias: 'categorias', metasRenda: 'metas-renda', contasFixas: 'contas-fixas', rendasFixas: 'rendas-fixas', dividas: 'dividas' };
-        await fetch(`${API}/${rotas[banco]}/${id}`, { method: 'DELETE', headers: getHeaders() });
-        const setters = { cartoes: [setCartoes, cartoes], categorias: [setCategorias, categorias], metasRenda: [setMetasRenda, metasRenda], contasFixas: [setContasFixas, contasFixas], rendasFixas: [setRendasFixas, rendasFixas], dividas: [setDividas, dividas] };
-        const [setter, state] = setters[banco];
-        setter(state.filter(i => i.id !== id));
-    }, [API, getHeaders, cartoes, categorias, metasRenda, contasFixas, rendasFixas, dividas, modal]);
+        const res = await fetch(`${API}/dividas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
+        if (res.ok) {
+            setDividas([...dividas, dados]);
+            if (e && e.target && e.target.reset) e.target.reset();
+            modal.alert('Dívida adicionada com sucesso!', '✅ Sucesso');
+        }
+    };
 
-    const gerarMesManual = useCallback(async () => {
+    const editarSetup = async (tipo, id, dados) => {
+        const rotas = {
+            'contas_fixas': 'contas-fixas',
+            'dividas': 'dividas',
+            'cartoes': 'cartoes',
+            'categorias': 'categorias',
+            'rendas_fixas': 'rendas-fixas',
+            'metas_renda': 'metas-renda'
+        };
+        const endpoint = rotas[tipo] || tipo;
+        const res = await fetch(`${API}/${endpoint}/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(dados)
+        });
+        if (res.ok) {
+            if (tipo === 'contas_fixas') setContasFixas(contasFixas.map(item => item.id === id ? { ...item, ...dados } : item));
+            if (tipo === 'dividas') setDividas(dividas.map(item => item.id === id ? { ...item, ...dados } : item));
+            if (tipo === 'cartoes') setCartoes(cartoes.map(item => item.id === id ? { ...item, ...dados } : item));
+            if (tipo === 'categorias') setCategorias(categorias.map(item => item.id === id ? { ...item, ...dados } : item));
+            if (tipo === 'rendas_fixas') setRendasFixas(rendasFixas.map(item => item.id === id ? { ...item, ...dados } : item));
+            if (tipo === 'metas_renda') setMetasRenda(metasRenda.map(item => item.id === id ? { ...item, ...dados } : item));
+            return true;
+        }
+        return false;
+    };
+
+    const removerSetup = async (tipo, id) => {
+        const rotas = {
+            'cartoes': 'cartoes',
+            'categorias': 'categorias',
+            'metas_renda': 'metas-renda',
+            'contas_fixas': 'contas-fixas',
+            'rendas_fixas': 'rendas-fixas',
+            'dividas': 'dividas' // 🔥 Mapeamento de dívidas garantido
+        };
+        const nomes = {
+            'cartoes': 'Cartão',
+            'categorias': 'Categoria',
+            'metas_renda': 'Meta de Renda',
+            'contas_fixas': 'Conta Fixa',
+            'rendas_fixas': 'Renda Fixa',
+            'dividas': 'Dívida'
+        };
+
+        const endpoint = rotas[tipo] || tipo;
+        const nomeStr = nomes[tipo] || tipo;
+
+        // Se passar 'all', a rota de exclusão em lote precisa estar no backend. 
+        // Como o backend atual não tem delete em lote para setup, deletamos pela chave única.
+        const res = await fetch(`${API}/${endpoint}/${id}`, { method: 'DELETE', headers: getHeaders() });
+        if (res.ok) {
+            if (tipo === 'cartoes') setCartoes(cartoes.filter(i => i.id !== id));
+            if (tipo === 'categorias') setCategorias(categorias.filter(i => i.id !== id));
+            if (tipo === 'metas_renda') setMetasRenda(metasRenda.filter(i => i.id !== id));
+            if (tipo === 'contas_fixas') setContasFixas(contasFixas.filter(i => i.id !== id));
+            if (tipo === 'rendas_fixas') setRendasFixas(rendasFixas.filter(i => i.id !== id));
+            if (tipo === 'dividas') setDividas(dividas.filter(i => i.id !== id));
+            modal.alert(`${nomeStr} excluído(a) com sucesso!`, '✅ Removido');
+        } else {
+            modal.alert(`Erro ao remover ${nomeStr}.`, '❌ Erro');
+        }
+    };
+
+    const gerarMesManual = async (mes, ano) => {
         setGerandoMes(true);
         try {
-            const res = await fetch(`${API}/gerar-mes`, { method: 'POST', headers: getHeaders() }); const data = await res.json();
-            if (data.gerados.length === 0) { await modal.alert(`Tudo já estava gerado para ${data.mes}/${data.ano}.\nNenhum lançamento novo.`, '✅ Nenhum novo'); }
-            else {
-                const lista = data.gerados.map(g => `• ${g.nome} (${g.tipo})`).join('\n');
-                await modal.alert(`${data.gerados.length} lançamento(s):\n\n${lista}`, '✅ Gerados');
-                const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() }); if (resT.ok) setTransacoes(await resT.json());
+            const res = await fetch(`${API}/gerar-mes`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ mes, ano })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                modal.alert(data.message, '✅ Mês Gerado');
+                // Força recarregar a página para o App.jsx puxar as novas transações
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                modal.alert(data.error || 'Erro ao gerar mês.', '❌ Erro');
             }
-        } catch (err) { await modal.alert('Erro ao gerar lançamentos.', '❌ Erro'); } finally { setGerandoMes(false); }
-    }, [API, getHeaders, modal, setTransacoes]);
+        } catch (err) {
+            modal.alert('Falha na conexão com o servidor.', '❌ Erro');
+        } finally {
+            setGerandoMes(false);
+        }
+    };
 
-    /**
-     * @function exportarCSV
-     * @description Gera e realiza o download de um arquivo CSV contendo todas as transações, compatível com MS Excel (UTF-8 com BOM).
-     */
-    const exportarCSV = useCallback(() => {
+    const exportarCSV = async () => {
         if (!transacoes || transacoes.length === 0) {
-            modal.alert('Não há dados de lançamentos para exportar.', '⚠️ Aviso');
-            return;
+            return modal.alert('Não há transações para exportar.', 'Aviso');
         }
 
-        // Cabeçalhos das colunas
-        const cabecalho = [
-            'ID', 'Mes/Ano Ref', 'Data Compra', 'Descrição', 'Categoria',
-            'Natureza', 'Status', 'Forma Pagamento', 'Valor Parcela (R$)',
-            'Terceiro (Sim/Não)', 'Nome Terceiro', 'Valor Terceiro (R$)', 'Observação'
-        ];
-
-        // Formatação das linhas
+        const cabecalho = ['ID', 'Data', 'Descrição', 'Categoria', 'Tipo', 'Valor', 'Status', 'Forma Pagamento', 'Mês', 'Ano'].join(';');
         const linhas = transacoes.map(t => {
-            const dataRef = `${String(t.mesReferencia).padStart(2, '0')}/${t.anoReferencia}`;
-            const dataC = t.dataCompra ? new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '';
-            // Substituição de aspas duplas por duplicadas e envelopamento em aspas para não quebrar CSV (RFC 4180)
-            const desc = `"${(t.descricao || '').replace(/"/g, '""')}"`;
-            const cat = `"${(t.categoria || '').replace(/"/g, '""')}"`;
-            const nat = t.tipo || '';
+            const data = t.datacompra || t.dataCompra || '';
+            const desc = (t.descricao || '').replace(/;/g, ',');
+            const cat = (t.categoria || '').replace(/;/g, ',');
+            const tipo = t.tipo || '';
+            const val = Number(t.valorparcela || t.valorParcela || 0).toFixed(2).replace('.', ',');
             const status = t.status || '';
-            const fp = `"${(t.formaPagamento || '').replace(/"/g, '""')}"`;
-            const vp = Number(t.valorParcela || 0).toFixed(2).replace('.', ',');
-            const isT = t.isThirdParty ? 'Sim' : 'Não';
-            const nT = `"${(t.thirdPartyName || '').replace(/"/g, '""')}"`;
-            const vT = t.thirdPartyValue ? Number(t.thirdPartyValue).toFixed(2).replace('.', ',') : '0,00';
-            const obs = `"${(t.observacao || '').replace(/"/g, '""')}"`;
+            const forma = t.formapagamento || t.formaPagamento || '';
+            const mes = t.mesreferencia || t.mesReferencia || '';
+            const ano = t.anoreferencia || t.anoReferencia || '';
 
-            return [t.id, dataRef, dataC, desc, cat, nat, status, fp, vp, isT, nT, vT, obs].join(';');
+            return `${t.id};${data};${desc};${cat};${tipo};${val};${status};${forma};${mes};${ano}`;
         });
 
-        // Adição do prefixo \uFEFF (Byte Order Mark) garante que o Excel force leitura em UTF-8
-        const csvContent = "\uFEFF" + [cabecalho.join(';'), ...linhas].join('\n');
+        const csvContent = "\uFEFF" + cabecalho + "\n" + linhas.join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-        const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `extrato_financeiro_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
 
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const a = document.createElement('a');
+        a.href = url;
+        const dataAtual = new Date().toISOString().split('T')[0];
+        a.download = `extrato_financeiro_${dataAtual}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
         modal.alert('O download do seu Extrato Financeiro foi iniciado.', '✅ Exportação Concluída');
-    }, [transacoes, modal]);
+    };
 
     return {
         cartoes, setCartoes, categorias, setCategorias, metasRenda, setMetasRenda,
-        contasFixas, setContasFixas, rendasFixas, setRendasFixas, dividas, setDividas, gerandoMes,
+        contasFixas, setContasFixas, rendasFixas, setRendasFixas, dividas, setDividas,
         addCartao, addCategoria, addMetaRenda, addContaFixa, addRendaFixa, addDivida,
-        editarSetup, removerSetup, gerarMesManual, exportarCSV
+        editarSetup, removerSetup, gerarMesManual, gerandoMes, exportarCSV
     };
 }
