@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 /**
  * @file src/components/Configuracoes.jsx
  * @description Painel de controlo central do utilizador.
- * Gere os dados de perfil, segurança, notificações, aparência (Modo Escuro), backups e ações destrutivas.
+ * Gere os dados de perfil, segurança, notificações interativas (Telegram), aparência (Modo Escuro), 
+ * backups e ações destrutivas.
  */
-export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, telegramChatId, atualizarTelegram, alterarSenha }) {
+export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha }) {
 
-    // Estados do Perfil e Notificações
+    // ================= ESTADOS GERAIS =================
     const [nomeCompleto, setNomeCompleto] = useState('');
     const [nomeExibicao, setNomeExibicao] = useState('');
-    const [chatIdInput, setChatIdInput] = useState('');
 
     // Estados de Segurança
     const [senhaAtual, setSenhaAtual] = useState('');
@@ -20,11 +20,43 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     // Estado de Aparência
     const [tema, setTema] = useState(localStorage.getItem('theme') || 'sistema');
 
+    // ================= ESTADOS DO TELEGRAM (BOT INTERATIVO) =================
+    const [statusTelegram, setStatusTelegram] = useState('loading'); // 'loading', 'vinculado', 'nao_vinculado'
+    const [pinGerado, setPinGerado] = useState(null);
+    const [gerandoPin, setGerandoPin] = useState(false);
+
+    // ================= EFEITOS (USE EFFECT) =================
+
     // Sincroniza as propriedades herdadas
     useEffect(() => {
         if (nomeUsuario) setNomeExibicao(nomeUsuario);
-        if (telegramChatId) setChatIdInput(telegramChatId);
-    }, [nomeUsuario, telegramChatId]);
+    }, [nomeUsuario]);
+
+    // Busca o status atual do Telegram ao carregar a página
+    useEffect(() => {
+        const fetchTelegramStatus = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
+
+                const res = await fetch(`${apiUrl}/api/telegram/status`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setStatusTelegram(data.vinculado ? 'vinculado' : 'nao_vinculado');
+                } else {
+                    setStatusTelegram('nao_vinculado');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar status do Telegram:', error);
+                setStatusTelegram('nao_vinculado');
+            }
+        };
+
+        fetchTelegramStatus();
+    }, []);
 
     // Lógica do Motor do Tema (Dark Mode)
     useEffect(() => {
@@ -53,14 +85,11 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, [tema]);
 
+    // ================= FUNÇÕES DE AÇÃO =================
+
     const handleSalvarPerfil = (e) => {
         e.preventDefault();
         if (atualizarPerfil) atualizarPerfil({ nomeCompleto, nomeExibicao });
-    };
-
-    const handleSalvarTelegram = (e) => {
-        e.preventDefault();
-        if (atualizarTelegram) atualizarTelegram({ telegram_chat_id: chatIdInput });
     };
 
     const handleAlterarSenha = (e) => {
@@ -73,6 +102,64 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         }
     };
 
+    /**
+     * @function gerarPinTelegram
+     * @description Solicita à API a geração de um PIN aleatório de 6 dígitos para vínculo.
+     */
+    const gerarPinTelegram = async () => {
+        setGerandoPin(true);
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
+
+            const res = await fetch(`${apiUrl}/api/telegram/gerar-pin`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setPinGerado(data.pin);
+            } else {
+                alert('Erro ao gerar PIN. Tente novamente.');
+            }
+        } catch (error) {
+            console.error('Erro ao gerar PIN:', error);
+            alert('Erro de conexão ao gerar PIN.');
+        } finally {
+            setGerandoPin(false);
+        }
+    };
+
+    /**
+     * @function desvincularTelegram
+     * @description Remove o Chat ID do banco de dados, parando as notificações.
+     */
+    const desvincularTelegram = async () => {
+        if (!window.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.')) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
+
+            const res = await fetch(`${apiUrl}/api/telegram/desvincular`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                setStatusTelegram('nao_vinculado');
+                setPinGerado(null);
+            } else {
+                alert('Erro ao desvincular. Tente novamente.');
+            }
+        } catch (error) {
+            console.error('Erro ao desvincular:', error);
+            alert('Erro de conexão ao desvincular.');
+        }
+    };
+
+    // ================= CLASSES CSS PADRÃO =================
     const inputCls = "w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors shadow-sm";
     const btnSalvarCls = "bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-sm transition-colors cursor-pointer shadow-md w-full md:w-auto";
 
@@ -113,21 +200,63 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                         <span className="text-8xl">💬</span>
                     </div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 relative z-10">📱 Notificações (Telegram)</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 relative z-10">Receba alertas de contas próximas do vencimento no telemóvel.</p>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 relative z-10">📱 Integração Telegram</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 relative z-10">Receba seu radar diário de faturas e manutenções automotivas diretamente no celular.</p>
 
-                    <form onSubmit={handleSalvarTelegram} className="space-y-4 flex flex-col flex-1 relative z-10">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Chat ID do Telegram</label>
-                            <input type="text" value={chatIdInput} onChange={(e) => setChatIdInput(e.target.value)} placeholder="Ex: 123456789" className={inputCls} />
-                            <p className="text-[10px] mt-2 text-slate-500 dark:text-slate-500">
-                                Não sabe o seu ID? Crie o seu assistente no <strong>@BotFather</strong>, inicie a conversa e pegue o seu identificador usando o bot <strong>@userinfobot</strong>.
-                            </p>
-                        </div>
-                        <div className="flex justify-end pt-2 mt-auto">
-                            <button type="submit" className={btnSalvarCls}>Salvar ID do Chat</button>
-                        </div>
-                    </form>
+                    <div className="flex flex-col flex-1 relative z-10">
+                        {statusTelegram === 'loading' && (
+                            <div className="animate-pulse flex items-center justify-center h-full">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm">Verificando status da integração...</p>
+                            </div>
+                        )}
+
+                        {statusTelegram === 'vinculado' && (
+                            <div className="flex flex-col items-center justify-center h-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-6 text-center">
+                                <span className="text-4xl mb-3">✅</span>
+                                <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-lg mb-1">Bot Conectado!</h4>
+                                <p className="text-sm text-emerald-600 dark:text-emerald-500/80 mb-6">Sua conta já está recebendo alertas de garagem e contas diárias pelo Telegram.</p>
+                                <button type="button" onClick={desvincularTelegram} className="text-rose-600 dark:text-rose-400 hover:underline text-sm font-bold cursor-pointer">
+                                    Desvincular Conta
+                                </button>
+                            </div>
+                        )}
+
+                        {statusTelegram === 'nao_vinculado' && (
+                            <div className="flex flex-col flex-1">
+                                {!pinGerado ? (
+                                    <div className="mt-auto">
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg mb-4">
+                                            <p className="text-xs text-blue-800 dark:text-blue-300">
+                                                Para garantir a segurança dos seus dados financeiros, o vínculo com o bot é feito através de um <strong>PIN Temporário de uso único</strong>.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={gerarPinTelegram}
+                                            disabled={gerandoPin}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+                                        >
+                                            <span className="text-lg">🤖</span> {gerandoPin ? 'Gerando...' : 'Gerar PIN de Vínculo'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center flex-1">
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                                            Abra o seu bot no Telegram e envie o código abaixo para concluir a integração:
+                                        </p>
+                                        <div className="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 w-full py-6 rounded-lg flex justify-center items-center mb-4 shadow-inner">
+                                            <span className="text-4xl md:text-5xl font-mono font-bold tracking-widest text-blue-600 dark:text-blue-500">
+                                                {pinGerado}
+                                            </span>
+                                        </div>
+                                        <button type="button" onClick={() => setPinGerado(null)} className="text-slate-500 dark:text-slate-400 hover:underline text-xs mt-auto cursor-pointer">
+                                            Cancelar e voltar
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
