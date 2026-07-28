@@ -39,7 +39,6 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                 const token = localStorage.getItem('tokenPainel');
                 const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-                // 🔥 CORREÇÃO: Removido o /api duplicado da string
                 const res = await fetch(`${apiUrl}/telegram/status`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -113,7 +112,6 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
             const token = localStorage.getItem('tokenPainel');
             const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-            // 🔥 CORREÇÃO: Removido o /api duplicado da string
             const res = await fetch(`${apiUrl}/telegram/gerar-pin`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -144,7 +142,6 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
             const token = localStorage.getItem('tokenPainel');
             const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-            // 🔥 CORREÇÃO: Removido o /api duplicado da string
             const res = await fetch(`${apiUrl}/telegram/desvincular`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -243,15 +240,37 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center flex-1">
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
-                                            Abra o seu bot no Telegram e envie o código abaixo para concluir a integração:
-                                        </p>
-                                        <div className="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 w-full py-6 rounded-lg flex justify-center items-center mb-4 shadow-inner">
+                                    <div className="flex flex-col items-center flex-1 w-full">
+                                        <div className="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 w-full py-4 md:py-6 rounded-lg flex justify-center items-center mb-4 shadow-inner">
                                             <span className="text-4xl md:text-5xl font-mono font-bold tracking-widest text-blue-600 dark:text-blue-500">
                                                 {pinGerado}
                                             </span>
                                         </div>
+
+                                        <div className="w-full text-left bg-blue-50/50 dark:bg-slate-800/50 border border-blue-100 dark:border-slate-700 rounded-lg p-4 mb-4">
+                                            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                                <span>🚀</span> Próximos Passos:
+                                            </h4>
+                                            <ol className="text-xs text-slate-600 dark:text-slate-400 space-y-2 ml-1">
+                                                <li className="flex items-start gap-2">
+                                                    <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                                                    <span>Abra o seu aplicativo do <strong>Telegram</strong>.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                                                    <span>Vá até a conversa com o seu <strong>Bot Assistente</strong>.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                                                    <span>Digite o <strong>código de 6 dígitos</strong> acima e envie.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                                                    <span>Receba a confirmação no celular e <strong>atualize esta página</strong>.</span>
+                                                </li>
+                                            </ol>
+                                        </div>
+
                                         <button type="button" onClick={() => setPinGerado(null)} className="text-slate-500 dark:text-slate-400 hover:underline text-xs mt-auto cursor-pointer">
                                             Cancelar e voltar
                                         </button>
