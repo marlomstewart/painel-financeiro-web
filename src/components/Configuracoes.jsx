@@ -36,7 +36,8 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     useEffect(() => {
         const fetchTelegramStatus = async () => {
             try {
-                const token = localStorage.getItem('token');
+                // 🔥 CORREÇÃO: Usando a chave correta 'tokenPainel' do localStorage
+                const token = localStorage.getItem('tokenPainel');
                 const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
 
                 const res = await fetch(`${apiUrl}/api/telegram/status`, {
@@ -109,7 +110,8 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     const gerarPinTelegram = async () => {
         setGerandoPin(true);
         try {
-            const token = localStorage.getItem('token');
+            // 🔥 CORREÇÃO: Usando a chave correta 'tokenPainel' do localStorage
+            const token = localStorage.getItem('tokenPainel');
             const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
 
             const res = await fetch(`${apiUrl}/api/telegram/gerar-pin`, {
@@ -121,7 +123,7 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                 const data = await res.json();
                 setPinGerado(data.pin);
             } else {
-                alert('Erro ao gerar PIN. Tente novamente.');
+                alert('Erro ao gerar PIN. Verifique sua conexão ou faça login novamente.');
             }
         } catch (error) {
             console.error('Erro ao gerar PIN:', error);
@@ -139,7 +141,8 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         if (!window.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.')) return;
 
         try {
-            const token = localStorage.getItem('token');
+            // 🔥 CORREÇÃO: Usando a chave correta 'tokenPainel' do localStorage
+            const token = localStorage.getItem('tokenPainel');
             const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
 
             const res = await fetch(`${apiUrl}/api/telegram/desvincular`, {
