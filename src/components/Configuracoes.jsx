@@ -258,11 +258,13 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
-                                                    <span>Vá até a conversa com o seu <strong>Bot Assistente</strong>.</span>
+                                                    <span>
+                                                        Busque pelo bot <strong>@erp_pessoal_bot</strong> (ou <a href="https://t.me/erp_pessoal_bot" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">clique aqui</a> para abrir direto).
+                                                    </span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
-                                                    <span>Digite o <strong>código de 6 dígitos</strong> acima e envie.</span>
+                                                    <span>Envie o <strong>código de 6 dígitos</strong> acima na conversa.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
