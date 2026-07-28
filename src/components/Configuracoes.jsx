@@ -36,11 +36,11 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     useEffect(() => {
         const fetchTelegramStatus = async () => {
             try {
-                // 🔥 CORREÇÃO: Usando a chave correta 'tokenPainel' do localStorage
                 const token = localStorage.getItem('tokenPainel');
-                const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
+                const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-                const res = await fetch(`${apiUrl}/api/telegram/status`, {
+                // 🔥 CORREÇÃO: Removido o /api duplicado da string
+                const res = await fetch(`${apiUrl}/telegram/status`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -110,11 +110,11 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     const gerarPinTelegram = async () => {
         setGerandoPin(true);
         try {
-            // 🔥 CORREÇÃO: Usando a chave correta 'tokenPainel' do localStorage
             const token = localStorage.getItem('tokenPainel');
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-            const res = await fetch(`${apiUrl}/api/telegram/gerar-pin`, {
+            // 🔥 CORREÇÃO: Removido o /api duplicado da string
+            const res = await fetch(`${apiUrl}/telegram/gerar-pin`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -141,11 +141,11 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         if (!window.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.')) return;
 
         try {
-            // 🔥 CORREÇÃO: Usando a chave correta 'tokenPainel' do localStorage
             const token = localStorage.getItem('tokenPainel');
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
 
-            const res = await fetch(`${apiUrl}/api/telegram/desvincular`, {
+            // 🔥 CORREÇÃO: Removido o /api duplicado da string
+            const res = await fetch(`${apiUrl}/telegram/desvincular`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
