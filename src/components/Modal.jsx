@@ -219,7 +219,6 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
  */
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
-  // 🔥 NOVO: Estado local para garantir o feedback instantâneo (UI Otimista) no calendário
   const [localDiasMarcados, setLocalDiasMarcados] = useState([]);
 
   useEffect(() => {
@@ -276,6 +275,7 @@ export function Modal({ config, onClose }) {
                 type={inputType || 'text'}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                placeholder={config.placeholder || ''}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
                 autoFocus
               />
@@ -390,7 +390,6 @@ export function Modal({ config, onClose }) {
                   const dia = i + 1;
                   const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 
-                  // 🔥 Lê agora a partir do ESTADO LOCAL (que é atualizado instantaneamente)
                   const isMarcado = localDiasMarcados.includes(dataStr);
 
                   const diaSemana = new Date(config.ano, config.mes - 1, dia).getDay();
@@ -422,7 +421,6 @@ export function Modal({ config, onClose }) {
                       key={dia}
                       title={titleHint}
                       onClick={async () => {
-                        // 🔥 UI OTIMISTA: Atualiza a interface instantaneamente!
                         const jaEstavaMarcado = localDiasMarcados.includes(dataStr);
 
                         setLocalDiasMarcados(prev =>
@@ -431,10 +429,8 @@ export function Modal({ config, onClose }) {
                             : [...prev, dataStr]
                         );
 
-                        // Faz a requisição ao servidor no fundo
                         const sucesso = await config.onToggle(dataStr);
 
-                        // Se der erro na rede (ex: sem internet), reverte a cor para o estado real do banco
                         if (!sucesso) {
                           setLocalDiasMarcados(prev =>
                             jaEstavaMarcado
