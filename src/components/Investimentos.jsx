@@ -9,7 +9,8 @@ const formatarMoeda = (valor) => {
 /**
  * @file src/components/Investimentos.jsx
  * @description Tela/Dashboard principal do Módulo de Renda Fixa.
- * Exibe o patrimônio, simulador de juros compostos e gestão de caixinhas/aportes com alertas de IOF e IR.
+ * Exibe o patrimônio, simulador dinâmico de juros compostos (com seleção de taxa por caixinha)
+ * e gestão de aportes com alertas de IOF e IR.
  */
 export function Investimentos({ API, getHeaders, modal }) {
     // 🔗 Conecta com o nosso Motor de Investimentos
@@ -18,20 +19,36 @@ export function Investimentos({ API, getHeaders, modal }) {
     // 🎛️ Estados para o Simulador da Máquina do Tempo
     const [metaSimulador, setMetaSimulador] = useState(100000);
     const [aporteSimulador, setAporteSimulador] = useState(500);
+    // 🔥 NOVO: Estado para saber qual taxa (caixinha) o usuário quer usar na simulação
+    const [caixinhaSimuladorId, setCaixinhaSimuladorId] = useState('base');
 
-    // 🤖 Lógica do Simulador: Juros Compostos com a Taxa CDI Real do Governo
+    // 🤖 Lógica do Simulador: Juros Compostos com a Taxa CDI da Caixinha Selecionada
     const simulacao = useMemo(() => {
-        if (!dashboardData || !dashboardData.taxas) return { anos: 0, meses: 0, investido: 0, juros: 0 };
+        if (!dashboardData || !dashboardData.taxas) return { anos: 0, meses: 0, investido: 0, juros: 0, taxaUsada: 100 };
 
         const cdiAnual = dashboardData.taxas.cdiAnual;
-        const taxaMensal = Math.pow(1 + (cdiAnual / 100), 1 / 12) - 1;
+        let percentualCdiSimulador = 100; // Começa com 100% da Selic como base
+        let nomeReferencia = 'Taxa Selic Base';
+
+        // Se escolheu uma caixinha específica, pega a taxa dela (ex: 120%)
+        if (caixinhaSimuladorId !== 'base') {
+            const caixinhaEscolhida = dashboardData.caixinhas.find(c => c.id === caixinhaSimuladorId);
+            if (caixinhaEscolhida) {
+                percentualCdiSimulador = Number(caixinhaEscolhida.percentual_cdi);
+                nomeReferencia = caixinhaEscolhida.nome_caixinha;
+            }
+        }
+
+        // Calcula a taxa anual efetiva daquela escolha e converte pra mensal
+        const taxaAnualEfetiva = cdiAnual * (percentualCdiSimulador / 100);
+        const taxaMensal = Math.pow(1 + (taxaAnualEfetiva / 100), 1 / 12) - 1;
 
         // Fórmula de Parcelas de Juros Compostos: n = log((FV * r / PMT) + 1) / log(1 + r)
         const nMeses = Math.log((metaSimulador * taxaMensal / aporteSimulador) + 1) / Math.log(1 + taxaMensal);
         const totalMeses = Math.ceil(nMeses);
 
         if (isNaN(totalMeses) || totalMeses <= 0 || totalMeses > 1200) {
-            return { anos: '+99', meses: 0, investido: metaSimulador, juros: 0 };
+            return { anos: '+99', meses: 0, investido: metaSimulador, juros: 0, taxaUsada: percentualCdiSimulador, nomeReferencia };
         }
 
         const anos = Math.floor(totalMeses / 12);
@@ -39,15 +56,19 @@ export function Investimentos({ API, getHeaders, modal }) {
         const investido = totalMeses * aporteSimulador;
         const juros = metaSimulador - investido;
 
-        return { anos, meses, investido, juros };
-    }, [metaSimulador, aporteSimulador, dashboardData]);
+        return { anos, meses, investido, juros, taxaUsada: percentualCdiSimulador, nomeReferencia };
+    }, [metaSimulador, aporteSimulador, caixinhaSimuladorId, dashboardData]);
 
-    // ⚡ Ações Interativas encadeando Modais (Igual fizemos nos Cartões)
+    // ⚡ Ações Interativas encadeando Modais (Usando placehoders opacos)
     const handleNovaCaixinha = async () => {
-        const banco = await modal.prompt('1️⃣ Nome da Instituição/Corretora?', 'Ex: Nubank, Inter', '🏦 Nova Caixinha', { confirmLabel: 'Próximo' });
+        // 🔥 ATUALIZAÇÃO: Utilizando defaultValue como '' (vazio) e ativando o placeholder por trás
+        const banco = await modal.prompt('1️⃣ Nome da Instituição/Corretora?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Nubank, Inter', confirmLabel: 'Próximo' });
         if (!banco) return;
-        const nome = await modal.prompt('2️⃣ Nome/Apelido deste Investimento?', 'Ex: Reserva de Emergência', '🏦 Nova Caixinha', { confirmLabel: 'Próximo' });
+
+        const nome = await modal.prompt('2️⃣ Nome/Apelido deste Investimento?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Caixinha Turbo, Reserva de Emergência', confirmLabel: 'Próximo' });
         if (!nome) return;
+
+        // A taxa como padrão '100' faz sentido ser defaultValue pra pessoa não precisar digitar caso seja só 100 mesmo.
         const taxa = await modal.prompt('3️⃣ Percentual do CDI? (Apenas números)', '100', '🏦 Nova Caixinha', { inputType: 'number', confirmLabel: 'Criar' });
         if (!taxa || isNaN(Number(taxa))) return modal.alert('Taxa inválida. Criação cancelada.');
 
@@ -55,7 +76,7 @@ export function Investimentos({ API, getHeaders, modal }) {
     };
 
     const handleNovoAporte = async (caixinhaId, nomeCaixinha) => {
-        const valorStr = await modal.prompt(`💰 Qual o valor do aporte para "${nomeCaixinha}"?`, '0', '📈 Novo Aporte', { inputType: 'number', confirmLabel: 'Próximo' });
+        const valorStr = await modal.prompt(`💰 Qual o valor do aporte para "${nomeCaixinha}"?`, '', '📈 Novo Aporte', { inputType: 'number', placeholder: 'Ex: 500.00', confirmLabel: 'Próximo' });
         if (!valorStr || isNaN(Number(valorStr)) || Number(valorStr) <= 0) return modal.alert('Valor inválido.');
 
         const dataAporte = await modal.prompt(`📅 Qual foi a data deste aporte?`, new Date().toISOString().split('T')[0], '📈 Novo Aporte', { inputType: 'date', confirmLabel: 'Registrar' });
@@ -86,7 +107,6 @@ export function Investimentos({ API, getHeaders, modal }) {
 
             {/* 🟦 HEADER E RESUMO FINANCEIRO (HERO SECTION) */}
             <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
-                {/* Elementos visuais de fundo */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500/10 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
 
@@ -131,12 +151,33 @@ export function Investimentos({ API, getHeaders, modal }) {
 
             {/* 🚀 SIMULADOR DE INDEPENDÊNCIA (A MÁQUINA DO TEMPO) */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm">
-                <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-                    <span className="text-3xl">🚀</span>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Projetor de Independência</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Simulação estrita baseada na Taxa Selic de hoje.</p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">🚀</span>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Projetor de Independência</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Calcule sua jornada considerando os juros compostos da sua taxa.</p>
+                        </div>
                     </div>
+                </div>
+
+                {/* 🔥 NOVO: SELETOR DE TAXA DO SIMULADOR */}
+                <div className="mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">
+                        Simular rendimento usando a taxa de qual fundo?
+                    </label>
+                    <select
+                        value={caixinhaSimuladorId}
+                        onChange={(e) => setCaixinhaSimuladorId(e.target.value)}
+                        className="w-full md:w-1/2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm cursor-pointer"
+                    >
+                        <option value="base">Padrão da Economia: 100% do CDI (Selic Base)</option>
+                        {caixinhas.map(cx => (
+                            <option key={cx.id} value={cx.id}>
+                                {cx.instituicao} - {cx.nome_caixinha} ({cx.percentual_cdi}% do CDI)
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -165,8 +206,13 @@ export function Investimentos({ API, getHeaders, modal }) {
                         </div>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
-                        <p className="text-center text-sm font-bold text-slate-600 dark:text-slate-400 mb-4">Você atingirá sua meta em:</p>
+                    <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+                        {caixinhaSimuladorId !== 'base' && (
+                            <div className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg shadow-sm">
+                                Simulando com {simulacao.taxaUsada}% CDI
+                            </div>
+                        )}
+                        <p className="text-center text-sm font-bold text-slate-600 dark:text-slate-400 mb-4 mt-2">Você atingirá sua meta em:</p>
                         <div className="flex justify-center items-end gap-2 text-blue-600 dark:text-blue-400 mb-6">
                             <span className="text-6xl font-black leading-none">{simulacao.anos}</span>
                             <span className="text-xl font-bold pb-1">Anos e</span>
