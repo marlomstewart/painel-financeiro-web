@@ -223,7 +223,8 @@ export function Modal({ config, onClose }) {
 
   useEffect(() => {
     if (config?.type === 'prompt' && config.inputType !== 'editar_transacao') {
-      setInputValue(config.defaultValue || '');
+      // Se for input de moeda (currency), inicializamos com 0, caso contrário usamos o defaultValue ou vazio.
+      setInputValue(config.inputType === 'currency' ? '0' : (config.defaultValue || ''));
     }
     // Sincroniza o calendário local com os dados vindos do banco ao abrir
     if (config?.type === 'calendario') {
@@ -271,17 +272,41 @@ export function Modal({ config, onClose }) {
           {type === 'prompt' && inputType !== 'editar_transacao' && (
             <div className="space-y-4">
               <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
-              <input
-                type={inputType || 'text'}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={config.placeholder || ''}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
-                autoFocus
-              />
+
+              {/* 🔥 NOVO: Condição que renderiza o formato "Banco Digital" se inputType for 'currency' */}
+              {inputType === 'currency' ? (
+                <input
+                  type="text"
+                  value={(Number(inputValue || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (!val) val = '0';
+                    setInputValue(val);
+                  }}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-4 text-3xl font-black text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors text-center shadow-inner"
+                  autoFocus
+                />
+              ) : (
+                <input
+                  type={inputType || 'text'}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={config.placeholder || ''}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+                  autoFocus
+                />
+              )}
+
               <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button onClick={onCancel} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
-                <button onClick={() => onConfirm(inputValue)} className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">{config.confirmLabel || 'Confirmar'}</button>
+                <button onClick={() => {
+                  // Se for currency, devolvemos o Float puro (ex: 50.25) para não quebrar o banco de dados.
+                  if (inputType === 'currency') {
+                    onConfirm(Number(inputValue) / 100);
+                  } else {
+                    onConfirm(inputValue);
+                  }
+                }} className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">{config.confirmLabel || 'Confirmar'}</button>
               </div>
             </div>
           )}
