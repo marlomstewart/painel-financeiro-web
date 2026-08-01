@@ -33,7 +33,6 @@ export function Dashboard({
         });
     }
 
-    // 🔥 INTELIGÊNCIA DE LAYOUT: Só mostra a caixa de garagem se houver alertas
     const showGarageAlerts = isStewart && alertasGaragem.length > 0;
 
     return (
@@ -63,15 +62,15 @@ export function Dashboard({
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
-                <div onClick={() => abrirResumoCard('rendas')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500 transition group">
+                <div onClick={() => abrirResumoCard('rendas', cartoes)} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500 transition group">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-emerald-500 transition">Rendas Pagas</p>
                     <h3 className="text-xl font-black text-emerald-600 dark:text-emerald-400">{formatarMoeda(totRendaPaga)}</h3>
                 </div>
-                <div onClick={() => abrirResumoCard('gastos')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-red-400 dark:hover:border-red-500 transition group">
+                <div onClick={() => abrirResumoCard('gastos', cartoes)} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-red-400 dark:hover:border-red-500 transition group">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-red-500 transition">Gastos (Real)</p>
                     <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</h3>
                 </div>
-                <div onClick={() => abrirResumoCard('investimentos')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-blue-400 transition group">
+                <div onClick={() => abrirResumoCard('investimentos', cartoes)} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-blue-400 transition group">
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-blue-500 transition">Investimentos</p>
                     <h3 className="text-xl font-black text-blue-600 dark:text-blue-400">{formatarMoeda(totInvestido)}</h3>
                 </div>
@@ -79,7 +78,7 @@ export function Dashboard({
                     <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-purple-500 transition">Faturas Abertas</p>
                     <h3 className="text-xl font-black text-purple-600 dark:text-purple-400">{formatarMoeda(totFaturaCreditoAberto)}</h3>
                 </div>
-                <div onClick={() => abrirResumoCard('saldo')} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group flex flex-col justify-between">
+                <div onClick={() => abrirResumoCard('saldo', cartoes)} className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-indigo-400 transition group flex flex-col justify-between">
                     <div className="flex justify-between items-start w-full mb-1">
                         <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 transition mt-1">Saldo Líquido</p>
                         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10 hover:bg-slate-200 dark:hover:bg-slate-700 transition shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -89,7 +88,7 @@ export function Dashboard({
                     </div>
                     <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(saldoAtual)}</h3>
                 </div>
-                <div onClick={() => abrirResumoCard('previsao')} className={`p-5 rounded-xl shadow-sm border cursor-pointer transition group ${previstoFimMes >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 hover:border-red-400'}`}>
+                <div onClick={() => abrirResumoCard('previsao', cartoes)} className={`p-5 rounded-xl shadow-sm border cursor-pointer transition group ${previstoFimMes >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 hover:border-red-400'}`}>
                     <p className={`text-[10px] uppercase font-bold mb-1 transition ${previstoFimMes >= 0 ? 'text-emerald-700 dark:text-emerald-500' : 'text-red-700 dark:text-red-500'}`}>Previsão Mês</p>
                     <h3 className={`text-xl font-black ${previstoFimMes >= 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-red-800 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</h3>
                 </div>
@@ -130,7 +129,6 @@ export function Dashboard({
             <AlertasDashboard transacoesMes={transacoesMes} transacoesGlobais={transacoesGlobais} cartoes={cartoes} dividas={dividas} dataVis={dataVis} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* 🔥 SE NÃO HOUVER ALERTAS DE GARAGEM, A COLUNA OCUPA O ECRÃ TODO (col-span-3) */}
                 <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col ${showGarageAlerts ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">⏱️ Últimos Lançamentos</h3>
@@ -159,7 +157,6 @@ export function Dashboard({
                     </div>
                 </div>
 
-                {/* 🔥 SÓ RENDERIZA A GARAGEM SE HOUVER PROBLEMAS */}
                 {showGarageAlerts && (
                     <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">🔧 Alertas do Veículo</h3>

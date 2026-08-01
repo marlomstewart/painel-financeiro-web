@@ -21,7 +21,7 @@ const InnerAcordeao = ({ grupo }) => {
     const [aberto, setAberto] = useState(false);
     return (
         <div className="border border-slate-200/50 dark:border-slate-700/50 rounded my-1.5 bg-slate-100/50 dark:bg-slate-900/50 overflow-hidden shadow-sm">
-            <div
+            <div 
                 className="flex justify-between items-center py-2 px-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors"
                 onClick={(e) => { e.stopPropagation(); setAberto(!aberto); }}
             >
@@ -34,13 +34,13 @@ const InnerAcordeao = ({ grupo }) => {
             {aberto && (
                 <div className="px-3 pb-2 space-y-1 mt-1 border-t border-slate-200/50 dark:border-slate-700/50 pt-1.5 bg-white/30 dark:bg-black/20">
                     {grupo.itens.map(subItem => (
-                        <div key={subItem.id} className="flex justify-between items-center py-1 border-b border-slate-200/30 dark:border-slate-700/30 last:border-0 pl-1">
-                            <div className="flex flex-col overflow-hidden">
+                         <div key={subItem.id} className="flex justify-between items-center py-1 border-b border-slate-200/30 dark:border-slate-700/30 last:border-0 pl-1">
+                             <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate pr-2" title={subItem.descricao}>{subItem.descricao}</span>
                                 <span className="text-[9px] text-slate-400">{subItem.data}</span>
-                            </div>
-                            <span className={`text-[11px] font-bold shrink-0 ${subItem.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>{subItem.isDestaque ? '+' : ''}{subItem.valorStr}</span>
-                        </div>
+                             </div>
+                             <span className={`text-[11px] font-bold shrink-0 ${subItem.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>{subItem.isDestaque ? '+' : ''}{subItem.valorStr}</span>
+                         </div>
                     ))}
                 </div>
             )}
@@ -52,7 +52,7 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
         <div className="border-b border-slate-200 dark:border-slate-700">
-            <div
+            <div 
                 className="flex justify-between items-center py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded transition-colors"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -65,19 +65,19 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
             </div>
             {aberto && (
                 <div className="pb-2 px-2 space-y-1 animate-fade-in max-h-60 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded mt-1">
-                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                        item.isGrupo ? (
-                            <InnerAcordeao key={item.id} grupo={item} />
-                        ) : (
-                            <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                                <div className="flex flex-col overflow-hidden">
+                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                         item.isGrupo ? (
+                             <InnerAcordeao key={item.id} grupo={item} />
+                         ) : (
+                             <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                                 <div className="flex flex-col overflow-hidden">
                                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                     <span className="text-[9px] text-slate-500">{item.data}</span>
-                                </div>
-                                <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                            </div>
-                        )
-                    ))}
+                                 </div>
+                                 <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                             </div>
+                         )
+                     ))}
                 </div>
             )}
         </div>
@@ -88,7 +88,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
     const [aberto, setAberto] = useState(false);
     return (
         <div className={`rounded border ${borderColor} ${bgColor} overflow-hidden transition-all`}>
-            <div
+            <div 
                 className="flex justify-between items-center p-3 cursor-pointer hover:brightness-95 transition-all"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -101,19 +101,19 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
             </div>
             {aberto && (
                 <div className="bg-white/50 dark:bg-slate-950/30 border-t border-black/5 dark:border-white/5 p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
-                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                        item.isGrupo ? (
-                            <InnerAcordeao key={item.id} grupo={item} />
-                        ) : (
-                            <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                                <div className="flex flex-col overflow-hidden">
+                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                         item.isGrupo ? (
+                             <InnerAcordeao key={item.id} grupo={item} />
+                         ) : (
+                             <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                                 <div className="flex flex-col overflow-hidden">
                                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
                                     <span className="text-[9px] text-slate-500">{item.data}</span>
-                                </div>
-                                <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                            </div>
-                        )
-                    ))}
+                                 </div>
+                                 <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                             </div>
+                         )
+                     ))}
                 </div>
             )}
         </div>
@@ -138,19 +138,19 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
-
+        
         todasAteOMes.forEach(t => {
             if (isDividaTerceiro(t)) return; // IGNORA DÍVIDAS DE TERCEIROS NO SALDO HISTÓRICO
-
+            
             const valorIntegral = Number(t.valorParcela);
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                if (t.status === 'pago') rendaPaga += valorIntegral;
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { 
+                if (t.status === 'pago') rendaPaga += valorIntegral; 
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral;
+                if (t.status === 'pago') gastoPago -= valorIntegral; 
             }
-            else {
-                if (t.status === 'pago') gastoPago += valorIntegral;
+            else { 
+                if (t.status === 'pago') gastoPago += valorIntegral; 
             }
         });
         return rendaPaga - gastoPago;
@@ -240,7 +240,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totInvestido += meuValor;
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -249,7 +249,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor; // Reembolso pendente abate do gasto pendente
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
                 else gCat[t.categoria] -= meuValor;
@@ -258,7 +258,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
-
+                
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -270,7 +270,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return categorias.map(c => c.nome === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
     }, [categorias, nomeUsuario, garagem, dataVis]);
 
-    // 🔥 NOVA FÓRMULA DE PREVISÃO (Visão Baseada no Saldo Real do Caixa)
     let metaNaoComprometida = 0;
     categoriasDinamicas.forEach(c => {
         metaNaoComprometida += Math.max(0, c.meta - (gCat[c.nome] || 0));
@@ -307,12 +306,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
+        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0); 
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
-
+        
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
@@ -375,11 +374,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         modal.alert(conteudo, `Raio-X: ${nCat}`);
     }, [transacoes, dataVis, dataHoje, modal, nomeUsuario, garagem]);
 
-    const abrirResumoCard = useCallback((tipo) => {
+    // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
+    const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {
         let conteudo;
         let titulo;
 
-        // 🔥 FUNÇÃO INTELIGENTE DE AGRUPAMENTO: Agrupa transações de cartão numa pasta "Fatura"
         const mapAgrupado = (list, useMeuValor = true) => {
             const grupos = {};
             const itensSoltos = [];
@@ -388,7 +387,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 const ehCredito = t.formaPagamento && t.formaPagamento.startsWith('credito_');
                 let valorCalculado = useMeuValor ? getMeuValor(t) : Number(t.valorParcela);
                 const isReembolso = t.tipo === 'reembolso';
-
+                
                 const itemFormatado = {
                     id: t.id,
                     data: new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
@@ -400,11 +399,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
                 if (ehCredito) {
                     if (!grupos[t.formaPagamento]) {
-                        // 🔥 CORREÇÃO: Forçando conversão para String para evitar bug de tipagem (Number vs String)
                         const cartaoId = String(t.formaPagamento).replace('credito_', '');
-                        const cartao = cartoes.find(c => String(c.id) === cartaoId);
-                        const nomeCartao = cartao ? cartao.nome : 'Cartão de Crédito';
-
+                        // 🔥 Busca o cartão na lista externa que veio direto do Dashboard
+                        const cartao = cartoesExternos.find(c => String(c.id) === cartaoId);
+                        const nomeCartao = cartao ? cartao.nome : 'Cartão Excluído/Desconhecido';
+                        
                         grupos[t.formaPagamento] = {
                             id: `grupo_${t.formaPagamento}`,
                             isGrupo: true,
@@ -454,7 +453,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <CardAcordeao titulo="⏳ A Receber (Pendente)" valorStr={formatarMoeda(totRendaPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapAgrupado(listRendaPendenteMeu, true)} />
                 </div>
             );
-        }
+        } 
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
@@ -505,31 +504,31 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
         else if (tipo === 'previsao') {
             titulo = 'Composição da Previsão Fim Mês';
-
+            
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Simulação estrita baseada no seu <b>caixa real atual</b>. Considera o dinheiro vivo que você tem nas mãos hoje e subtrai tudo o que ainda falta pagar ou atingir nas suas metas.</p>
-
+                    
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Líquido Atual</span>
                         <span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoAtual >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoAtual))}</span>
                     </div>
-
+                    
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pendentes (A Receber)</span>
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaPendente)}</span>
                     </div>
-
+                    
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Despesas Pendentes a Pagar</span>
                         <span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(Math.abs(totGastoPendente) + Math.abs(totInvestidoPendente))}</span>
                     </div>
-
+                    
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Verba Restante das Metas</span>
                         <span className="text-orange-600 dark:text-orange-400 font-bold">- {formatarMoeda(Math.abs(metaNaoComprometida))}</span>
                     </div>
-
+                    
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 mt-2">
                         <span className="text-slate-800 dark:text-slate-200 font-bold text-sm">Sobra Estimada no dia {ultimoDiaDoMes}</span>
                         <span className={`font-bold text-lg ${previstoFimMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</span>
@@ -539,15 +538,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, cartoes]);
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]); 
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas,
+        categoriasDinamicas, gCat, pendenciasPassadas, 
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
