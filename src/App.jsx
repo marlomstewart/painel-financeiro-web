@@ -11,9 +11,10 @@ import { Sidebar } from './components/Sidebar';
 import { Cartoes } from './components/Cartoes';
 import { MetasCategorias } from './components/MetasCategorias';
 import { ContasFixas } from './components/ContasFixas';
-import { RendasFixas } from './components/RendasFixas'; // OBRIGATÓRIO IMPORTAR AQUI
+import { RendasFixas } from './components/RendasFixas';
 import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
+import { Investimentos } from './components/Investimentos'; // 🔥 NOVO: Importação do Módulo de Renda Fixa
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -70,7 +71,7 @@ function App() {
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal });
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
-  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem });
+  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem, cartoes: setup.cartoes });
 
   useEffect(() => {
     const applyTheme = () => {
@@ -129,7 +130,6 @@ function App() {
     if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
-    // 🔥 ATUALIZADO: Injetando telegramChatId e atualizarTelegram nas configurações
     if (telaAtiva === 'configuracoes') return <Configuracoes nomeUsuario={auth.nomeUsuario} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} />;
 
     // Bloqueia renderização manual via URL/State da Garagem caso o usuário não tenha permissão
@@ -149,14 +149,9 @@ function App() {
       />;
     }
 
+    // 🔥 ATUALIZADO: Renderiza o componente real de Investimentos
     if (telaAtiva === 'investimentos') {
-      return (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in transition-colors duration-300">
-          <span className="text-6xl mb-6">📈</span>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Módulo de Investimentos</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md">O ambiente para gerir a sua carteira, fundos imobiliários e aportes está a ser preparado. Em breve estará disponível.</p>
-        </div>
-      );
+      return <Investimentos API={API} getHeaders={auth.getHeaders} modal={modal} />;
     }
 
     return <Dashboard
