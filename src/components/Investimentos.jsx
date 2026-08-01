@@ -6,33 +6,33 @@ const formatarMoeda = (valor) => {
     return (isNaN(v) ? 0 : v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
-// Tabela oficial de IOF do Governo (Desconto sobre o lucro nos primeiros 29 dias) para simulações client-side
+// Tabela oficial de IOF do Governo para simulações client-side
 const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53, 50, 46, 43, 40, 36, 33, 30, 26, 23, 20, 16, 13, 10, 6, 3];
 
 /**
  * @file src/components/Investimentos.jsx
  * @description Tela/Dashboard principal do Módulo de Renda Fixa.
- * Exibe o patrimônio, simulador dinâmico de juros compostos, calculadora de promoções curto prazo
- * e gestão de aportes com alertas de IOF e IR.
+ * Integração total com o novo motor de inputs 'currency' e matemática avançada para Resgates (abatimento de curva).
  */
 export function Investimentos({ API, getHeaders, modal }) {
-    // 🔗 Conecta com o nosso Motor de Investimentos
     const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal });
 
-    // 🎛️ Estados para o Simulador de Longo Prazo (Independência)
+    // 🎛️ Estados para o Simulador de Longo Prazo
     const [metaSimulador, setMetaSimulador] = useState(100000);
     const [aporteSimulador, setAporteSimulador] = useState(500);
     const [caixinhaSimuladorId, setCaixinhaSimuladorId] = useState('base');
 
-    // 🎛️ Estados para o Simulador de Curto Prazo (Promoções)
+    // 🎛️ Estados para a Calculadora de Promoções (Curto Prazo)
     const dataPadraoFuturo = new Date();
-    dataPadraoFuturo.setMonth(dataPadraoFuturo.getMonth() + 1); // Joga 1 mês para frente como padrão
+    dataPadraoFuturo.setMonth(dataPadraoFuturo.getMonth() + 1);
 
-    const [simCurtoValor, setSimCurtoValor] = useState(5000);
+    // 🔥 NOVO: Estado baseado em String para a digitação "Direita pra Esquerda"
+    const [simCurtoValorStr, setSimCurtoValorStr] = useState('500000'); // Equivale a R$ 5.000,00
+    const simCurtoValor = Number(simCurtoValorStr) / 100;
+
     const [simCurtoTaxa, setSimCurtoTaxa] = useState(150);
     const [simCurtoData, setSimCurtoData] = useState(dataPadraoFuturo.toISOString().split('T')[0]);
 
-    // 🤖 Lógica do Simulador: Juros Compostos com a Taxa CDI da Caixinha Selecionada
     const simulacao = useMemo(() => {
         if (!dashboardData || !dashboardData.taxas) return { anos: 0, meses: 0, investido: 0, juros: 0, taxaUsada: 100 };
 
@@ -50,7 +50,6 @@ export function Investimentos({ API, getHeaders, modal }) {
 
         const taxaAnualEfetiva = cdiAnual * (percentualCdiSimulador / 100);
         const taxaMensal = Math.pow(1 + (taxaAnualEfetiva / 100), 1 / 12) - 1;
-
         const nMeses = Math.log((metaSimulador * taxaMensal / aporteSimulador) + 1) / Math.log(1 + taxaMensal);
         const totalMeses = Math.ceil(nMeses);
 
@@ -66,7 +65,6 @@ export function Investimentos({ API, getHeaders, modal }) {
         return { anos, meses, investido, juros, taxaUsada: percentualCdiSimulador, nomeReferencia };
     }, [metaSimulador, aporteSimulador, caixinhaSimuladorId, dashboardData]);
 
-    // 🤖 Lógica da Calculadora de Curto Prazo (Promoções)
     const simulacaoCurto = useMemo(() => {
         if (!dashboardData || !dashboardData.taxas || !simCurtoData || simCurtoValor <= 0) {
             return { valorBruto: 0, lucroBruto: 0, iof: 0, ir: 0, valorLiquido: 0, lucroLiquido: 0, diasCorridos: 0, erro: false };
@@ -92,9 +90,8 @@ export function Investimentos({ API, getHeaders, modal }) {
         const lucroBruto = valorBruto - simCurtoValor;
 
         let taxaIof = 0;
-        if (diasCorridos < 30) {
-            taxaIof = TABELA_IOF[diasCorridos] / 100;
-        }
+        if (diasCorridos < 30) taxaIof = TABELA_IOF[diasCorridos] / 100;
+
         const valorIof = lucroBruto * taxaIof;
         const lucroPosIof = lucroBruto - valorIof;
 
@@ -105,35 +102,48 @@ export function Investimentos({ API, getHeaders, modal }) {
 
         const valorIr = lucroPosIof * taxaIr;
         const lucroLiquido = lucroPosIof - valorIr;
-        const valorLiquido = simCurtoValor + lucroLiquido;
 
-        return {
-            valorBruto, lucroBruto, iof: valorIof, ir: valorIr, valorLiquido, lucroLiquido, diasCorridos, erro: false
-        };
+        return { valorBruto, lucroBruto, iof: valorIof, ir: valorIr, valorLiquido: simCurtoValor + lucroLiquido, lucroLiquido, diasCorridos, erro: false };
     }, [simCurtoValor, simCurtoTaxa, simCurtoData, dashboardData]);
 
-    // ⚡ Ações Interativas encadeando Modais (Usando placehoders opacos)
     const handleNovaCaixinha = async () => {
         const banco = await modal.prompt('1️⃣ Nome da Instituição/Corretora?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Nubank, Inter', confirmLabel: 'Próximo' });
         if (!banco) return;
 
-        const nome = await modal.prompt('2️⃣ Nome/Apelido deste Investimento?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Caixinha Turbo, Reserva de Emergência', confirmLabel: 'Próximo' });
+        const nome = await modal.prompt('2️⃣ Nome/Apelido deste Investimento?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Caixinha Turbo, Reserva', confirmLabel: 'Próximo' });
         if (!nome) return;
 
         const taxa = await modal.prompt('3️⃣ Percentual do CDI? (Apenas números)', '100', '🏦 Nova Caixinha', { inputType: 'number', confirmLabel: 'Criar' });
-        if (!taxa || isNaN(Number(taxa))) return modal.alert('Taxa inválida. Criação cancelada.');
+        if (!taxa || isNaN(Number(taxa))) return modal.alert('Taxa inválida.');
 
         criarCaixinha(banco, nome, Number(taxa));
     };
 
+    // 🔥 ATUALIZADO: Uso do inputType: 'currency' criado no passo anterior
     const handleNovoAporte = async (caixinhaId, nomeCaixinha) => {
-        const valorStr = await modal.prompt(`💰 Qual o valor do aporte para "${nomeCaixinha}"?`, '', '📈 Novo Aporte', { inputType: 'number', placeholder: 'Ex: 500.00', confirmLabel: 'Próximo' });
-        if (!valorStr || isNaN(Number(valorStr)) || Number(valorStr) <= 0) return modal.alert('Valor inválido.');
+        const valor = await modal.prompt(`💰 Qual o valor do aporte para "${nomeCaixinha}"?`, '', '📈 Novo Aporte', { inputType: 'currency', confirmLabel: 'Próximo' });
+        if (!valor || valor <= 0) return;
 
         const dataAporte = await modal.prompt(`📅 Qual foi a data deste aporte?`, new Date().toISOString().split('T')[0], '📈 Novo Aporte', { inputType: 'date', confirmLabel: 'Registrar' });
         if (!dataAporte) return;
 
-        criarAporte(caixinhaId, Number(valorStr), dataAporte);
+        criarAporte(caixinhaId, valor, dataAporte);
+    };
+
+    // 🔥 NOVO: Botão de Resgate (Gera um valor negativo que "freia" os juros compostos daquele montante retirado)
+    const handleResgate = async (caixinhaId, nomeCaixinha, saldoTotal) => {
+        const valor = await modal.prompt(`💸 Quanto deseja resgatar? Seu saldo livre de impostos é de ${formatarMoeda(saldoTotal)}.`, '', `💸 Resgatar de ${nomeCaixinha}`, { inputType: 'currency', confirmLabel: 'Próximo' });
+        if (!valor || valor <= 0) return;
+
+        if (valor > saldoTotal) {
+            return modal.alert(`Você não pode resgatar ${formatarMoeda(valor)} pois o saldo disponível hoje é de ${formatarMoeda(saldoTotal)}.`, 'Saldo Insuficiente');
+        }
+
+        const dataResgate = await modal.prompt(`📅 Qual foi a data exata deste resgate?`, new Date().toISOString().split('T')[0], '💸 Confirmar Data', { inputType: 'date', confirmLabel: 'Aprovar Resgate' });
+        if (!dataResgate) return;
+
+        // O segredo matemático: Enviamos o valor NEGATIVO. O back-end calcula juros compostos em cima do negativo, anulando perfeitamente a curva de crescimento!
+        criarAporte(caixinhaId, -Math.abs(valor), dataResgate);
     };
 
     if (loading || !dashboardData) {
@@ -153,7 +163,6 @@ export function Investimentos({ API, getHeaders, modal }) {
     return (
         <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* 🟦 HEADER E RESUMO FINANCEIRO (HERO SECTION) */}
             <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500/10 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
@@ -208,15 +217,20 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-                    {/* Controles de Input */}
                     <div className="lg:col-span-3 space-y-4 bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Valor do Aporte (R$)</label>
+                                {/* 🔥 ATUALIZADO: Uso da Máscara de Moeda (Direita pra Esquerda) no input direto na tela */}
                                 <input
-                                    type="number" min="0" step="100"
-                                    value={simCurtoValor} onChange={(e) => setSimCurtoValor(Number(e.target.value))}
-                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500"
+                                    type="text"
+                                    value={simCurtoValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    onChange={(e) => {
+                                        let val = e.target.value.replace(/\D/g, '');
+                                        if (!val) val = '0';
+                                        setSimCurtoValorStr(val);
+                                    }}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-blue-700 dark:text-blue-400 outline-none focus:border-blue-500 transition-colors"
                                 />
                             </div>
                             <div>
@@ -241,7 +255,6 @@ export function Investimentos({ API, getHeaders, modal }) {
                         </div>
                     </div>
 
-                    {/* Resultado da Simulação */}
                     <div className="lg:col-span-2 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800 p-5 rounded-2xl border border-slate-300 dark:border-slate-700 relative overflow-hidden">
                         {simulacaoCurto.erro ? (
                             <div className="h-full flex flex-col items-center justify-center text-slate-500 py-6">
@@ -276,7 +289,6 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </div>
             </div>
 
-            {/* 🚀 SIMULADOR DE INDEPENDÊNCIA (A MÁQUINA DO TEMPO) */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div className="flex items-center gap-3">
@@ -393,7 +405,7 @@ export function Investimentos({ API, getHeaders, modal }) {
                                     <div className="text-right">
                                         <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Saldo Líquido</p>
                                         <p className="text-xl font-black text-slate-800 dark:text-slate-100">{formatarMoeda(cx.totalLiquido)}</p>
-                                        <p className="text-[10px] font-bold text-emerald-500 mt-1">Lucro: +{formatarMoeda(cx.lucroLiquido)}</p>
+                                        <p className="text-[10px] font-bold text-emerald-500 mt-1">Lucro: {cx.lucroLiquido >= 0 ? '+' : ''}{formatarMoeda(cx.lucroLiquido)}</p>
                                     </div>
                                 </div>
 
@@ -401,56 +413,74 @@ export function Investimentos({ API, getHeaders, modal }) {
                                     {cx.aportes.length === 0 ? (
                                         <p className="text-xs text-center text-slate-400 my-4 font-medium">Nenhum aporte registrado nesta caixinha.</p>
                                     ) : (
-                                        cx.aportes.map(ap => (
-                                            <div key={ap.id} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col group relative">
-                                                <button onClick={() => excluirAporte(ap.id)} className="absolute top-2 right-2 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer" title="Excluir Aporte">✖</button>
+                                        cx.aportes.map(ap => {
+                                            const isResgate = ap.valorOriginal < 0;
 
-                                                <div className="flex justify-between items-center mb-2 pr-6">
-                                                    <div>
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Aporte Inicial</span>
-                                                        <span className="text-[9px] block text-slate-400">{new Date(ap.data_aporte).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
-                                                    </div>
-                                                    <span className="text-sm font-black text-slate-800 dark:text-slate-200">{formatarMoeda(ap.valorOriginal)}</span>
-                                                </div>
+                                            return (
+                                                <div key={ap.id} className={`border rounded-xl p-3 flex flex-col group relative ${isResgate ? 'bg-rose-50/30 dark:bg-rose-900/10 border-rose-200/50 dark:border-rose-800/30' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800'}`}>
+                                                    <button onClick={() => excluirAporte(ap.id)} className="absolute top-2 right-2 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer" title="Excluir Aporte">✖</button>
 
-                                                <div className="flex justify-between items-center border-t border-slate-200/50 dark:border-slate-800/50 pt-2 mt-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="text-center">
-                                                            <span className="text-[9px] block uppercase font-bold text-slate-400">Bruto</span>
-                                                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{formatarMoeda(ap.lucroBruto)}</span>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <span className="text-[9px] block uppercase font-bold text-rose-400">IR ({((ap.valorIr / ap.lucroBruto) * 100 || 0).toFixed(1)}%)</span>
-                                                            <span className="text-xs font-bold text-rose-500">-{formatarMoeda(ap.valorIr)}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="text-[9px] block uppercase font-black text-emerald-500">Líquido Atual</span>
-                                                        <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatarMoeda(ap.valorLiquido)}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* ALERTA DE IOF (Apenas para aportes com menos de 30 dias) */}
-                                                {ap.diasCorridos < 30 && ap.lucroBruto > 0 && (
-                                                    <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-2 rounded-lg flex items-start gap-2">
-                                                        <span className="text-xs mt-0.5">⚠️</span>
+                                                    <div className="flex justify-between items-center mb-2 pr-6">
                                                         <div>
-                                                            <p className="text-[10px] font-bold text-amber-800 dark:text-amber-400">Trava de IOF Ativa (-{formatarMoeda(ap.valorIof)})</p>
-                                                            <p className="text-[9px] font-medium text-amber-700 dark:text-amber-500 mt-0.5">Se resgatar hoje, você perde {((ap.valorIof / ap.lucroBruto) * 100).toFixed(0)}% do lucro. Aguarde mais {30 - ap.diasCorridos} dias.</p>
+                                                            <span className={`text-xs font-bold ${isResgate ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                                {isResgate ? 'Saída (Resgate)' : 'Aporte Original'}
+                                                            </span>
+                                                            <span className="text-[9px] block text-slate-400">{new Date(ap.data_aporte).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                                                         </div>
+                                                        <span className={`text-sm font-black ${isResgate ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                                                            {formatarMoeda(ap.valorOriginal)}
+                                                        </span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))
+
+                                                    {!isResgate ? (
+                                                        <div className="flex justify-between items-center border-t border-slate-200/50 dark:border-slate-800/50 pt-2 mt-1">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-center">
+                                                                    <span className="text-[9px] block uppercase font-bold text-slate-400">Bruto</span>
+                                                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{formatarMoeda(ap.lucroBruto)}</span>
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <span className="text-[9px] block uppercase font-bold text-rose-400">IR ({((ap.valorIr / ap.lucroBruto) * 100 || 0).toFixed(1)}%)</span>
+                                                                    <span className="text-xs font-bold text-rose-500">-{formatarMoeda(ap.valorIr)}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className="text-[9px] block uppercase font-black text-emerald-500">Líquido Atual</span>
+                                                                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatarMoeda(ap.valorLiquido)}</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex justify-between items-center border-t border-rose-100/50 dark:border-rose-800/50 pt-2 mt-1">
+                                                            <span className="text-[9px] text-rose-500/70 dark:text-rose-400/70 font-medium">Frenagem de Juros Compostos.</span>
+                                                            <span className="text-[9px] uppercase font-black text-rose-600 dark:text-rose-500">Curva Abatida: {formatarMoeda(ap.valorLiquido)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* ALERTA DE IOF (Apenas para aportes recentes e positivos) */}
+                                                    {!isResgate && ap.diasCorridos < 30 && ap.lucroBruto > 0 && (
+                                                        <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-2 rounded-lg flex items-start gap-2">
+                                                            <span className="text-xs mt-0.5">⚠️</span>
+                                                            <div>
+                                                                <p className="text-[10px] font-bold text-amber-800 dark:text-amber-400">Trava de IOF Ativa (-{formatarMoeda(ap.valorIof)})</p>
+                                                                <p className="text-[9px] font-medium text-amber-700 dark:text-amber-500 mt-0.5">Se resgatar hoje, você perde {((ap.valorIof / ap.lucroBruto) * 100).toFixed(0)}% do lucro. Aguarde mais {30 - ap.diasCorridos} dias.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
                                     )}
                                 </div>
 
-                                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
-                                    <button onClick={() => excluirCaixinha(cx.id)} className="px-3 py-2 text-xs font-bold text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors cursor-pointer">
-                                        Excluir
+                                <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
+                                    <button onClick={() => excluirCaixinha(cx.id)} className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors cursor-pointer" title="Apagar Caixinha">
+                                        🗑️
+                                    </button>
+                                    <button onClick={() => handleResgate(cx.id, cx.nome_caixinha, cx.totalLiquido)} className="flex-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/40 py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer">
+                                        💸 Resgatar
                                     </button>
                                     <button onClick={() => handleNovoAporte(cx.id, cx.nome_caixinha)} className="flex-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/40 py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer">
-                                        + Novo Aporte
+                                        ➕ Aporte
                                     </button>
                                 </div>
                             </div>
