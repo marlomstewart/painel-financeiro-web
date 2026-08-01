@@ -16,11 +16,43 @@ const isDividaTerceiro = (t) => {
     return t.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'divida de terceiros';
 };
 
+// 🔥 NOVO: Componente Acordeão Interno (Para faturas agrupadas)
+const InnerAcordeao = ({ grupo }) => {
+    const [aberto, setAberto] = useState(false);
+    return (
+        <div className="border border-slate-200/50 dark:border-slate-700/50 rounded my-1.5 bg-slate-100/50 dark:bg-slate-900/50 overflow-hidden shadow-sm">
+            <div
+                className="flex justify-between items-center py-2 px-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setAberto(!aberto); }}
+            >
+                <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="text-[10px] opacity-70 text-slate-600 dark:text-slate-400">{aberto ? '▼' : '▶'}</span>
+                    <span className="text-[12px] font-black text-slate-800 dark:text-slate-100 truncate">{grupo.descricao}</span>
+                </div>
+                <span className="text-[12px] font-black text-slate-800 dark:text-slate-100 shrink-0">{grupo.valorStr}</span>
+            </div>
+            {aberto && (
+                <div className="px-3 pb-2 space-y-1 mt-1 border-t border-slate-200/50 dark:border-slate-700/50 pt-1.5 bg-white/30 dark:bg-black/20">
+                    {grupo.itens.map(subItem => (
+                        <div key={subItem.id} className="flex justify-between items-center py-1 border-b border-slate-200/30 dark:border-slate-700/30 last:border-0 pl-1">
+                            <div className="flex flex-col overflow-hidden">
+                                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate pr-2" title={subItem.descricao}>{subItem.descricao}</span>
+                                <span className="text-[9px] text-slate-400">{subItem.data}</span>
+                            </div>
+                            <span className={`text-[11px] font-bold shrink-0 ${subItem.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>{subItem.isDestaque ? '+' : ''}{subItem.valorStr}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
 const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
     const [aberto, setAberto] = useState(false);
     return (
         <div className="border-b border-slate-200 dark:border-slate-700">
-            <div 
+            <div
                 className="flex justify-between items-center py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded transition-colors"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -32,16 +64,20 @@ const RowAcordeao = ({ titulo, valorStr, textColor, itens, sinal = '' }) => {
                 <span className={`font-bold select-none ${textColor}`}>{sinal} {valorStr}</span>
             </div>
             {aberto && (
-                <div className="pb-2 px-2 space-y-1 animate-fade-in max-h-40 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded mt-1">
-                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                         <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                             <div className="flex flex-col overflow-hidden">
-                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
-                                <span className="text-[9px] text-slate-500">{item.data}</span>
-                             </div>
-                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                         </div>
-                     ))}
+                <div className="pb-2 px-2 space-y-1 animate-fade-in max-h-60 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded mt-1">
+                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                        item.isGrupo ? (
+                            <InnerAcordeao key={item.id} grupo={item} />
+                        ) : (
+                            <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
+                                    <span className="text-[9px] text-slate-500">{item.data}</span>
+                                </div>
+                                <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                            </div>
+                        )
+                    ))}
                 </div>
             )}
         </div>
@@ -52,7 +88,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
     const [aberto, setAberto] = useState(false);
     return (
         <div className={`rounded border ${borderColor} ${bgColor} overflow-hidden transition-all`}>
-            <div 
+            <div
                 className="flex justify-between items-center p-3 cursor-pointer hover:brightness-95 transition-all"
                 onClick={() => setAberto(!aberto)}
                 title="Clique para ver os lançamentos"
@@ -64,16 +100,20 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
                 <span className={`font-bold select-none ${textColor}`}>{sinal}{valorStr}</span>
             </div>
             {aberto && (
-                <div className="bg-white/50 dark:bg-slate-950/30 border-t border-black/5 dark:border-white/5 p-2 space-y-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                     {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
-                         <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
-                             <div className="flex flex-col overflow-hidden">
-                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
-                                <span className="text-[9px] text-slate-500">{item.data}</span>
-                             </div>
-                             <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
-                         </div>
-                     ))}
+                <div className="bg-white/50 dark:bg-slate-950/30 border-t border-black/5 dark:border-white/5 p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
+                    {itens.length === 0 ? <p className="text-[10px] text-center text-slate-500 py-2">Nenhum lançamento gerou este valor.</p> : itens.map(item => (
+                        item.isGrupo ? (
+                            <InnerAcordeao key={item.id} grupo={item} />
+                        ) : (
+                            <div key={item.id} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate pr-2" title={item.descricao}>{item.descricao}</span>
+                                    <span className="text-[9px] text-slate-500">{item.data}</span>
+                                </div>
+                                <span className={`text-[11px] font-bold shrink-0 ${item.isDestaque ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{item.isDestaque ? '+' : ''}{item.valorStr}</span>
+                            </div>
+                        )
+                    ))}
                 </div>
             )}
         </div>
@@ -83,7 +123,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 /**
  * @file src/hooks/useDashboard.jsx
  */
-export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem }) {
+export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem, cartoes = [] }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -98,19 +138,19 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
         const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
         let rendaPaga = 0, gastoPago = 0;
-        
+
         todasAteOMes.forEach(t => {
             if (isDividaTerceiro(t)) return; // IGNORA DÍVIDAS DE TERCEIROS NO SALDO HISTÓRICO
-            
+
             const valorIntegral = Number(t.valorParcela);
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { 
-                if (t.status === 'pago') rendaPaga += valorIntegral; 
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
+                if (t.status === 'pago') rendaPaga += valorIntegral;
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral; 
+                if (t.status === 'pago') gastoPago -= valorIntegral;
             }
-            else { 
-                if (t.status === 'pago') gastoPago += valorIntegral; 
+            else {
+                if (t.status === 'pago') gastoPago += valorIntegral;
             }
         });
         return rendaPaga - gastoPago;
@@ -200,7 +240,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totInvestido += meuValor;
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
-                
+
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -209,7 +249,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor; // Reembolso pendente abate do gasto pendente
-                
+
                 if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
                 else gCat[t.categoria] -= meuValor;
@@ -218,7 +258,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
-                
+
                 if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
                 else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
                 else gCat[t.categoria] += meuValor;
@@ -233,18 +273,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     // 🔥 NOVA FÓRMULA DE PREVISÃO (Visão Baseada no Saldo Real do Caixa)
     let metaNaoComprometida = 0;
     categoriasDinamicas.forEach(c => {
-        // Se a meta é maior que o gasto, soma o que ainda falta gastar.
         metaNaoComprometida += Math.max(0, c.meta - (gCat[c.nome] || 0));
     });
 
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
-
-    // O que eu ainda vou precisar tirar do meu bolso este mês?
-    // Gastos pendentes + Investimentos pendentes + O dinheiro que eu reservei nas minhas metas
     const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;
-
-    // Novo cálculo de Sobra: O dinheiro que tenho na mão + o que vai entrar - o que falta sair.
     const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
 
     const dataHoje = new Date();
@@ -273,12 +307,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0); 
+        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0);
         if (ts.length === 0) return;
 
         const qtd = ts.length;
         const med = vGasto / qtd;
-        
+
         const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
         const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
 
@@ -345,21 +379,52 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         let conteudo;
         let titulo;
 
-        const mapConta = (list) => list.map(t => ({
-            id: t.id,
-            data: new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
-            descricao: t.descricao,
-            valorStr: formatarMoeda(Number(t.valorParcela)),
-            isDestaque: t.tipo === 'reembolso'
-        }));
+        // 🔥 FUNÇÃO INTELIGENTE DE AGRUPAMENTO: Agrupa transações de cartão numa pasta "Fatura"
+        const mapAgrupado = (list, useMeuValor = true) => {
+            const grupos = {};
+            const itensSoltos = [];
 
-        const mapMeu = (list) => list.map(t => ({
-            id: t.id,
-            data: new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
-            descricao: t.descricao,
-            valorStr: formatarMoeda(getMeuValor(t)),
-            isDestaque: t.tipo === 'reembolso'
-        }));
+            list.forEach(t => {
+                const ehCredito = t.formaPagamento && t.formaPagamento.startsWith('credito_');
+                let valorCalculado = useMeuValor ? getMeuValor(t) : Number(t.valorParcela);
+                const isReembolso = t.tipo === 'reembolso';
+
+                const itemFormatado = {
+                    id: t.id,
+                    data: new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
+                    descricao: t.descricao,
+                    valor: isReembolso ? -valorCalculado : valorCalculado,
+                    valorStr: formatarMoeda(valorCalculado),
+                    isDestaque: isReembolso
+                };
+
+                if (ehCredito) {
+                    if (!grupos[t.formaPagamento]) {
+                        const cartao = cartoes.find(c => c.id === t.formaPagamento.replace('credito_', ''));
+                        const nomeCartao = cartao ? cartao.nome : 'Cartão de Crédito';
+                        grupos[t.formaPagamento] = {
+                            id: `grupo_${t.formaPagamento}`,
+                            isGrupo: true,
+                            descricao: `💳 Fatura ${nomeCartao}`,
+                            valor: 0,
+                            valorStr: '',
+                            itens: []
+                        };
+                    }
+                    grupos[t.formaPagamento].itens.push(itemFormatado);
+                    grupos[t.formaPagamento].valor += itemFormatado.valor;
+                } else {
+                    itensSoltos.push(itemFormatado);
+                }
+            });
+
+            const gruposArray = Object.values(grupos).map(g => {
+                g.valorStr = formatarMoeda(Math.abs(g.valor));
+                return g;
+            });
+
+            return [...gruposArray, ...itensSoltos].sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor));
+        };
 
         const listRendaPagaConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
         const listGastoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
@@ -382,11 +447,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Total Bruto do Mês</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totRendaTotal)}</span>
                     </div>
-                    <CardAcordeao titulo="✔ Já Recebido (Paga)" valorStr={formatarMoeda(totRendaPaga)} textColor="text-emerald-800 dark:text-emerald-300" bgColor="bg-emerald-50 dark:bg-emerald-900/20" borderColor="border-emerald-200 dark:border-emerald-800/50" itens={mapMeu(listRendaPagaMeu)} />
-                    <CardAcordeao titulo="⏳ A Receber (Pendente)" valorStr={formatarMoeda(totRendaPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapMeu(listRendaPendenteMeu)} />
+                    <CardAcordeao titulo="✔ Já Recebido (Paga)" valorStr={formatarMoeda(totRendaPaga)} textColor="text-emerald-800 dark:text-emerald-300" bgColor="bg-emerald-50 dark:bg-emerald-900/20" borderColor="border-emerald-200 dark:border-emerald-800/50" itens={mapAgrupado(listRendaPagaMeu, true)} />
+                    <CardAcordeao titulo="⏳ A Receber (Pendente)" valorStr={formatarMoeda(totRendaPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapAgrupado(listRendaPendenteMeu, true)} />
                 </div>
             );
-        } 
+        }
         else if (tipo === 'gastos') {
             titulo = 'Detalhamento de Gastos (Despesas)';
             conteudo = (
@@ -396,8 +461,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Custo Líquido do Mês (Sua Parte)</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totGastoReal)}</span>
                     </div>
-                    <CardAcordeao titulo="✔ Já Descontado (Pago)" valorStr={formatarMoeda(Math.abs(totGastoPago))} textColor={totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'} bgColor="bg-red-50 dark:bg-red-900/20" borderColor="border-red-200 dark:border-red-800/50" sinal={totGastoPago >= 0 ? '' : '+ '} itens={mapMeu(listGastoPagoMeu)} />
-                    <CardAcordeao titulo="⏳ A Descontar (Pendente)" valorStr={formatarMoeda(Math.abs(totGastoPendente))} textColor={totGastoPendente >= 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'} bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" sinal={totGastoPendente >= 0 ? '' : '+ '} itens={mapMeu(listGastoPendenteMeu)} />
+                    <CardAcordeao titulo="✔ Já Descontado (Pago)" valorStr={formatarMoeda(Math.abs(totGastoPago))} textColor={totGastoPago >= 0 ? 'text-red-800 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-400'} bgColor="bg-red-50 dark:bg-red-900/20" borderColor="border-red-200 dark:border-red-800/50" sinal={totGastoPago >= 0 ? '' : '+ '} itens={mapAgrupado(listGastoPagoMeu, true)} />
+                    <CardAcordeao titulo="⏳ A Descontar (Pendente)" valorStr={formatarMoeda(Math.abs(totGastoPendente))} textColor={totGastoPendente >= 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'} bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" sinal={totGastoPendente >= 0 ? '' : '+ '} itens={mapAgrupado(listGastoPendenteMeu, true)} />
                 </div>
             );
         }
@@ -409,8 +474,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-sm">Aportes Totais do Mês</span>
                         <span className="font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(totInvestido)}</span>
                     </div>
-                    <CardAcordeao titulo="✔ Aportes Efetivados" valorStr={formatarMoeda(totInvestidoPago)} textColor="text-blue-800 dark:text-blue-300" bgColor="bg-blue-50 dark:bg-blue-900/20" borderColor="border-blue-200 dark:border-blue-800/50" itens={mapMeu(listInvestidoPagoMeu)} />
-                    <CardAcordeao titulo="⏳ Aportes Pendentes" valorStr={formatarMoeda(totInvestidoPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapMeu(listInvestidoPendenteMeu)} />
+                    <CardAcordeao titulo="✔ Aportes Efetivados" valorStr={formatarMoeda(totInvestidoPago)} textColor="text-blue-800 dark:text-blue-300" bgColor="bg-blue-50 dark:bg-blue-900/20" borderColor="border-blue-200 dark:border-blue-800/50" itens={mapAgrupado(listInvestidoPagoMeu, true)} />
+                    <CardAcordeao titulo="⏳ Aportes Pendentes" valorStr={formatarMoeda(totInvestidoPendente)} textColor="text-amber-800 dark:text-amber-300" bgColor="bg-amber-50 dark:bg-amber-900/20" borderColor="border-amber-200 dark:border-amber-800/50" itens={mapAgrupado(listInvestidoPendenteMeu, true)} />
                 </div>
             );
         }
@@ -419,9 +484,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Este é o dinheiro real que deve estar no seu banco agora, considerando o que já sobrou e o que foi efetivamente pago neste mês.</p>
-                    <RowAcordeao titulo="Rendas Pagas" valorStr={formatarMoeda(rendaPagaConta)} textColor="text-emerald-600 dark:text-emerald-400" sinal="+" itens={mapConta(listRendaPagaConta)} />
-                    <RowAcordeao titulo="Gastos Pagos (Totais)" valorStr={formatarMoeda(Math.abs(gastoPagoConta))} textColor={gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={gastoPagoConta >= 0 ? '-' : '+'} itens={mapConta(listGastoPagoConta)} />
-                    <RowAcordeao titulo="Investimentos Efetivados" valorStr={formatarMoeda(Math.abs(investidoPagoConta))} textColor={investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={investidoPagoConta >= 0 ? '-' : '+'} itens={mapConta(listInvestidoPagoConta)} />
+                    <RowAcordeao titulo="Rendas Pagas" valorStr={formatarMoeda(rendaPagaConta)} textColor="text-emerald-600 dark:text-emerald-400" sinal="+" itens={mapAgrupado(listRendaPagaConta, false)} />
+                    <RowAcordeao titulo="Gastos Pagos (Totais)" valorStr={formatarMoeda(Math.abs(gastoPagoConta))} textColor={gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={gastoPagoConta >= 0 ? '-' : '+'} itens={mapAgrupado(listGastoPagoConta, false)} />
+                    <RowAcordeao titulo="Investimentos Efetivados" valorStr={formatarMoeda(Math.abs(investidoPagoConta))} textColor={investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={investidoPagoConta >= 0 ? '-' : '+'} itens={mapAgrupado(listInvestidoPagoConta, false)} />
                     {somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                             <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span>
@@ -437,32 +502,31 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
         else if (tipo === 'previsao') {
             titulo = 'Composição da Previsão Fim Mês';
-            
-            // 🔥 MODAL ATUALIZADO PARA EXPLICAR O NOVO CÁLCULO BASEADO NO CAIXA REAL
+
             conteudo = (
                 <div className="space-y-3">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Simulação estrita baseada no seu <b>caixa real atual</b>. Considera o dinheiro vivo que você tem nas mãos hoje e subtrai tudo o que ainda falta pagar ou atingir nas suas metas.</p>
-                    
+
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Líquido Atual</span>
                         <span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoAtual >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoAtual))}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Rendas Pendentes (A Receber)</span>
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ {formatarMoeda(totRendaPendente)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Despesas Pendentes a Pagar</span>
                         <span className="text-red-600 dark:text-red-400 font-bold">- {formatarMoeda(Math.abs(totGastoPendente) + Math.abs(totInvestidoPendente))}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                         <span className="text-slate-600 dark:text-slate-300 text-sm">Verba Restante das Metas</span>
                         <span className="text-orange-600 dark:text-orange-400 font-bold">- {formatarMoeda(Math.abs(metaNaoComprometida))}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 mt-2">
                         <span className="text-slate-800 dark:text-slate-200 font-bold text-sm">Sobra Estimada no dia {ultimoDiaDoMes}</span>
                         <span className={`font-bold text-lg ${previstoFimMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</span>
@@ -472,15 +536,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]); 
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, cartoes]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
-        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
+        mesAnterior, mesProximo, mudarOrdenacao, dadosTabela,
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas, 
+        categoriasDinamicas, gCat, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
     };
 }
