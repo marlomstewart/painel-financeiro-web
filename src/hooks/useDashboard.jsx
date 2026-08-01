@@ -400,8 +400,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
                 if (ehCredito) {
                     if (!grupos[t.formaPagamento]) {
-                        const cartao = cartoes.find(c => c.id === t.formaPagamento.replace('credito_', ''));
+                        // 🔥 CORREÇÃO: Forçando conversão para String para evitar bug de tipagem (Number vs String)
+                        const cartaoId = String(t.formaPagamento).replace('credito_', '');
+                        const cartao = cartoes.find(c => String(c.id) === cartaoId);
                         const nomeCartao = cartao ? cartao.nome : 'Cartão de Crédito';
+
                         grupos[t.formaPagamento] = {
                             id: `grupo_${t.formaPagamento}`,
                             isGrupo: true,
