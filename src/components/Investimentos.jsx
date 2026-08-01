@@ -6,31 +6,40 @@ const formatarMoeda = (valor) => {
     return (isNaN(v) ? 0 : v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
+// Tabela oficial de IOF do Governo (Desconto sobre o lucro nos primeiros 29 dias) para simulações client-side
+const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53, 50, 46, 43, 40, 36, 33, 30, 26, 23, 20, 16, 13, 10, 6, 3];
+
 /**
  * @file src/components/Investimentos.jsx
  * @description Tela/Dashboard principal do Módulo de Renda Fixa.
- * Exibe o patrimônio, simulador dinâmico de juros compostos (com seleção de taxa por caixinha)
+ * Exibe o patrimônio, simulador dinâmico de juros compostos, calculadora de promoções curto prazo
  * e gestão de aportes com alertas de IOF e IR.
  */
 export function Investimentos({ API, getHeaders, modal }) {
     // 🔗 Conecta com o nosso Motor de Investimentos
     const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal });
 
-    // 🎛️ Estados para o Simulador da Máquina do Tempo
+    // 🎛️ Estados para o Simulador de Longo Prazo (Independência)
     const [metaSimulador, setMetaSimulador] = useState(100000);
     const [aporteSimulador, setAporteSimulador] = useState(500);
-    // 🔥 NOVO: Estado para saber qual taxa (caixinha) o usuário quer usar na simulação
     const [caixinhaSimuladorId, setCaixinhaSimuladorId] = useState('base');
+
+    // 🎛️ Estados para o Simulador de Curto Prazo (Promoções)
+    const dataPadraoFuturo = new Date();
+    dataPadraoFuturo.setMonth(dataPadraoFuturo.getMonth() + 1); // Joga 1 mês para frente como padrão
+
+    const [simCurtoValor, setSimCurtoValor] = useState(5000);
+    const [simCurtoTaxa, setSimCurtoTaxa] = useState(150);
+    const [simCurtoData, setSimCurtoData] = useState(dataPadraoFuturo.toISOString().split('T')[0]);
 
     // 🤖 Lógica do Simulador: Juros Compostos com a Taxa CDI da Caixinha Selecionada
     const simulacao = useMemo(() => {
         if (!dashboardData || !dashboardData.taxas) return { anos: 0, meses: 0, investido: 0, juros: 0, taxaUsada: 100 };
 
         const cdiAnual = dashboardData.taxas.cdiAnual;
-        let percentualCdiSimulador = 100; // Começa com 100% da Selic como base
+        let percentualCdiSimulador = 100;
         let nomeReferencia = 'Taxa Selic Base';
 
-        // Se escolheu uma caixinha específica, pega a taxa dela (ex: 120%)
         if (caixinhaSimuladorId !== 'base') {
             const caixinhaEscolhida = dashboardData.caixinhas.find(c => c.id === caixinhaSimuladorId);
             if (caixinhaEscolhida) {
@@ -39,11 +48,9 @@ export function Investimentos({ API, getHeaders, modal }) {
             }
         }
 
-        // Calcula a taxa anual efetiva daquela escolha e converte pra mensal
         const taxaAnualEfetiva = cdiAnual * (percentualCdiSimulador / 100);
         const taxaMensal = Math.pow(1 + (taxaAnualEfetiva / 100), 1 / 12) - 1;
 
-        // Fórmula de Parcelas de Juros Compostos: n = log((FV * r / PMT) + 1) / log(1 + r)
         const nMeses = Math.log((metaSimulador * taxaMensal / aporteSimulador) + 1) / Math.log(1 + taxaMensal);
         const totalMeses = Math.ceil(nMeses);
 
@@ -59,16 +66,60 @@ export function Investimentos({ API, getHeaders, modal }) {
         return { anos, meses, investido, juros, taxaUsada: percentualCdiSimulador, nomeReferencia };
     }, [metaSimulador, aporteSimulador, caixinhaSimuladorId, dashboardData]);
 
+    // 🤖 Lógica da Calculadora de Curto Prazo (Promoções)
+    const simulacaoCurto = useMemo(() => {
+        if (!dashboardData || !dashboardData.taxas || !simCurtoData || simCurtoValor <= 0) {
+            return { valorBruto: 0, lucroBruto: 0, iof: 0, ir: 0, valorLiquido: 0, lucroLiquido: 0, diasCorridos: 0, erro: false };
+        }
+
+        const cdiAnual = dashboardData.taxas.cdiAnual;
+        const dataResgate = new Date(`${simCurtoData}T12:00:00`);
+        const hoje = new Date();
+        hoje.setHours(12, 0, 0, 0);
+
+        if (dataResgate <= hoje) {
+            return { valorBruto: simCurtoValor, lucroBruto: 0, iof: 0, ir: 0, valorLiquido: simCurtoValor, lucroLiquido: 0, diasCorridos: 0, erro: true };
+        }
+
+        const diffMilisegundos = Math.abs(dataResgate - hoje);
+        const diasCorridos = Math.floor(diffMilisegundos / (1000 * 60 * 60 * 24));
+        const diasUteis = Math.floor(diasCorridos * (252 / 365));
+
+        const taxaAnualDecimal = (cdiAnual * (simCurtoTaxa / 100)) / 100;
+        const taxaDiaria = Math.pow(1 + taxaAnualDecimal, 1 / 252) - 1;
+
+        const valorBruto = simCurtoValor * Math.pow(1 + taxaDiaria, diasUteis);
+        const lucroBruto = valorBruto - simCurtoValor;
+
+        let taxaIof = 0;
+        if (diasCorridos < 30) {
+            taxaIof = TABELA_IOF[diasCorridos] / 100;
+        }
+        const valorIof = lucroBruto * taxaIof;
+        const lucroPosIof = lucroBruto - valorIof;
+
+        let taxaIr = 0.225;
+        if (diasCorridos > 180 && diasCorridos <= 360) taxaIr = 0.20;
+        else if (diasCorridos > 360 && diasCorridos <= 720) taxaIr = 0.175;
+        else if (diasCorridos > 720) taxaIr = 0.15;
+
+        const valorIr = lucroPosIof * taxaIr;
+        const lucroLiquido = lucroPosIof - valorIr;
+        const valorLiquido = simCurtoValor + lucroLiquido;
+
+        return {
+            valorBruto, lucroBruto, iof: valorIof, ir: valorIr, valorLiquido, lucroLiquido, diasCorridos, erro: false
+        };
+    }, [simCurtoValor, simCurtoTaxa, simCurtoData, dashboardData]);
+
     // ⚡ Ações Interativas encadeando Modais (Usando placehoders opacos)
     const handleNovaCaixinha = async () => {
-        // 🔥 ATUALIZAÇÃO: Utilizando defaultValue como '' (vazio) e ativando o placeholder por trás
         const banco = await modal.prompt('1️⃣ Nome da Instituição/Corretora?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Nubank, Inter', confirmLabel: 'Próximo' });
         if (!banco) return;
 
         const nome = await modal.prompt('2️⃣ Nome/Apelido deste Investimento?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Caixinha Turbo, Reserva de Emergência', confirmLabel: 'Próximo' });
         if (!nome) return;
 
-        // A taxa como padrão '100' faz sentido ser defaultValue pra pessoa não precisar digitar caso seja só 100 mesmo.
         const taxa = await modal.prompt('3️⃣ Percentual do CDI? (Apenas números)', '100', '🏦 Nova Caixinha', { inputType: 'number', confirmLabel: 'Criar' });
         if (!taxa || isNaN(Number(taxa))) return modal.alert('Taxa inválida. Criação cancelada.');
 
@@ -85,7 +136,6 @@ export function Investimentos({ API, getHeaders, modal }) {
         criarAporte(caixinhaId, Number(valorStr), dataAporte);
     };
 
-    // ⏳ Tela de Carregamento enquanto o BCB responde
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
@@ -97,8 +147,6 @@ export function Investimentos({ API, getHeaders, modal }) {
     }
 
     const { resumo, taxas, caixinhas } = dashboardData;
-
-    // Cálculo da rentabilidade bruta diária aproximada para gerar "aquela motivação" no painel
     const taxaDiariaReal = Math.pow(1 + (taxas.cdiAnual / 100), 1 / 252) - 1;
     const rendimentoDiarioBruto = resumo.aplicadoTotal * taxaDiariaReal;
 
@@ -149,6 +197,85 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </div>
             </div>
 
+            {/* ⏱️ CALCULADORA DE CURTO PRAZO (NOVA FUNCIONALIDADE) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm">
+                <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <span className="text-3xl">⏱️</span>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Calculadora de Curto Prazo (Promoções)</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Simule um aporte numa taxa promocional para saber exatamente o valor líquido de resgate.</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+                    {/* Controles de Input */}
+                    <div className="lg:col-span-3 space-y-4 bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Valor do Aporte (R$)</label>
+                                <input
+                                    type="number" min="0" step="100"
+                                    value={simCurtoValor} onChange={(e) => setSimCurtoValor(Number(e.target.value))}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Rendimento (% do CDI)</label>
+                                <div className="relative">
+                                    <input
+                                        type="number" min="0" step="1"
+                                        value={simCurtoTaxa} onChange={(e) => setSimCurtoTaxa(Number(e.target.value))}
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 pr-8"
+                                    />
+                                    <span className="absolute right-3 top-2.5 text-sm font-bold text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Data final do Resgate</label>
+                            <input
+                                type="date"
+                                value={simCurtoData} onChange={(e) => setSimCurtoData(e.target.value)}
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Resultado da Simulação */}
+                    <div className="lg:col-span-2 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800 p-5 rounded-2xl border border-slate-300 dark:border-slate-700 relative overflow-hidden">
+                        {simulacaoCurto.erro ? (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-500 py-6">
+                                <span className="text-3xl mb-2">⏳</span>
+                                <p className="font-bold text-sm">A data precisa ser no futuro.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center mb-4">Resultado em {simulacaoCurto.diasCorridos} dias corridos</p>
+
+                                <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-300 dark:border-slate-700">
+                                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Rendimento Bruto</span>
+                                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">+{formatarMoeda(simulacaoCurto.lucroBruto)}</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-300 dark:border-slate-700">
+                                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">Imposto de Renda</span>
+                                    <span className="text-sm font-bold text-rose-600 dark:text-rose-400">-{formatarMoeda(simulacaoCurto.ir)}</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-300 dark:border-slate-700">
+                                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">IOF (Nos 30 primeiros dias)</span>
+                                    <span className="text-sm font-bold text-rose-600 dark:text-rose-400">-{formatarMoeda(simulacaoCurto.iof)}</span>
+                                </div>
+
+                                <div className="text-center mt-6">
+                                    <p className="text-[10px] uppercase font-black text-emerald-600 dark:text-emerald-500 tracking-wider mb-1">Valor Líquido de Resgate</p>
+                                    <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400">{formatarMoeda(simulacaoCurto.valorLiquido)}</p>
+                                    <p className="text-xs font-bold text-emerald-600/70 dark:text-emerald-500/70 mt-1">Lucro Livre: +{formatarMoeda(simulacaoCurto.lucroLiquido)}</p>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             {/* 🚀 SIMULADOR DE INDEPENDÊNCIA (A MÁQUINA DO TEMPO) */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -156,12 +283,11 @@ export function Investimentos({ API, getHeaders, modal }) {
                         <span className="text-3xl">🚀</span>
                         <div>
                             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Projetor de Independência</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Calcule sua jornada considerando os juros compostos da sua taxa.</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Calcule sua jornada considerando os juros compostos da sua taxa mensal.</p>
                         </div>
                     </div>
                 </div>
 
-                {/* 🔥 NOVO: SELETOR DE TAXA DO SIMULADOR */}
                 <div className="mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
                     <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">
                         Simular rendimento usando a taxa de qual fundo?
