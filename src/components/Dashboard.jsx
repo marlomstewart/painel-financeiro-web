@@ -37,17 +37,21 @@ export function Dashboard({
 
     return (
         <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 relative">
-            <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm transition-colors">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Painel Executivo</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Resumo financeiro de {nomesMeses[dataVis.mes - 1]} de {dataVis.ano}</p>
-                    </div>
-                    <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                        <button type="button" onClick={mesAnterior} className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-800 rounded shadow-sm text-slate-600 dark:text-slate-300 transition cursor-pointer">◀</button>
-                        <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-sm w-32 text-center">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-                        <button type="button" onClick={mesProximo} className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-800 rounded shadow-sm text-slate-600 dark:text-slate-300 transition cursor-pointer">▶</button>
-                    </div>
+
+            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        📊 Painel Executivo
+                    </h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Resumo financeiro de {nomesMeses[dataVis.mes - 1]} de {dataVis.ano}
+                    </p>
+                </div>
+                <div className="w-full sm:w-auto shrink-0 flex items-center justify-between sm:justify-end bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <button type="button" onClick={mesAnterior} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">◀</button>
+                    <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-sm px-4 text-center">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
+                    <button type="button" onClick={mesProximo} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">▶</button>
                 </div>
             </div>
 

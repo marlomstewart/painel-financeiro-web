@@ -134,10 +134,16 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
 
     return (
         <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto pb-24 animate-fade-in relative">
-            <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
-                <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📉 Dívidas e Financiamentos</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Controle empréstimos, consórcios e compras parceladas longo prazo.</p>
+
+            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-6 md:-mt-6 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        📉 Dívidas e Financiamentos
+                    </h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Controle empréstimos, consórcios e compras parceladas longo prazo.
+                    </p>
                 </div>
             </div>
 

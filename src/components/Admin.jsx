@@ -32,15 +32,21 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
 
       <div className="mx-auto max-w-5xl space-y-6">
 
-        {/* CABEÇALHO FIXO (STICKY BLUR) */}
-        <div className="sticky top-0 z-40 pt-4 md:pt-6 pb-2 -mt-4 md:-mt-6 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6 w-full">
-          <header className="border-b border-slate-200 dark:border-slate-700 pb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 transition-colors">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">👥 Gerenciamento de Usuários</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Super Admin — Acesso restrito e auditoria de sistema.</p>
-            </div>
-            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 dark:bg-slate-700 text-white font-medium py-2 px-6 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors cursor-pointer shadow-sm shrink-0">Voltar</button>
-          </header>
+        {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+        <div className="sticky top-0 z-40 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-6 md:-mt-6 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+          <div>
+            <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              👥 Gerenciamento de Usuários
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Super Admin — Acesso restrito e auditoria de sistema.
+            </p>
+          </div>
+          <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
+            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-900 dark:bg-slate-700 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors cursor-pointer shadow-sm">
+              Voltar ao Painel
+            </button>
+          </div>
         </div>
 
         <section className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">

@@ -245,15 +245,25 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                 )}
 
                 <div className="mx-auto max-w-4xl">
-                    {/* CABEÇALHO FIXO - VISÃO GERAL DE VEÍCULOS */}
-                    <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-8">
-                        <header className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">🏍️ Garagem</h1>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Selecione um veículo para ver o dashboard</p>
-                            </div>
-                            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="bg-slate-900 dark:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 text-sm cursor-pointer transition-colors shadow-sm">← Voltar</button>
-                        </header>
+
+                    {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO (VISÃO FROTA) */}
+                    <div className="sticky top-0 z-40 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-8 md:-mt-8 md:p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                🏍️ Minha Garagem
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                Selecione um veículo para ver o dashboard e manutenções.
+                            </p>
+                        </div>
+                        <div className="w-full sm:w-auto shrink-0 flex flex-wrap items-center justify-start sm:justify-end gap-3">
+                            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold py-2.5 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-sm transition-colors cursor-pointer">
+                                ← Voltar
+                            </button>
+                            <button type="button" onClick={() => { setTipoVeiculoForm('proprio'); setModalVeiculo('novo'); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2">
+                                <span>+</span> Cadastrar Veículo
+                            </button>
+                        </div>
                     </div>
 
                     {carregando ? (
@@ -327,14 +337,14 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                             </div>
                             <input type="hidden" name="tipo" value={tipoVeiculoForm} />
                         </div>
-                        <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">{tipoVeiculoForm === 'convidado' ? 'Nome/Descrição' : 'Modelo'}</label><input name="modelo" defaultValue={modalVeiculo.modelo} required className={inputCls} /></div>
+                        <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">{tipoVeiculoForm === 'convidado' ? 'Nome/Descrição' : 'Modelo'}</label><input name="modelo" defaultValue={veiculoSelecionado.modelo} required className={inputCls} /></div>
                         {tipoVeiculoForm === 'proprio' && (
                             <>
                                 <div className="flex gap-2">
-                                    <div className="flex-1"><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">Ano Fab.</label><input name="ano_fabricacao" type="number" defaultValue={modalVeiculo.ano_fabricacao} required className={inputCls} /></div>
-                                    <div className="flex-1"><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">Ano Modelo</label><input name="ano_modelo" type="number" defaultValue={modalVeiculo.ano_modelo} required className={inputCls} /></div>
+                                    <div className="flex-1"><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">Ano Fab.</label><input name="ano_fabricacao" type="number" defaultValue={veiculoSelecionado.ano_fabricacao} required className={inputCls} /></div>
+                                    <div className="flex-1"><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">Ano Modelo</label><input name="ano_modelo" type="number" defaultValue={veiculoSelecionado.ano_modelo} required className={inputCls} /></div>
                                 </div>
-                                <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">KM Atual</label><input name="km_atual" type="number" defaultValue={modalVeiculo.km_atual} required className={inputCls} /></div>
+                                <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">KM Atual</label><input name="km_atual" type="number" defaultValue={veiculoSelecionado.km_atual} required className={inputCls} /></div>
                             </>
                         )}
                         <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -378,21 +388,29 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
             <div className="mx-auto max-w-5xl space-y-4 md:space-y-6">
 
-                {/* CABEÇALHO FIXO - VISÃO DO DASHBOARD DO VEÍCULO */}
-                <div className="sticky top-0 z-40 pt-2 md:pt-8 pb-4 -mt-2 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-4 md:mb-6">
-                    <header className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 gap-3 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <button type="button" onClick={() => setVeiculoSelecionado(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-2xl cursor-pointer transition-colors">←</button>
-                            <div>
-                                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{veiculoSelecionado.modelo}</h1>
-                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{veiculoSelecionado.ano_fabricacao}/{veiculoSelecionado.ano_modelo} • {Number(kmAtual).toLocaleString('pt-BR')} km</p>
-                            </div>
+                {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO (DASHBOARD VEÍCULO) */}
+                <div className="sticky top-0 z-40 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-2 -mt-2 p-4 md:-mx-8 md:-mt-8 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                    <div className="flex items-center gap-3">
+                        <button type="button" onClick={() => setVeiculoSelecionado(null)} className="w-10 h-10 flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer text-lg font-bold shadow-inner">←</button>
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                {veiculoSelecionado.tipo === 'convidado' ? '🤝' : '🚗'} {veiculoSelecionado.modelo}
+                            </h1>
+                            {veiculoSelecionado.tipo === 'convidado' ? (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Veículo de terceiros</p>
+                            ) : (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{veiculoSelecionado.ano_fabricacao}/{veiculoSelecionado.ano_modelo} • {Number(kmAtual).toLocaleString('pt-BR')} km</p>
+                            )}
                         </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <button type="button" onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="flex-1 md:flex-none bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-4 py-2.5 rounded-lg text-sm font-bold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer">✏️ Editar</button>
-                            <button type="button" onClick={() => setTelaAtiva('dashboard')} className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 text-sm border border-transparent dark:border-slate-600 cursor-pointer transition-colors shadow-sm">← Painel</button>
-                        </div>
-                    </header>
+                    </div>
+                    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2">
+                        <button type="button" onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="w-full sm:w-auto bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm">
+                            ✏️ Editar
+                        </button>
+                        <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-900 dark:bg-slate-700 text-white border border-slate-900 dark:border-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm">
+                            Painel Principal
+                        </button>
+                    </div>
                 </div>
 
                 <div className={`grid grid-cols-1 ${veiculoSelecionado.tipo !== 'convidado' ? 'lg:grid-cols-2' : ''} gap-4 md:gap-6`}>

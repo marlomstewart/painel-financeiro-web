@@ -163,6 +163,23 @@ export function Investimentos({ API, getHeaders, modal }) {
     return (
         <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
+            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+            <div className="sticky top-0 z-40 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-6 md:-mt-6 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        📈 Renda Fixa e Investimentos
+                    </h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Acompanhe a rentabilidade real diária, simule metas e faça aportes.
+                    </p>
+                </div>
+                <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
+                    <button type="button" onClick={handleNovaCaixinha} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2">
+                        <span>➕ Criar Caixinha</span>
+                    </button>
+                </div>
+            </div>
+
             <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500/10 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
@@ -374,16 +391,6 @@ export function Investimentos({ API, getHeaders, modal }) {
 
             {/* 🏦 GESTOR DE CAIXINHAS E APORTES */}
             <div>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Minhas Caixinhas (CDB)</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Controle individualizado por instituição.</p>
-                    </div>
-                    <button onClick={handleNovaCaixinha} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center gap-2 cursor-pointer">
-                        <span>➕ Criar Caixinha</span>
-                    </button>
-                </div>
-
                 {caixinhas.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center">
                         <span className="text-4xl block mb-3">🏦</span>

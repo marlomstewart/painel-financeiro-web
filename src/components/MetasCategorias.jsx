@@ -52,12 +52,16 @@ export function MetasCategorias({ categorias, addCategoria, metasRenda = [], add
     return (
         <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-24 relative">
 
-            {/* CABEÇALHO FIXO COM VIDRO FOSCO */}
-            <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md mb-6">
-                <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Metas & Categorias</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Defina os tetos de gastos, alvos de investimento e expectativas de receita.</p>
-                </header>
+            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-8 md:-mt-8 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        🎯 Metas & Categorias
+                    </h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Defina os tetos de gastos, alvos de investimento e expectativas de receita.
+                    </p>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

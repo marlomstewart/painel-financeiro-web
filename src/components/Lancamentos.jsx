@@ -130,11 +130,28 @@ export function Lancamentos({
         return (
             <div className="p-4 md:p-8 space-y-6 w-full max-w-3xl mx-auto pb-24 overflow-x-hidden relative">
 
-                <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
-                    <header className="border-b border-slate-200 dark:border-slate-800 pb-2">
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">➕ Novo Lançamento</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Adicione uma nova despesa, receita, investimento ou reembolso ao seu livro-razão.</p>
-                    </header>
+                {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+                <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            ✨ Novo Lançamento
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                            Adicione uma nova despesa, receita, investimento ou reembolso ao seu livro-razão.
+                        </p>
+                    </div>
+
+                    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
+                        <button type="button" onClick={() => {
+                            setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
+                            setDataCompra(new Date().toISOString().split('T')[0]);
+                            setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
+                            setFormaPagamento('pix'); setParcelas(1);
+                            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0');
+                        }} className="text-sm font-bold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-2 rounded-lg">
+                            Limpar Dados
+                        </button>
+                    </div>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-xl shadow-sm">
@@ -218,7 +235,6 @@ export function Lancamentos({
                                             />
                                         </div>
                                         <div>
-                                            {/* 🔥 NOVO INPUT PARA CAPTURAR A DIVISÃO NO ATO DO CADASTRO */}
                                             <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Valor TOTAL da Pessoa (R$)</label>
                                             <input
                                                 name="thirdPartyValue" type="text"
@@ -298,22 +314,32 @@ export function Lancamentos({
     return (
         <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl mx-auto pb-24 overflow-x-hidden relative">
 
-            <div className="sticky top-0 z-40 pt-4 md:pt-8 pb-4 -mt-4 md:-mt-8 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
-                <header className="border-b border-slate-200 dark:border-slate-800 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">📋 Extrato de Lançamentos</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Audite, pesquise e faça a gestão em lote de todas as movimentações.</p>
-                    </div>
+            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
+            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        📋 Extrato de Lançamentos
+                    </h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Audite, pesquise e faça a gestão em lote de todas as movimentações.
+                    </p>
+                </div>
 
-                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm self-start md:self-auto shrink-0">
-                        <button onClick={mesAnterior} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
-                        <div className="flex flex-col items-center min-w-[120px] justify-center px-2">
-                            <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-xs">{meses[dataVis.mes - 1]}</span>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
-                        </div>
-                        <button onClick={mesProximo} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-600 dark:text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+                {/* MÁGICA: Seletor de mês fixo no lado direito */}
+                <div className="w-full sm:w-auto shrink-0 flex items-center justify-between sm:justify-end bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <button type="button" onClick={mesAnterior} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div className="flex flex-col items-center px-4">
+                        <span className="font-black uppercase text-sm text-slate-700 dark:text-slate-200 tracking-wider">
+                            {meses[dataVis.mes - 1]}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
                     </div>
-                </header>
+                    <button type="button" onClick={mesProximo} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm flex flex-col w-full">
