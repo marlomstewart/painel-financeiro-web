@@ -75,10 +75,10 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto pb-24 animate-fade-in relative">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         🔄 Contas Fixas
@@ -89,62 +89,64 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm transition-colors">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
-                    {editandoId ? '✏️ Editar Despesa' : 'Nova Despesa'}
-                    {isCredito && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2 py-0.5 rounded ml-auto">Modo Cartão de Crédito</span>}
-                </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição</label>
-                            <input name="nome" type="text" value={nome} onChange={e => setNome(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="Ex: Internet Claro" />
+            <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm transition-colors">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
+                        {editandoId ? '✏️ Editar Despesa' : 'Nova Despesa'}
+                        {isCredito && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2 py-0.5 rounded ml-auto">Modo Cartão de Crédito</span>}
+                    </h3>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição</label>
+                                <input name="nome" type="text" value={nome} onChange={e => setNome(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="Ex: Internet Claro" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Padrão (R$)</label>
+                                <input name="valorPadrao" type="text" inputMode="numeric" value={valorPadrao} onChange={handleCurrency} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="0,00" />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Padrão (R$)</label>
-                            <input name="valorPadrao" type="text" inputMode="numeric" value={valorPadrao} onChange={handleCurrency} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="0,00" />
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forma Pagamento</label>
-                            <select name="forma_pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors">
-                                <option value="pix">PIX / Dinheiro</option>
-                                <option value="debito">Débito</option>
-                                {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}
-                            </select>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forma Pagamento</label>
+                                <select name="forma_pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors">
+                                    <option value="pix">PIX / Dinheiro</option>
+                                    <option value="debito">Débito</option>
+                                    {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}
+                                </select>
+                            </div>
+                            <div className="relative">
+                                <label className={`block text-xs font-semibold mb-1 transition-colors ${isCredito ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                                    {isCredito ? 'Dia da Compra (Cobrança)' : 'Dia Vencimento'}
+                                </label>
+                                <input name="vencimento" type="number" min="1" max="31" value={vencimento} onChange={e => setVencimento(e.target.value)} required className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none transition-colors ${isCredito ? 'border-indigo-300 dark:border-indigo-700/50 focus:border-indigo-500' : 'border-slate-200 dark:border-slate-800 focus:border-blue-500'}`} placeholder="Ex: 5" />
+                                {isCredito && (
+                                    <p className="text-[10px] text-indigo-500 mt-1 leading-tight absolute w-full">
+                                        O sistema avaliará a data de fechamento do cartão para lançar na fatura do mês correto.
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div className="relative">
-                            <label className={`block text-xs font-semibold mb-1 transition-colors ${isCredito ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                {isCredito ? 'Dia da Compra (Cobrança)' : 'Dia Vencimento'}
-                            </label>
-                            <input name="vencimento" type="number" min="1" max="31" value={vencimento} onChange={e => setVencimento(e.target.value)} required className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none transition-colors ${isCredito ? 'border-indigo-300 dark:border-indigo-700/50 focus:border-indigo-500' : 'border-slate-200 dark:border-slate-800 focus:border-blue-500'}`} placeholder="Ex: 5" />
-                            {isCredito && (
-                                <p className="text-[10px] text-indigo-500 mt-1 leading-tight absolute w-full">
-                                    O sistema avaliará a data de fechamento do cartão para lançar na fatura do mês correto.
-                                </p>
+
+                        <div className={`pt-4 ${isCredito ? 'mt-6' : 'mt-2'}`}>
+                            {editandoId ? (
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={cancelarEdicao} className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">
+                                        Salvar Edição
+                                    </button>
+                                </div>
+                            ) : (
+                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">
+                                    Salvar Conta Fixa
+                                </button>
                             )}
                         </div>
-                    </div>
-
-                    <div className={`pt-4 ${isCredito ? 'mt-6' : 'mt-2'}`}>
-                        {editandoId ? (
-                            <div className="flex gap-2">
-                                <button type="button" onClick={cancelarEdicao} className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer">
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">
-                                    Salvar Edição
-                                </button>
-                            </div>
-                        ) : (
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">
-                                Salvar Conta Fixa
-                            </button>
-                        )}
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
 
             <div>

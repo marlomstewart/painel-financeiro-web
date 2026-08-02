@@ -36,10 +36,10 @@ export function Dashboard({
     const showGarageAlerts = isStewart && alertasGaragem.length > 0;
 
     return (
-        <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 relative">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         📊 Painel Executivo
@@ -48,10 +48,10 @@ export function Dashboard({
                         Resumo financeiro de {nomesMeses[dataVis.mes - 1]} de {dataVis.ano}
                     </p>
                 </div>
-                <div className="w-full sm:w-auto shrink-0 flex items-center justify-between sm:justify-end bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <button type="button" onClick={mesAnterior} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">◀</button>
+                <div className="w-full md:w-auto shrink-0 flex items-center justify-between md:justify-end bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <button type="button" onClick={mesAnterior} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">◀</button>
                     <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-sm px-4 text-center">{nomesMeses[dataVis.mes - 1]} {dataVis.ano}</span>
-                    <button type="button" onClick={mesProximo} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">▶</button>
+                    <button type="button" onClick={mesProximo} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">▶</button>
                 </div>
             </div>
 

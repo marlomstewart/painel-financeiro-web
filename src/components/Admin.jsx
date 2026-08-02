@@ -27,13 +27,13 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-6 text-slate-800 dark:text-slate-200 transition-colors duration-300 relative w-full overflow-x-hidden">
+    <div className="p-4 md:p-6 text-slate-800 dark:text-slate-200 transition-colors duration-300 relative w-full overflow-x-hidden animate-fade-in">
       <ModalComponent config={modalConfig} onClose={modalClose} />
 
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="w-full max-w-7xl mx-auto space-y-6 pb-24">
 
-        {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-        <div className="sticky top-0 z-40 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-6 md:-mt-6 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+        {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
               👥 Gerenciamento de Usuários

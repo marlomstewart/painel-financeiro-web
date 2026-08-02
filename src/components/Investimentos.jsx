@@ -9,11 +9,6 @@ const formatarMoeda = (valor) => {
 // Tabela oficial de IOF do Governo para simulações client-side
 const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53, 50, 46, 43, 40, 36, 33, 30, 26, 23, 20, 16, 13, 10, 6, 3];
 
-/**
- * @file src/components/Investimentos.jsx
- * @description Tela/Dashboard principal do Módulo de Renda Fixa.
- * Integração total com o novo motor de inputs 'currency' e matemática avançada para Resgates (abatimento de curva).
- */
 export function Investimentos({ API, getHeaders, modal }) {
     const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal });
 
@@ -119,7 +114,6 @@ export function Investimentos({ API, getHeaders, modal }) {
         criarCaixinha(banco, nome, Number(taxa));
     };
 
-    // 🔥 ATUALIZADO: Uso do inputType: 'currency' criado no passo anterior
     const handleNovoAporte = async (caixinhaId, nomeCaixinha) => {
         const valor = await modal.prompt(`💰 Qual o valor do aporte para "${nomeCaixinha}"?`, '', '📈 Novo Aporte', { inputType: 'currency', confirmLabel: 'Próximo' });
         if (!valor || valor <= 0) return;
@@ -130,7 +124,6 @@ export function Investimentos({ API, getHeaders, modal }) {
         criarAporte(caixinhaId, valor, dataAporte);
     };
 
-    // 🔥 NOVO: Botão de Resgate (Gera um valor negativo que "freia" os juros compostos daquele montante retirado)
     const handleResgate = async (caixinhaId, nomeCaixinha, saldoTotal) => {
         const valor = await modal.prompt(`💸 Quanto deseja resgatar? Seu saldo livre de impostos é de ${formatarMoeda(saldoTotal)}.`, '', `💸 Resgatar de ${nomeCaixinha}`, { inputType: 'currency', confirmLabel: 'Próximo' });
         if (!valor || valor <= 0) return;
@@ -142,7 +135,6 @@ export function Investimentos({ API, getHeaders, modal }) {
         const dataResgate = await modal.prompt(`📅 Qual foi a data exata deste resgate?`, new Date().toISOString().split('T')[0], '💸 Confirmar Data', { inputType: 'date', confirmLabel: 'Aprovar Resgate' });
         if (!dataResgate) return;
 
-        // O segredo matemático: Enviamos o valor NEGATIVO. O back-end calcula juros compostos em cima do negativo, anulando perfeitamente a curva de crescimento!
         criarAporte(caixinhaId, -Math.abs(valor), dataResgate);
     };
 
@@ -161,10 +153,10 @@ export function Investimentos({ API, getHeaders, modal }) {
     const rendimentoDiarioBruto = resumo.aplicadoTotal * taxaDiariaReal;
 
     return (
-        <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto pb-24 animate-fade-in relative">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-            <div className="sticky top-0 z-40 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-6 md:-mt-6 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         📈 Renda Fixa e Investimentos
@@ -172,11 +164,6 @@ export function Investimentos({ API, getHeaders, modal }) {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Acompanhe a rentabilidade real diária, simule metas e faça aportes.
                     </p>
-                </div>
-                <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
-                    <button type="button" onClick={handleNovaCaixinha} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2">
-                        <span>➕ Criar Caixinha</span>
-                    </button>
                 </div>
             </div>
 
@@ -223,7 +210,7 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </div>
             </div>
 
-            {/* ⏱️ CALCULADORA DE CURTO PRAZO (NOVA FUNCIONALIDADE) */}
+            {/* ⏱️ CALCULADORA DE CURTO PRAZO */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm">
                 <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <span className="text-3xl">⏱️</span>
@@ -238,7 +225,6 @@ export function Investimentos({ API, getHeaders, modal }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Valor do Aporte (R$)</label>
-                                {/* 🔥 ATUALIZADO: Uso da Máscara de Moeda (Direita pra Esquerda) no input direto na tela */}
                                 <input
                                     type="text"
                                     value={simCurtoValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -391,6 +377,16 @@ export function Investimentos({ API, getHeaders, modal }) {
 
             {/* 🏦 GESTOR DE CAIXINHAS E APORTES */}
             <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Minhas Caixinhas (CDB)</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Controle individualizado por instituição.</p>
+                    </div>
+                    <button onClick={handleNovaCaixinha} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center gap-2 cursor-pointer">
+                        <span>➕ Criar Caixinha</span>
+                    </button>
+                </div>
+
                 {caixinhas.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center">
                         <span className="text-4xl block mb-3">🏦</span>

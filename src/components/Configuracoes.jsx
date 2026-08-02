@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 /**
  * @file src/components/Configuracoes.jsx
  * @description Painel de controlo central do utilizador.
- * Gere os dados de perfil, segurança, notificações interativas (Telegram), aparência (Modo Escuro), 
- * backups e ações destrutivas.
+ * Gere os dados de perfil, segurança, exportação e Telegram.
  */
 export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha }) {
 
@@ -102,10 +101,6 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         }
     };
 
-    /**
-     * @function gerarPinTelegram
-     * @description Solicita à API a geração de um PIN aleatório de 6 dígitos para vínculo.
-     */
     const gerarPinTelegram = async () => {
         setGerandoPin(true);
         try {
@@ -131,10 +126,6 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         }
     };
 
-    /**
-     * @function desvincularTelegram
-     * @description Remove o Chat ID do banco de dados, parando as notificações.
-     */
     const desvincularTelegram = async () => {
         if (!window.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.')) return;
 
@@ -164,10 +155,10 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     const btnSalvarCls = "bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-sm transition-colors cursor-pointer shadow-md w-full md:w-auto";
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24 transition-colors duration-300 relative">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 transition-colors duration-300 relative animate-fade-in">
 
-            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-8 md:-mt-8 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         ⚙️ Configurações

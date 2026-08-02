@@ -133,10 +133,10 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto pb-24 animate-fade-in relative">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 md:-mx-6 md:-mt-6 md:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         📉 Dívidas e Financiamentos
@@ -147,88 +147,90 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm transition-colors">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
-                    {editandoId ? '✏️ Editar Dívida' : 'Registrar Nova Dívida'}
-                    {isCredito && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2 py-0.5 rounded ml-auto">Modo Cartão de Crédito</span>}
-                </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição / Motivo</label>
-                            <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Financiamento Carro" />
+            <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm transition-colors">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
+                        {editandoId ? '✏️ Editar Dívida' : 'Registrar Nova Dívida'}
+                        {isCredito && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2 py-0.5 rounded ml-auto">Modo Cartão de Crédito</span>}
+                    </h3>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descrição / Motivo</label>
+                                <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Financiamento Carro" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Total (R$)</label>
+                                <input type="text" inputMode="numeric" value={valorTotal} onChange={handleValorTotal} onBlur={calcularParcelas} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Parcela (R$)</label>
+                                <input type="text" inputMode="numeric" value={valorParcela} onChange={handleValorParcela} onBlur={calcularParcelas} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Qtd. de Parcelas</label>
+                                <input type="number" min="1" value={qtdParcelas} onChange={e => setQtdParcelas(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 48" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Quantas já foram pagas?</label>
+                                <input type="number" min="0" value={parcelasPagasIniciais} onChange={e => setParcelasPagasIniciais(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 0" />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor Total (R$)</label>
-                            <input type="text" inputMode="numeric" value={valorTotal} onChange={handleValorTotal} onBlur={calcularParcelas} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Valor da Parcela (R$)</label>
-                            <input type="text" inputMode="numeric" value={valorParcela} onChange={handleValorParcela} onBlur={calcularParcelas} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0,00" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Qtd. de Parcelas</label>
-                            <input type="number" min="1" value={qtdParcelas} onChange={e => setQtdParcelas(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 48" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Quantas já foram pagas?</label>
-                            <input type="number" min="0" value={parcelasPagasIniciais} onChange={e => setParcelasPagasIniciais(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: 0" />
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forma de Pagamento</label>
-                            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors">
-                                <option value="pix">PIX / Dinheiro</option>
-                                <option value="debito">Débito</option>
-                                {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}
-                            </select>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forma de Pagamento</label>
+                                <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors">
+                                    <option value="pix">PIX / Dinheiro</option>
+                                    <option value="debito">Débito</option>
+                                    {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito: {c.nome}</option>)}
+                                </select>
+                            </div>
+                            <div className="relative">
+                                <label className={`block text-xs font-semibold mb-1 transition-colors ${isCredito ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                                    {isCredito ? 'Dia da Compra (Cobrança)' : 'Dia de Vencimento'}
+                                </label>
+                                <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value)} required className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none transition-colors ${isCredito ? 'border-indigo-300 dark:border-indigo-700/50 focus:border-indigo-500' : 'border-slate-200 dark:border-slate-800 focus:border-blue-500'}`} placeholder="Ex: 10" />
+                                {isCredito && (
+                                    <p className="text-[10px] text-indigo-500 mt-1 leading-tight absolute w-full">
+                                        O sistema avaliará a data de fechamento do cartão para lançar na fatura do mês correto.
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div className="relative">
-                            <label className={`block text-xs font-semibold mb-1 transition-colors ${isCredito ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                {isCredito ? 'Dia da Compra (Cobrança)' : 'Dia de Vencimento'}
+
+                        <div className="pt-2">
+                            <label className="flex items-center gap-2 cursor-pointer w-fit mb-3">
+                                <input type="checkbox" checked={paraTerceiros} onChange={e => setParaTerceiros(e.target.checked)} className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500" />
+                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Dívida feita para terceiros (Nome Sujo)</span>
                             </label>
-                            <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value)} required className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none transition-colors ${isCredito ? 'border-indigo-300 dark:border-indigo-700/50 focus:border-indigo-500' : 'border-slate-200 dark:border-slate-800 focus:border-blue-500'}`} placeholder="Ex: 10" />
-                            {isCredito && (
-                                <p className="text-[10px] text-indigo-500 mt-1 leading-tight absolute w-full">
-                                    O sistema avaliará a data de fechamento do cartão para lançar na fatura do mês correto.
-                                </p>
+                            {paraTerceiros && (
+                                <div className="animate-fade-in">
+                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome da Pessoa</label>
+                                    <input type="text" value={nomeTerceiro} onChange={e => setNomeTerceiro(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: João da Silva" />
+                                </div>
                             )}
                         </div>
-                    </div>
 
-                    <div className="pt-2">
-                        <label className="flex items-center gap-2 cursor-pointer w-fit mb-3">
-                            <input type="checkbox" checked={paraTerceiros} onChange={e => setParaTerceiros(e.target.checked)} className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500" />
-                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Dívida feita para terceiros (Nome Sujo)</span>
-                        </label>
-                        {paraTerceiros && (
-                            <div className="animate-fade-in">
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome da Pessoa</label>
-                                <input type="text" value={nomeTerceiro} onChange={e => setNomeTerceiro(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: João da Silva" />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className={`pt-4 ${isCredito ? 'mt-6' : 'mt-2'}`}>
-                        {editandoId ? (
-                            <div className="flex gap-2">
-                                <button type="button" onClick={cancelarEdicao} className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer">Cancelar</button>
-                                <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">Salvar Edição</button>
-                            </div>
-                        ) : (
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">Registrar Dívida</button>
-                        )}
-                    </div>
-                </form>
+                        <div className={`pt-4 ${isCredito ? 'mt-6' : 'mt-2'}`}>
+                            {editandoId ? (
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={cancelarEdicao} className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer">Cancelar</button>
+                                    <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">Salvar Edição</button>
+                                </div>
+                            ) : (
+                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md">Registrar Dívida</button>
+                            )}
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <div>
+            <div className="pt-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 pl-1">Acompanhamento</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {dividas.length === 0 ? (
-                        <div className="lg:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
+                        <div className="md:col-span-2 lg:col-span-3 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
                             Nenhuma dívida registrada.
                         </div>
                     ) : (

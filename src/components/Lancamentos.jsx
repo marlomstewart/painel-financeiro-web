@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 
-/**
- * @file src/components/Lancamentos.jsx
- * @description Componente visual responsável pela tela de "Novo Lançamento" e pelo "Extrato" de transações.
- * Atualizado para suportar a divisão fracionada (split) de valores com terceiros.
- */
 export function Lancamentos({
     modo = 'lancamentos',
     categorias, cartoes, addTransacao,
@@ -33,8 +28,6 @@ export function Lancamentos({
 
     const [isThirdParty, setIsThirdParty] = useState(false);
     const [thirdPartyName, setThirdPartyName] = useState('');
-
-    // 🔥 NOVO ESTADO: Valor total fracionado do Terceiro
     const [thirdPartyValueStr, setThirdPartyValueStr] = useState('0');
 
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
@@ -83,9 +76,7 @@ export function Lancamentos({
         setIsSubmitting(false);
     };
 
-    const toggleSelecao = (id) => {
-        setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]);
-    };
+    const toggleSelecao = (id) => setTransacoesSelecionadas(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]);
 
     const selecionarTodas = () => {
         if (transacoesSelecionadas.length === dadosTabela.length) setTransacoesSelecionadas([]);
@@ -119,191 +110,190 @@ export function Lancamentos({
         });
     };
 
-    const limparFiltros = () => {
-        setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
-    };
+    const limparFiltros = () => setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
 
     const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
     const labelCls = "block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider";
 
     if (modo === 'novo_lancamento') {
         return (
-            <div className="p-4 md:p-8 space-y-6 w-full max-w-3xl mx-auto pb-24 overflow-x-hidden relative">
+            <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-                {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-                <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+                {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                     <div>
                         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                             ✨ Novo Lançamento
                         </h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Adicione uma nova despesa, receita, investimento ou reembolso ao seu livro-razão.
+                            Adicione uma nova despesa, receita, investimento ou reembolso.
                         </p>
                     </div>
-
-                    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
+                    <div className="w-full md:w-auto shrink-0 flex items-center justify-end">
                         <button type="button" onClick={() => {
                             setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
                             setDataCompra(new Date().toISOString().split('T')[0]);
                             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
                             setFormaPagamento('pix'); setParcelas(1);
                             setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0');
-                        }} className="text-sm font-bold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-2 rounded-lg">
+                        }} className="text-sm font-bold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
                             Limpar Dados
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-xl shadow-sm">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className={labelCls}>Descrição</label>
-                            <input name="descricao" type="text" value={descricao} onChange={(e) => setDescricao(e.target.value)} required className={inputCls} placeholder="Ex: Supermercado, Abastecimento, Salário..." />
-                        </div>
-
-                        <div>
-                            <label className={labelCls}>Observação (Opcional)</label>
-                            <textarea name="observacao" value={observacao} onChange={(e) => setObservacao(e.target.value)} className={`${inputCls} resize-none`} placeholder="Detalhes extras sobre a transação..." rows="2"></textarea>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="max-w-4xl mx-auto space-y-6">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-xl shadow-sm">
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className={labelCls}>Valor (R$)</label>
-                                <input name="valor" type="text" value={displayValor} onChange={handleValorChange} required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} />
+                                <label className={labelCls}>Descrição</label>
+                                <input name="descricao" type="text" value={descricao} onChange={(e) => setDescricao(e.target.value)} required className={inputCls} placeholder="Ex: Supermercado, Abastecimento, Salário..." />
                             </div>
+
                             <div>
-                                <label className={labelCls}>Data da Transação</label>
-                                <input name="dataCompra" type="date" value={dataCompra} onChange={(e) => setDataCompra(e.target.value)} required className={inputCls} />
+                                <label className={labelCls}>Observação (Opcional)</label>
+                                <textarea name="observacao" value={observacao} onChange={(e) => setObservacao(e.target.value)} className={`${inputCls} resize-none`} placeholder="Detalhes extras sobre a transação..." rows="2"></textarea>
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelCls}>Natureza</label>
-                                <select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputCls}>
-                                    <option value="despesa">🔻 Despesa (Saída)</option>
-                                    <option value="renda">💰 Renda (Entrada)</option>
-                                    <option value="investimento">📈 Investimento</option>
-                                    <option value="reembolso">🔄 Reembolso / Estorno</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Status Atual</label>
-                                <select name="status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
-                                    <option value="pendente">⏳ Pendente (A Pagar/Receber)</option>
-                                    <option value="pago">✅ Liquidado (Pago/Recebido)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className={labelCls}>Categoria Orçamental</label>
-                            <select name="categoria" value={categoria} onChange={(e) => setCategoria(e.target.value)} className={inputCls}>
-                                <option value="Sem Categoria">-- Selecione uma Categoria --</option>
-                                <option value="Contas Fixas">Contas Fixas</option>
-                                {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
-                            </select>
-                        </div>
-
-                        {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart' && (
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
-                                <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
-                                <input
-                                    name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)}
-                                    className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
-                                    placeholder="Ex: 81604 (Deixe em branco se não quiser registar)"
-                                />
-                            </div>
-                        )}
-
-                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                            <label className="flex items-center gap-2 cursor-pointer mb-3">
-                                <input type="checkbox" name="isThirdParty" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
-                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra Compartilhada / Terceiro</span>
-                            </label>
-
-                            {isThirdParty && (
-                                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Pessoa / Terceiro</label>
-                                            <input
-                                                name="thirdPartyName" type="text" required
-                                                value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
-                                                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                                                placeholder="Ex: Maria, João..."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Valor TOTAL da Pessoa (R$)</label>
-                                            <input
-                                                name="thirdPartyValue" type="text"
-                                                value={displayThirdValue} onChange={handleThirdValueChange}
-                                                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
-                                            />
-                                        </div>
-                                    </div>
-                                    <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
-                                        💡 Se a compra for parcelada, informe a dívida TOTAL da pessoa. O sistema fará a divisão por parcelas automaticamente. Deixe R$ 0,00 se a compra for 100% dela.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelCls}>Forma de Pagamento</label>
-                                <select name="formaPagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className={inputCls}>
-                                    <option value="pix">PIX / Dinheiro</option>
-                                    <option value="debito">Cartão de Débito</option>
-                                    {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Cartão: {c.nome}</option>)}
-                                </select>
-                            </div>
-                            {formaPagamento.startsWith('credito_') && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className={labelCls}>Parcelas</label>
-                                    <input name="parcelas" type="number" min="1" max="48" value={parcelas} onChange={(e) => setParcelas(e.target.value)} className={inputCls} />
+                                    <label className={labelCls}>Valor (R$)</label>
+                                    <input name="valor" type="text" value={displayValor} onChange={handleValorChange} required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} />
                                 </div>
-                            )}
-                        </div>
-
-                        <div className="pt-4">
-                            <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 cursor-not-allowed opacity-90' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
-                                {isSubmitting ? (
-                                    <><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processando...</>
-                                ) : ('Registrar Transação')}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm mt-6 animate-fade-in-up">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
-                        <span>Últimos Lançamentos</span>
-                        <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300">{dataVis.ano}</span>
-                    </h3>
-
-                    <div className="space-y-3">
-                        {ultimosCinco.map(t => (
-                            <div key={t.id} onClick={() => abrirDetalhes(t)} className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer group">
-                                <div className="flex-1 min-w-0 pr-2">
-                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                                        {t.descricao}
-                                        {t.isThirdParty && <span className="ml-2 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block no-underline">🤝 {t.thirdPartyName}</span>}
-                                    </p>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
-                                </div>
-                                <div className="text-right flex flex-col items-end shrink-0">
-                                    <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                                        {formatarMoeda(t.valorParcela)}
-                                    </p>
-                                    <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                        {t.status}
-                                    </span>
+                                <div>
+                                    <label className={labelCls}>Data da Transação</label>
+                                    <input name="dataCompra" type="date" value={dataCompra} onChange={(e) => setDataCompra(e.target.value)} required className={inputCls} />
                                 </div>
                             </div>
-                        ))}
-                        {ultimosCinco.length === 0 && <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registrado nesta competência.</p>}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelCls}>Natureza</label>
+                                    <select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputCls}>
+                                        <option value="despesa">🔻 Despesa (Saída)</option>
+                                        <option value="renda">💰 Renda (Entrada)</option>
+                                        <option value="investimento">📈 Investimento</option>
+                                        <option value="reembolso">🔄 Reembolso / Estorno</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Status Atual</label>
+                                    <select name="status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
+                                        <option value="pendente">⏳ Pendente (A Pagar/Receber)</option>
+                                        <option value="pago">✅ Liquidado (Pago/Recebido)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className={labelCls}>Categoria Orçamental</label>
+                                <select name="categoria" value={categoria} onChange={(e) => setCategoria(e.target.value)} className={inputCls}>
+                                    <option value="Sem Categoria">-- Selecione uma Categoria --</option>
+                                    <option value="Contas Fixas">Contas Fixas</option>
+                                    {categorias.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
+                                </select>
+                            </div>
+
+                            {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart' && (
+                                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
+                                    <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
+                                    <input
+                                        name="kmMoto" type="number" value={kmMoto} onChange={(e) => setKmMoto(e.target.value)}
+                                        className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
+                                        placeholder="Ex: 81604 (Deixe em branco se não quiser registar)"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                                    <input type="checkbox" name="isThirdParty" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
+                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra Compartilhada / Terceiro</span>
+                                </label>
+
+                                {isThirdParty && (
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Pessoa / Terceiro</label>
+                                                <input
+                                                    name="thirdPartyName" type="text" required
+                                                    value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
+                                                    className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                                                    placeholder="Ex: Maria, João..."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Valor TOTAL da Pessoa (R$)</label>
+                                                <input
+                                                    name="thirdPartyValue" type="text"
+                                                    value={displayThirdValue} onChange={handleThirdValueChange}
+                                                    className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
+                                                />
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
+                                            💡 Se a compra for parcelada, informe a dívida TOTAL da pessoa. O sistema fará a divisão por parcelas automaticamente. Deixe R$ 0,00 se a compra for 100% dela.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelCls}>Forma de Pagamento</label>
+                                    <select name="formaPagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className={inputCls}>
+                                        <option value="pix">PIX / Dinheiro</option>
+                                        <option value="debito">Cartão de Débito</option>
+                                        {cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Cartão: {c.nome}</option>)}
+                                    </select>
+                                </div>
+                                {formaPagamento.startsWith('credito_') && (
+                                    <div>
+                                        <label className={labelCls}>Parcelas</label>
+                                        <input name="parcelas" type="number" min="1" max="48" value={parcelas} onChange={(e) => setParcelas(e.target.value)} className={inputCls} />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-4">
+                                <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 cursor-not-allowed opacity-90' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
+                                    {isSubmitting ? (
+                                        <><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processando...</>
+                                    ) : ('Registrar Transação')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
+                            <span>Últimos Lançamentos</span>
+                            <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300">{dataVis.ano}</span>
+                        </h3>
+
+                        <div className="space-y-3">
+                            {ultimosCinco.map(t => (
+                                <div key={t.id} onClick={() => abrirDetalhes(t)} className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer group shadow-sm">
+                                    <div className="flex-1 min-w-0 pr-2">
+                                        <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                            {t.descricao}
+                                            {t.isThirdParty && <span className="ml-2 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block no-underline">🤝 {t.thirdPartyName}</span>}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end shrink-0">
+                                        <p className={`font-bold text-sm ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                                            {formatarMoeda(t.valorParcela)}
+                                        </p>
+                                        <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded mt-1 inline-block ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                            {t.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {ultimosCinco.length === 0 && <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4 italic">Nenhum lançamento registrado nesta competência.</p>}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -312,10 +302,10 @@ export function Lancamentos({
 
     // EXTRATO VISÃO
     return (
-        <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl mx-auto pb-24 overflow-x-hidden relative">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-            {/* 🌟 CABEÇALHO PADRÃO STICKY E TRANSLÚCIDO */}
-            <div className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 -mt-4 p-4 sm:-mx-6 sm:-mt-6 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm transition-colors">
+            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         📋 Extrato de Lançamentos
@@ -324,10 +314,8 @@ export function Lancamentos({
                         Audite, pesquise e faça a gestão em lote de todas as movimentações.
                     </p>
                 </div>
-
-                {/* MÁGICA: Seletor de mês fixo no lado direito */}
-                <div className="w-full sm:w-auto shrink-0 flex items-center justify-between sm:justify-end bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <button type="button" onClick={mesAnterior} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">
+                <div className="w-full md:w-auto shrink-0 flex items-center justify-between md:justify-end bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <button type="button" onClick={mesAnterior} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
                     <div className="flex flex-col items-center px-4">
@@ -336,7 +324,7 @@ export function Lancamentos({
                         </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
                     </div>
-                    <button type="button" onClick={mesProximo} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">
+                    <button type="button" onClick={mesProximo} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
