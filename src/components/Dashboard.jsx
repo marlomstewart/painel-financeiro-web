@@ -1,9 +1,20 @@
 import React from 'react';
 import { AlertasDashboard } from './AlertasDashboard';
 
+/**
+ * @function formatarMoeda
+ * @description Converte um número para o padrão monetário BRL.
+ * @param {number|string} valor 
+ * @returns {string} Valor formatado em Reais.
+ */
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
+/**
+ * @file src/components/Dashboard.jsx
+ * @description Componente principal do sistema. Exibe KPIs financeiros, progresso de metas, 
+ * lista de últimos lançamentos e alertas preditivos (contas e garagem).
+ */
 export function Dashboard({
     dataVis, mesAnterior, mesProximo,
     totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
@@ -18,6 +29,7 @@ export function Dashboard({
         .sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra))
         .slice(0, 5);
 
+    // Lógica de Extração de Alertas da Garagem (Exclusivo para Stewart)
     const alertasGaragem = [];
     if (isStewart && garagem && garagem.veiculos && garagem.itens) {
         garagem.veiculos.forEach(veiculo => {
@@ -34,6 +46,9 @@ export function Dashboard({
     }
 
     const showGarageAlerts = isStewart && alertasGaragem.length > 0;
+
+    // 🔥 NOVA LÓGICA: Filtra apenas categorias que possuem meta maior que zero para exibir no Dashboard
+    const categoriasEstrategicas = categorias.filter(c => Number(c.meta) > 0);
 
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
@@ -99,35 +114,55 @@ export function Dashboard({
             </div>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Progresso Estratégico</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Clique na categoria para Inteligência Preditiva</p>
+                <div className="flex justify-between items-center mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🎯 Progresso Estratégico</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Acompanhamento das categorias com Teto de Gastos ou Alvo Mensal definidos.</p>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {categorias.map(c => {
-                        const gasto = gCat[c.nome] || 0;
-                        let pct = c.meta > 0 ? (gasto / c.meta) * 100 : 0;
-                        if (pct > 100) pct = 100;
-                        let corBarra = "bg-blue-500";
-                        if (c.tipo === 'despesa') { if (pct < 50) corBarra = "bg-emerald-500"; else if (pct < 85) corBarra = "bg-amber-500"; else corBarra = "bg-rose-500"; }
-                        else { if (pct >= 100) corBarra = "bg-emerald-500"; else if (pct > 50) corBarra = "bg-blue-500"; else corBarra = "bg-slate-400 dark:bg-slate-600"; }
-                        return (
-                            <div key={c.id} onClick={() => abrirDetalhesCategoria(c.nome, gasto, c.meta, c.tipo)} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-lg cursor-pointer hover:shadow-md transition hover:-translate-y-0.5">
-                                <div className="flex justify-between items-end mb-2">
-                                    <p className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate pr-2">{c.nome}</p>
-                                    <span className="text-[10px] font-black text-slate-500 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">{Math.round(pct)}%</span>
+
+                {categoriasEstrategicas.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                        <span className="text-3xl opacity-50 mb-2 block">🏷️</span>
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Nenhuma meta estratégica definida.</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Vá na aba "Categorias" e crie uma categoria com valor maior que zero para rastreá-la aqui.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {categoriasEstrategicas.map(c => {
+                            const gasto = gCat[c.nome] || 0;
+                            let pct = c.meta > 0 ? (gasto / c.meta) * 100 : 0;
+                            if (pct > 100) pct = 100;
+
+                            let corBarra = "bg-blue-500";
+                            if (c.tipo === 'despesa') {
+                                if (pct < 50) corBarra = "bg-emerald-500";
+                                else if (pct < 85) corBarra = "bg-amber-500";
+                                else corBarra = "bg-rose-500";
+                            } else {
+                                if (pct >= 100) corBarra = "bg-emerald-500";
+                                else if (pct > 50) corBarra = "bg-blue-500";
+                                else corBarra = "bg-slate-400 dark:bg-slate-600";
+                            }
+
+                            return (
+                                <div key={c.id} onClick={() => abrirDetalhesCategoria(c.nome, gasto, c.meta, c.tipo)} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-lg cursor-pointer hover:shadow-md transition hover:-translate-y-0.5">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <p className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate pr-2">{c.nome}</p>
+                                        <span className="text-[10px] font-black text-slate-500 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded shadow-sm">{Math.round(pct)}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 mb-2 overflow-hidden shadow-inner">
+                                        <div className={`${corBarra} h-1.5 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}></div>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200">{formatarMoeda(gasto)}</span>
+                                        <span className="text-slate-400">{formatarMoeda(c.meta)}</span>
+                                    </div>
                                 </div>
-                                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 mb-2 overflow-hidden">
-                                    <div className={`${corBarra} h-1.5 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}></div>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatarMoeda(gasto)}</span>
-                                    <span className="text-slate-400">{formatarMoeda(c.meta)}</span>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             <AlertasDashboard transacoesMes={transacoesMes} transacoesGlobais={transacoesGlobais} cartoes={cartoes} dividas={dividas} dataVis={dataVis} />
