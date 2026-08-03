@@ -26,7 +26,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Passamos o evento para a função herdada que fará o POST
+        // Passamos o evento para a função herdada que fará o POST nativo do form
         await addCategoria(e);
 
         // Limpa o formulário após salvar
@@ -37,31 +37,45 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
 
     /**
      * @function handleEditarCategoria
-     * @description Abre o fluxo de prompts sequenciais para editar uma categoria existente e corrige o bug de captura de objeto.
+     * @description Abre o fluxo de prompts sequenciais (Wizard) para editar uma categoria existente.
+     * Possui tratamento rigoroso de conversão de tipos para evitar rejeição da API (NaN ou Objetos vazados).
      * @param {Object} c - Objeto da categoria selecionada.
      */
     const handleEditarCategoria = async (c) => {
+        // Passo 1: Nome da Categoria
         const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' });
         if (nNome === null) return;
 
-        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta), '✏️ Editar Categoria', { inputType: 'number', confirmLabel: 'Próximo' });
+        // Passo 2: Valor da Meta. inputType 'text' evita que navegadores mobile bloqueiem vírgulas no teclado.
+        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), '✏️ Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' });
         if (nMeta === null) return;
 
-        const nTipoRes = await modal.options(`3️⃣ Qual o Comportamento?`, [
+        // Passo 3: Natureza/Comportamento
+        const nTipoRes = await modal.options(`3️⃣ Qual a Natureza?`, [
             { value: 'despesa', icon: '🔻', label: 'Despesa (Saída)' },
-            { value: 'investimento', icon: '📈', label: 'Investimento (Alvo)' },
-            { value: 'renda', icon: '💰', label: 'Renda (Entrada Livre)' }
+            { value: 'investimento', icon: '📈', label: 'Investimento / Alvo' },
+            { value: 'renda', icon: '💰', label: 'Renda (Entrada)' }
         ], '✏️ Editar Categoria');
         if (!nTipoRes) return;
 
-        // 🔥 CORREÇÃO DO BUG DE EDIÇÃO: Extrai o valor caso o Modal retorne o objeto completo em vez da string
-        const tipoFinal = typeof nTipoRes === 'object' ? nTipoRes.value : nTipoRes;
+        // 🔥 TRATAMENTO ANTI-BUG 1: O modal.options pode retornar o objeto inteiro ou apenas o value.
+        const tipoFinal = typeof nTipoRes === 'object' ? nTipoRes.value : String(nTipoRes);
 
-        await editarSetup('categorias', c.id, {
+        // 🔥 TRATAMENTO ANTI-BUG 2: Higienização financeira. Previne que "300,00" vire NaN.
+        const metaStr = String(nMeta).replace(/\./g, '').replace(',', '.');
+        const metaFormatada = Number(metaStr) || 0;
+
+        // 🔥 TRATAMENTO ANTI-BUG 3: Rota corrigida para 'categoria' no singular, evitando Erro 404
+        const sucesso = await editarSetup('categoria', c.id, {
             nome: nNome,
-            meta: Number(nMeta),
+            meta: metaFormatada,
             tipo: tipoFinal
         });
+
+        // Feedback visual obrigatório para o usuário
+        if (sucesso) {
+            modal.alert('Sua categoria foi atualizada com sucesso no banco de dados!', '✅ Salvo com Sucesso');
+        }
     };
 
     /**
@@ -72,7 +86,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta categoria? Lançamentos antigos no extrato não serão afetados, mas ficarão "Sem Categoria".', '🗑️ Excluir Registo', { confirmColor: 'bg-rose-600 hover:bg-rose-700', confirmLabel: 'Excluir' });
         if (!ok) return;
-        await removerSetup('categorias', id);
+
+        // 🔥 CORREÇÃO: Rota no singular
+        await removerSetup('categoria', id);
     };
 
     return (
