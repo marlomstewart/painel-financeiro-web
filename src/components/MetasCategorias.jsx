@@ -4,6 +4,7 @@ import React, { useState } from 'react';
  * @file src/components/MetasCategorias.jsx
  * @description Módulo de gestão de Categorias Orçamentais e Metas Estratégicas.
  * Permite a criação de categorias simples (sem meta) ou categorias rastreáveis no Dashboard (com meta > 0).
+ * Possui um sistema de Fetch Resiliente para edição e exclusão, contornando falhas de roteamento do hook genérico.
  */
 export function MetasCategorias({ categorias, addCategoria, editarSetup, removerSetup, modal }) {
     const [nomeCategoria, setNomeCategoria] = useState('');
@@ -38,57 +39,100 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     /**
      * @function handleEditarCategoria
      * @description Abre o fluxo de prompts sequenciais (Wizard) para editar uma categoria existente.
-     * Possui tratamento rigoroso de conversão de tipos para evitar rejeição da API (NaN ou Objetos vazados).
+     * Implementa um Fetch Resiliente que tenta rotas no plural e singular para evitar Erros 404 do Backend.
      * @param {Object} c - Objeto da categoria selecionada.
      */
     const handleEditarCategoria = async (c) => {
         // Passo 1: Nome da Categoria
-        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' }); 
+        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' });
         if (nNome === null) return;
-        
-        // Passo 2: Valor da Meta. inputType 'text' evita que navegadores mobile bloqueiem vírgulas no teclado.
-        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), '✏️ Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' }); 
+
+        // Passo 2: Valor da Meta. inputType 'text' evita que navegadores mobile bloqueiem vírgulas.
+        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), '✏️ Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' });
         if (nMeta === null) return;
-        
+
         // Passo 3: Natureza/Comportamento
         const nTipoRes = await modal.options(`3️⃣ Qual a Natureza?`, [
             { value: 'despesa', icon: '🔻', label: 'Despesa (Saída)' },
             { value: 'investimento', icon: '📈', label: 'Investimento / Alvo' },
             { value: 'renda', icon: '💰', label: 'Renda (Entrada)' }
-        ], '✏️ Editar Categoria'); 
+        ], '✏️ Editar Categoria');
         if (!nTipoRes) return;
 
-        // 🔥 TRATAMENTO ANTI-BUG 1: O modal.options pode retornar o objeto inteiro ou apenas o value.
+        // Higienização de Dados (Previne falhas na montagem do JSON)
         const tipoFinal = typeof nTipoRes === 'object' ? nTipoRes.value : String(nTipoRes);
-
-        // 🔥 TRATAMENTO ANTI-BUG 2: Higienização financeira. Previne que "300,00" vire NaN e seja rejeitado (400 Bad Request).
         const metaStr = String(nMeta).replace(/\./g, '').replace(',', '.');
         const metaFormatada = Number(metaStr) || 0;
 
-        // 🔥 TRATAMENTO ANTI-BUG 3: Rota corrigida para 'categorias' (PLURAL), conforme a arquitetura do seu backend.
-        const sucesso = await editarSetup('categorias', c.id, { 
-            nome: nNome, 
-            meta: metaFormatada, 
-            tipo: tipoFinal 
-        });
+        try {
+            const token = localStorage.getItem('tokenPainel');
+            const API = import.meta.env.VITE_API_URL;
+            const payload = JSON.stringify({ nome: nNome, meta: metaFormatada, tipo: tipoFinal });
 
-        // Feedback visual obrigatório para o usuário
-        if (sucesso) {
-            modal.alert('Sua categoria foi atualizada com sucesso no banco de dados!', '✅ Salvo com Sucesso');
+            // 🔥 TENTATIVA 1: Rota no Plural (Padrão REST)
+            let response = await fetch(`${API}/categorias/${c.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: payload
+            });
+
+            // 🔥 TENTATIVA 2 (FALLBACK): Se der 404, o backend foi construído no Singular
+            if (response.status === 404) {
+                console.warn("Rota /categorias/ falhou com 404. Acionando Fallback para /categoria/...");
+                response = await fetch(`${API}/categoria/${c.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: payload
+                });
+            }
+
+            if (response.ok) {
+                await modal.alert('Sua categoria foi atualizada com sucesso!', '✅ Salvo com Sucesso');
+                window.location.reload(); // Força a recarga para atualizar o estado local contornando o hook
+            } else {
+                await modal.alert(`Falha ao salvar. O servidor retornou o erro: ${response.status}`, '❌ Erro no Back-end');
+            }
+        } catch (error) {
+            console.error("Erro Fatal no Fetch de Edição:", error);
+            await modal.alert('Erro crítico de conexão com o banco de dados.', '❌ Erro de Rede');
         }
     };
 
     /**
      * @function handleExcluir
-     * @description Confirma e aciona a exclusão de uma categoria.
+     * @description Confirma e aciona a exclusão de uma categoria via Fetch Resiliente.
      * @param {string|number} id - ID da categoria.
      */
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta categoria? Lançamentos antigos no extrato não serão afetados, mas ficarão "Sem Categoria".', '🗑️ Excluir Registo', { confirmColor: 'bg-rose-600 hover:bg-rose-700', confirmLabel: 'Excluir' });
         if (!ok) return;
-        
-        // 🔥 CORREÇÃO: Rota no plural
-        await removerSetup('categorias', id);
+
+        try {
+            const token = localStorage.getItem('tokenPainel');
+            const API = import.meta.env.VITE_API_URL;
+
+            // Tentativa Plural
+            let response = await fetch(`${API}/categorias/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            // Fallback Singular
+            if (response.status === 404) {
+                response = await fetch(`${API}/categoria/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            }
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                await modal.alert(`Não foi possível excluir. O servidor retornou: ${response.status}`, '❌ Erro no Back-end');
+            }
+        } catch (error) {
+            console.error("Erro ao excluir:", error);
+        }
     };
 
     return (
@@ -107,7 +151,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
-                
+
                 {/* COLUNA ESQUERDA: FORMULÁRIO */}
                 <div className="lg:col-span-1">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm lg:sticky top-6">
@@ -124,7 +168,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                     className="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Natureza</label>
                                 <select
@@ -154,7 +198,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md mt-4">
                                 Salvar Categoria
                             </button>
@@ -168,7 +212,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                         <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
                             Categorias Cadastradas
                         </h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {categorias.length === 0 ? (
                                 <div className="col-span-full text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
@@ -176,7 +220,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                 </div>
                             ) : categorias.map(c => {
                                 const isMeta = Number(c.meta) > 0;
-                                
+
                                 // Define estilos baseados no comportamento da categoria
                                 let borderColor = 'border-slate-200 dark:border-slate-700 hover:border-slate-400';
                                 let icon = '🏷️';
@@ -216,7 +260,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-slate-700 pl-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button type="button" onClick={() => handleEditarCategoria(c)} className="text-xs bg-slate-50 hover:bg-blue-50 dark:bg-slate-900 dark:hover:bg-blue-900/30 text-slate-400 hover:text-blue-600 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded transition-colors cursor-pointer" title="Editar">✏️</button>
                                             <button type="button" onClick={() => handleExcluir(c.id)} className="text-xs bg-slate-50 hover:bg-rose-50 dark:bg-slate-900 dark:hover:bg-rose-900/30 text-slate-400 hover:text-rose-600 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded transition-colors cursor-pointer" title="Excluir">🗑️</button>
