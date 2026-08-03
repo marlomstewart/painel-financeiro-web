@@ -4,7 +4,6 @@ import React, { useState } from 'react';
  * @file src/components/MetasCategorias.jsx
  * @description Módulo de gestão de Categorias Orçamentais e Metas Estratégicas.
  * Permite a criação de categorias simples (sem meta) ou categorias rastreáveis no Dashboard (com meta > 0).
- * Possui um sistema de Fetch Resiliente para edição e exclusão, contornando falhas de roteamento do hook genérico.
  */
 export function MetasCategorias({ categorias, addCategoria, editarSetup, removerSetup, modal }) {
     const [nomeCategoria, setNomeCategoria] = useState('');
@@ -39,7 +38,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     /**
      * @function handleEditarCategoria
      * @description Abre o fluxo de prompts sequenciais (Wizard) para editar uma categoria existente.
-     * Implementa um Fetch Resiliente que tenta rotas no plural e singular para evitar Erros 404 do Backend.
+     * Possui tratamento rigoroso de conversão de tipos para evitar rejeição da API (NaN ou Objetos vazados).
      * @param {Object} c - Objeto da categoria selecionada.
      */
     const handleEditarCategoria = async (c) => {
@@ -59,80 +58,36 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
         ], '✏️ Editar Categoria');
         if (!nTipoRes) return;
 
-        // Higienização de Dados (Previne falhas na montagem do JSON)
+        // 🔥 Higienização de Dados (Previne falhas na montagem do JSON ou NaN)
         const tipoFinal = typeof nTipoRes === 'object' ? nTipoRes.value : String(nTipoRes);
         const metaStr = String(nMeta).replace(/\./g, '').replace(',', '.');
         const metaFormatada = Number(metaStr) || 0;
 
-        try {
-            const token = localStorage.getItem('tokenPainel');
-            const API = import.meta.env.VITE_API_URL;
-            const payload = JSON.stringify({ nome: nNome, meta: metaFormatada, tipo: tipoFinal });
+        // Requisição oficial utilizando o Hook padronizado
+        const sucesso = await editarSetup('categorias', c.id, {
+            nome: nNome,
+            meta: metaFormatada,
+            tipo: tipoFinal
+        });
 
-            // 🔥 TENTATIVA 1: Rota no Plural (Padrão REST)
-            let response = await fetch(`${API}/categorias/${c.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: payload
-            });
-
-            // 🔥 TENTATIVA 2 (FALLBACK): Se der 404, o backend foi construído no Singular
-            if (response.status === 404) {
-                console.warn("Rota /categorias/ falhou com 404. Acionando Fallback para /categoria/...");
-                response = await fetch(`${API}/categoria/${c.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: payload
-                });
-            }
-
-            if (response.ok) {
-                await modal.alert('Sua categoria foi atualizada com sucesso!', '✅ Salvo com Sucesso');
-                window.location.reload(); // Força a recarga para atualizar o estado local contornando o hook
-            } else {
-                await modal.alert(`Falha ao salvar. O servidor retornou o erro: ${response.status}`, '❌ Erro no Back-end');
-            }
-        } catch (error) {
-            console.error("Erro Fatal no Fetch de Edição:", error);
-            await modal.alert('Erro crítico de conexão com o banco de dados.', '❌ Erro de Rede');
+        // Feedback visual obrigatório para o usuário
+        if (sucesso) {
+            modal.alert('Sua categoria foi atualizada com sucesso no banco de dados!', '✅ Salvo com Sucesso');
+        } else {
+            modal.alert('Houve um erro ao atualizar a categoria. Verifique o servidor.', '❌ Erro');
         }
     };
 
     /**
      * @function handleExcluir
-     * @description Confirma e aciona a exclusão de uma categoria via Fetch Resiliente.
+     * @description Confirma e aciona a exclusão de uma categoria.
      * @param {string|number} id - ID da categoria.
      */
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta categoria? Lançamentos antigos no extrato não serão afetados, mas ficarão "Sem Categoria".', '🗑️ Excluir Registo', { confirmColor: 'bg-rose-600 hover:bg-rose-700', confirmLabel: 'Excluir' });
         if (!ok) return;
 
-        try {
-            const token = localStorage.getItem('tokenPainel');
-            const API = import.meta.env.VITE_API_URL;
-
-            // Tentativa Plural
-            let response = await fetch(`${API}/categorias/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            // Fallback Singular
-            if (response.status === 404) {
-                response = await fetch(`${API}/categoria/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-            }
-
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                await modal.alert(`Não foi possível excluir. O servidor retornou: ${response.status}`, '❌ Erro no Back-end');
-            }
-        } catch (error) {
-            console.error("Erro ao excluir:", error);
-        }
+        await removerSetup('categorias', id);
     };
 
     return (
