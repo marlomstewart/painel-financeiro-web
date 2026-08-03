@@ -43,33 +43,33 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
      */
     const handleEditarCategoria = async (c) => {
         // Passo 1: Nome da Categoria
-        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' });
+        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' }); 
         if (nNome === null) return;
-
+        
         // Passo 2: Valor da Meta. inputType 'text' evita que navegadores mobile bloqueiem vírgulas no teclado.
-        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), '✏️ Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' });
+        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), '✏️ Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' }); 
         if (nMeta === null) return;
-
+        
         // Passo 3: Natureza/Comportamento
         const nTipoRes = await modal.options(`3️⃣ Qual a Natureza?`, [
             { value: 'despesa', icon: '🔻', label: 'Despesa (Saída)' },
             { value: 'investimento', icon: '📈', label: 'Investimento / Alvo' },
             { value: 'renda', icon: '💰', label: 'Renda (Entrada)' }
-        ], '✏️ Editar Categoria');
+        ], '✏️ Editar Categoria'); 
         if (!nTipoRes) return;
 
         // 🔥 TRATAMENTO ANTI-BUG 1: O modal.options pode retornar o objeto inteiro ou apenas o value.
         const tipoFinal = typeof nTipoRes === 'object' ? nTipoRes.value : String(nTipoRes);
 
-        // 🔥 TRATAMENTO ANTI-BUG 2: Higienização financeira. Previne que "300,00" vire NaN.
+        // 🔥 TRATAMENTO ANTI-BUG 2: Higienização financeira. Previne que "300,00" vire NaN e seja rejeitado (400 Bad Request).
         const metaStr = String(nMeta).replace(/\./g, '').replace(',', '.');
         const metaFormatada = Number(metaStr) || 0;
 
-        // 🔥 TRATAMENTO ANTI-BUG 3: Rota corrigida para 'categoria' no singular, evitando Erro 404
-        const sucesso = await editarSetup('categoria', c.id, {
-            nome: nNome,
-            meta: metaFormatada,
-            tipo: tipoFinal
+        // 🔥 TRATAMENTO ANTI-BUG 3: Rota corrigida para 'categorias' (PLURAL), conforme a arquitetura do seu backend.
+        const sucesso = await editarSetup('categorias', c.id, { 
+            nome: nNome, 
+            meta: metaFormatada, 
+            tipo: tipoFinal 
         });
 
         // Feedback visual obrigatório para o usuário
@@ -86,9 +86,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     const handleExcluir = async (id) => {
         const ok = await modal.confirm('Deseja excluir esta categoria? Lançamentos antigos no extrato não serão afetados, mas ficarão "Sem Categoria".', '🗑️ Excluir Registo', { confirmColor: 'bg-rose-600 hover:bg-rose-700', confirmLabel: 'Excluir' });
         if (!ok) return;
-
-        // 🔥 CORREÇÃO: Rota no singular
-        await removerSetup('categoria', id);
+        
+        // 🔥 CORREÇÃO: Rota no plural
+        await removerSetup('categorias', id);
     };
 
     return (
@@ -107,7 +107,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
-
+                
                 {/* COLUNA ESQUERDA: FORMULÁRIO */}
                 <div className="lg:col-span-1">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm lg:sticky top-6">
@@ -124,7 +124,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                     className="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
                                 />
                             </div>
-
+                            
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Natureza</label>
                                 <select
@@ -143,7 +143,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                 <input
                                     type="number" name="meta" step="0.01" min="0" required
                                     value={metaCategoria} onChange={(e) => setMetaCategoria(e.target.value)}
-                                    placeholder="0,00"
+                                    placeholder="0.00"
                                     className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-blue-700 dark:text-blue-400 font-bold p-3 rounded-lg text-sm outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors shadow-inner"
                                 />
                                 {/* 🔥 AVISO DE UX PARA O USUÁRIO */}
@@ -154,7 +154,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                     </p>
                                 </div>
                             </div>
-
+                            
                             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md mt-4">
                                 Salvar Categoria
                             </button>
@@ -168,7 +168,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                         <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
                             Categorias Cadastradas
                         </h3>
-
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {categorias.length === 0 ? (
                                 <div className="col-span-full text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
@@ -176,7 +176,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                 </div>
                             ) : categorias.map(c => {
                                 const isMeta = Number(c.meta) > 0;
-
+                                
                                 // Define estilos baseados no comportamento da categoria
                                 let borderColor = 'border-slate-200 dark:border-slate-700 hover:border-slate-400';
                                 let icon = '🏷️';
@@ -216,7 +216,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                                 )}
                                             </div>
                                         </div>
-
+                                        
                                         <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-slate-700 pl-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button type="button" onClick={() => handleEditarCategoria(c)} className="text-xs bg-slate-50 hover:bg-blue-50 dark:bg-slate-900 dark:hover:bg-blue-900/30 text-slate-400 hover:text-blue-600 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded transition-colors cursor-pointer" title="Editar">✏️</button>
                                             <button type="button" onClick={() => handleExcluir(c.id)} className="text-xs bg-slate-50 hover:bg-rose-50 dark:bg-slate-900 dark:hover:bg-rose-900/30 text-slate-400 hover:text-rose-600 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded transition-colors cursor-pointer" title="Excluir">🗑️</button>
