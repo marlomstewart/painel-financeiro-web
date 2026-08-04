@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 
+/**
+ * @file src/components/Cartoes.jsx
+ * @description Módulo de gestão de Cartões de Crédito. 
+ * Permite auditar limites disponíveis, separação de gastos (pessoais vs. terceiros) e dias de fechamento.
+ */
 export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, removerSetup, modal }) {
     const [nomeCartao, setNomeCartao] = useState('');
     const [limite, setLimite] = useState('');
@@ -8,7 +13,6 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         await addCartao(e);
         setNomeCartao('');
         setLimite('');
@@ -40,7 +44,7 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
     };
 
     const handleExcluir = async (id) => {
-        const ok = await modal.confirm('Atenção: Excluir este cartão pode quebrar faturas vinculadas. Tem certeza?', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-red-600 hover:bg-red-700' });
+        const ok = await modal.confirm('Atenção: Excluir este cartão pode quebrar faturas vinculadas. Tem certeza?', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
         if (ok) removerSetup('cartoes', id);
     };
 
@@ -49,6 +53,10 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
         const valorSeguro = isNaN(numero) ? 0 : numero;
         return valorSeguro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
+
+    // UI Constantes (Mobile-First)
+    const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors shadow-sm";
+    const labelCls = "block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 md:mb-1 tracking-wide";
 
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
@@ -66,45 +74,49 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm h-fit">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Novo Cartão</h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                {/* COLUNA ESQUERDA: FORMULÁRIO DE CADASTRO */}
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm h-fit">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-5 border-b border-slate-100 dark:border-slate-800 pb-3">Novo Cartão</h3>
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome do Cartão</label>
-                            <input name="nome" type="text" value={nomeCartao} onChange={(e) => setNomeCartao(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="Ex: Nubank, Itaú" />
+                            <label className={labelCls}>Nome do Cartão</label>
+                            <input name="nome" type="text" value={nomeCartao} onChange={(e) => setNomeCartao(e.target.value)} required className={inputCls} placeholder="Ex: Nubank, Itaú" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Limite Total (R$)</label>
-                            <input name="limite" type="number" step="any" min="0.01" value={limite} onChange={(e) => setLimite(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" placeholder="0.00" />
+                            <label className={labelCls}>Limite Total (R$)</label>
+                            <input name="limite" type="number" step="any" min="0.01" value={limite} onChange={(e) => setLimite(e.target.value)} required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} placeholder="0.00" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Fechamento</label>
-                                <input name="melhorDia" type="number" min="1" max="31" value={diaFechamento} onChange={(e) => setDiaFechamento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" />
+                                <label className={labelCls}>Dia Fechamento</label>
+                                <input name="melhorDia" type="number" min="1" max="31" value={diaFechamento} onChange={(e) => setDiaFechamento(e.target.value)} required className={inputCls} placeholder="Ex: 5" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dia Vencimento</label>
-                                <input name="vencimento" type="number" min="1" max="31" value={diaVencimento} onChange={(e) => setDiaVencimento(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500" />
+                                <label className={labelCls}>Dia Vencimento</label>
+                                <input name="vencimento" type="number" min="1" max="31" value={diaVencimento} onChange={(e) => setDiaVencimento(e.target.value)} required className={inputCls} placeholder="Ex: 12" />
                             </div>
                         </div>
 
                         <button
                             type="submit"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 md:py-3 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex justify-center items-center gap-2 active:scale-[0.98] mt-2"
                         >
                             Cadastrar Cartão
                         </button>
                     </form>
                 </div>
 
-                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-fit">
+                {/* COLUNA DIREITA: LISTAGEM DE CARDS DE CRÉDITO */}
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 h-fit">
                     {cartoes.length === 0 ? (
-                        <div className="md:col-span-2 text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400">Nenhum cartão cadastrado.</div>
+                        <div className="md:col-span-2 text-center p-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/30">
+                            <span className="text-3xl opacity-50 block mb-3">💳</span>
+                            <span className="font-semibold text-sm">Nenhum cartão cadastrado.</span>
+                        </div>
                     ) : (
                         cartoes.map(c => {
                             const transacoesCartao = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${c.id}`);
 
-                            // 🔥 DIVISÃO ENTRE GASTOS PESSOAIS E TERCEIROS
                             const gastosPessoais = transacoesCartao.filter(t => !t.isThirdParty).reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
                             const gastosTerceiros = transacoesCartao.filter(t => t.isThirdParty).reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
 
@@ -116,54 +128,58 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                             const isEstourado = limiteRestante < 0;
 
                             return (
-                                <div key={c.id} className="bg-gradient-to-tr from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden group">
+                                <div key={c.id} className="bg-gradient-to-tr from-slate-800 to-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden group flex flex-col justify-between">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl pointer-events-none"></div>
-                                    <div className="flex justify-between items-start mb-6 relative z-10">
-                                        <h4 className="text-lg font-black tracking-widest uppercase">{c.nome}</h4>
-                                        <div className="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => handleEditar(c)} className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="Editar">✏️</button>
-                                            <button onClick={() => handleExcluir(c.id)} className="text-slate-400 hover:text-rose-400 transition-colors cursor-pointer" title="Excluir">🗑️</button>
-                                            <span className="text-xl opacity-50 ml-1">💳</span>
-                                        </div>
-                                    </div>
 
-                                    <div className="mb-5 relative z-10 space-y-3">
-                                        <div className="flex justify-between items-end">
-                                            <div>
-                                                <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Limite Disponível</p>
-                                                <p className={`text-2xl font-black ${isEstourado ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                                    {formatarMoeda(limiteRestante)}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Limite Total</p>
-                                                <p className="text-sm font-bold text-slate-300">{formatarMoeda(limiteTotal)}</p>
+                                    <div>
+                                        <div className="flex justify-between items-start mb-6 relative z-10 gap-2">
+                                            <h4 className="text-base md:text-lg font-black tracking-widest uppercase truncate">{c.nome}</h4>
+
+                                            {/* 🔥 MOBILE FIX: Pílula de ações sempre visível no mobile */}
+                                            <div className="flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0 shadow-sm">
+                                                <button onClick={() => handleEditar(c)} className="p-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer rounded hover:bg-slate-700" title="Editar">✏️</button>
+                                                <div className="w-px h-4 bg-slate-600"></div>
+                                                <button onClick={() => handleExcluir(c.id)} className="p-1.5 text-slate-300 hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-700" title="Excluir">🗑️</button>
                                             </div>
                                         </div>
 
-                                        <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                                            <div
-                                                className={`h-1.5 rounded-full transition-all duration-1000 ${isEstourado ? 'bg-rose-500' : pctUtilizado > 80 ? 'bg-amber-500' : 'bg-blue-500'}`}
-                                                style={{ width: `${Math.min(pctUtilizado, 100)}%` }}
-                                            ></div>
-                                        </div>
-
-                                        {/* 🔥 MOSTRA A DIVISÃO DOS GASTOS AQUI */}
-                                        <div className="flex flex-col gap-1 text-[10px] font-medium text-slate-400 bg-slate-800/40 p-2 rounded border border-slate-700">
-                                            <div className="flex justify-between items-center">
-                                                <span>Meus Gastos:</span>
-                                                <strong className="text-slate-200">{formatarMoeda(gastosPessoais)}</strong>
-                                            </div>
-                                            {gastosTerceiros > 0 && (
-                                                <div className="flex justify-between items-center text-amber-400">
-                                                    <span>De Terceiros:</span>
-                                                    <strong>{formatarMoeda(gastosTerceiros)}</strong>
+                                        <div className="mb-5 relative z-10 space-y-4">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Limite Disponível</p>
+                                                    <p className={`text-xl md:text-2xl font-black ${isEstourado ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                        {formatarMoeda(limiteRestante)}
+                                                    </p>
                                                 </div>
-                                            )}
+                                                <div className="text-right">
+                                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Limite Total</p>
+                                                    <p className="text-sm font-bold text-slate-300">{formatarMoeda(limiteTotal)}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden shadow-inner border border-slate-600/50">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-1000 ${isEstourado ? 'bg-rose-500' : pctUtilizado > 80 ? 'bg-amber-500' : 'bg-blue-500'}`}
+                                                    style={{ width: `${Math.min(pctUtilizado, 100)}%` }}
+                                                ></div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1.5 text-[10px] font-semibold text-slate-300 bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/70 shadow-inner">
+                                                <div className="flex justify-between items-center">
+                                                    <span>Meus Gastos:</span>
+                                                    <strong className="text-white">{formatarMoeda(gastosPessoais)}</strong>
+                                                </div>
+                                                {gastosTerceiros > 0 && (
+                                                    <div className="flex justify-between items-center text-amber-400">
+                                                        <span>De Terceiros:</span>
+                                                        <strong>{formatarMoeda(gastosTerceiros)}</strong>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-between text-[10px] text-slate-400 relative z-10 border-t border-slate-700/50 pt-3 uppercase tracking-wider">
+                                    <div className="flex justify-between text-[10px] text-slate-400 relative z-10 border-t border-slate-700/50 pt-3 uppercase tracking-wider mt-auto">
                                         <p>Fechamento: <strong className="text-white">Dia {c.melhorDia || '--'}</strong></p>
                                         <p>Vencimento: <strong className="text-white">Dia {c.vencimento || '--'}</strong></p>
                                     </div>
