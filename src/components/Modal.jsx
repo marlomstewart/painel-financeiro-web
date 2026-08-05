@@ -68,17 +68,18 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
     });
   };
 
-  const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors";
-  const labelCls = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider";
+  // UI Constantes (Mobile-First)
+  const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
+  const labelCls = "block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 md:mb-1 uppercase tracking-wider";
 
   const editandoEmLote = infoParcelamento && acaoEdicao && acaoEdicao !== 'unica';
   const labelTerceiroValor = editandoEmLote ? 'VALOR DA PESSOA (POR PARCELA)' : 'VALOR DA PESSOA (NESTA PARCELA)';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
 
       {infoParcelamento && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 p-3 rounded-lg flex justify-between items-center shadow-sm">
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 p-4 rounded-xl flex justify-between items-center shadow-sm">
           <div>
             <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-wider mb-0.5">Compra Parcelada</p>
             <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">Parcela {infoParcelamento.atual} de {infoParcelamento.total}</p>
@@ -87,7 +88,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-wider mb-0.5">Valor Original Total</p>
             <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">{formatarMoedaLocal(infoParcelamento.valorTotal)}</p>
             {infoParcelamento.valorTerceiroTotal > 0 && (
-              <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
+              <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold mt-1 uppercase tracking-wider">
                 🤝 Terceiros: {formatarMoedaLocal(infoParcelamento.valorTerceiroTotal)}
               </p>
             )}
@@ -98,11 +99,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
       <div>
         <label className={labelCls}>{infoParcelamento ? 'Valor DESTA Parcela (R$)' : 'Valor (R$)'}</label>
         <input
-          type="text"
+          type="text" inputMode="numeric"
           value={displayValor}
           onChange={handleValorChange}
           autoFocus
-          className="w-full bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 text-3xl font-black text-blue-700 dark:text-blue-400 text-center outline-none focus:border-blue-500 transition-colors shadow-inner"
+          className="w-full bg-blue-50 dark:bg-blue-900/10 border border-blue-300 dark:border-blue-700/50 rounded-xl p-4 text-3xl md:text-4xl font-black text-blue-700 dark:text-blue-400 text-center outline-none focus:border-blue-500 transition-colors shadow-inner"
         />
         {infoParcelamento && (
           <p className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mt-2 text-center leading-tight">
@@ -113,12 +114,12 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
       <div><label className={labelCls}>Descrição</label><input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className={inputCls} /></div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Data</label>
           <input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} required className={inputCls} />
           {editandoEmLote && (
-            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O mês/ano das outras parcelas serão preservados.</p>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 leading-tight">O mês/ano das outras parcelas serão preservados.</p>
           )}
         </div>
         <div>
@@ -128,12 +129,12 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             <option value="pago">Pago / Recebido</option>
           </select>
           {editandoEmLote && (
-            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-tight text-center">O status das outras parcelas NÃO será alterado.</p>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 leading-tight">O status das outras parcelas NÃO será alterado.</p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Natureza</label>
           <select value={tipo} onChange={e => setTipo(e.target.value)} className={inputCls}>
@@ -153,41 +154,41 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         </div>
       </div>
 
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-        <label className="flex items-center gap-2 cursor-pointer mb-3">
-          <input type="checkbox" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
+      <div className="pt-2">
+        <label className="flex items-center gap-3 cursor-pointer mb-3 py-1">
+          <input type="checkbox" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-5 h-5 accent-blue-600 cursor-pointer" />
           <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra de Terceiro</span>
         </label>
 
         {isThirdParty && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-1 mt-2">
+          <div className="bg-amber-50 dark:bg-amber-900/10 p-5 rounded-xl border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-1 mt-3 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
+                <label className="block text-[10px] md:text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">Nome da Pessoa (Terceiro)</label>
                 <input
                   type="text" required
                   value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                  className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/50 rounded-xl p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500 shadow-sm"
                   placeholder="Ex: Maiara, Irmão..."
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-amber-700 dark:text-amber-500 mb-1 uppercase tracking-wider">{labelTerceiroValor}</label>
+                <label className="block text-[10px] md:text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">{labelTerceiroValor}</label>
                 <input
-                  type="text" required
+                  type="text" inputMode="numeric" required
                   value={displayThirdValue} onChange={handleThirdValueChange}
-                  className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
+                  className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/50 rounded-xl p-3.5 md:p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500 shadow-sm"
                 />
               </div>
             </div>
 
             {editandoEmLote ? (
-              <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
+              <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-3 font-medium leading-relaxed">
                 💡 <strong>Atenção:</strong> Como você está a editar em lote, o valor de R$ {displayThirdValue} será aplicado a <strong>cada uma</strong> das parcelas selecionadas.
               </p>
             ) : (
-              <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-2 font-medium leading-tight">
-                Se você deixar R$ 0,00 o sistema assumirá que 100% desta parcela percente ao terceiro.
+              <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-3 font-medium leading-relaxed">
+                Se você deixar R$ 0,00 o sistema assumirá que 100% desta parcela pertence ao terceiro.
               </p>
             )}
           </div>
@@ -203,11 +204,11 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         </select>
       </div>
 
-      <div><label className={labelCls}>Observação</label><textarea value={observacao} onChange={e => setObservacao(e.target.value)} className={`${inputCls} resize-none`} rows="2"></textarea></div>
+      <div><label className={labelCls}>Observação</label><textarea value={observacao} onChange={e => setObservacao(e.target.value)} className={`${inputCls} resize-none`} rows="3"></textarea></div>
 
-      <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-        <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
-        <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-md cursor-pointer">Salvar Alterações</button>
+      <div className="flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer active:scale-[0.98] order-2 sm:order-1 border border-transparent dark:border-slate-700">Cancelar</button>
+        <button type="submit" className="flex-1 bg-blue-600 text-white py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md cursor-pointer active:scale-[0.98] order-1 sm:order-2">Salvar Alterações</button>
       </div>
     </form>
   );
@@ -223,10 +224,8 @@ export function Modal({ config, onClose }) {
 
   useEffect(() => {
     if (config?.type === 'prompt' && config.inputType !== 'editar_transacao') {
-      // Se for input de moeda (currency), inicializamos com 0, caso contrário usamos o defaultValue ou vazio.
       setInputValue(config.inputType === 'currency' ? '0' : (config.defaultValue || ''));
     }
-    // Sincroniza o calendário local com os dados vindos do banco ao abrir
     if (config?.type === 'calendario') {
       setLocalDiasMarcados(config.diasMarcados || []);
     }
@@ -236,54 +235,57 @@ export function Modal({ config, onClose }) {
 
   const { type, title, message, onConfirm, onCancel, options, inputType } = config;
 
+  // Botões Padrões
+  const btnCancelCls = "w-full sm:w-auto px-6 py-4 md:py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer active:scale-95 border border-transparent dark:border-slate-700";
+  const btnConfirmCls = `w-full sm:w-auto px-6 py-4 md:py-3 text-white font-bold rounded-xl transition-colors cursor-pointer shadow-md active:scale-95 ${config.confirmColor || 'bg-blue-600 hover:bg-blue-700'}`;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel || onClose}></div>
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in">
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in">
 
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
-          <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{title || 'Aviso'}</h3>
-          <button onClick={onCancel || onClose} className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer p-1">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center shrink-0">
+          <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">{title || 'Aviso'}</h3>
+          <button onClick={onCancel || onClose} className="text-slate-400 hover:text-rose-500 bg-white dark:bg-slate-800 rounded-full p-2 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors cursor-pointer active:scale-95">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+        <div className="p-5 md:p-6 overflow-y-auto custom-scrollbar flex-1">
 
           {type === 'alert' && (
-            <div className="space-y-4">
-              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
-              <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={onConfirm} className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">OK, Entendido</button>
+            <div className="space-y-5">
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{message}</div>
+              <div className="flex justify-end pt-5 border-t border-slate-100 dark:border-slate-800">
+                <button onClick={onConfirm} className="w-full sm:w-auto px-8 py-4 md:py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors cursor-pointer shadow-md active:scale-95">OK, Entendido</button>
               </div>
             </div>
           )}
 
           {type === 'confirm' && (
-            <div className="space-y-4">
-              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={onCancel} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
-                <button onClick={onConfirm} className={`px-5 py-2.5 text-white font-bold rounded-lg transition-colors cursor-pointer ${config.confirmColor || 'bg-blue-600 hover:bg-blue-700'}`}>{config.confirmLabel || 'Confirmar'}</button>
+            <div className="space-y-5">
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{message}</div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-end pt-5 border-t border-slate-100 dark:border-slate-800">
+                <button onClick={onCancel} className={`${btnCancelCls} order-2 sm:order-1`}>Cancelar</button>
+                <button onClick={onConfirm} className={`${btnConfirmCls} order-1 sm:order-2`}>{config.confirmLabel || 'Confirmar'}</button>
               </div>
             </div>
           )}
 
           {type === 'prompt' && inputType !== 'editar_transacao' && (
-            <div className="space-y-4">
-              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
+            <div className="space-y-5">
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{message}</div>
 
-              {/* 🔥 NOVO: Condição que renderiza o formato "Banco Digital" se inputType for 'currency' */}
               {inputType === 'currency' ? (
                 <input
-                  type="text"
+                  type="text" inputMode="numeric"
                   value={(Number(inputValue || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   onChange={(e) => {
                     let val = e.target.value.replace(/\D/g, '');
                     if (!val) val = '0';
                     setInputValue(val);
                   }}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-4 text-3xl font-black text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors text-center shadow-inner"
+                  className="w-full bg-blue-50/50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-2xl p-5 text-4xl font-black text-blue-700 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors text-center shadow-inner"
                   autoFocus
                 />
               ) : (
@@ -292,21 +294,17 @@ export function Modal({ config, onClose }) {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder={config.placeholder || ''}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-4 text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm"
                   autoFocus
                 />
               )}
 
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={onCancel} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-end pt-5 border-t border-slate-100 dark:border-slate-800">
+                <button onClick={onCancel} className={`${btnCancelCls} order-2 sm:order-1`}>Cancelar</button>
                 <button onClick={() => {
-                  // Se for currency, devolvemos o Float puro (ex: 50.25) para não quebrar o banco de dados.
-                  if (inputType === 'currency') {
-                    onConfirm(Number(inputValue) / 100);
-                  } else {
-                    onConfirm(inputValue);
-                  }
-                }} className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">{config.confirmLabel || 'Confirmar'}</button>
+                  if (inputType === 'currency') onConfirm(Number(inputValue) / 100);
+                  else onConfirm(inputValue);
+                }} className={`${btnConfirmCls} order-1 sm:order-2`}>{config.confirmLabel || 'Confirmar'}</button>
               </div>
             </div>
           )}
@@ -316,75 +314,77 @@ export function Modal({ config, onClose }) {
           )}
 
           {type === 'options' && (
-            <div className="space-y-4">
-              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message}</div>
-              <div className="flex flex-col gap-2">
+            <div className="space-y-5">
+              <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{message}</div>
+              <div className="flex flex-col gap-3">
                 {options.map((opt, i) => (
-                  <button key={i} onClick={() => onConfirm(opt.value)} className="w-full p-3 text-left bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-lg font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
-                    {opt.label}
+                  <button key={i} onClick={() => onConfirm(opt.value)} className="w-full p-4 md:p-3 text-left bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shadow-sm flex items-center gap-3 active:scale-[0.98]">
+                    {opt.icon && <span className="text-xl">{opt.icon}</span>}
+                    <span>{opt.label}</span>
                   </button>
                 ))}
               </div>
-              <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={onCancel} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancelar</button>
+              <div className="flex justify-end pt-5 border-t border-slate-100 dark:border-slate-800">
+                <button onClick={onCancel} className={btnCancelCls}>Cancelar</button>
               </div>
             </div>
           )}
 
           {type === 'faturas' && config.itens && (
-            <div className="space-y-4">
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Gerencie as faturas fechadas ou em aberto deste mês. Apenas transações pendentes podem ser pagas em lote.</p>
+            <div className="space-y-5">
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-2 font-medium leading-relaxed">Gerencie as faturas fechadas ou em aberto deste mês. Apenas transações pendentes podem ser pagas em lote.</p>
 
               {config.itens.length === 0 ? (
-                <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
-                  <p className="text-slate-500 dark:text-slate-400 font-bold">Nenhum gasto no crédito nesta competência.</p>
+                <div className="text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/30">
+                  <span className="text-4xl block mb-3 opacity-50">💳</span>
+                  <p className="text-slate-600 dark:text-slate-400 font-bold">Nenhum gasto no crédito nesta competência.</p>
                 </div>
               ) : (
                 config.itens.map((item, i) => {
                   const cId = config.cartaoIds[item.nome];
                   return (
-                    <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
-                      <h4 className="font-black text-slate-800 dark:text-slate-100 text-base mb-3 uppercase tracking-wider flex items-center gap-2">💳 {item.nome}</h4>
+                    <div key={i} className="bg-white dark:bg-slate-800/80 p-4 md:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                      <h4 className="font-black text-slate-800 dark:text-slate-100 text-base md:text-lg mb-4 uppercase tracking-wider flex items-center gap-2 truncate">💳 {item.nome}</h4>
 
-                      <div className="grid grid-cols-3 gap-2 mb-4">
-                        <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center text-center">
-                          <span className="block text-[9px] uppercase font-bold text-slate-400 mb-0.5">Total Fatura</span>
-                          <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">{Number(item.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      <div className="grid grid-cols-3 gap-2 mb-5">
+                        <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center text-center">
+                          <span className="block text-[9px] uppercase font-bold text-slate-500 mb-1">Total Fatura</span>
+                          <span className="font-black text-slate-800 dark:text-slate-200 text-xs md:text-sm truncate w-full">{Number(item.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
-                        <div className="bg-emerald-50 dark:bg-emerald-900/10 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/30 shadow-sm flex flex-col items-center justify-center text-center">
-                          <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-0.5">Já Pago</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">{Number(item.pago).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <div className="bg-emerald-50 dark:bg-emerald-900/10 p-2 rounded-xl border border-emerald-100 dark:border-emerald-800/30 shadow-sm flex flex-col items-center justify-center text-center">
+                          <span className="block text-[9px] uppercase font-bold text-emerald-600 mb-1">Já Pago</span>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs md:text-sm truncate w-full">{Number(item.pago).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
-                        <div className="bg-amber-50 dark:bg-amber-900/10 p-2 rounded-lg border border-amber-100 dark:border-amber-800/30 shadow-sm flex flex-col items-center justify-center text-center">
-                          <span className="block text-[9px] uppercase font-bold text-amber-500 mb-0.5">Pendente</span>
-                          <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">{Number(item.pendente).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 p-2 rounded-xl border border-amber-100 dark:border-amber-800/30 shadow-sm flex flex-col items-center justify-center text-center">
+                          <span className="block text-[9px] uppercase font-bold text-amber-600 mb-1">Pendente</span>
+                          <span className="font-black text-amber-600 dark:text-amber-400 text-xs md:text-sm truncate w-full">{Number(item.pendente).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
                       </div>
 
-                      <div className="mb-4 bg-slate-100 dark:bg-slate-900 p-3 rounded border border-slate-200 dark:border-slate-700 text-xs">
+                      <div className="mb-5 bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/50 text-xs">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-semibold text-slate-600 dark:text-slate-400">Meus Gastos (Pessoais):</span>
-                          <strong className="text-slate-800 dark:text-slate-200">{Number(item.gastoPessoal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                          <span className="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Meus Gastos (Pessoais):</span>
+                          <strong className="text-slate-800 dark:text-slate-200 text-sm">{Number(item.gastoPessoal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                         </div>
                         {item.listaTerceiros && item.listaTerceiros.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                            <span className="block font-bold text-[10px] uppercase text-amber-600 dark:text-amber-500 mb-1">Gastos de Terceiros:</span>
+                          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 space-y-2">
+                            <span className="block font-black text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-500 mb-1">Gastos de Terceiros:</span>
                             {item.listaTerceiros.map((terceiro, idx) => (
-                              <div key={idx} className="flex justify-between items-center pl-2">
-                                <span className="text-amber-700 dark:text-amber-400 font-medium">🤝 {terceiro.nome}</span>
-                                <strong className="text-amber-700 dark:text-amber-400">{Number(terceiro.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                              <div key={idx} className="flex justify-between items-center bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                                <span className="text-amber-700 dark:text-amber-400 font-bold truncate pr-2">🤝 {terceiro.nome}</span>
+                                <strong className="text-amber-700 dark:text-amber-400 shrink-0">{Number(terceiro.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex gap-2">
-                        <button onClick={() => config.pagarFatura(cId)} disabled={item.pendente <= 0} className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1 ${item.pendente > 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-70'}`}>
-                          ✅ Pagar Fatura
-                        </button>
-                        <button onClick={() => config.reverterFatura(cId)} disabled={item.pago <= 0} className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1 ${item.pago > 0 ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-400 cursor-pointer border border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-70'}`}>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button onClick={() => config.reverterFatura(cId)} disabled={item.pago <= 0} className={`w-full sm:flex-1 py-3.5 md:py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border active:scale-95 ${item.pago > 0 ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 dark:text-amber-400 cursor-pointer border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 cursor-not-allowed border-slate-200 dark:border-slate-800'}`}>
                           ↩️ Reverter
+                        </button>
+                        <button onClick={() => config.pagarFatura(cId)} disabled={item.pendente <= 0} className={`w-full sm:flex-[1.5] py-3.5 md:py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 ${item.pendente > 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer border-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border-transparent dark:border-slate-700'}`}>
+                          ✅ Pagar Fatura
                         </button>
                       </div>
                     </div>
@@ -395,17 +395,17 @@ export function Modal({ config, onClose }) {
           )}
 
           {type === 'calendario' && (
-            <div className="space-y-4">
-              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
-                <p className="text-sm text-indigo-800 dark:text-indigo-300 text-center font-medium leading-tight">
+            <div className="space-y-5">
+              <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/30 shadow-sm">
+                <p className="text-xs md:text-sm text-indigo-800 dark:text-indigo-300 text-center font-medium leading-relaxed">
                   Ajuste sua rotina (Padrão: Seg, Qua, Sex).<br />
-                  Clique para registrar <strong className="text-rose-600">faltas</strong> ou <strong className="text-blue-600">dias extras</strong> rodados.
+                  Clique para registrar <strong className="font-bold text-rose-600 dark:text-rose-400">faltas</strong> ou <strong className="font-bold text-blue-600 dark:text-blue-400">dias extras</strong> rodados.
                 </p>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center mb-1">
-                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => <div key={i} className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{d}</div>)}
+              <div className="grid grid-cols-7 gap-1.5 md:gap-2 text-center mb-1">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i} className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">{d}</div>)}
               </div>
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className="grid grid-cols-7 gap-1.5 md:gap-2">
 
                 {Array.from({ length: new Date(config.ano, config.mes - 1, 1).getDay() }).map((_, i) => (
                   <div key={`empty-${i}`} className="p-2" />
@@ -428,7 +428,7 @@ export function Modal({ config, onClose }) {
                       btnClass = 'bg-rose-500 text-white shadow-inner scale-95 border border-rose-600';
                       titleHint = 'Faltou (Abate R$ 23)';
                     } else {
-                      btnClass = 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800/50';
+                      btnClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/50';
                       titleHint = 'Rodou (Padrão)';
                     }
                   } else {
@@ -436,7 +436,7 @@ export function Modal({ config, onClose }) {
                       btnClass = 'bg-blue-600 text-white shadow-inner scale-95 border border-blue-700';
                       titleHint = 'Rodou Extra (Soma R$ 23)';
                     } else {
-                      btnClass = 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 border border-transparent hover:bg-slate-200 dark:hover:bg-slate-700/50';
+                      btnClass = 'bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/80';
                       titleHint = 'Folga (Padrão)';
                     }
                   }
@@ -464,29 +464,30 @@ export function Modal({ config, onClose }) {
                           );
                         }
                       }}
-                      className={`p-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${btnClass}`}
+                      className={`py-3 md:py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer active:scale-90 ${btnClass}`}
                     >
                       {dia}
                     </button>
                   );
                 })}
               </div>
-              <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800 mt-2">
-                <button onClick={onCancel} className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer shadow-md w-full">Concluir Ajustes</button>
+              <div className="flex justify-end pt-5 border-t border-slate-100 dark:border-slate-800 mt-4">
+                <button onClick={onCancel} className="px-6 py-4 md:py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all cursor-pointer shadow-md w-full active:scale-[0.98]">Concluir Ajustes do Calendário</button>
               </div>
             </div>
           )}
 
           {type === 'detalhes' && config.transacao && (
             <div className="space-y-6">
-              <div className="text-center bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{config.transacao.categoria}</p>
-                <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{config.transacao.descricao}</h4>
-                <p className={`text-3xl font-black ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
+              <div className="text-center bg-slate-50 dark:bg-slate-900/50 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-slate-100 dark:bg-slate-800 w-32 h-32 rounded-full -mr-10 -mt-10 blur-2xl opacity-50 pointer-events-none"></div>
+                <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5 relative z-10">{config.transacao.categoria}</p>
+                <h4 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-slate-100 mb-3 relative z-10 leading-tight">{config.transacao.descricao}</h4>
+                <p className={`text-4xl font-black tracking-tight relative z-10 ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 {config.transacao.isThirdParty && (
-                  <span className="inline-block mt-3 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border border-amber-200 dark:border-amber-800">
+                  <span className="inline-block mt-4 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm relative z-10">
                     🤝 Terceiro: {config.transacao.thirdPartyName}
                     <br className="sm:hidden" />
                     <span className="hidden sm:inline"> — </span>
@@ -495,50 +496,50 @@ export function Modal({ config, onClose }) {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Data Competência</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(config.transacao.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 md:p-3 rounded-xl shadow-sm">
+                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-wider">Data Competência</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{new Date(config.transacao.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Status</span>
-                  <span className={`font-semibold uppercase ${config.transacao.status === 'pago' ? 'text-emerald-600' : 'text-amber-600'}`}>{config.transacao.status}</span>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 md:p-3 rounded-xl shadow-sm">
+                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-wider">Status</span>
+                  <span className={`font-black uppercase tracking-wider text-xs ${config.transacao.status === 'pago' ? 'text-emerald-600' : 'text-amber-600'}`}>{config.transacao.status}</span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm col-span-2 flex justify-between items-center">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm col-span-2 flex justify-between items-center gap-2">
                   <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Forma de Pagamento</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{config.nomePagamento}</span>
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-wider">Forma de Pagamento</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{config.nomePagamento}</span>
                   </div>
                   {config.transacao.data_pagamento && config.transacao.status === 'pago' && (
-                    <div className="text-right">
-                      <span className="block text-[10px] text-emerald-500 uppercase font-bold mb-1">Liquidado em</span>
-                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">{new Date(config.transacao.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                    <div className="text-right shrink-0">
+                      <span className="block text-[10px] text-emerald-500 uppercase font-bold mb-1 tracking-wider">Liquidado em</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400">{new Date(config.transacao.data_pagamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                     </div>
                   )}
                 </div>
                 {config.transacao.observacao && (
-                  <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 p-3 rounded-lg col-span-2">
-                    <span className="block text-[10px] text-amber-600 dark:text-amber-500 uppercase font-bold mb-1">Observação Adicional</span>
-                    <span className="font-medium text-amber-800 dark:text-amber-300">{config.transacao.observacao}</span>
+                  <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 p-4 rounded-xl col-span-2 shadow-sm">
+                    <span className="block text-[10px] text-amber-600 dark:text-amber-500 uppercase font-bold mb-1.5 tracking-wider">Observação Adicional</span>
+                    <span className="font-medium text-amber-800 dark:text-amber-300 leading-relaxed text-sm">{config.transacao.observacao}</span>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
-                  🔄 {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago'}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
+                <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3">
+                  🔄 {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago (Liquidado)'}
                 </button>
-                <button onClick={() => config.onEditar()} className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition cursor-pointer border border-blue-200 dark:border-blue-800">
-                  ✏️ Editar Tudo
+                <button onClick={() => config.onEditar()} className="p-3.5 md:p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer active:scale-95 shadow-sm">
+                  ✏️ Editar
                 </button>
-                <button onClick={() => config.onDeletar()} className="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-bold rounded hover:bg-rose-200 dark:hover:bg-rose-900/50 transition cursor-pointer">
-                  🗑️ Excluir
-                </button>
-                <button onClick={() => config.onAnexarComprovante()} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
+                <button onClick={() => config.onAnexarComprovante()} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm">
                   📎 Anexar
                 </button>
-                <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
-                  📄 Ver Anexo
+                <button onClick={() => config.onDeletar()} className="p-3.5 md:p-2.5 bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition cursor-pointer active:scale-95 shadow-sm">
+                  🗑️ Excluir
+                </button>
+                <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3">
+                  📄 Ver Comprovante Anexado
                 </button>
               </div>
             </div>
