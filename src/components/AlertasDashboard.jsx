@@ -1,5 +1,10 @@
 import React from 'react';
 
+/**
+ * @file src/components/AlertasDashboard.jsx
+ * @description Componente visual responsável por calcular e exibir avisos de vencimentos 
+ * próximos (Contas, Faturas de Cartão, Dívidas e Entradas de Renda).
+ */
 export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], dataVis }) {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -30,7 +35,7 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
             let parcelaInfo = null;
             let isDivida = t.tipo === 'divida';
 
-            // 🔥 INTELIGÊNCIA EM TEMPO REAL: Busca a dívida na memória e calcula a parcela atual (mesmo se for o 1º mês)
+            // INTELIGÊNCIA EM TEMPO REAL: Busca a dívida na memória e calcula a parcela atual (mesmo se for o 1º mês)
             const dividaRelacionada = dividas.find(d => String(d.descricao).toLowerCase() === String(t.nomeContaFixa || t.descricao).toLowerCase());
 
             if (dividaRelacionada) {
@@ -85,41 +90,57 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
     });
 
     alertas.sort((a, b) => a.dias - b.dias);
+
     if (alertas.length === 0) return null;
+
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <div className="animate-fade-in-down mb-6">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <span className="text-rose-500">🚨</span> Alertas do Mês
+        <div className="animate-fade-in-down mb-6 md:mb-8">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span className="text-rose-500 text-lg">🚨</span> Radar de Vencimentos
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {alertas.map(alerta => {
                     const isRenda = alerta.isRenda;
                     let statusConfig = {};
 
                     if (alerta.dias < 0) {
-                        statusConfig = { texto: isRenda ? `Renda atrasada há ${Math.abs(alerta.dias)} dias` : `Atrasado há ${Math.abs(alerta.dias)} dias`, cor: isRenda ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50' : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/50', textoCor: isRenda ? 'text-amber-700 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400' };
+                        statusConfig = {
+                            texto: isRenda ? `Renda atrasada há ${Math.abs(alerta.dias)} dias` : `Atrasado há ${Math.abs(alerta.dias)} dias`,
+                            cor: isRenda ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50' : 'bg-rose-50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-800/40 shadow-[0_0_15px_rgba(225,29,72,0.1)]',
+                            textoCor: isRenda ? 'text-amber-700 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'
+                        };
                     } else if (alerta.dias === 0) {
-                        statusConfig = { texto: isRenda ? 'Recebe HOJE' : 'Vence HOJE', cor: isRenda ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50', textoCor: isRenda ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400' };
+                        statusConfig = {
+                            texto: isRenda ? 'Recebe HOJE' : 'Vence HOJE',
+                            cor: isRenda ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/40 shadow-[0_0_10px_rgba(245,158,11,0.1)]',
+                            textoCor: isRenda ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
+                        };
                     } else {
-                        statusConfig = { texto: isRenda ? `Recebe em ${alerta.dias} dias` : `Vence em ${alerta.dias} dias`, cor: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50', textoCor: 'text-blue-700 dark:text-blue-400' };
+                        statusConfig = {
+                            texto: isRenda ? `Recebe em ${alerta.dias} dias` : `Vence em ${alerta.dias} dias`,
+                            cor: 'bg-white dark:bg-slate-900/50 border-blue-200 dark:border-blue-800/50',
+                            textoCor: 'text-blue-700 dark:text-blue-400'
+                        };
                     }
 
                     return (
-                        <div key={alerta.id} className={`p-4 rounded-xl border flex flex-col gap-2 shadow-sm transition-colors ${statusConfig.cor}`}>
-                            <div className="flex justify-between items-start gap-2">
-                                <h4 className="font-bold text-slate-800 dark:text-slate-100 line-clamp-1 flex-1" title={alerta.titulo}>{alerta.titulo}</h4>
-                                <div className="flex flex-col gap-1 items-end shrink-0">
-                                    {alerta.tipo === 'cartao_fatura' && (<span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800">💳 Fatura</span>)}
-                                    {alerta.tipo === 'terceiros' && (<span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800">🤝 Terceiros</span>)}
-                                    {alerta.parcelaInfo && (<span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">{alerta.parcelaInfo}</span>)}
-                                    {isRenda && (<span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">💰 Receita</span>)}
+                        <div key={alerta.id} className={`p-4 md:p-5 rounded-2xl border flex flex-col gap-3 shadow-sm transition-colors ${statusConfig.cor}`}>
+                            <div className="flex justify-between items-start gap-3">
+                                <h4 className="font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight flex-1" title={alerta.titulo}>{alerta.titulo}</h4>
+
+                                {/* Badges informativas */}
+                                <div className="flex flex-col gap-1.5 items-end shrink-0">
+                                    {alerta.tipo === 'cartao_fatura' && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-sm">💳 Fatura</span>)}
+                                    {alerta.tipo === 'terceiros' && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm">🤝 Terceiros</span>)}
+                                    {alerta.parcelaInfo && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-sm">⏳ {alerta.parcelaInfo}</span>)}
+                                    {isRenda && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm">💰 Receita</span>)}
                                 </div>
                             </div>
-                            <div className="flex justify-between items-end mt-1">
-                                <span className="text-lg font-black text-slate-900 dark:text-white">{formatarMoeda(alerta.valor)}</span>
-                                <span className={`text-[10px] font-bold uppercase tracking-wider ${statusConfig.textoCor}`}>{statusConfig.texto}</span>
+                            <div className="flex justify-between items-end mt-auto pt-2">
+                                <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{formatarMoeda(alerta.valor)}</span>
+                                <span className={`text-[10px] font-black uppercase tracking-wider ${statusConfig.textoCor}`}>{statusConfig.texto}</span>
                             </div>
                         </div>
                     );
