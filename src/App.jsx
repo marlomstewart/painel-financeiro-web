@@ -15,6 +15,7 @@ import { RendasFixas } from './components/RendasFixas';
 import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
 import { Investimentos } from './components/Investimentos';
+import { Cobrancas } from './components/Cobrancas'; // 🔥 NOVO: Importação do módulo de Cobranças
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -25,7 +26,7 @@ import { useDashboard } from './hooks/useDashboard';
 
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
-import { Skeleton } from './components/Skeleton'; // 🔥 CORRIGIDO AQUI
+import { Skeleton } from './components/Skeleton';
 
 /**
  * @constant {string} API
@@ -111,7 +112,6 @@ function App() {
   if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /></>;
   if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /></>;
 
-  // 🔥 CORRIGIDO AQUI ABAIXO TAMBÉM: Usando <Skeleton />
   if (auth.token && !carregouAPI) return <><Skeleton /><Toast toast={toast} /></>;
 
   /**
@@ -119,6 +119,9 @@ function App() {
    */
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} />;
+
+    // 🔥 NOVO: Rota da Central de Cobranças
+    if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} modal={modal} showToast={showToast} />;
 
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;

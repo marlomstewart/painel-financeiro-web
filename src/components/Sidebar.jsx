@@ -141,6 +141,9 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                         <MenuItem id="dividas" icone="📉" titulo="Dívidas" isSub />
                     </MenuExpansivel>
 
+                    {/* 🔥 NOVO: Item de menu para Cobranças */}
+                    <MenuItem id="cobrancas" icone="🤝" titulo="A Receber (Terceiros)" />
+
                     <MenuItem id="cartoes" icone="💳" titulo="Cartões de Crédito" />
                     <MenuItem id="rendas_fixas" icone="💰" titulo="Rendas Fixas" />
                     <MenuItem id="metas_categorias" icone="🎯" titulo="Metas & Categorias" />
