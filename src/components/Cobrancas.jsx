@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 
 /**
  * @file src/components/Cobrancas.jsx
@@ -10,11 +10,6 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     const anoAtual = dataVis ? dataVis.ano : new Date().getFullYear();
 
     const [pessoaDetalhe, setPessoaDetalhe] = useState(null);
-
-    // 🔥 DEBUG SILENCIOSO: Pressione F12 no navegador para ver como as variáveis da Dívida estão escritas no banco
-    useEffect(() => {
-        console.log("🕵️ Array de Dívidas recebido:", dividas);
-    }, [dividas]);
 
     const cobrancasPorPessoa = useMemo(() => {
         const mapa = {};
@@ -74,27 +69,30 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         // 2. PROCESSAR DÍVIDAS (Empréstimos/Consórcios para Terceiros)
         if (dividas && dividas.length > 0) {
             dividas.forEach(d => {
-                // 🔥 O SEGREDO ESTÁ AQUI: Rede de pesca de variáveis!
-                // Testa as nomenclaturas mais prováveis que podem estar no seu banco de dados
-                const flagTerceiro = d.isThirdParty || d.paraTerceiro || d.dividaTerceiro || d.terceiro || d.isTerceiro || d.isThird || d.terceiros;
-                const nomeDoTerceiro = d.thirdPartyName || d.nomeTerceiro || d.terceiroNome || d.nomeDevedor || d.nomePessoa || d.nome_terceiro;
+                // 🔥 VARIÁVEIS EXATAS DO SEU BANCO DE DADOS (Baseado no Console)
+                const flagTerceiro = d.para_terceiros == 1 || d.para_terceiros === true || d.isThirdParty;
+                const nomeDoTerceiro = d.nome_terceiro || d.thirdPartyName;
 
                 if (!flagTerceiro || !nomeDoTerceiro) return;
 
                 const p = registrarNoMapa(nomeDoTerceiro);
 
-                const valorParcela = Number(d.valorParcela || 0);
-                const parcelasPendentes = Number(d.qtdParcelas) - Number(d.pagas);
+                // Mapeamento snake_case (banco) para o cálculo
+                const valorParcela = Number(d.valor_parcela || d.valorParcela || 0);
+                const qtdTotalParcelas = Number(d.qtd_parcelas || d.qtdParcelas || 1);
+                const parcelasPagas = Number(d.parcelas_pagas_iniciais || d.pagas || 0);
+
+                const parcelasPendentes = qtdTotalParcelas - parcelasPagas;
                 const valorPendenteTotal = parcelasPendentes * valorParcela;
-                const valorPagoTotal = Number(d.pagas) * valorParcela;
+                const valorPagoTotal = parcelasPagas * valorParcela;
 
                 p.todasTransacoes.push({
                     isDividaDeLongoPrazo: true,
-                    descricao: `Empréstimo: ${d.descricao} (${d.pagas}/${d.qtdParcelas})`,
-                    valorCobradoCalculado: valorParcela * d.qtdParcelas,
-                    status: parcelasPendentes === 0 ? 'pago' : 'pendente',
-                    parcelasTotais: d.qtdParcelas,
-                    parcelasPagas: d.pagas,
+                    descricao: `Empréstimo: ${d.descricao} (${parcelasPagas}/${qtdTotalParcelas})`,
+                    valorCobradoCalculado: valorParcela * qtdTotalParcelas,
+                    status: parcelasPendentes <= 0 ? 'pago' : 'pendente',
+                    parcelasTotais: qtdTotalParcelas,
+                    parcelasPagas: parcelasPagas,
                     valorPendente: valorPendenteTotal,
                     valorPago: valorPagoTotal
                 });
@@ -105,15 +103,16 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
                     p.totalMesAtual += valorParcela;
 
-                    let dataVencimento = new Date(anoAtual, mesAtual - 1, d.diaVencimento || 10);
+                    const diaVenc = Number(d.dia_vencimento || d.diaVencimento || 10);
+                    let dataVencimento = new Date(anoAtual, mesAtual - 1, diaVenc);
 
                     p.itensMesAtual.push({
                         id: `divida_${d.id}`,
                         isEmprestimo: true,
-                        descricao: `Parcela: ${d.descricao} (${Number(d.pagas) + 1}/${d.qtdParcelas})`, // Mostra qual parcela está cobrando
+                        descricao: `Parcela: ${d.descricao} (${parcelasPagas + 1}/${qtdTotalParcelas})`,
                         valorCobradoCalculado: valorParcela,
                         dataVencimento: dataVencimento,
-                        nomeForma: d.formaPagamento || 'Empréstimo',
+                        nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
                         refDivida: d
                     });
                 } else {
@@ -230,8 +229,9 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
         if (confirm) {
             if (item.isEmprestimo) {
-                const novaQtdPagas = Number(item.refDivida.pagas) + 1;
-                await editarSetup('dividas', item.refDivida.id, { pagas: novaQtdPagas });
+                // Atualiza usando a nomenclatura exata do banco
+                const qtdAtual = Number(item.refDivida.parcelas_pagas_iniciais || item.refDivida.pagas || 0);
+                await editarSetup('dividas', item.refDivida.id, { parcelas_pagas_iniciais: qtdAtual + 1 });
                 if (showToast) showToast('Parcela do empréstimo avançada!', 'success');
             } else {
                 await alternarStatusTransacao(item.id, 'pendente');
