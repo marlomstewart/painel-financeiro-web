@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 /**
  * @file src/components/Cobrancas.jsx
  * @description Central de Gestão de Terceiros. Agrupa transações e dívidas por mês.
- * Utiliza o NOME EXATO (case insensitive) para agrupar as pessoas e evitar colisão de homônimos.
  */
 export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, alternarStatusTransacao, editarSetup, modal, showToast }) {
 
@@ -12,20 +11,21 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
     const [pessoaDetalhe, setPessoaDetalhe] = useState(null);
 
-    // Processamento central: Unifica Transações de Terceiros e Dívidas de Terceiros
+    // 🔥 DEBUG SILENCIOSO: Pressione F12 no navegador para ver como as variáveis da Dívida estão escritas no banco
+    useEffect(() => {
+        console.log("🕵️ Array de Dívidas recebido:", dividas);
+    }, [dividas]);
+
     const cobrancasPorPessoa = useMemo(() => {
         const mapa = {};
 
-        // Helper para normalizar e agrupar nomes
         const registrarNoMapa = (nomeBruto) => {
-            const nomeStr = nomeBruto.trim();
-            // 🔥 CORREÇÃO: Usa o nome inteiro, apenas convertendo para maiúsculo para evitar case-sensitivity
-            // Ex: "João" != "João Marcos", mas "JOÃO MARCOS" == "joão marcos"
+            const nomeStr = String(nomeBruto).trim();
             const chave = nomeStr.toUpperCase();
 
             if (!mapa[chave]) {
                 mapa[chave] = {
-                    nomeExibicao: nomeStr, // Guarda o nome original (ex: João Marcos) para exibição bonita
+                    nomeExibicao: nomeStr,
                     totalPendenteGeral: 0,
                     totalPagoGeral: 0,
                     totalMesAtual: 0,
@@ -74,9 +74,14 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         // 2. PROCESSAR DÍVIDAS (Empréstimos/Consórcios para Terceiros)
         if (dividas && dividas.length > 0) {
             dividas.forEach(d => {
-                if (!d.isThirdParty || !d.thirdPartyName) return;
+                // 🔥 O SEGREDO ESTÁ AQUI: Rede de pesca de variáveis!
+                // Testa as nomenclaturas mais prováveis que podem estar no seu banco de dados
+                const flagTerceiro = d.isThirdParty || d.paraTerceiro || d.dividaTerceiro || d.terceiro || d.isTerceiro || d.isThird || d.terceiros;
+                const nomeDoTerceiro = d.thirdPartyName || d.nomeTerceiro || d.terceiroNome || d.nomeDevedor || d.nomePessoa || d.nome_terceiro;
 
-                const p = registrarNoMapa(d.thirdPartyName);
+                if (!flagTerceiro || !nomeDoTerceiro) return;
+
+                const p = registrarNoMapa(nomeDoTerceiro);
 
                 const valorParcela = Number(d.valorParcela || 0);
                 const parcelasPendentes = Number(d.qtdParcelas) - Number(d.pagas);
@@ -98,7 +103,6 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                     p.totalPendenteGeral += valorPendenteTotal;
                     p.totalPagoGeral += valorPagoTotal;
 
-                    // Exige 1 parcela no mês atual da tela
                     p.totalMesAtual += valorParcela;
 
                     let dataVencimento = new Date(anoAtual, mesAtual - 1, d.diaVencimento || 10);
@@ -106,7 +110,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                     p.itensMesAtual.push({
                         id: `divida_${d.id}`,
                         isEmprestimo: true,
-                        descricao: `Parcela: ${d.descricao}`,
+                        descricao: `Parcela: ${d.descricao} (${Number(d.pagas) + 1}/${d.qtdParcelas})`, // Mostra qual parcela está cobrando
                         valorCobradoCalculado: valorParcela,
                         dataVencimento: dataVencimento,
                         nomeForma: d.formaPagamento || 'Empréstimo',
@@ -226,7 +230,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
         if (confirm) {
             if (item.isEmprestimo) {
-                const novaQtdPagas = item.refDivida.pagas + 1;
+                const novaQtdPagas = Number(item.refDivida.pagas) + 1;
                 await editarSetup('dividas', item.refDivida.id, { pagas: novaQtdPagas });
                 if (showToast) showToast('Parcela do empréstimo avançada!', 'success');
             } else {
@@ -330,7 +334,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 </div>
             )}
 
-            {/* 🔥 MODAL DE DETALHAMENTO (OVERLAY NATIVO DA TELA) */}
+            {/* 🔥 MODAL DE DETALHAMENTO */}
             {pessoaDetalhe && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setPessoaDetalhe(null)}></div>
