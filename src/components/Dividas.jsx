@@ -154,15 +154,18 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                 </div>
             </div>
 
-            <div className="max-w-4xl mx-auto space-y-6">
+            {/* 🔥 MUDANÇA AQUI: Removido o max-w-4xl para o formulário acompanhar o layout inteiro */}
+            <div className="w-full space-y-6">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-xl shadow-sm transition-colors">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-5 border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-wrap items-center gap-2">
                         {editandoId ? '✏️ Editar Dívida' : 'Registrar Nova Dívida'}
                         {isCredito && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2.5 py-1 rounded-md ml-auto shadow-sm">Modo Cartão de Crédito</span>}
                     </h3>
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
+
+                        {/* 🔥 MUDANÇA AQUI: Grid adaptado para 4 colunas em monitores Ultra-Wide (lg) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="md:col-span-2 lg:col-span-4">
                                 <label className={labelCls}>Descrição / Motivo</label>
                                 <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required className={inputCls} placeholder="Ex: Financiamento Carro" />
                             </div>
@@ -263,7 +266,6 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                                                 )}
                                             </div>
 
-                                            {/* 🔥 MOBILE FIX: Pílula de ações explícita e elegante */}
                                             <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0 shadow-sm">
                                                 <button onClick={() => handleEditar(divida)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar">✏️</button>
                                                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-600"></div>
