@@ -121,9 +121,9 @@ function App() {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} />;
 
     // 🔥 NOVO: Rota da Central de Cobranças
-    if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} cartoes={setup.cartoes} dataVis={dataVis} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} modal={modal} showToast={showToast} />;
-
-    // if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} modal={modal} showToast={showToast} />;
+    // 🔥 SUBSTITUA A LINHA DO COBRANÇAS POR ESTA:
+    if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} dividas={setup.dividas} cartoes={setup.cartoes} dataVis={dataVis} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarSetup={setup.editarSetup} modal={modal} showToast={showToast} />;
+    
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} cartoes={setup.cartoes} addDivida={setup.addDivida} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
