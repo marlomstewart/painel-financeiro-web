@@ -185,8 +185,8 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                             Categorias Cadastradas
                         </h3>
 
-                        {/* 🔥 MUDANÇA AQUI: Grid super inteligente (Sanfona Responsiva) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5">
+                        {/* 🔥 MUDANÇA AQUI: Grid simplificado para 1 coluna até telas super largas (xl) */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5">
                             {categorias.length === 0 ? (
                                 <div className="col-span-full text-center p-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/30">
                                     <span className="text-3xl opacity-50 block mb-3">🏷️</span>
@@ -221,7 +221,6 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                         <div className="flex items-center gap-3.5 min-w-0 pr-2 flex-1">
                                             <span className="text-xl bg-slate-50 dark:bg-slate-800 w-12 h-12 flex items-center justify-center rounded-full shadow-inner shrink-0 border border-slate-100 dark:border-slate-700/50">{icon}</span>
                                             <div className="min-w-0 flex-1">
-                                                {/* 🔥 MUDANÇA AQUI: Título isolado do badge para não cortar a tag da garagem junto */}
                                                 <div className="flex items-center gap-2 mb-0.5 min-w-0">
                                                     <h4 className="font-black text-slate-800 dark:text-slate-100 leading-tight truncate text-sm md:text-base">
                                                         {c.nome}
