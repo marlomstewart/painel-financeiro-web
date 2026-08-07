@@ -161,7 +161,6 @@ export function Lancamentos({
 
     const limparFiltros = () => setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
 
-    // 🔥 MOBILE FIX: Áreas de toque dos inputs ampliadas com paddings maiores (p-3.5)
     const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
     const labelCls = "block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 md:mb-1 uppercase tracking-wider";
 
@@ -182,7 +181,6 @@ export function Lancamentos({
                             Adicione uma nova despesa, receita, investimento ou reembolso.
                         </p>
                     </div>
-                    {/* 🔥 MOBILE FIX: Botão de limpeza ocupando 100% da largura em celulares para melhor alcance */}
                     <div className="w-full md:w-auto shrink-0 flex items-center justify-end mt-2 md:mt-0">
                         <button type="button" onClick={() => {
                             setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
@@ -248,7 +246,8 @@ export function Lancamentos({
                                 </select>
                             </div>
 
-                            {(categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart' && (
+                            {/* 🔥 MODIFICAÇÃO AQUI: Avalia dinamicamente pelo banco se a categoria ativou a garagem */}
+                            {Boolean(categorias.find(c => c.nome === categoria)?.is_garagem) ? (
                                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
                                     <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
                                     <input
@@ -257,10 +256,9 @@ export function Lancamentos({
                                         placeholder="Ex: 81604 (Deixe em branco se não quiser registar)"
                                     />
                                 </div>
-                            )}
+                            ) : null}
 
                             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                {/* 🔥 MOBILE FIX: Checkbox com padding invisível maior para facilitar toque */}
                                 <label className="flex items-center gap-3 cursor-pointer mb-3 py-1">
                                     <input type="checkbox" name="isThirdParty" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-5 h-5 accent-blue-600 cursor-pointer" />
                                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra Compartilhada / Terceiro</span>
@@ -311,7 +309,6 @@ export function Lancamentos({
                                 )}
                             </div>
 
-                            {/* 🔥 MOBILE FIX: Botão de submit expandido no mobile (py-4) */}
                             <div className="pt-4">
                                 <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-4 md:py-3 rounded-lg text-sm transition-all shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 cursor-not-allowed opacity-90' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'}`}>
                                     {isSubmitting ? (

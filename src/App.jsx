@@ -15,7 +15,7 @@ import { RendasFixas } from './components/RendasFixas';
 import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
 import { Investimentos } from './components/Investimentos';
-import { Cobrancas } from './components/Cobrancas'; // 🔥 NOVO: Importação do módulo de Cobranças
+import { Cobrancas } from './components/Cobrancas';
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -120,12 +120,13 @@ function App() {
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} />;
 
-    // 🔥 NOVO: Rota da Central de Cobranças
-    // 🔥 SUBSTITUA A LINHA DO COBRANÇAS POR ESTA:
     if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} dividas={setup.dividas} cartoes={setup.cartoes} dataVis={dataVis} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarSetup={setup.editarSetup} modal={modal} showToast={showToast} />;
-    
+
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-    if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+
+    // Injetando a flag de controle da garagem no componente de Metas & Categorias
+    if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} temGaragem={auth.temGaragem} />;
+
     if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} cartoes={setup.cartoes} addDivida={setup.addDivida} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
