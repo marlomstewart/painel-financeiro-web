@@ -21,21 +21,19 @@ export function Dashboard({
     totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
     saldoAtual, previstoFimMes, somarSaldoAnterior, setSomarSaldoAnterior,
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
-    verFaturasPorCartao, transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], garagem = null, nomeUsuario = ''
+    verFaturasPorCartao, transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], garagem = null, temGaragem = false
 }) {
-
-    const isStewart = nomeUsuario?.toLowerCase() === 'stewart';
 
     const ultimosCinco = [...transacoesMes]
         .sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra))
         .slice(0, 5);
 
-    // Lógica de Extração de Alertas da Garagem (Exclusivo para Stewart)
+    // Lógica de Extração de Alertas da Garagem (para quem tiver o módulo liberado)
     const alertasGaragem = [];
-    if (isStewart && garagem && garagem.veiculos && garagem.itens) {
-        garagem.veiculos.forEach(veiculo => {
+    if (temGaragem && garagem && garagem.veiculosGaragem && garagem.itensGaragem) {
+        garagem.veiculosGaragem.forEach(veiculo => {
             if (veiculo.ativo === 0) return;
-            const itensDoVeiculo = garagem.itens.filter(i => i.veiculo_id === veiculo.id);
+            const itensDoVeiculo = garagem.itensGaragem.filter(i => i.veiculo_id === veiculo.id);
             itensDoVeiculo.forEach(item => {
                 const kmProximaTroca = Number(item.km_ultima_troca) + Number(item.intervalo_km);
                 const kmRestante = kmProximaTroca - Number(veiculo.km_atual);
@@ -46,7 +44,7 @@ export function Dashboard({
         });
     }
 
-    const showGarageAlerts = isStewart && alertasGaragem.length > 0;
+    const showGarageAlerts = temGaragem && alertasGaragem.length > 0;
 
     // Filtra apenas categorias que possuem meta maior que zero para exibir no Dashboard
     const categoriasEstrategicas = categorias.filter(c => Number(c.meta) > 0);

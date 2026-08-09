@@ -18,6 +18,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
 
     // Controle de acesso ao módulo garagem e notificações preditivas
     const [temGaragem, setTemGaragem] = useState(localStorage.getItem('temGaragem') === 'true');
+    const [temComprovante, setTemComprovante] = useState(localStorage.getItem('temComprovante') === 'true');
     const [telegramChatId, setTelegramChatId] = useState(localStorage.getItem('telegramChatId') || '');
 
     const [usuarios, setUsuarios] = useState([]);
@@ -62,12 +63,14 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     localStorage.setItem('isAdminPainel', data.is_admin ? 'true' : 'false');
                     localStorage.setItem('nomeUsuario', nomeVisual);
                     localStorage.setItem('temGaragem', data.tem_garagem ? 'true' : 'false');
+                    localStorage.setItem('temComprovante', data.tem_comprovante ? 'true' : 'false');
                     localStorage.setItem('telegramChatId', data.telegram_chat_id || '');
 
                     setToken(data.token);
                     setIsAdmin(data.is_admin === true);
                     setNomeUsuario(nomeVisual);
                     setTemGaragem(data.tem_garagem === true);
+                    setTemComprovante(data.tem_comprovante === true);
                     setTelegramChatId(data.telegram_chat_id || '');
                 }
             } else {
@@ -85,6 +88,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         localStorage.removeItem('nomeUsuario');
         localStorage.removeItem('isAdminPainel');
         localStorage.removeItem('temGaragem');
+        localStorage.removeItem('temComprovante');
         localStorage.removeItem('telegramChatId');
 
         setToken(null);
@@ -94,6 +98,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         setNomeUsuario('');
         setIsAdmin(false);
         setTemGaragem(false);
+        setTemComprovante(false);
         setTelegramChatId('');
         setUsuarios([]);
         setUsuarioLogin('');
@@ -210,12 +215,13 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); const data = await res.json(); await modal.alert(data.message, res.ok ? '✅ Resetada' : '❌ Erro'); };
     const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const acao = atualIsAdmin ? 'remover admin' : 'promover a admin'; const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
     const toggleGaragem = async (id, nomeU, atualTemGaragem) => { const acao = atualTemGaragem ? 'REVOGAR o acesso à Garagem' : 'LIBERAR o acesso à Garagem'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '🏍️ Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-garagem`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
+    const toggleComprovante = async (id, nomeU, atualTemComprovante) => { const acao = atualTemComprovante ? 'REVOGAR o anexo de comprovantes' : 'LIBERAR o anexo de comprovantes'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '📎 Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-comprovante`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
 
     return {
-        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, telegramChatId, usuarios, getHeaders,
+        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, temComprovante, telegramChatId, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
-        fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem,
+        fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem, toggleComprovante,
         atualizarPerfil, atualizarTelegram, alterarSenha
     };
 }

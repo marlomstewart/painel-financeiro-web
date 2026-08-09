@@ -1,24 +1,27 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 
 /**
  * Hook Customizado: useGaragem
  * Gerencia a lógica de negócio atrelada à frota de veículos automotores.
  */
-export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes, showToast }) {
+export function useGaragem({ API, getHeaders, modal, temGaragem, showToast }) {
     // Nota: O estado chama-se "diasNaoRodados" por herança do Back-end, mas conceitualmente
     // atua como um array de "Exceções à Regra" (Faltas em dias úteis ou Extras em dias de folga).
     const [veiculosGaragem, setVeiculosGaragem] = useState([]);
+    const [itensGaragem, setItensGaragem] = useState([]);
     const [diasNaoRodados, setDiasNaoRodados] = useState([]);
 
     const carregarDadosGaragem = useCallback(async () => {
-        if (nomeUsuario.toLowerCase() !== 'stewart') return;
+        if (!temGaragem) return;
         try {
             const resGar = await fetch(`${API}/garagem/veiculos`, { headers: getHeaders() });
             if (resGar.ok) setVeiculosGaragem(await resGar.json());
+            const resItens = await fetch(`${API}/garagem/itens`, { headers: getHeaders() });
+            if (resItens.ok) setItensGaragem(await resItens.json());
             const resDias = await fetch(`${API}/garagem/dias-nao-rodados`, { headers: getHeaders() });
             if (resDias.ok) setDiasNaoRodados(await resDias.json());
         } catch (err) { console.error("Erro garagem:", err); }
-    }, [API, getHeaders, nomeUsuario]);
+    }, [API, getHeaders, temGaragem]);
 
     const verificarDesgasteVeiculo = useCallback(async (veiculoId, kmAtual) => {
         try {
@@ -78,20 +81,11 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes, sh
         return metaCalculada;
     }, [diasNaoRodados]);
 
-    const alertaMoto = useMemo(() => {
-        if (nomeUsuario.toLowerCase() !== 'stewart') return null;
-        const transacoesComKm = transacoes.filter(t => t.kmMoto).sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra));
-        if (transacoesComKm.length > 0) {
-            const kmAtual = Number(transacoesComKm[0].kmMoto);
-            const ultimaTroca = transacoesComKm.find(t => t.categoria === 'Manutenção da moto' && t.descricao.toLowerCase().includes('leo'));
-            const kmUltimaTroca = ultimaTroca ? Number(ultimaTroca.kmMoto) : kmAtual;
-            const kmRodados = kmAtual - kmUltimaTroca;
-            const limiteTrocaOleo = 1000;
-            const kmFaltantes = limiteTrocaOleo - kmRodados;
-            return { kmAtual, kmFaltantes, alertaCritico: kmFaltantes <= 150 };
-        }
-        return null;
-    }, [nomeUsuario, transacoes]);
+    // NOTA: O antigo "alertaMoto" (cartão de troca de óleo da Biz 125, com intervalo
+    // fixo de 1000km) foi removido em 2026. Ele lia o campo `t.kmMoto`, que não existe
+    // mais desde que o sistema migrou para `km_moto` (com underscore) — ou seja, já
+    // estava morto na prática. O alerta preditivo de troca agora vem do sistema
+    // genérico de Itens de Manutenção (itensGaragem acima), consumido pelo Dashboard.
 
     /**
      * Abstração do Calendário Interativo.
@@ -124,8 +118,8 @@ export function useGaragem({ API, getHeaders, modal, nomeUsuario, transacoes, sh
     }, [API, getHeaders, modal, diasNaoRodados, showToast]);
 
     return {
-        veiculosGaragem, setVeiculosGaragem, diasNaoRodados, setDiasNaoRodados,
+        veiculosGaragem, setVeiculosGaragem, itensGaragem, setItensGaragem, diasNaoRodados, setDiasNaoRodados,
         carregarDadosGaragem, verificarDesgasteVeiculo, calcularMetaGasolina,
-        alertaMoto, abrirCalendarioGasolina
+        abrirCalendarioGasolina
     };
 }

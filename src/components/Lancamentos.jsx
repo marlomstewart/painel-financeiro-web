@@ -13,7 +13,7 @@ export function Lancamentos({
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela,
     alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa,
-    modal, nomeUsuario, anexarComprovante, verComprovante,
+    modal, nomeUsuario, temGaragem = false, temComprovante = false, anexarComprovante, verComprovante,
     dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
     mesAnterior = () => { },
     mesProximo = () => { },
@@ -150,7 +150,7 @@ export function Lancamentos({
             type: 'detalhes',
             transacao: t,
             nomePagamento: obterNomePagamento(t.formaPagamento),
-            isStewart: nomeUsuario?.toLowerCase() === 'stewart',
+            temComprovante,
             onAlternarStatus: () => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra),
             onEditar: () => editarValor(t),
             onDeletar: () => deletarTransacao(t),
@@ -246,8 +246,10 @@ export function Lancamentos({
                                 </select>
                             </div>
 
-                            {/* 🔥 MODIFICAÇÃO AQUI: Avalia dinamicamente pelo banco se a categoria ativou a garagem */}
-                            {Boolean(categorias.find(c => c.nome === categoria)?.is_garagem) ? (
+                            {/* PROVISÓRIO até a D (vínculo categoria↔garagem) estar pronta: usa a mesma
+                                regra do modal de seleção de veículo em useTransacoes.jsx. O antigo gate
+                                por c.is_garagem nunca funcionava — a coluna não existe no banco ainda. */}
+                            {temGaragem && (categoria === 'Gasolina' || categoria === 'Manutenção da moto') ? (
                                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
                                     <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
                                     <input

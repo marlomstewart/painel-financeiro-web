@@ -5,7 +5,7 @@ import { useCallback } from 'react';
  * @description Hook customizado para gerir o CRUD de transações financeiras.
  * Refatorado para suportar valores fracionados de Terceiros (Split).
  */
-export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, transacoes, setTransacoes, categorias, cartoes, garagem }) {
+export function useTransacoes({ API, getHeaders, modal, token, temGaragem, transacoes, setTransacoes, categorias, cartoes, garagem }) {
 
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
@@ -47,7 +47,7 @@ export function useTransacoes({ API, getHeaders, modal, token, nomeUsuario, tran
         let veiculo_id = null;
         let veiculo_emprestado = 0;
 
-        if ((categoria === 'Gasolina' || categoria === 'Manutenção da moto') && nomeUsuario?.toLowerCase() === 'stewart') {
+        if ((categoria === 'Gasolina' || categoria === 'Manutenção da moto') && temGaragem) {
             if (garagem && garagem.veiculosGaragem && garagem.veiculosGaragem.length > 0) {
                 const opcoes = garagem.veiculosGaragem.filter(v => v.ativo === 1).map(v => ({
                     label: `${v.modelo} ${v.tipo !== 'proprio' ? '(Convidado)' : ''}`,

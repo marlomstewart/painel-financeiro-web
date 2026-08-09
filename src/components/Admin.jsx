@@ -5,7 +5,7 @@ import React, { useState } from 'react';
  * @file src/components/Admin.jsx
  * @description Módulo de gerenciamento de permissões e usuários do sistema (Super Admin).
  */
-export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, criarUsuario, carregarUsuarios, usuarios, toggleAdmin, resetarSenha, deletarUsuario, toggleGaragem }) {
+export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, criarUsuario, carregarUsuarios, usuarios, toggleAdmin, resetarSenha, deletarUsuario, toggleGaragem, toggleComprovante }) {
 
   const [atualizando, setAtualizando] = useState(false);
 
@@ -117,7 +117,7 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-4 gap-2 text-center">
                       <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center shadow-sm">
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Sessão</p>
                         {formatarUltimoAcesso(u.ultimo_login)}
@@ -134,6 +134,12 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                           {u.tem_garagem === 1 ? '🏍️ LIBERADA' : 'BLOQUEADA'}
                         </span>
                       </div>
+                      <div className={`p-3 rounded-xl border flex flex-col items-center justify-center shadow-sm ${u.tem_comprovante === 1 ? 'bg-teal-50 border-teal-200 dark:bg-teal-900/10 dark:border-teal-800/30' : 'bg-slate-50 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700/50'}`}>
+                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 text-slate-500 dark:text-slate-400">Comprovante</p>
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${u.tem_comprovante === 1 ? 'text-teal-700 dark:text-teal-400' : 'text-slate-400'}`}>
+                          {u.tem_comprovante === 1 ? '📎 LIBERADO' : 'BLOQUEADO'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -142,6 +148,9 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                       </button>
                       <button type="button" onClick={() => toggleGaragem && toggleGaragem(u.id, u.usuario, u.tem_garagem === 1)} className="py-3.5 text-xs bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
                         {u.tem_garagem === 1 ? '🚫 Tira Garagem' : '🏍️ Dar Garagem'}
+                      </button>
+                      <button type="button" onClick={() => toggleComprovante && toggleComprovante(u.id, u.usuario, u.tem_comprovante === 1)} className="py-3.5 text-xs bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
+                        {u.tem_comprovante === 1 ? '🚫 Tira Comprovante' : '📎 Dar Comprovante'}
                       </button>
                       <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} className="py-3.5 text-xs bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
                         🔑 Forçar Reset
@@ -166,7 +175,8 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                       <th className="px-3 py-5 text-center w-2/12">Última Sessão</th>
                       <th className="px-3 py-5 text-center w-1/12">Senha</th>
                       <th className="px-3 py-5 text-center w-1/12">Garagem</th>
-                      <th className="px-5 py-5 text-center w-4/12">Ações Administrativas</th>
+                      <th className="px-3 py-5 text-center w-1/12">Comprovante</th>
+                      <th className="px-5 py-5 text-center w-3/12">Ações Administrativas</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -204,6 +214,12 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                           </span>
                         </td>
 
+                        <td className="px-3 py-4 text-center">
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.tem_comprovante === 1 ? 'bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                            {u.tem_comprovante === 1 ? '📎 ATIVO' : 'INATIVO'}
+                          </span>
+                        </td>
+
                         <td className="px-5 py-4">
                           <div className="flex flex-wrap gap-2 justify-center">
                             <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} title={u.is_admin === 1 ? 'Rebaixar para Visualizador' : 'Promover a Administrador'} className="text-xs bg-purple-50 dark:bg-purple-900/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
@@ -211,6 +227,9 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                             </button>
                             <button type="button" onClick={() => toggleGaragem && toggleGaragem(u.id, u.usuario, u.tem_garagem === 1)} title={u.tem_garagem === 1 ? 'Revogar acesso à Garagem' : 'Liberar acesso à Garagem'} className="text-xs bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
                               {u.tem_garagem === 1 ? '🚫 Garagem' : '🏍️ Garagem'}
+                            </button>
+                            <button type="button" onClick={() => toggleComprovante && toggleComprovante(u.id, u.usuario, u.tem_comprovante === 1)} title={u.tem_comprovante === 1 ? 'Revogar anexo de comprovantes' : 'Liberar anexo de comprovantes'} className="text-xs bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
+                              {u.tem_comprovante === 1 ? '🚫 Comprovante' : '📎 Comprovante'}
                             </button>
                             <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} title="Forçar a senha a voltar para 'admin123'" className="text-xs bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
                               🔑 Reset

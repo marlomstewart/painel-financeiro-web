@@ -64,10 +64,10 @@ function App() {
 
   const auth = useAuth({ API, modal, setCarregouAPI });
   const setup = useSetup({ API, getHeaders: auth.getHeaders, modal, transacoes, setTransacoes });
-  const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, nomeUsuario: auth.nomeUsuario, transacoes, showToast });
+  const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, temGaragem: auth.temGaragem, showToast });
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal });
-  const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, nomeUsuario: auth.nomeUsuario, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
+  const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, nomeUsuario: auth.nomeUsuario, garagem, cartoes: setup.cartoes });
 
   useEffect(() => {
@@ -118,7 +118,7 @@ function App() {
    * @function renderizarConteudoAtivo
    */
   const renderizarConteudoAtivo = () => {
-    if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} />;
+    if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} toggleComprovante={auth.toggleComprovante} />;
 
     if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} dividas={setup.dividas} cartoes={setup.cartoes} dataVis={dataVis} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarSetup={setup.editarSetup} modal={modal} showToast={showToast} />;
 
@@ -144,7 +144,7 @@ function App() {
         setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao}
         dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor}
         deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal}
-        nomeUsuario={auth.nomeUsuario} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante}
+        nomeUsuario={auth.nomeUsuario} temGaragem={auth.temGaragem} temComprovante={auth.temComprovante} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante}
         dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} garagem={garagem}
       />;
     }
@@ -154,7 +154,7 @@ function App() {
     }
 
     return <Dashboard
-      nomeUsuario={auth.nomeUsuario} transacoesGlobais={transacoes} transacoesMes={transacoesMes} cartoes={setup.cartoes} dividas={setup.dividas} garagem={garagem}
+      nomeUsuario={auth.nomeUsuario} temGaragem={auth.temGaragem} transacoesGlobais={transacoes} transacoesMes={transacoesMes} cartoes={setup.cartoes} dividas={setup.dividas} garagem={garagem}
       dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} totRendaPaga={dashboardManager.totRendaPaga}
       totGastoReal={dashboardManager.totGastoReal} totInvestido={dashboardManager.totInvestido} totFaturaCreditoAberto={dashboardManager.totFaturaCreditoAberto}
       saldoAtual={dashboardManager.saldoAtual} previstoFimMes={dashboardManager.previstoFimMes} somarSaldoAnterior={dashboardManager.somarSaldoAnterior}
