@@ -1,5 +1,10 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
+import {
+    X, Bike, Car, Users, Plus, Pencil, Trash2, Settings, Wrench,
+    AlertTriangle, Stethoscope, ClipboardList, Wallet, CreditCard,
+    Calendar, ArrowLeft, Lightbulb
+} from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -14,6 +19,27 @@ const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currenc
  * @description Formata a data ISO para o padrão brasileiro de exibição (dd/mm/aaaa).
  */
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
+
+/**
+ * @component ModalInterno
+ * @description Shell de modal reutilizado pelos formulários internos da Garagem (veículo, item, manutenção).
+ */
+const ModalInterno = ({ titulo, children, onFechar }) => (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 transition-colors duration-300 animate-fade-in bg-black/60 backdrop-blur-sm" onClick={onFechar}>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm md:max-w-md border border-slate-200 dark:border-slate-800 transition-colors duration-300 animate-scale-in relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Cabeçalho do Modal Mobile-First */}
+            <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-base font-black text-slate-800 dark:text-slate-100 tracking-tight">{titulo}</h3>
+                <button type="button" onClick={onFechar} className="p-1.5 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">
+                    <X className="w-5 h-5" strokeWidth={2.5} />
+                </button>
+            </div>
+            <div className="p-5 overflow-y-auto max-h-[75vh] custom-scrollbar">
+                {children}
+            </div>
+        </div>
+    </div>
+);
 
 /**
  * @file src/components/Garagem.jsx
@@ -49,15 +75,6 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     // ==========================================
     // EFEITOS E CARREGAMENTO INICIAL
     // ==========================================
-    useEffect(() => {
-        if (!garagem || veiculos.length === 0) {
-            carregarVeiculos();
-        } else {
-            setCarregando(false);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [garagem]);
-
     const carregarVeiculos = async () => {
         setCarregando(true);
         try {
@@ -66,6 +83,16 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
         } catch (err) { console.error('Erro de conexão ao carregar veículos:', err); }
         setCarregando(false);
     };
+
+    useEffect(() => {
+        if (!garagem || veiculos.length === 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- busca inicial de dados (fetch on mount), padrão sancionado pelo React
+            carregarVeiculos();
+        } else {
+            setCarregando(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [garagem]);
 
     const carregarDashboard = async (veiculo) => {
         setVeiculoSelecionado(veiculo);
@@ -114,7 +141,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
     const solicitarExclusaoVeiculo = (id) => {
         setModalConfirm({
-            titulo: '🗑️ Excluir Veículo',
+            titulo: 'Excluir Veículo',
             mensagem: 'Excluir este veículo apagará todos os seus itens mecânicos e histórico de manutenções. Os lançamentos financeiros no extrato não serão apagados. Tem certeza?',
             acao: async () => {
                 await fetch(`${API}/garagem/veiculos/${id}`, { method: 'DELETE', headers: getHeaders() });
@@ -147,7 +174,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
     const solicitarExclusaoItem = (id) => {
         setModalConfirm({
-            titulo: '🗑️ Excluir Item',
+            titulo: 'Excluir Item',
             mensagem: 'Deseja remover este item do rastreador de desgaste do odômetro?',
             acao: async () => {
                 await fetch(`${API}/garagem/itens/${id}`, { method: 'DELETE', headers: getHeaders() });
@@ -179,7 +206,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
     const solicitarExclusaoManutencao = (id) => {
         setModalConfirm({
-            titulo: '🗑️ Excluir Registro',
+            titulo: 'Excluir Registro',
             mensagem: 'Deseja apagar este registro do histórico da linha do tempo da sua manutenção?',
             acao: async () => {
                 await fetch(`${API}/garagem/manutencoes/${id}`, { method: 'DELETE', headers: getHeaders() });
@@ -204,23 +231,6 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
         <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
     );
 
-    const ModalInterno = ({ titulo, children, onFechar }) => (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 transition-colors duration-300 animate-fade-in bg-black/60 backdrop-blur-sm" onClick={onFechar}>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm md:max-w-md border border-slate-200 dark:border-slate-800 transition-colors duration-300 animate-scale-in relative overflow-hidden" onClick={e => e.stopPropagation()}>
-                {/* Cabeçalho do Modal Mobile-First */}
-                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50">
-                    <h3 className="text-base font-black text-slate-800 dark:text-slate-100 tracking-tight">{titulo}</h3>
-                    <button type="button" onClick={onFechar} className="p-1.5 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <div className="p-5 overflow-y-auto max-h-[75vh] custom-scrollbar">
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-
     const ModalEConfirmacoesBase = () => (
         <>
             <ModalComponent config={modalConfig} onClose={modalClose} />
@@ -238,13 +248,13 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
             )}
 
             {modalVeiculo && (
-                <ModalInterno titulo={modalVeiculo === 'novo' ? '🚗 Cadastrar Veículo' : '✏️ Editar Veículo'} onFechar={() => !isSubmitting && setModalVeiculo(null)}>
+                <ModalInterno titulo={modalVeiculo === 'novo' ? 'Cadastrar Veículo' : 'Editar Veículo'} onFechar={() => !isSubmitting && setModalVeiculo(null)}>
                     <form onSubmit={salvarVeiculo} className="space-y-5">
                         <div>
                             <label className={labelCls}>Tipo de Veículo</label>
                             <div className="flex gap-3">
-                                <button type="button" onClick={() => setTipoVeiculoForm('proprio')} className={`flex-1 py-3 md:py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer shadow-sm ${tipoVeiculoForm === 'proprio' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-2 ring-blue-200 dark:ring-blue-900/20' : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>🚗 Próprio</button>
-                                <button type="button" onClick={() => setTipoVeiculoForm('convidado')} className={`flex-1 py-3 md:py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer shadow-sm ${tipoVeiculoForm === 'convidado' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-2 ring-amber-200 dark:ring-amber-900/20' : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>🤝 Convidado</button>
+                                <button type="button" onClick={() => setTipoVeiculoForm('proprio')} className={`flex-1 py-3 md:py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2 ${tipoVeiculoForm === 'proprio' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-2 ring-blue-200 dark:ring-blue-900/20' : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Car className="w-4 h-4" strokeWidth={2} /> Próprio</button>
+                                <button type="button" onClick={() => setTipoVeiculoForm('convidado')} className={`flex-1 py-3 md:py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2 ${tipoVeiculoForm === 'convidado' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-2 ring-amber-200 dark:ring-amber-900/20' : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Users className="w-4 h-4" strokeWidth={2} /> Convidado</button>
                             </div>
                             <input type="hidden" name="tipo" value={tipoVeiculoForm} />
                         </div>
@@ -258,7 +268,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                 <div><label className={labelCls}>KM Atual</label><input name="km_atual" type="number" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.km_atual : '0'} required={tipoVeiculoForm === 'proprio'} className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} /></div>
                             </>
                         )}
-                        {tipoVeiculoForm === 'convidado' && <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3.5 leading-relaxed font-medium">💡 Veículos convidados não rastreiam quilometragem nem peças mecânicas. Eles servem apenas para organizar gastos eventuais (como gasolina) quando você usa um veículo emprestado.</p>}
+                        {tipoVeiculoForm === 'convidado' && <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3.5 leading-relaxed font-medium flex items-start gap-1.5"><Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} /> Veículos convidados não rastreiam quilometragem nem peças mecânicas. Eles servem apenas para organizar gastos eventuais (como gasolina) quando você usa um veículo emprestado.</p>}
 
                         <div className="flex gap-3 pt-2 mt-2">
                             <button type="button" onClick={() => setModalVeiculo(null)} disabled={isSubmitting} className={btnCancelar}>Cancelar</button>
@@ -276,23 +286,28 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     if (!veiculoSelecionado) {
         return (
             <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
-                <ModalEConfirmacoesBase />
+                {ModalEConfirmacoesBase()}
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                    <div>
-                        <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            🏍️ Minha Garagem
-                        </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Selecione um veículo para auditar histórico mecânico e financeiro.
-                        </p>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                            <Bike className="w-5 h-5" strokeWidth={2} />
+                        </div>
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                                Minha Garagem
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                Selecione um veículo para auditar histórico mecânico e financeiro.
+                            </p>
+                        </div>
                     </div>
                     <div className="w-full md:w-auto shrink-0 flex flex-col sm:flex-row items-center justify-start sm:justify-end gap-3 mt-2 md:mt-0">
-                        <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 md:py-2.5 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-sm transition-colors cursor-pointer shadow-sm border border-transparent dark:border-slate-700 active:scale-[0.98]">
-                            ← Painel Principal
+                        <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 md:py-2.5 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-sm transition-colors cursor-pointer shadow-sm border border-transparent dark:border-slate-700 active:scale-[0.98] flex items-center justify-center gap-2">
+                            <ArrowLeft className="w-4 h-4" strokeWidth={2} /> Painel Principal
                         </button>
                         <button type="button" onClick={() => { setTipoVeiculoForm('proprio'); setModalVeiculo('novo'); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 md:py-2.5 px-4 rounded-lg text-sm transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-[0.98]">
-                            <span>+</span> Novo Veículo
+                            <Plus className="w-4 h-4" strokeWidth={2.5} /> Novo Veículo
                         </button>
                     </div>
                 </div>
@@ -303,7 +318,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
                         <button type="button" onClick={() => { setTipoVeiculoForm('proprio'); setModalVeiculo('novo'); }} className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group cursor-pointer active:scale-[0.98]">
                             <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
-                                <span className="text-3xl group-hover:scale-110 transition-transform">➕</span>
+                                <Plus className="w-7 h-7 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-transform" strokeWidth={2} />
                             </div>
                             <span className="text-sm font-bold text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">Cadastrar Novo Veículo</span>
                         </button>
@@ -313,7 +328,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                 <div role="button" tabIndex={0} onClick={() => carregarDashboard(v)} className="p-6 cursor-pointer flex-1 flex flex-col active:scale-[0.98] transition-transform">
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="w-14 h-14 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center shadow-inner border border-slate-100 dark:border-slate-800/50">
-                                            <span className="text-3xl">{v.tipo === 'convidado' ? '🤝' : '🚗'}</span>
+                                            {v.tipo === 'convidado' ? <Users className="w-6 h-6 text-amber-500" strokeWidth={2} /> : <Car className="w-6 h-6 text-blue-500" strokeWidth={2} />}
                                         </div>
                                         <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded shadow-sm ${v.tipo === 'convidado' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'}`}>
                                             {v.tipo === 'convidado' ? 'Convidado' : 'Próprio'}
@@ -332,9 +347,9 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                     )}
                                 </div>
                                 <div className="border-t border-slate-100 dark:border-slate-700 flex bg-slate-50 dark:bg-slate-900/50 rounded-b-xl">
-                                    <button type="button" onClick={() => { setTipoVeiculoForm(v.tipo || 'proprio'); setModalVeiculo(v); }} className="flex-1 py-3.5 md:py-3 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-800 transition-colors cursor-pointer rounded-bl-xl active:bg-blue-200 dark:active:bg-slate-700">✏️ Editar</button>
+                                    <button type="button" onClick={() => { setTipoVeiculoForm(v.tipo || 'proprio'); setModalVeiculo(v); }} className="flex-1 py-3.5 md:py-3 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-800 transition-colors cursor-pointer rounded-bl-xl active:bg-blue-200 dark:active:bg-slate-700 flex items-center justify-center gap-1.5"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /> Editar</button>
                                     <div className="w-px bg-slate-200 dark:bg-slate-700/50 my-2"></div>
-                                    <button type="button" onClick={() => solicitarExclusaoVeiculo(v.id)} className="flex-1 py-3.5 md:py-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors cursor-pointer rounded-br-xl active:bg-rose-200 dark:active:bg-rose-800">🗑️ Excluir</button>
+                                    <button type="button" onClick={() => solicitarExclusaoVeiculo(v.id)} className="flex-1 py-3.5 md:py-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors cursor-pointer rounded-br-xl active:bg-rose-200 dark:active:bg-rose-800 flex items-center justify-center gap-1.5"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /> Excluir</button>
                                 </div>
                             </div>
                         ))}
@@ -351,11 +366,11 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
     // ==========================================
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
-            <ModalEConfirmacoesBase />
+            {ModalEConfirmacoesBase()}
 
             {/* MODAL: ITEM DE DESGASTE */}
             {modalItem && (
-                <ModalInterno titulo={modalItem === 'novo' ? '⚙️ Novo Rastreio de Peça' : '✏️ Editar Rastreio'} onFechar={() => !isSubmitting && setModalItem(null)}>
+                <ModalInterno titulo={modalItem === 'novo' ? 'Novo Rastreio de Peça' : 'Editar Rastreio'} onFechar={() => !isSubmitting && setModalItem(null)}>
                     <form onSubmit={salvarItem} className="space-y-5">
                         <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800/30 rounded-lg p-3 mb-2 flex items-center justify-between shadow-sm">
                             <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Odômetro Mestre</span>
@@ -378,7 +393,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
             {/* MODAL: REGISTRO HISTÓRICO MANUAL */}
             {modalManutencao && (
-                <ModalInterno titulo={modalManutencao === 'novo' ? '🔧 Registrar Intervenção' : '✏️ Editar Registro'} onFechar={() => !isSubmitting && setModalManutencao(null)}>
+                <ModalInterno titulo={modalManutencao === 'novo' ? 'Registrar Intervenção' : 'Editar Registro'} onFechar={() => !isSubmitting && setModalManutencao(null)}>
                     <form onSubmit={salvarManutencao} className="space-y-5">
                         <div><label className={labelCls}>Resumo do Serviço</label><input name="descricao" defaultValue={modalManutencao !== 'novo' ? modalManutencao.descricao : ''} placeholder="Ex: Aperto da corrente, Troca de fusível..." required className={inputCls} /></div>
                         <div className="grid grid-cols-2 gap-4">
@@ -398,12 +413,12 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
             )}
 
             {/* CABEÇALHO DO VEÍCULO ESPECÍFICO */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 transition-colors">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 transition-colors">
                 <div className="flex items-center gap-4 w-full lg:w-auto">
-                    <button type="button" onClick={() => setVeiculoSelecionado(null)} className="w-12 h-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer text-xl font-black border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 active:scale-95">←</button>
+                    <button type="button" onClick={() => setVeiculoSelecionado(null)} className="w-12 h-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 active:scale-95"><ArrowLeft className="w-5 h-5" strokeWidth={2.25} /></button>
                     <div className="min-w-0">
-                        <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 truncate">
-                            {veiculoSelecionado.tipo === 'convidado' ? '🤝' : '🚗'} {veiculoSelecionado.modelo}
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2 truncate tracking-tight">
+                            {veiculoSelecionado.tipo === 'convidado' ? <Users className="w-5 h-5 shrink-0 text-amber-500" strokeWidth={2} /> : <Car className="w-5 h-5 shrink-0 text-blue-500" strokeWidth={2} />} {veiculoSelecionado.modelo}
                         </h1>
                         {veiculoSelecionado.tipo === 'convidado' ? (
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Veículo de uso esporádico (Terceiros)</p>
@@ -416,8 +431,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                     </div>
                 </div>
                 <div className="w-full lg:w-auto shrink-0 flex flex-col sm:flex-row items-center gap-3">
-                    <button type="button" onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="w-full sm:w-auto bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 px-5 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm active:scale-[0.98]">
-                        ✏️ Atualizar KM / Editar
+                    <button type="button" onClick={() => { setTipoVeiculoForm(veiculoSelecionado.tipo || 'proprio'); setModalVeiculo(veiculoSelecionado); }} className="w-full sm:w-auto bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 px-5 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm active:scale-[0.98] flex items-center justify-center gap-2">
+                        <Pencil className="w-4 h-4" strokeWidth={2} /> Atualizar KM / Editar
                     </button>
                     <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-800 dark:bg-slate-700 text-white border border-slate-800 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 px-5 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm active:scale-[0.98]">
                         Ir para Dashboard Central
@@ -433,7 +448,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                     <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
                             <div>
-                                <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">⚙️ Rastreador de Peças</h2>
+                                <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Settings className="w-4 h-4" strokeWidth={2} /> Rastreador de Peças</h2>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase font-bold">Baseado no odômetro atual ({kmAtual.toLocaleString()}km)</p>
                             </div>
                             <div className="flex items-center w-full sm:w-auto bg-slate-100 dark:bg-slate-900/80 p-1.5 rounded-lg border border-transparent dark:border-slate-700">
@@ -444,10 +459,10 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
                         {itens.length === 0 ? (
                             <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-                                <span className="text-3xl opacity-50 mb-3">🛠️</span>
+                                <Wrench className="w-9 h-9 opacity-50 mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                                 <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Sem rastreio ativo</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">Cadastre o óleo do motor, filtro de ar ou velas para que o painel avise a hora exata da troca.</p>
-                                <button type="button" onClick={() => setModalItem('novo')} className="mt-5 text-white bg-blue-600 hover:bg-blue-700 font-bold text-sm py-2.5 px-6 rounded-lg cursor-pointer transition-colors shadow-sm active:scale-95">+ Iniciar Rastreamento</button>
+                                <button type="button" onClick={() => setModalItem('novo')} className="mt-5 text-white bg-blue-600 hover:bg-blue-700 font-bold text-sm py-2.5 px-6 rounded-lg cursor-pointer transition-colors shadow-sm active:scale-95 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Iniciar Rastreamento</button>
                             </div>
                         ) : (
                             <div className="space-y-4 flex-1">
@@ -475,15 +490,15 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                             <div className="flex justify-between items-center mb-3.5 relative z-10">
                                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 min-w-0 pr-2">
                                                     <span className="font-black text-slate-800 dark:text-slate-100 text-sm md:text-base tracking-tight truncate">{item.nome}</span>
-                                                    {isCritico && <span className="inline-flex w-max items-center gap-1 text-[9px] uppercase bg-rose-600 text-white font-black px-2 py-0.5 rounded shadow-sm animate-pulse">⚠️ Troca Imediata</span>}
+                                                    {isCritico && <span className="inline-flex w-max items-center gap-1 text-[9px] uppercase bg-rose-600 text-white font-black px-2 py-0.5 rounded shadow-sm animate-pulse"><AlertTriangle className="w-2.5 h-2.5" strokeWidth={2.5} /> Troca Imediata</span>}
                                                 </div>
                                                 <div className="flex items-center gap-4 shrink-0">
                                                     <span className={`text-base md:text-lg font-black tracking-tighter ${corTexto}`}>
                                                         {modoBarras === 'pct' ? `${pct.toFixed(0)}%` : `${kmFaltando.toLocaleString('pt-BR')} km`}
                                                     </span>
                                                     <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                                                        <button type="button" onClick={() => setModalItem(item)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar Intervalo/KM">✏️</button>
-                                                        <button type="button" onClick={() => solicitarExclusaoItem(item.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Excluir Rastreio">🗑️</button>
+                                                        <button type="button" onClick={() => setModalItem(item)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar Intervalo/KM"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /></button>
+                                                        <button type="button" onClick={() => solicitarExclusaoItem(item.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Excluir Rastreio"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -500,7 +515,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                             </div>
                         )}
 
-                        <button type="button" onClick={() => setModalItem('novo')} className="mt-5 w-full border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400 font-bold py-3.5 md:py-3 rounded-xl text-sm transition-all cursor-pointer shadow-sm active:scale-[0.98]">+ Monitorar Nova Peça</button>
+                        <button type="button" onClick={() => setModalItem('novo')} className="mt-5 w-full border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400 font-bold py-3.5 md:py-3 rounded-xl text-sm transition-all cursor-pointer shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Monitorar Nova Peça</button>
                     </div>
                 )}
 
@@ -508,21 +523,21 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                 {veiculoSelecionado.tipo !== 'convidado' && (
                     <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                            <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">🛠️ Histórico Clínico</h2>
+                            <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Stethoscope className="w-4 h-4" strokeWidth={2} /> Histórico Clínico</h2>
                             <button type="button" onClick={() => setModalManutencao('novo')} className="w-full sm:w-auto bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white text-xs font-bold px-5 py-3 md:py-2.5 rounded-lg transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-95">
-                                <span>+</span> Registrar Serviço
+                                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Registrar Serviço
                             </button>
                         </div>
 
                         {manutencoes.length === 0 ? (
                             <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-                                <span className="text-3xl opacity-50 mb-3">📋</span>
+                                <ClipboardList className="w-9 h-9 opacity-50 mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                                 <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Ficha limpa</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">Registre limpezas de bico, diagnósticos elétricos, troca de pneu ou reparos mecânicos aqui para criar um histórico valioso.</p>
                             </div>
                         ) : (
                             <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 md:ml-4 space-y-6 pb-4 mt-2 max-h-[500px] overflow-y-auto custom-scrollbar">
-                                {manutencoes.map((m, index) => (
+                                {manutencoes.map((m) => (
                                     <div key={m.id} className="relative pl-6 md:pl-8 group">
                                         {/* Ponto da Linha do Tempo */}
                                         <span className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-blue-500 border-4 border-white dark:border-slate-800 group-hover:bg-indigo-500 transition-colors shadow-sm"></span>
@@ -538,8 +553,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                                 </div>
                                                 {/* Mini menu de contexto (Hover) */}
                                                 <div className="flex gap-1 shrink-0 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                    <button type="button" onClick={() => setModalManutencao(m)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Editar Registro">✏️</button>
-                                                    <button type="button" onClick={() => solicitarExclusaoManutencao(m.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Excluir Registro">🗑️</button>
+                                                    <button type="button" onClick={() => setModalManutencao(m)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Editar Registro"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /></button>
+                                                    <button type="button" onClick={() => solicitarExclusaoManutencao(m.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Excluir Registro"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                                 </div>
                                             </div>
                                             {m.observacao && (
@@ -557,12 +572,12 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
 
                 {/* BLOCO: LANÇAMENTOS FINANCEIROS ATRELADOS (Para Próprios e Convidados) */}
                 <div className={`bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors ${veiculoSelecionado.tipo === 'convidado' ? 'lg:col-span-2' : 'lg:col-span-2 xl:col-span-2'}`}>
-                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-1">💸 Custos Associados (Extrato)</h2>
+                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-1 flex items-center gap-2"><Wallet className="w-4 h-4" strokeWidth={2} /> Custos Associados (Extrato)</h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Transações extraídas automaticamente do Livro-Razão atreladas a esta placa.</p>
 
                     {lancamentosVeiculo.length === 0 ? (
                         <div className="text-center py-10 px-4 text-slate-400 dark:text-slate-500 text-sm border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl font-semibold bg-slate-50 dark:bg-slate-900/30">
-                            <span className="text-3xl opacity-50 mb-3 block">💳</span>
+                            <CreditCard className="w-9 h-9 opacity-50 mb-3 mx-auto text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                             <p>Nenhum custo registrado para este veículo.</p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-normal">Ao registrar uma despesa no painel principal, selecione a categoria Gasolina/Manutenção e vincule a quilometragem.</p>
                         </div>
@@ -573,8 +588,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                                     <div className="min-w-0 flex-1 pr-4">
                                         <p className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate leading-tight">{t.descricao}</p>
                                         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                                            <span>📅 {formatarData(t.dataCompra)}</span>
-                                            {t.km_moto && <span className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">🏍️ {Number(t.km_moto).toLocaleString('pt-BR')} km</span>}
+                                            <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" strokeWidth={2.25} /> {formatarData(t.dataCompra)}</span>
+                                            {t.km_moto && <span className="inline-flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300"><Bike className="w-2.5 h-2.5" strokeWidth={2.5} /> {Number(t.km_moto).toLocaleString('pt-BR')} km</span>}
                                         </p>
                                     </div>
                                     <div className="text-right shrink-0 flex flex-col items-end gap-1.5">

@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import React from 'react';
+import { ShieldCheck } from 'lucide-react';
 
 /**
  * @file src/components/TrocaSenha.jsx
@@ -15,10 +16,10 @@ export function TrocaSenha({ enviarNovaSenha, novaSenha, setNovaSenha, confirmar
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 animate-fade-in">
             <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-800 transition-colors duration-300 animate-scale-in">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner border border-amber-200 dark:border-amber-800/50">
-                        🛡️
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner border border-amber-200 dark:border-amber-800/50">
+                        <ShieldCheck className="w-7 h-7" strokeWidth={2} />
                     </div>
-                    <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Segurança</h1>
+                    <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Segurança</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Atualização de Senha Obrigatória</p>
                 </div>
 

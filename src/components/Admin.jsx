@@ -1,5 +1,9 @@
 /* eslint-disable react/prop-types */
 import React, { useState } from 'react';
+import {
+  Users, Lightbulb, RefreshCw, FolderOpen, Star, ShieldAlert, ShieldCheck,
+  Bike, Paperclip, ArrowUpCircle, ArrowDownCircle, Ban, KeyRound, Trash2, Loader2
+} from 'lucide-react';
 
 /**
  * @file src/components/Admin.jsx
@@ -40,15 +44,20 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
 
       <div className="w-full max-w-7xl mx-auto space-y-6 pb-24">
 
-        {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              👥 Gerenciamento de Usuários
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Super Admin — Acesso restrito e auditoria de sistema.
-            </p>
+        {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+              <Users className="w-5 h-5" strokeWidth={2} />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                Gerenciamento de Usuários
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Super Admin — Acesso restrito e auditoria de sistema.
+              </p>
+            </div>
           </div>
           <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
             <button type="button" onClick={() => setTelaAtiva('dashboard')} className="w-full sm:w-auto bg-slate-900 dark:bg-slate-700 text-white font-bold py-3.5 md:py-2.5 px-6 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors cursor-pointer shadow-sm active:scale-[0.98]">
@@ -70,8 +79,9 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
             </div>
             <button type="submit" className={btnSalvarCls}>Criar Usuário</button>
           </form>
-          <div className="mt-5 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30 shadow-sm">
-            <p className="text-[11px] md:text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">💡 A senha padrão gerada será <strong>admin123</strong>. O sistema forçará o utilizador a definir uma senha própria e segura logo no seu primeiro login. Por padrão, novos usuários não têm acesso ao Módulo Garagem.</p>
+          <div className="mt-5 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30 shadow-sm flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" strokeWidth={2} />
+            <p className="text-[11px] md:text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">A senha padrão gerada será <strong>admin123</strong>. O sistema forçará o utilizador a definir uma senha própria e segura logo no seu primeiro login. Por padrão, novos usuários não têm acesso ao Módulo Garagem.</p>
           </div>
         </section>
 
@@ -85,14 +95,14 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
               className={`text-xs font-bold px-4 py-3 md:py-2 rounded-xl border transition-all flex items-center justify-center gap-2 w-full sm:w-auto active:scale-95 ${atualizando ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700 cursor-wait' : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer shadow-sm'}`}
             >
               {atualizando ? (
-                <><svg className="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sincronizando...</>
-              ) : '🔄 Sincronizar Base'}
+                <><Loader2 className="animate-spin h-4 w-4 text-slate-500" strokeWidth={2.5} /> Sincronizando...</>
+              ) : <><RefreshCw className="w-3.5 h-3.5" strokeWidth={2.25} /> Sincronizar Base</>}
             </button>
           </div>
 
           {usuarios.length === 0 ? (
             <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-sm flex flex-col items-center gap-4">
-              <span className="text-5xl opacity-50 block mb-2">📂</span>
+              <FolderOpen className="w-12 h-12 opacity-50 mx-auto mb-2" strokeWidth={1.5} />
               <p className="font-bold text-lg">A base de utilizadores local ainda não foi carregada.</p>
               <button type="button" onClick={handleAtualizarLista} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">Clique aqui para sincronizar agora.</button>
             </div>
@@ -112,8 +122,8 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                         </div>
                         <h3 className="font-black text-slate-800 dark:text-slate-100 truncate text-lg">{u.usuario}</h3>
                       </div>
-                      <span className={`shrink-0 text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.is_admin === 1 ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
-                        {u.is_admin === 1 ? '⭐ Admin' : 'Comum'}
+                      <span className={`inline-flex items-center gap-1 shrink-0 text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.is_admin === 1 ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                        {u.is_admin === 1 && <Star className="w-2.5 h-2.5" strokeWidth={2.5} />} {u.is_admin === 1 ? 'Admin' : 'Comum'}
                       </span>
                     </div>
 
@@ -124,39 +134,39 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                       </div>
                       <div className={`p-3 rounded-xl border flex flex-col items-center justify-center shadow-sm ${u.precisa_trocar === 1 ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/30' : 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800/30'}`}>
                         <p className={`text-[9px] font-bold uppercase tracking-widest mb-1.5 ${u.precisa_trocar === 1 ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500'}`}>Senha</p>
-                        <span className={`text-xs font-black uppercase tracking-wider ${u.precisa_trocar === 1 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                          {u.precisa_trocar === 1 ? '⚠ VAZADA' : '✔ FORTE'}
+                        <span className={`inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider ${u.precisa_trocar === 1 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                          {u.precisa_trocar === 1 ? <><ShieldAlert className="w-3 h-3" strokeWidth={2.5} /> Vazada</> : <><ShieldCheck className="w-3 h-3" strokeWidth={2.5} /> Forte</>}
                         </span>
                       </div>
                       <div className={`p-3 rounded-xl border flex flex-col items-center justify-center shadow-sm ${u.tem_garagem === 1 ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/10 dark:border-indigo-800/30' : 'bg-slate-50 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700/50'}`}>
                         <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 text-slate-500 dark:text-slate-400">Garagem</p>
-                        <span className={`text-[10px] font-black uppercase tracking-wider ${u.tem_garagem === 1 ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'}`}>
-                          {u.tem_garagem === 1 ? '🏍️ LIBERADA' : 'BLOQUEADA'}
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${u.tem_garagem === 1 ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'}`}>
+                          {u.tem_garagem === 1 && <Bike className="w-3 h-3" strokeWidth={2.5} />} {u.tem_garagem === 1 ? 'Liberada' : 'Bloqueada'}
                         </span>
                       </div>
                       <div className={`p-3 rounded-xl border flex flex-col items-center justify-center shadow-sm ${u.tem_comprovante === 1 ? 'bg-teal-50 border-teal-200 dark:bg-teal-900/10 dark:border-teal-800/30' : 'bg-slate-50 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700/50'}`}>
                         <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 text-slate-500 dark:text-slate-400">Comprovante</p>
-                        <span className={`text-[10px] font-black uppercase tracking-wider ${u.tem_comprovante === 1 ? 'text-teal-700 dark:text-teal-400' : 'text-slate-400'}`}>
-                          {u.tem_comprovante === 1 ? '📎 LIBERADO' : 'BLOQUEADO'}
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${u.tem_comprovante === 1 ? 'text-teal-700 dark:text-teal-400' : 'text-slate-400'}`}>
+                          {u.tem_comprovante === 1 && <Paperclip className="w-3 h-3" strokeWidth={2.5} />} {u.tem_comprovante === 1 ? 'Liberado' : 'Bloqueado'}
                         </span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                      <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} className="py-3.5 text-xs bg-purple-50 dark:bg-purple-900/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
-                        {u.is_admin === 1 ? '↓ Rebaixar' : '↑ Promover Admin'}
+                      <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} className="py-3.5 text-xs bg-purple-50 dark:bg-purple-900/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        {u.is_admin === 1 ? <ArrowDownCircle className="w-3.5 h-3.5" strokeWidth={2} /> : <ArrowUpCircle className="w-3.5 h-3.5" strokeWidth={2} />} {u.is_admin === 1 ? 'Rebaixar' : 'Promover Admin'}
                       </button>
-                      <button type="button" onClick={() => toggleGaragem && toggleGaragem(u.id, u.usuario, u.tem_garagem === 1)} className="py-3.5 text-xs bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
-                        {u.tem_garagem === 1 ? '🚫 Tira Garagem' : '🏍️ Dar Garagem'}
+                      <button type="button" onClick={() => toggleGaragem && toggleGaragem(u.id, u.usuario, u.tem_garagem === 1)} className="py-3.5 text-xs bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        {u.tem_garagem === 1 ? <Ban className="w-3.5 h-3.5" strokeWidth={2} /> : <Bike className="w-3.5 h-3.5" strokeWidth={2} />} {u.tem_garagem === 1 ? 'Tira Garagem' : 'Dar Garagem'}
                       </button>
-                      <button type="button" onClick={() => toggleComprovante && toggleComprovante(u.id, u.usuario, u.tem_comprovante === 1)} className="py-3.5 text-xs bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
-                        {u.tem_comprovante === 1 ? '🚫 Tira Comprovante' : '📎 Dar Comprovante'}
+                      <button type="button" onClick={() => toggleComprovante && toggleComprovante(u.id, u.usuario, u.tem_comprovante === 1)} className="py-3.5 text-xs bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        {u.tem_comprovante === 1 ? <Ban className="w-3.5 h-3.5" strokeWidth={2} /> : <Paperclip className="w-3.5 h-3.5" strokeWidth={2} />} {u.tem_comprovante === 1 ? 'Tira Comprovante' : 'Dar Comprovante'}
                       </button>
-                      <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} className="py-3.5 text-xs bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
-                        🔑 Forçar Reset
+                      <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} className="py-3.5 text-xs bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5" strokeWidth={2} /> Forçar Reset
                       </button>
-                      <button type="button" onClick={() => deletarUsuario(u.id, u.usuario)} className="py-3.5 text-xs bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
-                        🗑️ Excluir Conta
+                      <button type="button" onClick={() => deletarUsuario(u.id, u.usuario)} className="py-3.5 text-xs bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5">
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={2} /> Excluir Conta
                       </button>
                     </div>
                   </div>
@@ -193,8 +203,8 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                         </td>
 
                         <td className="px-3 py-4 text-center">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.is_admin === 1 ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
-                            {u.is_admin === 1 ? '⭐ Admin' : 'Comum'}
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.is_admin === 1 ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                            {u.is_admin === 1 && <Star className="w-2.5 h-2.5" strokeWidth={2.5} />} {u.is_admin === 1 ? 'Admin' : 'Comum'}
                           </span>
                         </td>
 
@@ -203,39 +213,39 @@ export function Admin({ ModalComponent, modalConfig, modalClose, setTelaAtiva, c
                         </td>
 
                         <td className="px-3 py-4 text-center">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.precisa_trocar === 1 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50' : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50'}`}>
-                            {u.precisa_trocar === 1 ? '⚠ VAZADA' : '✔ FORTE'}
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.precisa_trocar === 1 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50' : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50'}`}>
+                            {u.precisa_trocar === 1 ? <><ShieldAlert className="w-3 h-3" strokeWidth={2.5} /> Vazada</> : <><ShieldCheck className="w-3 h-3" strokeWidth={2.5} /> Forte</>}
                           </span>
                         </td>
 
                         <td className="px-3 py-4 text-center">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.tem_garagem === 1 ? 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
-                            {u.tem_garagem === 1 ? '🏍️ ATIVA' : 'INATIVA'}
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.tem_garagem === 1 ? 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                            {u.tem_garagem === 1 && <Bike className="w-3 h-3" strokeWidth={2.5} />} {u.tem_garagem === 1 ? 'Ativa' : 'Inativa'}
                           </span>
                         </td>
 
                         <td className="px-3 py-4 text-center">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.tem_comprovante === 1 ? 'bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
-                            {u.tem_comprovante === 1 ? '📎 ATIVO' : 'INATIVO'}
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm ${u.tem_comprovante === 1 ? 'bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                            {u.tem_comprovante === 1 && <Paperclip className="w-3 h-3" strokeWidth={2.5} />} {u.tem_comprovante === 1 ? 'Ativo' : 'Inativo'}
                           </span>
                         </td>
 
                         <td className="px-5 py-4">
                           <div className="flex flex-wrap gap-2 justify-center">
-                            <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} title={u.is_admin === 1 ? 'Rebaixar para Visualizador' : 'Promover a Administrador'} className="text-xs bg-purple-50 dark:bg-purple-900/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
-                              {u.is_admin === 1 ? '↓ Despromover' : '↑ Promover'}
+                            <button type="button" onClick={() => toggleAdmin(u.id, u.usuario, u.is_admin === 1)} title={u.is_admin === 1 ? 'Rebaixar para Visualizador' : 'Promover a Administrador'} className="flex items-center gap-1.5 text-xs bg-purple-50 dark:bg-purple-900/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
+                              {u.is_admin === 1 ? <ArrowDownCircle className="w-3.5 h-3.5" strokeWidth={2} /> : <ArrowUpCircle className="w-3.5 h-3.5" strokeWidth={2} />} {u.is_admin === 1 ? 'Despromover' : 'Promover'}
                             </button>
-                            <button type="button" onClick={() => toggleGaragem && toggleGaragem(u.id, u.usuario, u.tem_garagem === 1)} title={u.tem_garagem === 1 ? 'Revogar acesso à Garagem' : 'Liberar acesso à Garagem'} className="text-xs bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
-                              {u.tem_garagem === 1 ? '🚫 Garagem' : '🏍️ Garagem'}
+                            <button type="button" onClick={() => toggleGaragem && toggleGaragem(u.id, u.usuario, u.tem_garagem === 1)} title={u.tem_garagem === 1 ? 'Revogar acesso à Garagem' : 'Liberar acesso à Garagem'} className="flex items-center gap-1.5 text-xs bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
+                              {u.tem_garagem === 1 ? <Ban className="w-3.5 h-3.5" strokeWidth={2} /> : <Bike className="w-3.5 h-3.5" strokeWidth={2} />} Garagem
                             </button>
-                            <button type="button" onClick={() => toggleComprovante && toggleComprovante(u.id, u.usuario, u.tem_comprovante === 1)} title={u.tem_comprovante === 1 ? 'Revogar anexo de comprovantes' : 'Liberar anexo de comprovantes'} className="text-xs bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
-                              {u.tem_comprovante === 1 ? '🚫 Comprovante' : '📎 Comprovante'}
+                            <button type="button" onClick={() => toggleComprovante && toggleComprovante(u.id, u.usuario, u.tem_comprovante === 1)} title={u.tem_comprovante === 1 ? 'Revogar anexo de comprovantes' : 'Liberar anexo de comprovantes'} className="flex items-center gap-1.5 text-xs bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
+                              {u.tem_comprovante === 1 ? <Ban className="w-3.5 h-3.5" strokeWidth={2} /> : <Paperclip className="w-3.5 h-3.5" strokeWidth={2} />} Comprovante
                             </button>
-                            <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} title="Forçar a senha a voltar para 'admin123'" className="text-xs bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
-                              🔑 Reset
+                            <button type="button" onClick={() => resetarSenha(u.id, u.usuario)} title="Forçar a senha a voltar para 'admin123'" className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
+                              <KeyRound className="w-3.5 h-3.5" strokeWidth={2} /> Reset
                             </button>
-                            <button type="button" onClick={() => deletarUsuario(u.id, u.usuario)} title="Apagar a conta permanentemente" className="text-xs bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
-                              🗑️ Excluir
+                            <button type="button" onClick={() => deletarUsuario(u.id, u.usuario)} title="Apagar a conta permanentemente" className="flex items-center gap-1.5 text-xs bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 px-3 py-2 rounded-xl font-bold cursor-pointer transition-colors shadow-sm active:scale-95">
+                              <Trash2 className="w-3.5 h-3.5" strokeWidth={2} /> Excluir
                             </button>
                           </div>
                         </td>

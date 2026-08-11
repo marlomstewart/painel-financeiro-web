@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Handshake, Eye, CheckCircle2, MessageCircle, X, Landmark, CreditCard } from 'lucide-react';
 
 /**
  * @file src/components/Cobrancas.jsx
@@ -156,9 +157,9 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         try {
             await navigator.clipboard.writeText(texto);
             if (showToast) showToast(`Cobrança de ${pessoa.nomeExibicao} copiada!`, 'success');
-            else modal.alert('Resumo do mês copiado! Pronto para colar no WhatsApp.', '✅ Copiado com sucesso');
+            else modal.alert('Resumo do mês copiado! Pronto para colar no WhatsApp.', 'Copiado com sucesso');
         } catch (err) {
-            modal.alert('Não foi possível copiar automaticamente.', '❌ Erro');
+            modal.alert('Não foi possível copiar automaticamente.', 'Erro');
         }
     };
 
@@ -176,7 +177,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                     valorPendente: t.valorPendente,
                     parcelasPagas: t.parcelasPagas,
                     parcelasPendentes: t.parcelasTotais - t.parcelasPagas,
-                    tipoBadge: '🏛️ Empréstimo'
+                    isEmprestimoBadge: true
                 };
                 return;
             }
@@ -202,7 +203,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                     valorPendente: 0,
                     parcelasPagas: 0,
                     parcelasPendentes: 0,
-                    tipoBadge: '💳 Cartão/Pix'
+                    isEmprestimoBadge: false
                 };
             }
 
@@ -223,7 +224,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     const handleMarcarPago = async (item) => {
         const confirm = await modal.confirm(
             `Confirma o recebimento de ${formatarMoeda(item.valorCobradoCalculado)} referente a "${item.descricao}"?`,
-            '💰 Confirmar Recebimento',
+            'Confirmar Recebimento',
             { confirmLabel: 'Sim, Recebi', confirmColor: 'bg-emerald-600 hover:bg-emerald-700' }
         );
 
@@ -242,14 +243,19 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        🤝 A Receber (Terceiros)
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Unificação de gastos no cartão e empréstimos cedidos a terceiros.
-                    </p>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                        <Handshake className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            A Receber (Terceiros)
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Unificação de gastos no cartão e empréstimos cedidos a terceiros.
+                        </p>
+                    </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                     <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 px-5 py-3 rounded-xl shadow-sm flex-1 lg:flex-none">
@@ -269,8 +275,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
             {cobrancasPorPessoa.length === 0 ? (
                 <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center shadow-sm">
-                    <span className="text-5xl block mb-4 opacity-80">🙌</span>
-                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Nenhuma cobrança registrada</h3>
+                    <Handshake className="w-12 h-12 mx-auto mb-4 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
+                    <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Nenhuma cobrança registrada</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Não há dívidas ou compras de terceiros em aberto no seu nome.</p>
                 </div>
             ) : (
@@ -289,7 +295,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                     </div>
                                 </div>
                                 <button onClick={() => setPessoaDetalhe(pessoa)} className="shrink-0 p-2 text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm transition-colors cursor-pointer" title="Ver Detalhamento Completo">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    <Eye className="w-5 h-5" strokeWidth={2} />
                                 </button>
                             </div>
 
@@ -297,7 +303,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Pendências do Mês Atual</p>
                                 {pessoa.itensMesAtual.length === 0 ? (
                                     <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-xl p-4 text-center">
-                                        <span className="text-2xl mb-1 block">✅</span>
+                                        <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-500" strokeWidth={2} />
                                         <p className="text-xs font-bold text-slate-500">Tudo pago neste mês!</p>
                                     </div>
                                 ) : (
@@ -311,8 +317,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                                 </div>
                                                 <span className="text-sm font-black text-rose-600 dark:text-rose-400 shrink-0">{formatarMoeda(item.valorCobradoCalculado)}</span>
                                             </div>
-                                            <button onClick={() => handleMarcarPago(item)} className="w-full bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 py-2.5 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors active:scale-95 shadow-sm cursor-pointer">
-                                                ✅ Marcar como Recebido
+                                            <button onClick={() => handleMarcarPago(item)} className="w-full bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 py-2.5 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors active:scale-95 shadow-sm cursor-pointer flex items-center justify-center gap-1.5">
+                                                <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} /> Marcar como Recebido
                                             </button>
                                         </div>
                                     ))
@@ -325,7 +331,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                     <span className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{formatarMoeda(pessoa.totalMesAtual)}</span>
                                 </div>
                                 <button onClick={() => gerarTextoCobranca(pessoa)} disabled={pessoa.itensMesAtual.length === 0} className="w-full bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 dark:hover:bg-slate-700 disabled:bg-slate-300 disabled:dark:bg-slate-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 cursor-pointer">
-                                    <span className="text-lg">💬</span> Copiar Cobrança Mensal
+                                    <MessageCircle className="w-4 h-4" strokeWidth={2} /> Copiar Cobrança Mensal
                                 </button>
                             </div>
 
@@ -346,7 +352,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Histórico financeiro com <strong>{pessoaDetalhe.nomeExibicao}</strong></p>
                             </div>
                             <button onClick={() => setPessoaDetalhe(null)} className="p-2 bg-white dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-rose-500 transition-colors shadow-sm cursor-pointer">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <X className="w-5 h-5" strokeWidth={2.5} />
                             </button>
                         </div>
 
@@ -367,8 +373,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                 <div key={idx} className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm flex flex-col gap-3">
                                     <div className="flex justify-between items-start gap-2">
                                         <div>
-                                            <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 mb-1.5 uppercase tracking-wider border border-slate-200 dark:border-slate-700">
-                                                {compra.tipoBadge}
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 mb-1.5 uppercase tracking-wider border border-slate-200 dark:border-slate-700">
+                                                {compra.isEmprestimoBadge ? <><Landmark className="w-2.5 h-2.5" strokeWidth={2.5} /> Empréstimo</> : <><CreditCard className="w-2.5 h-2.5" strokeWidth={2.5} /> Cartão/Pix</>}
                                             </span>
                                             <h5 className="font-black text-slate-800 dark:text-slate-100 text-base leading-tight">{compra.nome}</h5>
                                             <p className="text-xs font-semibold text-slate-500 mt-1">

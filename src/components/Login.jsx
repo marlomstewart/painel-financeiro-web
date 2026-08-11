@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import React, { useState } from 'react';
+import { Lock } from 'lucide-react';
 
 /**
  * @file src/components/Login.jsx
@@ -93,10 +94,10 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                 {view === 'login' && (
                     <div className="animate-fade-in">
                         <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner border border-blue-200 dark:border-blue-800/50">
-                                🔐
+                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner border border-blue-200 dark:border-blue-800/50">
+                                <Lock className="w-7 h-7" strokeWidth={2} />
                             </div>
-                            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Painel Financeiro</h1>
+                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Painel Financeiro</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Acesso Restrito</p>
                         </div>
 
@@ -140,7 +141,7 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                 {view === 'forgot' && (
                     <div className="animate-fade-in-right">
                         <div className="text-center mb-8">
-                            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Recuperar Senha</h1>
+                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Recuperar Senha</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Identifique a sua conta</p>
                         </div>
 
@@ -171,7 +172,7 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                 {view === 'verify' && (
                     <div className="animate-fade-in-right">
                         <div className="text-center mb-8">
-                            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Código Enviado</h1>
+                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Código Enviado</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Insira o código de 6 dígitos</p>
                         </div>
 
@@ -204,7 +205,7 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                 {view === 'reset' && (
                     <div className="animate-fade-in-right">
                         <div className="text-center mb-8">
-                            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Nova Senha</h1>
+                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Nova Senha</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Crie uma nova credencial forte</p>
                         </div>
 

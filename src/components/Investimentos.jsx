@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
+import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle } from 'lucide-react';
 
 /**
  * @function formatarMoeda
@@ -109,37 +110,37 @@ export function Investimentos({ API, getHeaders, modal }) {
     }, [simCurtoValor, simCurtoTaxa, simCurtoData, dashboardData]);
 
     const handleNovaCaixinha = async () => {
-        const banco = await modal.prompt('1️⃣ Nome da Instituição/Corretora?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Nubank, Inter', confirmLabel: 'Próximo' });
+        const banco = await modal.prompt('Passo 1 de 3 — Nome da Instituição/Corretora?', '', 'Nova Caixinha', { placeholder: 'Ex: Nubank, Inter', confirmLabel: 'Próximo' });
         if (!banco) return;
 
-        const nome = await modal.prompt('2️⃣ Nome/Apelido deste Investimento?', '', '🏦 Nova Caixinha', { placeholder: 'Ex: Caixinha Turbo, Reserva', confirmLabel: 'Próximo' });
+        const nome = await modal.prompt('Passo 2 de 3 — Nome/Apelido deste Investimento?', '', 'Nova Caixinha', { placeholder: 'Ex: Caixinha Turbo, Reserva', confirmLabel: 'Próximo' });
         if (!nome) return;
 
-        const taxa = await modal.prompt('3️⃣ Percentual do CDI? (Apenas números)', '100', '🏦 Nova Caixinha', { inputType: 'number', confirmLabel: 'Criar' });
+        const taxa = await modal.prompt('Passo 3 de 3 — Percentual do CDI? (Apenas números)', '100', 'Nova Caixinha', { inputType: 'number', confirmLabel: 'Criar' });
         if (!taxa || isNaN(Number(taxa))) return modal.alert('Taxa inválida.');
 
         criarCaixinha(banco, nome, Number(taxa));
     };
 
     const handleNovoAporte = async (caixinhaId, nomeCaixinha) => {
-        const valor = await modal.prompt(`💰 Qual o valor do aporte para "${nomeCaixinha}"?`, '', '📈 Novo Aporte', { inputType: 'currency', confirmLabel: 'Próximo' });
+        const valor = await modal.prompt(`Qual o valor do aporte para "${nomeCaixinha}"?`, '', 'Novo Aporte', { inputType: 'currency', confirmLabel: 'Próximo' });
         if (!valor || valor <= 0) return;
 
-        const dataAporte = await modal.prompt(`📅 Qual foi a data deste aporte?`, new Date().toISOString().split('T')[0], '📈 Novo Aporte', { inputType: 'date', confirmLabel: 'Registrar' });
+        const dataAporte = await modal.prompt(`Qual foi a data deste aporte?`, new Date().toISOString().split('T')[0], 'Novo Aporte', { inputType: 'date', confirmLabel: 'Registrar' });
         if (!dataAporte) return;
 
         criarAporte(caixinhaId, valor, dataAporte);
     };
 
     const handleResgate = async (caixinhaId, nomeCaixinha, saldoTotal) => {
-        const valor = await modal.prompt(`💸 Quanto deseja resgatar? Seu saldo livre de impostos é de ${formatarMoeda(saldoTotal)}.`, '', `💸 Resgatar de ${nomeCaixinha}`, { inputType: 'currency', confirmLabel: 'Próximo' });
+        const valor = await modal.prompt(`Quanto deseja resgatar? Seu saldo livre de impostos é de ${formatarMoeda(saldoTotal)}.`, '', `Resgatar de ${nomeCaixinha}`, { inputType: 'currency', confirmLabel: 'Próximo' });
         if (!valor || valor <= 0) return;
 
         if (valor > saldoTotal) {
             return modal.alert(`Você não pode resgatar ${formatarMoeda(valor)} pois o saldo disponível hoje é de ${formatarMoeda(saldoTotal)}.`, 'Saldo Insuficiente');
         }
 
-        const dataResgate = await modal.prompt(`📅 Qual foi a data exata deste resgate?`, new Date().toISOString().split('T')[0], '💸 Confirmar Data', { inputType: 'date', confirmLabel: 'Aprovar Resgate' });
+        const dataResgate = await modal.prompt(`Qual foi a data exata deste resgate?`, new Date().toISOString().split('T')[0], 'Confirmar Data', { inputType: 'date', confirmLabel: 'Aprovar Resgate' });
         if (!dataResgate) return;
 
         criarAporte(caixinhaId, -Math.abs(valor), dataResgate);
@@ -166,15 +167,20 @@ export function Investimentos({ API, getHeaders, modal }) {
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        📈 Renda Fixa e Investimentos
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Acompanhe a rentabilidade real diária, simule metas e faça aportes.
-                    </p>
+            {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                        <LineChart className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            Renda Fixa e Investimentos
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Acompanhe a rentabilidade real diária, simule metas e faça aportes.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -225,7 +231,9 @@ export function Investimentos({ API, getHeaders, modal }) {
             {/* ⏱️ CALCULADORA DE CURTO PRAZO */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-3xl shadow-sm transition-colors">
                 <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-                    <span className="text-3xl">⏱️</span>
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
+                        <Timer className="w-5 h-5" strokeWidth={2} />
+                    </div>
                     <div>
                         <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">Calculadora de Curto Prazo (Promoções)</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Simule um aporte numa taxa promocional para saber exatamente o valor líquido de resgate.</p>
@@ -273,7 +281,7 @@ export function Investimentos({ API, getHeaders, modal }) {
                     <div className="lg:col-span-2 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-slate-300 dark:border-slate-700 relative overflow-hidden h-full flex flex-col justify-center">
                         {simulacaoCurto.erro ? (
                             <div className="flex flex-col items-center justify-center text-slate-500 py-6">
-                                <span className="text-4xl mb-2 opacity-50">⏳</span>
+                                <Hourglass className="w-9 h-9 mb-2 opacity-50" strokeWidth={1.5} />
                                 <p className="font-bold text-sm">A data precisa ser no futuro.</p>
                             </div>
                         ) : (
@@ -308,7 +316,9 @@ export function Investimentos({ API, getHeaders, modal }) {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-3xl shadow-sm transition-colors">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div className="flex items-center gap-3">
-                        <span className="text-3xl">🚀</span>
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                            <Rocket className="w-5 h-5" strokeWidth={2} />
+                        </div>
                         <div>
                             <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">Projetor de Independência</h2>
                             <p className="text-sm text-slate-500 dark:text-slate-400">Calcule sua jornada considerando os juros compostos da sua taxa mensal.</p>
@@ -399,13 +409,13 @@ export function Investimentos({ API, getHeaders, modal }) {
                         <p className="text-sm text-slate-500 dark:text-slate-400">Controle individualizado por instituição e metrificação de lucro.</p>
                     </div>
                     <button onClick={handleNovaCaixinha} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
-                        <span>➕ Criar Caixinha</span>
+                        <Plus className="w-4 h-4" strokeWidth={2.5} /> Criar Caixinha
                     </button>
                 </div>
 
                 {caixinhas.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center">
-                        <span className="text-4xl block mb-3 opacity-80">🏦</span>
+                        <Landmark className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                         <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhum investimento registrado</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Crie sua primeira caixinha para começar a acompanhar os juros diários.</p>
                     </div>
@@ -451,7 +461,7 @@ export function Investimentos({ API, getHeaders, modal }) {
                                                             </span>
                                                             {/* 🔥 MOBILE FIX: Pílula de ação para exclusão do aporte (Sem depender de Hover no celular) */}
                                                             <button onClick={() => excluirAporte(ap.id)} className="p-1.5 text-slate-400 hover:text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer active:scale-95" title="Excluir Aporte">
-                                                                🗑️
+                                                                <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
                                                             </button>
                                                         </div>
                                                     </div>
@@ -483,7 +493,7 @@ export function Investimentos({ API, getHeaders, modal }) {
                                                     {/* ALERTA DE IOF (Apenas para aportes recentes e positivos) */}
                                                     {!isResgate && ap.diasCorridos < 30 && ap.lucroBruto > 0 && (
                                                         <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-3 rounded-lg flex items-start gap-2.5 shadow-sm">
-                                                            <span className="text-xs mt-0.5 opacity-80">⚠️</span>
+                                                            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" strokeWidth={2} />
                                                             <div>
                                                                 <p className="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-400 mb-0.5">Trava de IOF Ativa (-{formatarMoeda(ap.valorIof)})</p>
                                                                 <p className="text-[10px] font-medium text-amber-700 dark:text-amber-500 leading-tight">Se resgatar hoje, você perde <strong className="font-bold">{((ap.valorIof / ap.lucroBruto) * 100).toFixed(0)}%</strong> do lucro. Aguarde mais <strong className="font-bold">{30 - ap.diasCorridos}</strong> dias.</p>
@@ -497,14 +507,14 @@ export function Investimentos({ API, getHeaders, modal }) {
                                 </div>
 
                                 <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap sm:flex-nowrap gap-2.5">
-                                    <button onClick={() => excluirCaixinha(cx.id)} className="w-full sm:w-auto px-4 py-3 md:py-2 text-sm font-bold text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 dark:bg-slate-950 dark:hover:bg-rose-900/20 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors cursor-pointer active:scale-95" title="Apagar Caixinha">
-                                        🗑️ <span className="sm:hidden ml-2">Apagar</span>
+                                    <button onClick={() => excluirCaixinha(cx.id)} className="w-full sm:w-auto px-4 py-3 md:py-2 text-sm font-bold text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 dark:bg-slate-950 dark:hover:bg-rose-900/20 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-2" title="Apagar Caixinha">
+                                        <Trash2 className="w-4 h-4" strokeWidth={2} /> <span className="sm:hidden">Apagar</span>
                                     </button>
-                                    <button onClick={() => handleResgate(cx.id, cx.nome_caixinha, cx.totalLiquido)} className="flex-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/40 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer active:scale-[0.98]">
-                                        💸 Resgatar
+                                    <button onClick={() => handleResgate(cx.id, cx.nome_caixinha, cx.totalLiquido)} className="flex-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/40 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2">
+                                        <ArrowDownToLine className="w-4 h-4" strokeWidth={2} /> Resgatar
                                     </button>
-                                    <button onClick={() => handleNovoAporte(cx.id, cx.nome_caixinha)} className="flex-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/40 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm active:scale-[0.98]">
-                                        ➕ Aporte
+                                    <button onClick={() => handleNovoAporte(cx.id, cx.nome_caixinha)} className="flex-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/40 py-3 md:py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer shadow-sm active:scale-[0.98] flex items-center justify-center gap-2">
+                                        <Plus className="w-4 h-4" strokeWidth={2.25} /> Aporte
                                     </button>
                                 </div>
                             </div>

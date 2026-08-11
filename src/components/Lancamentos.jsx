@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
+import {
+    Sparkles, ClipboardList, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
+    Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info
+} from 'lucide-react';
+
+/**
+ * @function IconeOrdenacao
+ * @description Ícone de seta ativo/inativo para a coluna atualmente ordenada.
+ */
+const IconeOrdenacao = ({ ordenacao, coluna }) => {
+    if (ordenacao.coluna !== coluna) return null;
+    return ordenacao.direcao === 'asc'
+        ? <ChevronUp className="w-3 h-3 inline-block ml-0.5" strokeWidth={3} />
+        : <ChevronDown className="w-3 h-3 inline-block ml-0.5" strokeWidth={3} />;
+};
 
 /**
  * @file src/components/Lancamentos.jsx
- * @description Módulo de gestão de transações. 
- * Permite adicionar novas transações (receitas, despesas, investimentos) e auditar o extrato completo 
+ * @description Módulo de gestão de transações.
+ * Permite adicionar novas transações (receitas, despesas, investimentos) e auditar o extrato completo
  * com suporte a ações em lote, filtros avançados e visualização responsiva em cards no mobile.
  */
 export function Lancamentos({
@@ -75,7 +90,7 @@ export function Lancamentos({
 
     /**
      * @function handleSubmit
-     * @description Processa a submissão do formulário, valida regras de negócio (como limite de terceiro) 
+     * @description Processa a submissão do formulário, valida regras de negócio (como limite de terceiro)
      * e limpa os estados após a persistência.
      */
     const handleSubmit = async (e) => {
@@ -161,7 +176,7 @@ export function Lancamentos({
 
     const limparFiltros = () => setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
 
-    const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
+    const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors shadow-sm";
     const labelCls = "block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 md:mb-1 uppercase tracking-wider";
 
     // ==========================================
@@ -171,15 +186,20 @@ export function Lancamentos({
         return (
             <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-                {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                    <div>
-                        <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            ✨ Novo Lançamento
-                        </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Adicione uma nova despesa, receita, investimento ou reembolso.
-                        </p>
+                {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                            <Sparkles className="w-5 h-5" strokeWidth={2} />
+                        </div>
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                                Novo Lançamento
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                Adicione uma nova despesa, receita, investimento ou reembolso.
+                            </p>
+                        </div>
                     </div>
                     <div className="w-full md:w-auto shrink-0 flex items-center justify-end mt-2 md:mt-0">
                         <button type="button" onClick={() => {
@@ -195,7 +215,7 @@ export function Lancamentos({
                 </div>
 
                 <div className="max-w-4xl mx-auto space-y-6">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-8 rounded-xl shadow-sm">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-8 rounded-2xl shadow-sm">
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
                                 <label className={labelCls}>Descrição</label>
@@ -222,17 +242,17 @@ export function Lancamentos({
                                 <div>
                                     <label className={labelCls}>Natureza</label>
                                     <select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputCls}>
-                                        <option value="despesa">🔻 Despesa (Saída)</option>
-                                        <option value="renda">💰 Renda (Entrada)</option>
-                                        <option value="investimento">📈 Investimento</option>
-                                        <option value="reembolso">🔄 Reembolso / Estorno</option>
+                                        <option value="despesa">Despesa (Saída)</option>
+                                        <option value="renda">Renda (Entrada)</option>
+                                        <option value="investimento">Investimento</option>
+                                        <option value="reembolso">Reembolso / Estorno</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className={labelCls}>Status Atual</label>
                                     <select name="status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
-                                        <option value="pendente">⏳ Pendente (A Pagar/Receber)</option>
-                                        <option value="pago">✅ Liquidado (Pago/Recebido)</option>
+                                        <option value="pendente">Pendente (A Pagar/Receber)</option>
+                                        <option value="pago">Liquidado (Pago/Recebido)</option>
                                     </select>
                                 </div>
                             </div>
@@ -284,8 +304,9 @@ export function Lancamentos({
                                                 />
                                             </div>
                                         </div>
-                                        <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-3 font-medium leading-tight">
-                                            💡 Se a compra for parcelada, informe a dívida TOTAL da pessoa. O sistema fará a divisão por parcelas automaticamente. Deixe R$ 0,00 se a compra for 100% dela.
+                                        <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-3 font-medium leading-tight flex items-start gap-1.5">
+                                            <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} />
+                                            Se a compra for parcelada, informe a dívida TOTAL da pessoa. O sistema fará a divisão por parcelas automaticamente. Deixe R$ 0,00 se a compra for 100% dela.
                                         </p>
                                     </div>
                                 )}
@@ -311,7 +332,7 @@ export function Lancamentos({
                             <div className="pt-4">
                                 <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-4 md:py-3 rounded-lg text-sm transition-all shadow-md flex justify-center items-center gap-2 ${isSubmitting ? 'bg-blue-400 cursor-not-allowed opacity-90' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'}`}>
                                     {isSubmitting ? (
-                                        <><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processando...</>
+                                        <><Loader2 className="animate-spin w-4 h-4" strokeWidth={2.5} />Processando...</>
                                     ) : ('Registrar Transação')}
                                 </button>
                             </div>
@@ -319,7 +340,7 @@ export function Lancamentos({
                     </div>
 
                     {/* Resumo de Últimos Lançamentos ao final do formulário */}
-                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm">
+                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-2xl shadow-sm">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
                             <span>Últimos Lançamentos</span>
                             <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300">{dataVis.ano}</span>
@@ -327,11 +348,15 @@ export function Lancamentos({
 
                         <div className="space-y-3">
                             {ultimosCinco.map(t => (
-                                <div key={t.id} onClick={() => abrirDetalhes(t)} className="flex justify-between items-center p-3 md:p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer group shadow-sm active:scale-[0.98]">
+                                <div key={t.id} onClick={() => abrirDetalhes(t)} className="flex justify-between items-center p-3 md:p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer group shadow-sm active:scale-[0.98]">
                                     <div className="flex-1 min-w-0 pr-2">
-                                        <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                                            {t.descricao}
-                                            {t.isThirdParty && <span className="ml-2 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block no-underline">🤝 {t.thirdPartyName}</span>}
+                                        <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate flex items-center gap-1.5">
+                                            <span className="truncate">{t.descricao}</span>
+                                            {t.isThirdParty && (
+                                                <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                                                    <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
+                                                </span>
+                                            )}
                                         </p>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                     </div>
@@ -359,42 +384,49 @@ export function Lancamentos({
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        📋 Extrato de Lançamentos
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Audite, pesquise e faça a gestão em lote de todas as movimentações.
-                    </p>
+            {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                        <ClipboardList className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            Extrato de Lançamentos
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Audite, pesquise e faça a gestão em lote de todas as movimentações.
+                        </p>
+                    </div>
                 </div>
-                {/* 🔥 MOBILE FIX: Áreas de toque expandidas para as setas do mês */}
                 <div className="w-full md:w-auto shrink-0 flex items-center justify-between md:justify-end bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <button type="button" onClick={mesAnterior} className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    <button type="button" onClick={mesAnterior} aria-label="Mês anterior" className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
+                        <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
                     </button>
                     <div className="flex flex-col items-center px-4">
-                        <span className="font-black uppercase text-sm text-slate-700 dark:text-slate-200 tracking-wider">
+                        <span className="font-bold uppercase text-sm text-slate-700 dark:text-slate-200 tracking-wider">
                             {meses[dataVis.mes - 1]}
                         </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
                     </div>
-                    <button type="button" onClick={mesProximo} className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    <button type="button" onClick={mesProximo} aria-label="Próximo mês" className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
+                        <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-xl shadow-sm flex flex-col w-full">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-2xl shadow-sm flex flex-col w-full">
 
                 {/* BARRA DE PESQUISA E FILTROS RÁPIDOS */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
-                    <input
-                        type="text" placeholder="Buscar lançamentos..."
-                        value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)}
-                        className="w-full xl:w-80 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 md:p-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"
-                    />
+                    <div className="relative w-full xl:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" strokeWidth={2} />
+                        <input
+                            type="text" placeholder="Buscar lançamentos..."
+                            value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-3.5 py-3.5 md:py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                        />
+                    </div>
 
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full xl:w-auto">
                         <select
@@ -407,9 +439,9 @@ export function Lancamentos({
                         </select>
                         <button
                             type="button" onClick={() => setMostrarFiltrosAvancados(!mostrarFiltrosAvancados)}
-                            className={`w-full sm:w-auto px-4 py-3 md:py-2.5 rounded-lg text-sm font-bold border transition-colors cursor-pointer ${mostrarFiltrosAvancados ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                            className={`w-full sm:w-auto px-4 py-3 md:py-2.5 rounded-lg text-sm font-bold border transition-colors cursor-pointer inline-flex items-center justify-center gap-2 ${mostrarFiltrosAvancados ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                         >
-                            Filtros Avançados
+                            <SlidersHorizontal className="w-4 h-4" strokeWidth={2} /> Filtros Avançados
                         </button>
                     </div>
                 </div>
@@ -451,10 +483,10 @@ export function Lancamentos({
                         <div className="mb-4 bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
                             <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-1">Ordenar Lista Por:</p>
                             <div className="flex flex-wrap gap-2">
-                                <button onClick={() => mudarOrdenacao('data')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'data' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Data {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
-                                <button onClick={() => mudarOrdenacao('descricao')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'descricao' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Nome {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
-                                <button onClick={() => mudarOrdenacao('valor')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'valor' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Valor {ordenacao.coluna === 'valor' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
-                                <button onClick={() => mudarOrdenacao('status')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 shadow-sm ${ordenacao.coluna === 'status' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Status {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</button>
+                                <button onClick={() => mudarOrdenacao('data')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center shadow-sm ${ordenacao.coluna === 'data' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Data<IconeOrdenacao ordenacao={ordenacao} coluna="data" /></button>
+                                <button onClick={() => mudarOrdenacao('descricao')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center shadow-sm ${ordenacao.coluna === 'descricao' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Nome<IconeOrdenacao ordenacao={ordenacao} coluna="descricao" /></button>
+                                <button onClick={() => mudarOrdenacao('valor')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center shadow-sm ${ordenacao.coluna === 'valor' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Valor<IconeOrdenacao ordenacao={ordenacao} coluna="valor" /></button>
+                                <button onClick={() => mudarOrdenacao('status')} className={`flex-1 min-w-[80px] px-2 py-2.5 md:py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center shadow-sm ${ordenacao.coluna === 'status' ? 'bg-blue-600 text-white border border-blue-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>Status<IconeOrdenacao ordenacao={ordenacao} coluna="status" /></button>
                             </div>
                         </div>
                     )}
@@ -473,16 +505,20 @@ export function Lancamentos({
                     ) : (
                         dadosTabela.map((t) => (
                             <div key={t.id} className={`bg-white dark:bg-slate-900 rounded-xl border transition-all shadow-sm relative overflow-hidden flex w-full active:scale-[0.98] ${transacoesSelecionadas.includes(t.id) ? 'border-blue-500 ring-1 ring-blue-500 dark:bg-blue-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
-                                {/* 🔥 MOBILE FIX: Área de seleção do checkbox expandida (w-14) para não errar o dedo */}
+                                {/* Área de seleção do checkbox expandida (w-14) para não errar o dedo */}
                                 <div className="w-14 shrink-0 flex items-center justify-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800 cursor-pointer" onClick={() => toggleSelecao(t.id)}>
                                     <input type="checkbox" readOnly checked={transacoesSelecionadas.includes(t.id)} className="cursor-pointer w-5 h-5 accent-blue-600 pointer-events-none" />
                                 </div>
                                 <div className="flex-1 min-w-0 p-4 cursor-pointer" onClick={() => abrirDetalhes(t)}>
                                     <div className="flex justify-between items-start gap-3 mb-2">
-                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate">
-                                            {t.descricao}
-                                            {t.isThirdParty && <span className="ml-1 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block">🤝 {t.thirdPartyName}</span>}
-                                            {t.observacao && <span className="ml-1 text-blue-500" title="Possui observação">💬</span>}
+                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate flex items-center gap-1.5">
+                                            <span className="truncate">{t.descricao}</span>
+                                            {t.isThirdParty && (
+                                                <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                                                    <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
+                                                </span>
+                                            )}
+                                            {t.observacao && <MessageSquare className="w-3 h-3 text-blue-500 shrink-0" strokeWidth={2} aria-label="Possui observação" />}
                                         </h4>
                                         <span className={`shrink-0 text-[9px] uppercase font-bold px-2 py-1 rounded-md ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>{t.status}</span>
                                     </div>
@@ -492,7 +528,7 @@ export function Lancamentos({
                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className={`font-black text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>{formatarMoeda(t.valorParcela)}</p>
+                                            <p className={`font-extrabold text-[15px] ${t.tipo === 'renda' ? 'text-emerald-600 dark:text-emerald-400' : t.tipo === 'investimento' ? 'text-blue-600 dark:text-blue-400' : t.tipo === 'despesa' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>{formatarMoeda(t.valorParcela)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -509,10 +545,10 @@ export function Lancamentos({
                         <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-extrabold tracking-wider whitespace-nowrap">
                             <tr>
                                 <th className="p-3 text-center w-10"><input type="checkbox" onChange={selecionarTodas} checked={dadosTabela.length > 0 && transacoesSelecionadas.length === dadosTabela.length} className="cursor-pointer accent-blue-600 w-4 h-4" /></th>
-                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200" onClick={() => mudarOrdenacao('descricao')}>Descrição {ordenacao.coluna === 'descricao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
-                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200" onClick={() => mudarOrdenacao('data')}>Vencimento / Compra {ordenacao.coluna === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
-                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-center" onClick={() => mudarOrdenacao('status')}>Status da Conta {ordenacao.coluna === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
-                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-right" onClick={() => mudarOrdenacao('valor')}>Valor {ordenacao.coluna === 'valor' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}</th>
+                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200" onClick={() => mudarOrdenacao('descricao')}>Descrição<IconeOrdenacao ordenacao={ordenacao} coluna="descricao" /></th>
+                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200" onClick={() => mudarOrdenacao('data')}>Vencimento / Compra<IconeOrdenacao ordenacao={ordenacao} coluna="data" /></th>
+                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-center" onClick={() => mudarOrdenacao('status')}>Status da Conta<IconeOrdenacao ordenacao={ordenacao} coluna="status" /></th>
+                                <th className="p-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 text-right" onClick={() => mudarOrdenacao('valor')}>Valor<IconeOrdenacao ordenacao={ordenacao} coluna="valor" /></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -525,8 +561,12 @@ export function Lancamentos({
                                         <td className="p-3 min-w-[140px]">
                                             <span onClick={() => abrirDetalhes(t)} className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-start gap-1 transition-colors break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>
                                                 {t.descricao}
-                                                {t.isThirdParty && <span className="ml-2 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 inline-block no-underline">🤝 {t.thirdPartyName}</span>}
-                                                {t.observacao && <svg title="Possui Observação" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block flex-shrink-0 mt-0.5 cursor-help"><path fillRule="evenodd" d="M4.804 21.644A6.707 6.707 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337 4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785Z" clipRule="evenodd" /></svg>}
+                                                {t.isThirdParty && (
+                                                    <span className="inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 no-underline shrink-0">
+                                                        <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
+                                                    </span>
+                                                )}
+                                                {t.observacao && <Info aria-label="Possui observação" className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block shrink-0 mt-0.5 cursor-help" strokeWidth={2} />}
                                             </span>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </td>

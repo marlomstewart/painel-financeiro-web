@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import {
+  X, Users, Lightbulb, Undo2, CheckCircle2, RotateCcw, Pencil,
+  Paperclip, Trash2, FileText, CreditCard
+} from 'lucide-react';
 
 /**
  * Componente Interno: FormularioEdicao
@@ -88,8 +92,8 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-400 tracking-wider mb-0.5">Valor Original Total</p>
             <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">{formatarMoedaLocal(infoParcelamento.valorTotal)}</p>
             {infoParcelamento.valorTerceiroTotal > 0 && (
-              <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold mt-1 uppercase tracking-wider">
-                🤝 Terceiros: {formatarMoedaLocal(infoParcelamento.valorTerceiroTotal)}
+              <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold mt-1 uppercase tracking-wider inline-flex items-center gap-1">
+                <Users className="w-3 h-3" strokeWidth={2.5} /> Terceiros: {formatarMoedaLocal(infoParcelamento.valorTerceiroTotal)}
               </p>
             )}
           </div>
@@ -106,8 +110,8 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
           className="w-full bg-blue-50 dark:bg-blue-900/10 border border-blue-300 dark:border-blue-700/50 rounded-xl p-4 text-3xl md:text-4xl font-black text-blue-700 dark:text-blue-400 text-center outline-none focus:border-blue-500 transition-colors shadow-inner"
         />
         {infoParcelamento && (
-          <p className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mt-2 text-center leading-tight">
-            💡 Só edite o valor se esta parcela específica sofreu juros ou desconto.
+          <p className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mt-2 text-center leading-tight flex items-center justify-center gap-1">
+            <Lightbulb className="w-3 h-3 shrink-0" strokeWidth={2.5} /> Só edite o valor se esta parcela específica sofreu juros ou desconto.
           </p>
         )}
       </div>
@@ -138,10 +142,10 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
         <div>
           <label className={labelCls}>Natureza</label>
           <select value={tipo} onChange={e => setTipo(e.target.value)} className={inputCls}>
-            <option value="despesa">🔻 Despesa (Saída)</option>
-            <option value="renda">💰 Renda (Entrada)</option>
-            <option value="investimento">📈 Investimento</option>
-            <option value="reembolso">🔄 Reembolso / Estorno</option>
+            <option value="despesa">Despesa (Saída)</option>
+            <option value="renda">Renda (Entrada)</option>
+            <option value="investimento">Investimento</option>
+            <option value="reembolso">Reembolso / Estorno</option>
           </select>
         </div>
         <div>
@@ -183,8 +187,9 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
             </div>
 
             {editandoEmLote ? (
-              <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-3 font-medium leading-relaxed">
-                💡 <strong>Atenção:</strong> Como você está a editar em lote, o valor de R$ {displayThirdValue} será aplicado a <strong>cada uma</strong> das parcelas selecionadas.
+              <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-3 font-medium leading-relaxed flex items-start gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span><strong>Atenção:</strong> Como você está a editar em lote, o valor de R$ {displayThirdValue} será aplicado a <strong>cada uma</strong> das parcelas selecionadas.</span>
               </p>
             ) : (
               <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-3 font-medium leading-relaxed">
@@ -222,14 +227,18 @@ export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
   const [localDiasMarcados, setLocalDiasMarcados] = useState([]);
 
-  useEffect(() => {
+  // Sincroniza (durante a renderização, sem efeito) o estado local sempre que um NOVO config
+  // chega (cada chamada de modal.alert/prompt/etc. cria um objeto novo), sem precisar de useEffect.
+  const [configSincronizado, setConfigSincronizado] = useState(config);
+  if (config !== configSincronizado) {
+    setConfigSincronizado(config);
     if (config?.type === 'prompt' && config.inputType !== 'editar_transacao') {
       setInputValue(config.inputType === 'currency' ? '0' : (config.defaultValue || ''));
     }
     if (config?.type === 'calendario') {
       setLocalDiasMarcados(config.diasMarcados || []);
     }
-  }, [config]);
+  }
 
   if (!config) return null;
 
@@ -245,9 +254,9 @@ export function Modal({ config, onClose }) {
       <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in">
 
         <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center shrink-0">
-          <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">{title || 'Aviso'}</h3>
+          <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">{title || 'Aviso'}</h3>
           <button onClick={onCancel || onClose} className="text-slate-400 hover:text-rose-500 bg-white dark:bg-slate-800 rounded-full p-2 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors cursor-pointer active:scale-95">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
         </div>
 
@@ -319,7 +328,7 @@ export function Modal({ config, onClose }) {
               <div className="flex flex-col gap-3">
                 {options.map((opt, i) => (
                   <button key={i} onClick={() => onConfirm(opt.value)} className="w-full p-4 md:p-3 text-left bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shadow-sm flex items-center gap-3 active:scale-[0.98]">
-                    {opt.icon && <span className="text-xl">{opt.icon}</span>}
+                    {opt.icon && <span className="shrink-0 text-slate-500 dark:text-slate-400">{opt.icon}</span>}
                     <span>{opt.label}</span>
                   </button>
                 ))}
@@ -336,7 +345,7 @@ export function Modal({ config, onClose }) {
 
               {config.itens.length === 0 ? (
                 <div className="text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/30">
-                  <span className="text-4xl block mb-3 opacity-50">💳</span>
+                  <CreditCard className="w-9 h-9 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                   <p className="text-slate-600 dark:text-slate-400 font-bold">Nenhum gasto no crédito nesta competência.</p>
                 </div>
               ) : (
@@ -344,7 +353,7 @@ export function Modal({ config, onClose }) {
                   const cId = config.cartaoIds[item.nome];
                   return (
                     <div key={i} className="bg-white dark:bg-slate-800/80 p-4 md:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
-                      <h4 className="font-black text-slate-800 dark:text-slate-100 text-base md:text-lg mb-4 uppercase tracking-wider flex items-center gap-2 truncate">💳 {item.nome}</h4>
+                      <h4 className="font-black text-slate-800 dark:text-slate-100 text-base md:text-lg mb-4 uppercase tracking-wider flex items-center gap-2 truncate"><CreditCard className="w-4.5 h-4.5 shrink-0" strokeWidth={2} /> {item.nome}</h4>
 
                       <div className="grid grid-cols-3 gap-2 mb-5">
                         <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center text-center">
@@ -371,7 +380,7 @@ export function Modal({ config, onClose }) {
                             <span className="block font-black text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-500 mb-1">Gastos de Terceiros:</span>
                             {item.listaTerceiros.map((terceiro, idx) => (
                               <div key={idx} className="flex justify-between items-center bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
-                                <span className="text-amber-700 dark:text-amber-400 font-bold truncate pr-2">🤝 {terceiro.nome}</span>
+                                <span className="text-amber-700 dark:text-amber-400 font-bold truncate pr-2 inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} /> {terceiro.nome}</span>
                                 <strong className="text-amber-700 dark:text-amber-400 shrink-0">{Number(terceiro.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                               </div>
                             ))}
@@ -381,10 +390,10 @@ export function Modal({ config, onClose }) {
 
                       <div className="flex flex-col sm:flex-row gap-3">
                         <button onClick={() => config.reverterFatura(cId)} disabled={item.pago <= 0} className={`w-full sm:flex-1 py-3.5 md:py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border active:scale-95 ${item.pago > 0 ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 dark:text-amber-400 cursor-pointer border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 cursor-not-allowed border-slate-200 dark:border-slate-800'}`}>
-                          ↩️ Reverter
+                          <Undo2 className="w-4 h-4" strokeWidth={2} /> Reverter
                         </button>
                         <button onClick={() => config.pagarFatura(cId)} disabled={item.pendente <= 0} className={`w-full sm:flex-[1.5] py-3.5 md:py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 ${item.pendente > 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer border-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border-transparent dark:border-slate-700'}`}>
-                          ✅ Pagar Fatura
+                          <CheckCircle2 className="w-4 h-4" strokeWidth={2} /> Pagar Fatura
                         </button>
                       </div>
                     </div>
@@ -420,8 +429,8 @@ export function Modal({ config, onClose }) {
                   const diaSemana = new Date(config.ano, config.mes - 1, dia).getDay();
                   const isDiaTrabalho = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
 
-                  let btnClass = '';
-                  let titleHint = '';
+                  let btnClass;
+                  let titleHint;
 
                   if (isDiaTrabalho) {
                     if (isMarcado) {
@@ -482,15 +491,16 @@ export function Modal({ config, onClose }) {
               <div className="text-center bg-slate-50 dark:bg-slate-900/50 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800/50 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-slate-100 dark:bg-slate-800 w-32 h-32 rounded-full -mr-10 -mt-10 blur-2xl opacity-50 pointer-events-none"></div>
                 <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5 relative z-10">{config.transacao.categoria}</p>
-                <h4 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-slate-100 mb-3 relative z-10 leading-tight">{config.transacao.descricao}</h4>
+                <h4 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-3 relative z-10 leading-tight">{config.transacao.descricao}</h4>
                 <p className={`text-4xl font-black tracking-tight relative z-10 ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 {config.transacao.isThirdParty && (
-                  <span className="inline-block mt-4 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm relative z-10">
-                    🤝 Terceiro: {config.transacao.thirdPartyName}
+                  <span className="inline-flex items-center mt-4 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm relative z-10">
+                    <Users className="w-3 h-3 shrink-0 mr-1.5" strokeWidth={2.5} />
+                    Terceiro: {config.transacao.thirdPartyName}
                     <br className="sm:hidden" />
-                    <span className="hidden sm:inline"> — </span>
+                    <span className="hidden sm:inline">&nbsp;—&nbsp;</span>
                     Responsável por {config.transacao.thirdPartyValue ? Number(config.transacao.thirdPartyValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '100%'}
                   </span>
                 )}
@@ -526,23 +536,23 @@ export function Modal({ config, onClose }) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
-                <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3">
-                  🔄 {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago (Liquidado)'}
+                <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3 flex items-center justify-center gap-2">
+                  <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.25} /> {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago (Liquidado)'}
                 </button>
-                <button onClick={() => config.onEditar()} className="p-3.5 md:p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer active:scale-95 shadow-sm">
-                  ✏️ Editar
+                <button onClick={() => config.onEditar()} className="p-3.5 md:p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer active:scale-95 shadow-sm flex items-center justify-center gap-2">
+                  <Pencil className="w-3.5 h-3.5" strokeWidth={2.25} /> Editar
                 </button>
                 {config.temComprovante && (
-                  <button onClick={() => config.onAnexarComprovante()} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm">
-                    📎 Anexar
+                  <button onClick={() => config.onAnexarComprovante()} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm flex items-center justify-center gap-2">
+                    <Paperclip className="w-3.5 h-3.5" strokeWidth={2.25} /> Anexar
                   </button>
                 )}
-                <button onClick={() => config.onDeletar()} className="p-3.5 md:p-2.5 bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition cursor-pointer active:scale-95 shadow-sm">
-                  🗑️ Excluir
+                <button onClick={() => config.onDeletar()} className="p-3.5 md:p-2.5 bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition cursor-pointer active:scale-95 shadow-sm flex items-center justify-center gap-2">
+                  <Trash2 className="w-3.5 h-3.5" strokeWidth={2.25} /> Excluir
                 </button>
                 {config.temComprovante && (
-                  <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3">
-                    📄 Ver Comprovante Anexado
+                  <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3 flex items-center justify-center gap-2">
+                    <FileText className="w-3.5 h-3.5" strokeWidth={2.25} /> Ver Comprovante Anexado
                   </button>
                 )}
               </div>

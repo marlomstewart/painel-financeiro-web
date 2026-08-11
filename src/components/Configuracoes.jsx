@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import {
+    Settings, User, Send, CheckCircle2, Bot, Rocket, ArrowLeft, Palette,
+    Sun, Moon, Monitor, Lock, Wrench, Download, Hourglass, Zap, AlertTriangle
+} from 'lucide-react';
 
 /**
  * @file src/components/Configuracoes.jsx
@@ -26,9 +30,13 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
 
     // ================= EFEITOS (USE EFFECT) =================
 
-    useEffect(() => {
-        if (nomeUsuario) setNomeExibicao(nomeUsuario);
-    }, [nomeUsuario]);
+    // Sincroniza (durante a renderização, sem efeito) o campo "como quer ser chamado" com o
+    // nomeUsuario vindo da sessão, sem sobrescrever o que o usuário já esteja a digitar depois.
+    const [nomeUsuarioSincronizado, setNomeUsuarioSincronizado] = useState(nomeUsuario);
+    if (nomeUsuario && nomeUsuario !== nomeUsuarioSincronizado) {
+        setNomeUsuarioSincronizado(nomeUsuario);
+        setNomeExibicao(nomeUsuario);
+    }
 
     useEffect(() => {
         const fetchTelegramStatus = async () => {
@@ -151,22 +159,27 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     return (
         <div className="p-4 md:p-6 space-y-6 md:space-y-8 w-full max-w-7xl mx-auto pb-24 transition-colors duration-300 relative animate-fade-in">
 
-            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        ⚙️ Configurações
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Preferências, segurança, exportação de dados e notificações.
-                    </p>
+            {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                        <Settings className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            Configurações
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Preferências, segurança, exportação de dados e notificações.
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 {/* ================= BLOCO 1: PERFIL DO UTILIZADOR ================= */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col transition-colors">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg">👤 Perfil do Utilizador</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg flex items-center gap-2"><User className="w-4.5 h-4.5" strokeWidth={2} /> Perfil do Utilizador</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Personalize os seus dados e defina como o sistema se dirige a si.</p>
 
                     <form onSubmit={handleSalvarPerfil} className="space-y-5 flex flex-col flex-1">
@@ -187,9 +200,9 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                 {/* ================= BLOCO 1.5: NOTIFICAÇÕES (TELEGRAM) ================= */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col relative overflow-hidden transition-colors">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <span className="text-9xl">💬</span>
+                        <Send className="w-32 h-32" strokeWidth={1.5} />
                     </div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 relative z-10 text-lg">📱 Integração Telegram</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 relative z-10 text-lg flex items-center gap-2"><Send className="w-4.5 h-4.5" strokeWidth={2} /> Integração Telegram</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 relative z-10 pr-10">Receba seu radar diário de faturas e manutenções da garagem diretamente no celular.</p>
 
                     <div className="flex flex-col flex-1 relative z-10">
@@ -202,7 +215,7 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
 
                         {statusTelegram === 'vinculado' && (
                             <div className="flex flex-col items-center justify-center h-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-6 text-center shadow-sm">
-                                <span className="text-5xl mb-4">✅</span>
+                                <CheckCircle2 className="w-12 h-12 mb-4 text-emerald-500" strokeWidth={1.75} />
                                 <h4 className="text-emerald-800 dark:text-emerald-400 font-black text-xl mb-2">Bot Conectado!</h4>
                                 <p className="text-sm text-emerald-600 dark:text-emerald-500/80 mb-6">Sua conta já está recebendo alertas de garagem e contas diárias pelo Telegram.</p>
                                 <button type="button" onClick={desvincularTelegram} className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 text-sm font-bold cursor-pointer active:scale-95 transition-transform bg-rose-100/50 dark:bg-rose-900/20 px-4 py-2 rounded-lg">
@@ -226,7 +239,7 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                                             disabled={gerandoPin}
                                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-sm transition-all cursor-pointer shadow-md flex items-center justify-center gap-3 active:scale-[0.98]"
                                         >
-                                            <span className="text-xl">🤖</span> {gerandoPin ? 'Gerando Código...' : 'Gerar PIN de Vínculo'}
+                                            <Bot className="w-5 h-5" strokeWidth={2} /> {gerandoPin ? 'Gerando Código...' : 'Gerar PIN de Vínculo'}
                                         </button>
                                     </div>
                                 ) : (
@@ -239,7 +252,7 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
 
                                         <div className="w-full text-left bg-blue-50/50 dark:bg-slate-800/40 border border-blue-100 dark:border-slate-700/50 rounded-xl p-5 mb-5 shadow-sm">
                                             <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                                                <span>🚀</span> Próximos Passos:
+                                                <Rocket className="w-4 h-4" strokeWidth={2} /> Próximos Passos:
                                             </h4>
                                             <ol className="text-xs md:text-sm text-slate-600 dark:text-slate-400 space-y-3 ml-1 font-medium">
                                                 <li className="flex items-start gap-3">
@@ -263,8 +276,8 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                                             </ol>
                                         </div>
 
-                                        <button type="button" onClick={() => setPinGerado(null)} className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-bold text-xs mt-auto cursor-pointer p-2 transition-colors">
-                                            ← Cancelar e voltar
+                                        <button type="button" onClick={() => setPinGerado(null)} className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-bold text-xs mt-auto cursor-pointer p-2 transition-colors flex items-center gap-1.5">
+                                            <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.25} /> Cancelar e voltar
                                         </button>
                                     </div>
                                 )}
@@ -277,25 +290,25 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 {/* ================= BLOCO 2: APARÊNCIA ================= */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col transition-colors">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg">🎨 Aparência</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg flex items-center gap-2"><Palette className="w-4.5 h-4.5" strokeWidth={2} /> Aparência</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Personalize o tema visual do sistema para maior conforto.</p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-auto">
                         <button type="button" onClick={() => setTema('claro')} className={`py-4 md:py-3.5 rounded-xl text-sm font-bold flex flex-row sm:flex-col lg:flex-row items-center justify-center gap-2 border transition-all cursor-pointer active:scale-95 ${tema === 'claro' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-                            <span className="text-xl">☀️</span> <span className="sm:mt-1 lg:mt-0">Claro</span>
+                            <Sun className="w-4.5 h-4.5" strokeWidth={2} /> <span className="sm:mt-1 lg:mt-0">Claro</span>
                         </button>
                         <button type="button" onClick={() => setTema('escuro')} className={`py-4 md:py-3.5 rounded-xl text-sm font-bold flex flex-row sm:flex-col lg:flex-row items-center justify-center gap-2 border transition-all cursor-pointer active:scale-95 ${tema === 'escuro' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-                            <span className="text-xl">🌙</span> <span className="sm:mt-1 lg:mt-0">Escuro</span>
+                            <Moon className="w-4.5 h-4.5" strokeWidth={2} /> <span className="sm:mt-1 lg:mt-0">Escuro</span>
                         </button>
                         <button type="button" onClick={() => setTema('sistema')} className={`py-4 md:py-3.5 rounded-xl text-sm font-bold flex flex-row sm:flex-col lg:flex-row items-center justify-center gap-2 border transition-all cursor-pointer active:scale-95 ${tema === 'sistema' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-                            <span className="text-xl">💻</span> <span className="sm:mt-1 lg:mt-0">Sistema</span>
+                            <Monitor className="w-4.5 h-4.5" strokeWidth={2} /> <span className="sm:mt-1 lg:mt-0">Sistema</span>
                         </button>
                     </div>
                 </div>
 
                 {/* ================= BLOCO 3: SEGURANÇA ================= */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col transition-colors">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg">🔒 Segurança</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg flex items-center gap-2"><Lock className="w-4.5 h-4.5" strokeWidth={2} /> Segurança</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Altere a sua senha de acesso frequentemente para manter a conta protegida.</p>
 
                     <form onSubmit={handleAlterarSenha} className="space-y-5 flex-1 flex flex-col">
@@ -325,22 +338,22 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 {/* ================= BLOCO 4: FERRAMENTAS DE DADOS ================= */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col transition-colors">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg">🛠️ Ferramentas de Dados</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg flex items-center gap-2"><Wrench className="w-4.5 h-4.5" strokeWidth={2} /> Ferramentas de Dados</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Exporte o livro-razão financeiro completo para o Excel ou processe automações.</p>
 
                     <div className="space-y-4 mt-auto">
                         <button type="button" onClick={exportarCSV} className="w-full flex items-center justify-center gap-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 font-bold py-4 md:py-3.5 rounded-xl text-sm border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors cursor-pointer shadow-sm active:scale-[0.98]">
-                            <span className="text-xl">📥</span> Fazer Download Completo (CSV)
+                            <Download className="w-4.5 h-4.5" strokeWidth={2} /> Fazer Download Completo (CSV)
                         </button>
                         <button type="button" onClick={() => gerarMesManual(new Date().getMonth() + 1, new Date().getFullYear())} disabled={gerandoMes} className="w-full flex items-center justify-center gap-3 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold py-4 md:py-3.5 rounded-xl text-sm border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed">
-                            {gerandoMes ? '⏳ Injetando na base...' : <><span className="text-xl">⚡</span> Lançar Contas e Rendas Deste Mês Agora</>}
+                            {gerandoMes ? <><Hourglass className="w-4.5 h-4.5" strokeWidth={2} /> Injetando na base...</> : <><Zap className="w-4.5 h-4.5" strokeWidth={2} /> Lançar Contas e Rendas Deste Mês Agora</>}
                         </button>
                     </div>
                 </div>
 
                 {/* ================= BLOCO 5: ZONA DE PERIGO ================= */}
                 <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800/50 p-5 md:p-6 rounded-xl shadow-sm flex flex-col transition-colors">
-                    <h3 className="font-black text-rose-800 dark:text-rose-400 mb-1 text-lg flex items-center gap-2">⚠️ Zona de Perigo</h3>
+                    <h3 className="font-black text-rose-800 dark:text-rose-400 mb-1 text-lg flex items-center gap-2"><AlertTriangle className="w-4.5 h-4.5" strokeWidth={2} /> Zona de Perigo</h3>
                     <p className="text-sm text-rose-600 dark:text-rose-500/80 mb-6 font-medium">Ações destrutivas massivas. Não é possível desfazer ou recuperar os dados após a confirmação.</p>
 
                     <div className="space-y-3 mt-auto">

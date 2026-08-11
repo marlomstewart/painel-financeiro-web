@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Repeat, Pencil, Trash2, TrendingDown } from 'lucide-react';
 
 /**
  * @file src/components/ContasFixas.jsx
@@ -59,7 +60,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
             });
             if (sucesso) {
                 cancelarEdicao();
-                modal.alert('Conta fixa atualizada com sucesso!', '✅ Editado');
+                modal.alert('Conta fixa atualizada com sucesso!', 'Editado');
             }
         } else {
             await addContaFixa(e);
@@ -68,7 +69,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
     };
 
     const handleExcluir = async (id) => {
-        const ok = await modal.confirm('Deseja excluir esta conta fixa? Lançamentos passados não serão afetados.', '🗑️ Excluir Conta', { confirmLabel: 'Sim, Excluir', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
+        const ok = await modal.confirm('Deseja excluir esta conta fixa? Lançamentos passados não serão afetados.', 'Excluir Conta', { confirmLabel: 'Sim, Excluir', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
         if (ok) removerSetup('contas_fixas', id);
     };
 
@@ -90,21 +91,26 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        🔄 Contas Fixas
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Automatize despesas recorrentes (Internet, Água, Condomínio).
-                    </p>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                        <Repeat className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            Contas Fixas
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Automatize despesas recorrentes (Internet, Água, Condomínio).
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <div className="max-w-4xl mx-auto space-y-6">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-xl shadow-sm transition-colors">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-2xl shadow-sm transition-colors">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-5 border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-wrap items-center gap-2">
-                        {editandoId ? '✏️ Editar Despesa' : 'Nova Despesa'}
+                        {editandoId ? <span className="inline-flex items-center gap-1.5"><Pencil className="w-3.5 h-3.5" strokeWidth={2.25} /> Editar Despesa</span> : 'Nova Despesa'}
                         {isCredito && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2.5 py-1 rounded-md ml-auto shadow-sm">Modo Cartão de Crédito</span>}
                     </h3>
                     <form onSubmit={handleSubmit} className="space-y-5">
@@ -166,7 +172,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                     {contasFixas.length === 0 ? (
                         <div className="md:col-span-2 lg:col-span-3 text-center p-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/30">
-                            <span className="text-3xl opacity-50 block mb-3">🔄</span>
+                            <Repeat className="w-8 h-8 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                             <span className="font-semibold text-sm">Nenhuma conta fixa registrada.</span>
                         </div>
                     ) : (
@@ -177,13 +183,13 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
                                 <div key={conta.id} className={`bg-white dark:bg-slate-900 border p-4 md:p-5 rounded-xl shadow-sm relative group transition-all flex flex-col hover:shadow-md ${editandoId === conta.id ? 'border-blue-400 ring-1 ring-blue-400' : 'border-slate-200 dark:border-slate-800'}`}>
                                     <div className="flex justify-between items-start mb-4 gap-2">
                                         <h4 className="text-sm font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1.5 leading-tight">
-                                            <span className="text-rose-500">🔻</span> {conta.nome}
+                                            <TrendingDown className="w-3.5 h-3.5 text-rose-500 shrink-0" strokeWidth={2.25} /> {conta.nome}
                                         </h4>
-                                        {/* 🔥 MOBILE FIX: Botões de ação em formato de "Pílula", sempre visíveis no mobile */}
+                                        {/* Botões de ação em formato de "Pílula", sempre visíveis no mobile */}
                                         <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0 shadow-sm">
-                                            <button onClick={() => handleEditar(conta)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar">✏️</button>
+                                            <button onClick={() => handleEditar(conta)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                             <div className="w-px h-4 bg-slate-200 dark:border-slate-600"></div>
-                                            <button onClick={() => handleExcluir(conta.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Excluir">🗑️</button>
+                                            <button onClick={() => handleExcluir(conta.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Excluir"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                         </div>
                                     </div>
                                     <div className="bg-slate-50 dark:bg-slate-950/50 rounded-lg p-3.5 border border-slate-100 dark:border-slate-800 flex justify-between items-center mt-auto">

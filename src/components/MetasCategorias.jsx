@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Tag, Plus, Pencil, Trash2, TrendingDown, TrendingUp, Wallet, Bike, XCircle, Lightbulb } from 'lucide-react';
 
 /**
  * @file src/components/MetasCategorias.jsx
@@ -35,26 +36,26 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
      * @description Abre o fluxo de prompts sequenciais (Wizard) para editar uma categoria existente.
      */
     const handleEditarCategoria = async (c) => {
-        const nNome = await modal.prompt(`1️⃣ Novo NOME da Categoria?`, c.nome, '✏️ Editar Categoria', { confirmLabel: 'Próximo' });
+        const nNome = await modal.prompt(`Passo 1 de ${temGaragem ? 4 : 3} — Novo NOME da Categoria?`, c.nome, 'Editar Categoria', { confirmLabel: 'Próximo' });
         if (nNome === null) return;
 
-        const nMeta = await modal.prompt(`2️⃣ Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), '✏️ Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' });
+        const nMeta = await modal.prompt(`Passo 2 de ${temGaragem ? 4 : 3} — Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), 'Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' });
         if (nMeta === null) return;
 
-        const nTipoRes = await modal.options(`3️⃣ Qual a Natureza?`, [
-            { value: 'despesa', icon: '🔻', label: 'Despesa (Saída)' },
-            { value: 'investimento', icon: '📈', label: 'Investimento / Alvo' },
-            { value: 'renda', icon: '💰', label: 'Renda (Entrada)' }
-        ], '✏️ Editar Categoria');
+        const nTipoRes = await modal.options(`Passo 3 de ${temGaragem ? 4 : 3} — Qual a Natureza?`, [
+            { value: 'despesa', icon: <TrendingDown className="w-4 h-4" strokeWidth={2} />, label: 'Despesa (Saída)' },
+            { value: 'investimento', icon: <TrendingUp className="w-4 h-4" strokeWidth={2} />, label: 'Investimento / Alvo' },
+            { value: 'renda', icon: <Wallet className="w-4 h-4" strokeWidth={2} />, label: 'Renda (Entrada)' }
+        ], 'Editar Categoria');
         if (!nTipoRes) return;
 
         let isGaragemFinal = c.is_garagem || 0;
 
         if (temGaragem) {
-            const nGaragemRes = await modal.options(`4️⃣ Atrelar à Garagem?`, [
-                { value: 1, icon: '🏍️', label: 'Sim (Pedir KM no Lançamento)' },
-                { value: 0, icon: '❌', label: 'Não (Despesa Comum)' }
-            ], '✏️ Editar Categoria');
+            const nGaragemRes = await modal.options(`Passo 4 de 4 — Atrelar à Garagem?`, [
+                { value: 1, icon: <Bike className="w-4 h-4" strokeWidth={2} />, label: 'Sim (Pedir KM no Lançamento)' },
+                { value: 0, icon: <XCircle className="w-4 h-4" strokeWidth={2} />, label: 'Não (Despesa Comum)' }
+            ], 'Editar Categoria');
             if (nGaragemRes === null) return;
             isGaragemFinal = typeof nGaragemRes === 'object' ? nGaragemRes.value : Number(nGaragemRes);
         }
@@ -71,9 +72,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
         });
 
         if (sucesso) {
-            modal.alert('Sua categoria foi atualizada com sucesso no banco de dados!', '✅ Salvo com Sucesso');
+            modal.alert('Sua categoria foi atualizada com sucesso no banco de dados!', 'Salvo com Sucesso');
         } else {
-            modal.alert('Houve um erro ao atualizar a categoria. Verifique o servidor.', '❌ Erro');
+            modal.alert('Houve um erro ao atualizar a categoria. Verifique o servidor.', 'Erro');
         }
     };
 
@@ -82,7 +83,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
      * @description Confirma e aciona a exclusão de uma categoria.
      */
     const handleExcluir = async (id) => {
-        const ok = await modal.confirm('Deseja excluir esta categoria? Lançamentos antigos no extrato não serão afetados, mas ficarão "Sem Categoria".', '🗑️ Excluir Registo', { confirmColor: 'bg-rose-600 hover:bg-rose-700', confirmLabel: 'Excluir' });
+        const ok = await modal.confirm('Deseja excluir esta categoria? Lançamentos antigos no extrato não serão afetados, mas ficarão "Sem Categoria".', 'Excluir Registo', { confirmColor: 'bg-rose-600 hover:bg-rose-700', confirmLabel: 'Excluir' });
         if (!ok) return;
 
         await removerSetup('categorias', id);
@@ -95,15 +96,20 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
 
-            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        🏷️ Categorias e Metas
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Cadastre categorias para organizar seus lançamentos ou defina tetos de gastos.
-                    </p>
+            {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                        <Tag className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            Categorias e Metas
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Cadastre categorias para organizar seus lançamentos ou defina tetos de gastos.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -111,9 +117,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
 
                 {/* COLUNA ESQUERDA: FORMULÁRIO */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm lg:sticky top-6 transition-colors">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm lg:sticky top-6 transition-colors">
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-5 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                            <span>➕</span> Nova Categoria
+                            <Plus className="w-4 h-4" strokeWidth={2.5} /> Nova Categoria
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
@@ -133,9 +139,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                     value={tipoCategoria} onChange={(e) => setTipoCategoria(e.target.value)}
                                     className={`${inputCls} cursor-pointer`}
                                 >
-                                    <option value="despesa">🔻 Despesa (Saída)</option>
-                                    <option value="investimento">📈 Investimento / Aporte</option>
-                                    <option value="renda">💰 Renda / Entrada</option>
+                                    <option value="despesa">Despesa (Saída)</option>
+                                    <option value="investimento">Investimento / Aporte</option>
+                                    <option value="renda">Renda / Entrada</option>
                                 </select>
                             </div>
 
@@ -148,7 +154,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                     className={`w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 md:p-3 text-sm font-bold text-blue-600 dark:text-blue-400 outline-none focus:border-blue-500 transition-colors shadow-sm`}
                                 />
                                 <div className="mt-2.5 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-3 rounded-lg flex items-start gap-2 shadow-sm">
-                                    <span className="text-xs">💡</span>
+                                    <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" strokeWidth={2} />
                                     <p className="text-[10px] text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
                                         <strong>Opcional:</strong> Deixe em <strong>0,00</strong> se quiser criar apenas uma categoria simples sem rastrear metas no Dashboard.
                                     </p>
@@ -185,11 +191,10 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                             Categorias Cadastradas
                         </h3>
 
-                        {/* 🔥 MUDANÇA AQUI: Grid simplificado para 1 coluna até telas super largas (xl) */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5">
                             {categorias.length === 0 ? (
                                 <div className="col-span-full text-center p-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-                                    <span className="text-3xl opacity-50 block mb-3">🏷️</span>
+                                    <Tag className="w-8 h-8 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                                     <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">Nenhuma categoria cadastrada no seu livro-razão.</p>
                                 </div>
                             ) : categorias.map(c => {
@@ -197,35 +202,39 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                 const isGaragemFlag = Boolean(c.is_garagem);
 
                                 let borderColor = 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600';
-                                let icon = '🏷️';
+                                let Icone = Tag;
                                 let textColor = 'text-slate-500 dark:text-slate-400';
+                                let iconBg = 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
 
                                 if (isMeta) {
                                     if (c.tipo === 'despesa') {
                                         borderColor = 'border-amber-200 dark:border-amber-800/50 hover:border-amber-300 dark:hover:border-amber-700/50';
-                                        icon = '🔻';
+                                        Icone = TrendingDown;
                                         textColor = 'text-amber-600 dark:text-amber-400';
+                                        iconBg = 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400';
                                     } else if (c.tipo === 'investimento') {
                                         borderColor = 'border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700/50';
-                                        icon = '📈';
+                                        Icone = TrendingUp;
                                         textColor = 'text-blue-600 dark:text-blue-400';
+                                        iconBg = 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400';
                                     } else {
                                         borderColor = 'border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-700/50';
-                                        icon = '💰';
+                                        Icone = Wallet;
                                         textColor = 'text-emerald-600 dark:text-emerald-400';
+                                        iconBg = 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400';
                                     }
                                 }
 
                                 return (
                                     <div key={c.id} className={`bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl border shadow-sm flex justify-between items-center group transition-all hover:shadow-md ${borderColor}`}>
                                         <div className="flex items-center gap-3.5 min-w-0 pr-2 flex-1">
-                                            <span className="text-xl bg-slate-50 dark:bg-slate-800 w-12 h-12 flex items-center justify-center rounded-full shadow-inner shrink-0 border border-slate-100 dark:border-slate-700/50">{icon}</span>
+                                            <span className={`w-12 h-12 flex items-center justify-center rounded-full shadow-inner shrink-0 border border-slate-100 dark:border-slate-700/50 ${iconBg}`}><Icone className="w-5 h-5" strokeWidth={2} /></span>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2 mb-0.5 min-w-0">
                                                     <h4 className="font-black text-slate-800 dark:text-slate-100 leading-tight truncate text-sm md:text-base">
                                                         {c.nome}
                                                     </h4>
-                                                    {isGaragemFlag && <span className="shrink-0 text-[9px] uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800/50 shadow-sm">🏍️ Garagem</span>}
+                                                    {isGaragemFlag && <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800/50 shadow-sm"><Bike className="w-2.5 h-2.5" strokeWidth={2.5} /> Garagem</span>}
                                                 </div>
                                                 {isMeta ? (
                                                     <p className="text-[10px] font-black uppercase mt-1 tracking-wider text-slate-500 dark:text-slate-400 truncate">
@@ -241,9 +250,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                         </div>
 
                                         <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0 shadow-sm">
-                                            <button onClick={() => handleEditarCategoria(c)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar">✏️</button>
+                                            <button onClick={() => handleEditarCategoria(c)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                             <div className="w-px h-4 bg-slate-200 dark:bg-slate-600"></div>
-                                            <button onClick={() => handleExcluir(c.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Excluir">🗑️</button>
+                                            <button onClick={() => handleExcluir(c.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Excluir"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                         </div>
                                     </div>
                                 );

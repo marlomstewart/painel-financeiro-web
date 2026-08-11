@@ -1,8 +1,9 @@
 import React from 'react';
+import { Radar, CreditCard, Users, Hourglass, Wallet } from 'lucide-react';
 
 /**
  * @file src/components/AlertasDashboard.jsx
- * @description Componente visual responsável por calcular e exibir avisos de vencimentos 
+ * @description Componente visual responsável por calcular e exibir avisos de vencimentos
  * próximos (Contas, Faturas de Cartão, Dívidas e Entradas de Renda).
  */
 export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], dataVis }) {
@@ -97,13 +98,13 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
 
     return (
         <div className="animate-fade-in-down mb-6 md:mb-8">
-            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <span className="text-rose-500 text-lg">🚨</span> Radar de Vencimentos
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Radar className="w-4 h-4 text-rose-500" strokeWidth={2.25} /> Radar de Vencimentos
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {alertas.map(alerta => {
                     const isRenda = alerta.isRenda;
-                    let statusConfig = {};
+                    let statusConfig;
 
                     if (alerta.dias < 0) {
                         statusConfig = {
@@ -132,15 +133,31 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
 
                                 {/* Badges informativas */}
                                 <div className="flex flex-col gap-1.5 items-end shrink-0">
-                                    {alerta.tipo === 'cartao_fatura' && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-sm">💳 Fatura</span>)}
-                                    {alerta.tipo === 'terceiros' && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm">🤝 Terceiros</span>)}
-                                    {alerta.parcelaInfo && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-sm">⏳ {alerta.parcelaInfo}</span>)}
-                                    {isRenda && (<span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm">💰 Receita</span>)}
+                                    {alerta.tipo === 'cartao_fatura' && (
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-sm">
+                                            <CreditCard className="w-2.5 h-2.5" strokeWidth={2.5} /> Fatura
+                                        </span>
+                                    )}
+                                    {alerta.tipo === 'terceiros' && (
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm">
+                                            <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> Terceiros
+                                        </span>
+                                    )}
+                                    {alerta.parcelaInfo && (
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-sm">
+                                            <Hourglass className="w-2.5 h-2.5" strokeWidth={2.5} /> {alerta.parcelaInfo}
+                                        </span>
+                                    )}
+                                    {isRenda && (
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm">
+                                            <Wallet className="w-2.5 h-2.5" strokeWidth={2.5} /> Receita
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex justify-between items-end mt-auto pt-2">
-                                <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{formatarMoeda(alerta.valor)}</span>
-                                <span className={`text-[10px] font-black uppercase tracking-wider ${statusConfig.textoCor}`}>{statusConfig.texto}</span>
+                                <span className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{formatarMoeda(alerta.valor)}</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${statusConfig.textoCor}`}>{statusConfig.texto}</span>
                             </div>
                         </div>
                     );

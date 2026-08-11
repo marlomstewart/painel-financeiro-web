@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CreditCard, Pencil, Trash2 } from 'lucide-react';
 
 /**
  * @file src/components/Cartoes.jsx
@@ -21,16 +22,16 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
     };
 
     const handleEditar = async (c) => {
-        const nNome = await modal.prompt(`1️⃣ Novo NOME do Cartão?`, c.nome, '✏️ Editar Cartão', { confirmLabel: 'Próximo' });
+        const nNome = await modal.prompt(`Passo 1 de 4 — Novo NOME do Cartão?`, c.nome, 'Editar Cartão', { confirmLabel: 'Próximo' });
         if (!nNome) return;
 
-        const nLim = await modal.prompt(`2️⃣ Novo LIMITE (R$)?`, String(c.limite || ''), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
+        const nLim = await modal.prompt(`Passo 2 de 4 — Novo LIMITE (R$)?`, String(c.limite || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
         if (!nLim || isNaN(Number(nLim))) return modal.alert('Valor de limite inválido. Edição cancelada.', 'Erro');
 
-        const nF = await modal.prompt(`3️⃣ Novo Dia de FECHAMENTO?`, String(c.melhorDia || ''), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
+        const nF = await modal.prompt(`Passo 3 de 4 — Novo Dia de FECHAMENTO?`, String(c.melhorDia || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
         if (!nF || isNaN(Number(nF))) return modal.alert('Dia de fechamento inválido. Edição cancelada.', 'Erro');
 
-        const nV = await modal.prompt(`4️⃣ Novo Dia de VENCIMENTO?`, String(c.vencimento || ''), '✏️ Editar Cartão', { inputType: 'number', confirmLabel: 'Salvar' });
+        const nV = await modal.prompt(`Passo 4 de 4 — Novo Dia de VENCIMENTO?`, String(c.vencimento || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Salvar' });
         if (!nV || isNaN(Number(nV))) return modal.alert('Dia de vencimento inválido. Edição cancelada.', 'Erro');
 
         const sucesso = await editarSetup('cartoes', c.id, {
@@ -40,11 +41,11 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
             vencimento: Number(nV)
         });
 
-        if (sucesso) modal.alert('Cartão atualizado com sucesso!', '✅ Editado');
+        if (sucesso) modal.alert('Cartão atualizado com sucesso!', 'Editado');
     };
 
     const handleExcluir = async (id) => {
-        const ok = await modal.confirm('Atenção: Excluir este cartão pode quebrar faturas vinculadas. Tem certeza?', '🗑️ Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
+        const ok = await modal.confirm('Atenção: Excluir este cartão pode quebrar faturas vinculadas. Tem certeza?', 'Excluir', { confirmLabel: 'Excluir', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
         if (ok) removerSetup('cartoes', id);
     };
 
@@ -61,21 +62,26 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
-            {/* 🌟 CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        💳 Meus Cartões de Crédito
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Gerencie seus limites, uso em tempo real e dias de faturamento.
-                    </p>
+            {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                        <CreditCard className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            Meus Cartões de Crédito
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Gerencie seus limites, uso em tempo real e dias de faturamento.
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
                 {/* COLUNA ESQUERDA: FORMULÁRIO DE CADASTRO */}
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm h-fit">
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm h-fit">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-5 border-b border-slate-100 dark:border-slate-800 pb-3">Novo Cartão</h3>
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
@@ -110,7 +116,7 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 h-fit">
                     {cartoes.length === 0 ? (
                         <div className="md:col-span-2 text-center p-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/30">
-                            <span className="text-3xl opacity-50 block mb-3">💳</span>
+                            <CreditCard className="w-8 h-8 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                             <span className="font-semibold text-sm">Nenhum cartão cadastrado.</span>
                         </div>
                     ) : (
@@ -137,9 +143,9 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
 
                                             {/* 🔥 MOBILE FIX: Pílula de ações sempre visível no mobile */}
                                             <div className="flex items-center gap-1.5 bg-slate-800/90 px-2 py-1 rounded-lg border border-slate-700 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0 shadow-sm">
-                                                <button onClick={() => handleEditar(c)} className="p-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer rounded hover:bg-slate-700" title="Editar">✏️</button>
+                                                <button onClick={() => handleEditar(c)} className="p-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer rounded hover:bg-slate-700" title="Editar"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                                 <div className="w-px h-4 bg-slate-600"></div>
-                                                <button onClick={() => handleExcluir(c.id)} className="p-1.5 text-slate-300 hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-700" title="Excluir">🗑️</button>
+                                                <button onClick={() => handleExcluir(c.id)} className="p-1.5 text-slate-300 hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-700" title="Excluir"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button>
                                             </div>
                                         </div>
 
