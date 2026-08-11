@@ -73,7 +73,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         let anoRefInicial = parseInt(anoStr, 10);
 
         if (formaPagamento.startsWith('credito_')) {
-            const cartaoId = formaPagamento.split('_')[1];
+            const cartaoId = formaPagamento.replace('credito_', '');
             const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
 
             let diaFechamento = 31;

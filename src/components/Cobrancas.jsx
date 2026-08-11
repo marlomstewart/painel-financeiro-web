@@ -44,8 +44,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             let nomeForma = 'PIX/Débito';
 
             if (String(t.formaPagamento).startsWith('credito_') && cartoes.length > 0) {
-                const cId = t.formaPagamento.split('_')[1];
-                const cartao = cartoes.find(c => c.id === cId);
+                const cId = String(t.formaPagamento).replace('credito_', '');
+                const cartao = cartoes.find(c => String(c.id) === cId);
                 if (cartao) {
                     dataVencimento = new Date(t.anoReferencia, t.mesReferencia - 1, cartao.vencimento);
                     nomeForma = cartao.nome;

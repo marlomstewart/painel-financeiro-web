@@ -147,7 +147,7 @@ export function Lancamentos({
     const obterNomePagamento = (forma) => {
         if (!forma) return 'Desconhecido';
         if (forma.startsWith('credito_')) {
-            const cartao = cartoes.find(c => String(c.id) === String(forma.split('_')[1]));
+            const cartao = cartoes.find(c => String(c.id) === forma.replace('credito_', ''));
             return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
         }
         if (forma === 'pix') return 'PIX / Dinheiro';

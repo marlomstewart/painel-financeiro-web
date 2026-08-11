@@ -68,7 +68,7 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
 
         transacoesMes.forEach(t => {
             if (t.formaPagamento && String(t.formaPagamento).startsWith('credito_')) {
-                const cartaoId = String(t.formaPagamento).split('_')[1];
+                const cartaoId = String(t.formaPagamento).replace('credito_', '');
                 const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
                 const nomeCartao = cartao ? cartao.nome : 'Cartão Excluído / Desconhecido';
                 cartaoIds[nomeCartao] = cartao ? cartao.id : cartaoId;

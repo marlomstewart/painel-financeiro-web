@@ -77,7 +77,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
         if (!forma || forma === 'pix') return 'PIX / Dinheiro';
         if (forma === 'debito') return 'Débito';
         if (forma.startsWith('credito_')) {
-            const cartaoId = forma.split('_')[1];
+            const cartaoId = forma.replace('credito_', '');
             const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
             return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
         }
