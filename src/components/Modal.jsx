@@ -532,15 +532,19 @@ export function Modal({ config, onClose }) {
                 <button onClick={() => config.onEditar()} className="p-3.5 md:p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer active:scale-95 shadow-sm">
                   ✏️ Editar
                 </button>
-                <button onClick={() => config.onAnexarComprovante()} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm">
-                  📎 Anexar
-                </button>
+                {config.temComprovante && (
+                  <button onClick={() => config.onAnexarComprovante()} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm">
+                    📎 Anexar
+                  </button>
+                )}
                 <button onClick={() => config.onDeletar()} className="p-3.5 md:p-2.5 bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition cursor-pointer active:scale-95 shadow-sm">
                   🗑️ Excluir
                 </button>
-                <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3">
-                  📄 Ver Comprovante Anexado
-                </button>
+                {config.temComprovante && (
+                  <button onClick={() => { onClose(); config.onVerComprovante(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3">
+                    📄 Ver Comprovante Anexado
+                  </button>
+                )}
               </div>
             </div>
           )}

@@ -47,7 +47,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         let veiculo_id = null;
         let veiculo_emprestado = 0;
 
-        if ((categoria === 'Gasolina' || categoria === 'Manutenção da moto') && temGaragem) {
+        if (temGaragem && categorias.find(c => c.nome === categoria)?.is_garagem) {
             if (garagem && garagem.veiculosGaragem && garagem.veiculosGaragem.length > 0) {
                 const opcoes = garagem.veiculosGaragem.filter(v => v.ativo === 1).map(v => ({
                     label: `${v.modelo} ${v.tipo !== 'proprio' ? '(Convidado)' : ''}`,

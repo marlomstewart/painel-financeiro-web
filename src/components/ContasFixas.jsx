@@ -33,9 +33,9 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
     const handleEditar = (conta) => {
         setEditandoId(conta.id);
         setNome(conta.nome);
-        setValorPadrao(Number(conta.valorPadrao || conta.valorpadrao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        setValorPadrao(Number(conta.valorPadrao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         setVencimento(conta.vencimento);
-        setFormaPagamento(conta.formaPagamento || conta.forma_pagamento || 'pix');
+        setFormaPagamento(conta.forma_pagamento || 'pix');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -189,7 +189,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
                                     <div className="bg-slate-50 dark:bg-slate-950/50 rounded-lg p-3.5 border border-slate-100 dark:border-slate-800 flex justify-between items-center mt-auto">
                                         <div>
                                             <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mb-1">Valor Padrão</p>
-                                            <p className="text-base font-black text-rose-600 dark:text-rose-400">R$ {Number(conta.valorPadrao || conta.valorpadrao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-base font-black text-rose-600 dark:text-rose-400">R$ {Number(conta.valorPadrao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mb-1">

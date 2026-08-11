@@ -246,10 +246,7 @@ export function Lancamentos({
                                 </select>
                             </div>
 
-                            {/* PROVISÓRIO até a D (vínculo categoria↔garagem) estar pronta: usa a mesma
-                                regra do modal de seleção de veículo em useTransacoes.jsx. O antigo gate
-                                por c.is_garagem nunca funcionava — a coluna não existe no banco ainda. */}
-                            {temGaragem && (categoria === 'Gasolina' || categoria === 'Manutenção da moto') ? (
+                            {temGaragem && categorias.find(c => c.nome === categoria)?.is_garagem ? (
                                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800/50 animate-fade-in">
                                     <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">Odômetro Atual (KM) - Opcional</label>
                                     <input

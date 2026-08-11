@@ -123,7 +123,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 /**
  * @file src/hooks/useDashboard.jsx
  */
-export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, nomeUsuario, garagem, cartoes = [] }) {
+export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [] }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -267,8 +267,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     });
 
     const categoriasDinamicas = useMemo(() => {
-        return categorias.map(c => c.nome === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
-    }, [categorias, nomeUsuario, garagem, dataVis]);
+        return categorias.map(c => c.nome === 'Gasolina' && temGaragem ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
+    }, [categorias, temGaragem, garagem, dataVis]);
 
     let metaNaoComprometida = 0;
     categoriasDinamicas.forEach(c => {
@@ -364,7 +364,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-[9px] text-emerald-500 dark:text-emerald-400 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
                     </div>
                 </div>
-                {nCat === 'Gasolina' && nomeUsuario?.toLowerCase() === 'stewart' && (
+                {nCat === 'Gasolina' && temGaragem && (
                     <button type="button" onClick={(e) => garagem?.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md cursor-pointer">
                         📅 Ajustar Dias Não Rodados
                     </button>
@@ -372,7 +372,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoes, dataVis, dataHoje, modal, nomeUsuario, garagem]);
+    }, [transacoes, dataVis, dataHoje, modal, temGaragem, garagem]);
 
     // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
     const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {

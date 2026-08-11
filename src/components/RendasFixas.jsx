@@ -30,8 +30,8 @@ export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSet
     const handleEditar = (r) => {
         setEditandoId(r.id);
         setNome(r.nome);
-        setValorPadrao(Number(r.valorPadrao || r.valorpadrao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        setDiaRecebimento(r.diaRecebimento || r.diarecebimento);
+        setValorPadrao(Number(r.valorPadrao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        setDiaRecebimento(r.diaRecebimento);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -158,11 +158,11 @@ export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSet
                                     <div className="flex justify-between items-end bg-slate-50 dark:bg-slate-950/50 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 mt-auto">
                                         <div>
                                             <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mb-1">Valor Padrão</p>
-                                            <p className="text-lg font-black text-emerald-700 dark:text-emerald-400 truncate">{formatarMoeda(r.valorPadrao || r.valorpadrao)}</p>
+                                            <p className="text-lg font-black text-emerald-700 dark:text-emerald-400 truncate">{formatarMoeda(r.valorPadrao)}</p>
                                         </div>
                                         <div className="text-right shrink-0">
                                             <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mb-1">Recebe em</p>
-                                            <p className="text-sm font-black text-slate-700 dark:text-slate-300">Dia {r.diaRecebimento || r.diarecebimento}</p>
+                                            <p className="text-sm font-black text-slate-700 dark:text-slate-300">Dia {r.diaRecebimento}</p>
                                         </div>
                                     </div>
                                 </div>

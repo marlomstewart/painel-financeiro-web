@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
  * @description Painel de controlo central do utilizador.
  * Gere os dados de perfil, segurança, exportação, motor de temas e vinculação com o Telegram.
  */
-export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha }) {
+export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha }) {
 
     // ================= ESTADOS GERAIS =================
     const [nomeCompleto, setNomeCompleto] = useState('');
@@ -33,11 +33,8 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     useEffect(() => {
         const fetchTelegramStatus = async () => {
             try {
-                const token = localStorage.getItem('tokenPainel');
-                const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
-
-                const res = await fetch(`${apiUrl}/telegram/status`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const res = await fetch(`${API}/telegram/status`, {
+                    headers: getHeaders()
                 });
 
                 if (res.ok) {
@@ -105,12 +102,9 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
     const gerarPinTelegram = async () => {
         setGerandoPin(true);
         try {
-            const token = localStorage.getItem('tokenPainel');
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
-
-            const res = await fetch(`${apiUrl}/telegram/gerar-pin`, {
+            const res = await fetch(`${API}/telegram/gerar-pin`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getHeaders()
             });
 
             if (res.ok) {
@@ -132,12 +126,9 @@ export function Configuracoes({ exportarCSV, gerarMesManual, gerandoMes, remover
         if (!window.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.')) return;
 
         try {
-            const token = localStorage.getItem('tokenPainel');
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://painel-gestao-financeira-api.onrender.com/api';
-
-            const res = await fetch(`${apiUrl}/telegram/desvincular`, {
+            const res = await fetch(`${API}/telegram/desvincular`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getHeaders()
             });
 
             if (res.ok) {
