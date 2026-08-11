@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -211,7 +212,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         if (!isDividaTerceiro(t)) {
             const valorTotalIntegral = Number(t.valorParcela);
 
-            if (t.formaPagamento && t.formaPagamento.startsWith('credito_') && t.status === 'pendente') {
+            if (ehPagamentoCredito(t.formaPagamento) && t.status === 'pendente') {
                 if (t.tipo === 'reembolso') totFaturaCreditoAberto -= valorTotalIntegral;
                 else if (t.tipo !== 'renda' && t.tipo !== 'investimento') totFaturaCreditoAberto += valorTotalIntegral;
             }
@@ -384,7 +385,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             const itensSoltos = [];
 
             list.forEach(t => {
-                const ehCredito = t.formaPagamento && t.formaPagamento.startsWith('credito_');
+                const ehCredito = ehPagamentoCredito(t.formaPagamento);
                 let valorCalculado = useMeuValor ? getMeuValor(t) : Number(t.valorParcela);
                 const isReembolso = t.tipo === 'reembolso';
                 
@@ -399,9 +400,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
                 if (ehCredito) {
                     if (!grupos[t.formaPagamento]) {
-                        const cartaoId = String(t.formaPagamento).replace('credito_', '');
                         // 🔥 Busca o cartão na lista externa que veio direto do Dashboard
-                        const cartao = cartoesExternos.find(c => String(c.id) === cartaoId);
+                        const cartao = resolverCartao(t.formaPagamento, cartoesExternos);
                         const nomeCartao = cartao ? cartao.nome : 'Cartão Excluído/Desconhecido';
                         
                         grupos[t.formaPagamento] = {

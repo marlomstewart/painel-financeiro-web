@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Handshake, Eye, CheckCircle2, MessageCircle, X, Landmark, CreditCard } from 'lucide-react';
+import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 
 /**
  * @file src/components/Cobrancas.jsx
@@ -43,9 +44,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             let dataVencimento = new Date(t.dataCompra);
             let nomeForma = 'PIX/Débito';
 
-            if (String(t.formaPagamento).startsWith('credito_') && cartoes.length > 0) {
-                const cId = String(t.formaPagamento).replace('credito_', '');
-                const cartao = cartoes.find(c => String(c.id) === cId);
+            if (ehPagamentoCredito(t.formaPagamento) && cartoes.length > 0) {
+                const cartao = resolverCartao(t.formaPagamento, cartoes);
                 if (cartao) {
                     dataVencimento = new Date(t.anoReferencia, t.mesReferencia - 1, cartao.vencimento);
                     nomeForma = cartao.nome;

@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { ehPagamentoCredito, extrairCartaoId, resolverCartao } from '../utils/cartaoUtils';
 
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -67,9 +68,9 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         const gastosTerceiros = {};
 
         transacoesMes.forEach(t => {
-            if (t.formaPagamento && String(t.formaPagamento).startsWith('credito_')) {
-                const cartaoId = String(t.formaPagamento).replace('credito_', '');
-                const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
+            if (ehPagamentoCredito(t.formaPagamento)) {
+                const cartaoId = extrairCartaoId(t.formaPagamento);
+                const cartao = resolverCartao(t.formaPagamento, cartoes);
                 const nomeCartao = cartao ? cartao.nome : 'Cartão Excluído / Desconhecido';
                 cartaoIds[nomeCartao] = cartao ? cartao.id : cartaoId;
 

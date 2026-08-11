@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Repeat, Pencil, Trash2, TrendingDown } from 'lucide-react';
+import { nomeCartao } from '../utils/cartaoUtils';
 
 /**
  * @file src/components/ContasFixas.jsx
@@ -77,9 +78,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
         if (!forma || forma === 'pix') return 'PIX / Dinheiro';
         if (forma === 'debito') return 'Débito';
         if (forma.startsWith('credito_')) {
-            const cartaoId = forma.replace('credito_', '');
-            const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
-            return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
+            return `Crédito ${nomeCartao(forma, cartoes, '(Excluído)')}`;
         }
         return forma;
     };

@@ -15,9 +15,16 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const addCartao = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const dados = { id: `card_${Date.now()}`, nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')), limite: parseCurrency(fd.get('limite')) };
+        const dados = { nome: fd.get('nome'), melhorDia: Number(fd.get('melhorDia')), vencimento: Number(fd.get('vencimento')), limite: parseCurrency(fd.get('limite')) };
         const res = await fetch(`${API}/cartoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
-        if (res.ok) { setCartoes([...cartoes, dados]); e.target.reset(); modal.alert('Cartão adicionado com sucesso!', '✅ Sucesso'); }
+        if (res.ok) {
+            const data = await res.json();
+            setCartoes([...cartoes, data.cartao]);
+            e.target.reset();
+            modal.alert('Cartão adicionado com sucesso!', '✅ Sucesso');
+        } else {
+            modal.alert('Erro ao cadastrar cartão.', '❌ Erro');
+        }
     };
 
     const addCategoria = async (e) => {

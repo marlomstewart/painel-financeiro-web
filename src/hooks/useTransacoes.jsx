@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 
 /**
  * @file src/hooks/useTransacoes.jsx
@@ -72,16 +73,13 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         let mesRefInicial = parseInt(mesStr, 10);
         let anoRefInicial = parseInt(anoStr, 10);
 
-        if (formaPagamento.startsWith('credito_')) {
-            const cartaoId = formaPagamento.replace('credito_', '');
-            const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
+        if (ehPagamentoCredito(formaPagamento)) {
+            const cartao = resolverCartao(formaPagamento, cartoes);
 
             let diaFechamento = 31;
 
             if (cartao && cartao.melhorDia) {
                 diaFechamento = parseInt(cartao.melhorDia, 10);
-            } else if (cartao && cartao.nome?.toLowerCase().includes('nubank')) {
-                diaFechamento = 8;
             }
 
             if (diaCompra >= diaFechamento) {

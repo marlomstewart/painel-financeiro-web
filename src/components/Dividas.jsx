@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingDown, Pencil, Trash2, CheckCircle2, Hourglass, Users } from 'lucide-react';
+import { nomeCartao } from '../utils/cartaoUtils';
 
 /**
  * @file src/components/Dividas.jsx
@@ -119,9 +120,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         if (!forma || forma === 'pix') return 'PIX / Dinheiro';
         if (forma === 'debito') return 'Débito';
         if (forma.startsWith('credito_')) {
-            const cartaoId = forma.replace('credito_', '');
-            const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
-            return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
+            return `Crédito ${nomeCartao(forma, cartoes, '(Excluído)')}`;
         }
         return forma;
     };

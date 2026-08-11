@@ -3,6 +3,7 @@ import {
     Sparkles, ClipboardList, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
     Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info
 } from 'lucide-react';
+import { nomeCartao } from '../utils/cartaoUtils';
 
 /**
  * @function IconeOrdenacao
@@ -147,8 +148,7 @@ export function Lancamentos({
     const obterNomePagamento = (forma) => {
         if (!forma) return 'Desconhecido';
         if (forma.startsWith('credito_')) {
-            const cartao = cartoes.find(c => String(c.id) === forma.replace('credito_', ''));
-            return cartao ? `Crédito ${cartao.nome}` : 'Crédito (Excluído)';
+            return `Crédito ${nomeCartao(forma, cartoes, '(Excluído)')}`;
         }
         if (forma === 'pix') return 'PIX / Dinheiro';
         if (forma === 'debito') return 'Débito';
