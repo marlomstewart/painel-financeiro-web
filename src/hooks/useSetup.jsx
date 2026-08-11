@@ -169,6 +169,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
                 modal.alert(data.error || 'Erro ao gerar mês.', '❌ Erro');
             }
         } catch (err) {
+            console.error('Erro ao gerar mês:', err);
             modal.alert('Falha na conexão com o servidor.', '❌ Erro');
         } finally {
             setGerandoMes(false);
