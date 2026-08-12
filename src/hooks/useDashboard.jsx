@@ -13,7 +13,12 @@ const getMeuValor = (t) => {
 
 // 🔥 FUNÇÃO BLINDADA: Detecta se é um empréstimo oriundo do módulo de dívidas
 const isDividaTerceiro = (t) => {
+    // Motor atual (desde a correcao de 10/08): marca divida de terceiro via isThirdParty,
+    // nao mais via categoria. Mantido restrito a categoria de dividas para nao capturar
+    // compras normais divididas com alguem (split de restaurante, etc), que tambem usam isThirdParty.
+    if (t.isThirdParty && t.thirdPartyName && t.categoria === 'Dívidas e Empréstimos') return true;
     if (!t.categoria) return false;
+    // Compatibilidade com lancamentos antigos, gerados antes da correcao, que usavam essa categoria.
     return t.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'divida de terceiros';
 };
 
