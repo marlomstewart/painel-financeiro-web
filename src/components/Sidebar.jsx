@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     Zap, X, ChevronDown, LayoutDashboard, Wallet, Plus, ClipboardList,
     TrendingDown, Repeat, HandCoins, Handshake, CreditCard, PiggyBank,
-    Target, TrendingUp, Bike, Settings, Users, LogOut
+    Target, TrendingUp, Bike, Settings, Users, LogOut, HelpCircle
 } from 'lucide-react';
 
 /**
@@ -159,6 +159,7 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                         <MenuItem id="garagem" Icone={Bike} titulo="Garagem" telaAtiva={telaAtiva} onClick={() => handleNavegacao('garagem')} />
                     )}
 
+                    <MenuItem id="ajuda" Icone={HelpCircle} titulo="Ajuda" telaAtiva={telaAtiva} onClick={() => handleNavegacao('ajuda')} />
                     <MenuItem id="configuracoes" Icone={Settings} titulo="Configurações" telaAtiva={telaAtiva} onClick={() => handleNavegacao('configuracoes')} />
 
                     {isAdmin && (

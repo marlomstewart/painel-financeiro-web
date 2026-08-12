@@ -16,6 +16,8 @@ import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
 import { Investimentos } from './components/Investimentos';
 import { Cobrancas } from './components/Cobrancas';
+import { Tutorial } from './components/Tutorial';
+import { Ajuda } from './components/Ajuda';
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -59,6 +61,7 @@ function App() {
 
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mostrarTutorial, setMostrarTutorial] = useState(false);
   const [dataVis, setDataVis] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
   const [transacoes, setTransacoes] = useState([]);
 
@@ -109,6 +112,12 @@ function App() {
     carregar();
   }, [auth.token]);
 
+  // Exibe o tour de boas-vindas automaticamente após o carregamento, uma vez por sessão,
+  // a menos que o usuário já tenha marcado "Não mostrar novamente" (persistido no perfil dele).
+  useEffect(() => {
+    if (carregouAPI && !auth.tutorialDispensado) setMostrarTutorial(true);
+  }, [carregouAPI, auth.tutorialDispensado]);
+
   if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /></>;
   if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /></>;
 
@@ -132,6 +141,8 @@ function App() {
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
     if (telaAtiva === 'configuracoes') return <Configuracoes API={API} getHeaders={auth.getHeaders} nomeUsuario={auth.nomeUsuario} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} />;
+
+    if (telaAtiva === 'ajuda') return <Ajuda temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} abrirTutorial={() => setMostrarTutorial(true)} />;
 
     if (telaAtiva === 'garagem' && auth.temGaragem) return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} garagem={garagem} />;
 
@@ -178,6 +189,7 @@ function App() {
         {renderizarConteudoAtivo()}
       </main>
       <Modal config={modal.config} onClose={modal.close} />
+      <Tutorial visivel={mostrarTutorial} onClose={() => setMostrarTutorial(false)} temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} dispensarTutorial={auth.dispensarTutorial} />
       <Toast toast={toast} />
     </div>
   );
