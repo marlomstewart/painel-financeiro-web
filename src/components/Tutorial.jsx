@@ -10,7 +10,7 @@ import {
  * "Não mostrar novamente"). Os passos são montados dinamicamente conforme as permissões do usuário
  * (Garagem, Admin), assim como o restante do sistema já faz na Sidebar.
  */
-const construirPassos = ({ temGaragem, isAdmin }) => {
+const construirPassos = ({ temGaragem, isAdmin, temComprovante }) => {
     const passos = [
         {
             Icone: Sparkles,
@@ -25,7 +25,7 @@ const construirPassos = ({ temGaragem, isAdmin }) => {
         {
             Icone: Wallet,
             titulo: 'Lançamentos',
-            texto: 'Registre despesas, rendas, reembolsos e investimentos em "Novo Lançamento", e acompanhe tudo em "Extrato". Dá pra parcelar, dividir com terceiros e anexar comprovante.'
+            texto: `Registre despesas, rendas, reembolsos e investimentos em "Novo Lançamento", e acompanhe tudo em "Extrato". Dá pra parcelar e dividir com terceiros${temComprovante ? ', e como você tem a permissão liberada, também anexar comprovante a cada lançamento' : ''}.`
         },
         {
             Icone: CreditCard,
@@ -76,8 +76,8 @@ const construirPassos = ({ temGaragem, isAdmin }) => {
     return passos;
 };
 
-export function Tutorial({ visivel, onClose, temGaragem, isAdmin, dispensarTutorial }) {
-    const passos = useMemo(() => construirPassos({ temGaragem, isAdmin }), [temGaragem, isAdmin]);
+export function Tutorial({ visivel, onClose, temGaragem, isAdmin, temComprovante, dispensarTutorial }) {
+    const passos = useMemo(() => construirPassos({ temGaragem, isAdmin, temComprovante }), [temGaragem, isAdmin, temComprovante]);
     const [passoAtual, setPassoAtual] = useState(0);
     const [naoMostrarNovamente, setNaoMostrarNovamente] = useState(false);
 

@@ -189,7 +189,7 @@ function App() {
         {renderizarConteudoAtivo()}
       </main>
       <Modal config={modal.config} onClose={modal.close} />
-      <Tutorial visivel={mostrarTutorial} onClose={() => setMostrarTutorial(false)} temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} dispensarTutorial={auth.dispensarTutorial} />
+      <Tutorial visivel={mostrarTutorial} onClose={() => setMostrarTutorial(false)} temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} temComprovante={auth.temComprovante} dispensarTutorial={auth.dispensarTutorial} />
       <Toast toast={toast} />
     </div>
   );
