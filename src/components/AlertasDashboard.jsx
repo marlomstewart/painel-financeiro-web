@@ -76,7 +76,10 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
             if (dataVenc <= limiteAlerta || isFaturaFechada) {
                 const diffTime = dataVenc - hoje;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const valorTotalDaFatura = transCartao.reduce((acc, t) => acc + Number(t.valorParcela || t.valor || 0), 0);
+                const valorTotalDaFatura = transCartao.reduce((acc, t) => {
+                    const valor = Number(t.valorParcela || t.valor || 0);
+                    return t.tipo === 'reembolso' ? acc - valor : acc + valor;
+                }, 0);
 
                 alertas.push({
                     id: `fatura_${c.id}`,
