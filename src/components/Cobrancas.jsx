@@ -139,10 +139,12 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     const totalGeralRestante = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalPendenteGeral, 0);
 
     // Mantém só dígitos e prefixa 55 (Brasil) se a pessoa não tiver informado o código do país.
+    // Decide pela quantidade de dígitos (DDD+número = 10 ou 11) em vez do prefixo, já que o
+    // DDD 55 existe de verdade (Santa Maria/RS) e não pode ser confundido com o código do país.
     const formatarTelefoneWhatsApp = (telefone) => {
         const digitos = String(telefone).replace(/\D/g, '');
         if (!digitos) return null;
-        return digitos.startsWith('55') ? digitos : `55${digitos}`;
+        return digitos.length >= 12 ? digitos : `55${digitos}`;
     };
 
     const gerarTextoCobranca = async (pessoa) => {
