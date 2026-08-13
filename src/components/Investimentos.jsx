@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
 import { useBolsa } from '../hooks/useBolsa';
 import { useTesouro } from '../hooks/useTesouro';
-import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2, ShieldCheck, PieChart } from 'lucide-react';
+import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2, ShieldCheck, ChevronDown, TrendingUp } from 'lucide-react';
 
 /**
  * @function formatarMoeda
@@ -864,6 +864,9 @@ function SecaoTesouro({ tesouro, onRegistrarTitulo, excluirTitulo, formatarMoeda
  * backend — cada hook já busca seu próprio dashboard de qualquer forma.
  */
 function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda, onNovoLancamento }) {
+    const [gruposAbertos, setGruposAbertos] = useState({});
+    const toggleGrupo = (chave) => setGruposAbertos(prev => ({ ...prev, [chave]: !prev[chave] }));
+
     const carregando = !dashboardCdb || bolsa.loading || !bolsa.dashboardData || tesouro.loading || !tesouro.dashboardData;
 
     if (carregando) {
@@ -895,6 +898,39 @@ function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda,
         { chave: 'fiis', nome: 'FIIs', valor: fiisAtual, cor: 'bg-amber-500' },
         { chave: 'tesouro', nome: 'Tesouro Direto', valor: tesouroResumo.valorLiquidoTotal, cor: 'bg-indigo-500' }
     ];
+
+    // ===== "Meus Ativos": colunas e linhas de cada grupo expansível =====
+    const celulaVariacao = (valor) => valor == null ? '—' : (
+        <span className={valor >= 0 ? 'text-emerald-500' : 'text-rose-500'}>{valor >= 0 ? '+' : ''}{valor.toFixed(2)}%</span>
+    );
+
+    const posicoesAcoes = bolsa.dashboardData.posicoes.filter(p => classificarTicker(p.ticker) === 'acoes');
+    const posicoesFiis = bolsa.dashboardData.posicoes.filter(p => classificarTicker(p.ticker) === 'fiis');
+    const linhasBolsa = (posicoes) => posicoes.map(p => [
+        p.ticker, p.quantidade, formatarMoeda(p.precoMedio),
+        p.cotacaoAtual != null ? formatarMoeda(p.cotacaoAtual) : '—',
+        celulaVariacao(p.variacaoDia),
+        celulaVariacao(p.rentabilidadePercentual),
+        formatarMoeda(p.valorAtual ?? p.valorInvestido)
+    ]);
+    const colunasBolsa = ['Ativo', 'Quantidade', 'Preço Médio', 'Preço Atual', 'Variação (dia)', 'Rentabilidade', 'Saldo'];
+
+    const linhasRendaFixa = dashboardCdb.caixinhas.map(cx => [
+        cx.nome_caixinha, cx.instituicao, `${cx.percentual_cdi}%`,
+        formatarMoeda(cx.totalAplicado), celulaVariacao(cx.totalAplicado > 0 ? (cx.lucroLiquido / cx.totalAplicado) * 100 : null),
+        formatarMoeda(cx.totalLiquido)
+    ]);
+    const colunasRendaFixa = ['Caixinha', 'Instituição', '% CDI', 'Aplicado', 'Rendimento', 'Saldo'];
+
+    const rotuloTipoTesouro = { selic: 'Selic', prefixado: 'Prefixado', ipca: 'IPCA+' };
+    const linhasTesouro = tesouro.dashboardData.titulos.map(t => [
+        t.nome, rotuloTipoTesouro[t.tipo] || t.tipo, `${t.taxaAnualEfetiva}% a.a.`,
+        formatarMoeda(t.valorOriginal),
+        celulaVariacao(t.valorOriginal > 0 ? (t.lucroLiquido / t.valorOriginal) * 100 : null),
+        formatarMoeda(t.valorLiquido),
+        t.diasAteVencimento == null ? '—' : t.diasAteVencimento < 0 ? 'Vencido' : `${t.diasAteVencimento}d`
+    ]);
+    const colunasTesouro = ['Título', 'Tipo', 'Taxa Efetiva', 'Investido', 'Rentabilidade', 'Saldo', 'Vencimento'];
 
     return (
         <div className="space-y-6">
@@ -953,6 +989,84 @@ function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda,
                     })}
                 </div>
             </div>
+
+            {/* MEUS ATIVOS */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Meus Ativos</h2>
+                <div className="space-y-3">
+                    <GrupoAtivos titulo="Renda Fixa" Icone={Landmark} cor="bg-blue-500" contagem={dashboardCdb.caixinhas.length}
+                        valorTotal={cdb.patrimonioTotal} rentabilidadePercentual={cdb.aplicadoTotal > 0 ? (cdb.lucroLiquidoTotal / cdb.aplicadoTotal) * 100 : null}
+                        aberto={!!gruposAbertos.renda_fixa} onToggle={() => toggleGrupo('renda_fixa')}
+                        colunas={colunasRendaFixa} linhas={linhasRendaFixa} formatarMoeda={formatarMoeda} />
+                    <GrupoAtivos titulo="Ações" Icone={TrendingUp} cor="bg-emerald-500" contagem={posicoesAcoes.length}
+                        valorTotal={acoesAtual} rentabilidadePercentual={bolsaResumo.valorInvestidoTotal > 0 ? (bolsaResumo.rentabilidadeTotal / bolsaResumo.valorInvestidoTotal) * 100 : null}
+                        aberto={!!gruposAbertos.acoes} onToggle={() => toggleGrupo('acoes')}
+                        colunas={colunasBolsa} linhas={linhasBolsa(posicoesAcoes)} formatarMoeda={formatarMoeda} />
+                    <GrupoAtivos titulo="FIIs" Icone={Building2} cor="bg-amber-500" contagem={posicoesFiis.length}
+                        valorTotal={fiisAtual} rentabilidadePercentual={bolsaResumo.valorInvestidoTotal > 0 ? (bolsaResumo.rentabilidadeTotal / bolsaResumo.valorInvestidoTotal) * 100 : null}
+                        aberto={!!gruposAbertos.fiis} onToggle={() => toggleGrupo('fiis')}
+                        colunas={colunasBolsa} linhas={linhasBolsa(posicoesFiis)} formatarMoeda={formatarMoeda} />
+                    <GrupoAtivos titulo="Tesouro Direto" Icone={ShieldCheck} cor="bg-indigo-500" contagem={tesouro.dashboardData.titulos.length}
+                        valorTotal={tesouroResumo.valorLiquidoTotal} rentabilidadePercentual={tesouroResumo.valorInvestidoTotal > 0 ? (tesouroResumo.lucroLiquidoTotal / tesouroResumo.valorInvestidoTotal) * 100 : null}
+                        aberto={!!gruposAbertos.tesouro} onToggle={() => toggleGrupo('tesouro')}
+                        colunas={colunasTesouro} linhas={linhasTesouro} formatarMoeda={formatarMoeda} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * @component GrupoAtivos
+ * @description Linha de grupo expansível (accordion) usada pela seção "Meus Ativos" do Resumo —
+ * um grupo por classe de ativo, com uma tabela de detalhamento ao expandir.
+ */
+function GrupoAtivos({ titulo, Icone, cor, contagem, valorTotal, rentabilidadePercentual, aberto, onToggle, colunas, linhas, formatarMoeda }) {
+    const temDados = contagem > 0;
+    const rentPositiva = (rentabilidadePercentual ?? 0) >= 0;
+
+    return (
+        <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+            <button
+                type="button" onClick={temDados ? onToggle : undefined} disabled={!temDados}
+                className={`w-full flex items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-slate-950/50 transition-colors ${temDados ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900' : 'cursor-default opacity-60'}`}
+            >
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cor}`}>
+                        <Icone className="w-4.5 h-4.5 text-white" strokeWidth={2} />
+                    </div>
+                    <div className="text-left min-w-0">
+                        <p className="text-sm font-black text-slate-800 dark:text-slate-100">{titulo}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{contagem} ativo{contagem !== 1 ? 's' : ''}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-sm font-black text-slate-800 dark:text-slate-100">{formatarMoeda(valorTotal)}</p>
+                        {rentabilidadePercentual != null && (
+                            <p className={`text-[10px] font-bold ${rentPositiva ? 'text-emerald-500' : 'text-rose-500'}`}>{rentPositiva ? '+' : ''}{rentabilidadePercentual.toFixed(2)}%</p>
+                        )}
+                    </div>
+                    {temDados && <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform shrink-0 ${aberto ? 'rotate-180' : ''}`} strokeWidth={2.5} />}
+                </div>
+            </button>
+
+            {temDados && aberto && (
+                <div className="overflow-x-auto border-t border-slate-200 dark:border-slate-800">
+                    <table className="w-full text-left text-xs whitespace-nowrap">
+                        <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-400 uppercase text-[9px] font-bold tracking-wider">
+                            <tr>{colunas.map((c, i) => <th key={i} className="p-3">{c}</th>)}</tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {linhas.map((linha, i) => (
+                                <tr key={i} className="text-slate-700 dark:text-slate-300">
+                                    {linha.map((celula, j) => <td key={j} className="p-3 font-semibold">{celula}</td>)}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
