@@ -173,6 +173,16 @@ export function Investimentos({ API, getHeaders, modal }) {
         bolsa.criarCompra(ticker, quantidadeFinal, preco, data);
     };
 
+    const handleRegistrarProvento = async (ticker) => {
+        const valor = await modal.prompt(`Qual o valor recebido de ${ticker}?`, '', 'Registrar Provento', { inputType: 'currency', confirmLabel: 'Próximo' });
+        if (!valor || valor <= 0) return;
+
+        const data = await modal.prompt('Data do pagamento?', new Date().toISOString().split('T')[0], 'Registrar Provento', { inputType: 'date', confirmLabel: 'Registrar' });
+        if (!data) return;
+
+        bolsa.criarProvento(ticker, valor, 'provento', data);
+    };
+
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
@@ -211,7 +221,7 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </div>
             </div>
 
-            {/* ALTERNADOR DE ABAS: RENDA FIXA / AÇÕES & FIIS */}
+            {/* ALTERNADOR DE ABAS: RENDA FIXA / AÇÕES / FIIS */}
             <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl w-full sm:w-fit">
                 <button
                     type="button" onClick={() => setAbaAtiva('renda_fixa')}
@@ -220,15 +230,21 @@ export function Investimentos({ API, getHeaders, modal }) {
                     Renda Fixa
                 </button>
                 <button
-                    type="button" onClick={() => setAbaAtiva('bolsa')}
-                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'bolsa' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    type="button" onClick={() => setAbaAtiva('acoes')}
+                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'acoes' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                 >
-                    Ações & FIIs
+                    Ações
+                </button>
+                <button
+                    type="button" onClick={() => setAbaAtiva('fiis')}
+                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'fiis' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                    FIIs
                 </button>
             </div>
 
-            {abaAtiva === 'bolsa' ? (
-                <SecaoBolsa bolsa={bolsa} onRegistrarOperacao={handleRegistrarOperacaoBolsa} formatarMoeda={formatarMoeda} />
+            {(abaAtiva === 'acoes' || abaAtiva === 'fiis') ? (
+                <SecaoBolsa bolsa={bolsa} tipoFiltro={abaAtiva} onRegistrarOperacao={handleRegistrarOperacaoBolsa} onRegistrarProvento={handleRegistrarProvento} formatarMoeda={formatarMoeda} />
             ) : (
             <>
 
@@ -577,12 +593,39 @@ export function Investimentos({ API, getHeaders, modal }) {
 }
 
 /**
- * @component SecaoBolsa
- * @description Aba de Ações e FIIs dentro de Investimentos: posições agregadas por ticker com
- * cotação ao vivo (via useBolsa), lucro/prejuízo e o wizard de registro de operações.
+ * @function classificarTicker
+ * @description Heurística simples pra separar FIIs de Ações: na B3, FIIs sempre têm código
+ * terminado em "11" (ex: MXRF11). Não é 100% infalível (units de empresa também terminam em
+ * "11", mas são raras numa carteira de pessoa física) — não há um campo de "tipo" persistido.
  */
-function SecaoBolsa({ bolsa, onRegistrarOperacao, formatarMoeda }) {
+const classificarTicker = (ticker) => String(ticker).toUpperCase().endsWith('11') ? 'fiis' : 'acoes';
+
+/**
+ * @component SecaoBolsa
+ * @description Aba de Ações OU FIIs dentro de Investimentos (controlado por `tipoFiltro`):
+ * posições agregadas por ticker com cotação ao vivo (via useBolsa), lucro/prejuízo e o wizard de
+ * registro de operações.
+ */
+function SecaoBolsa({ bolsa, tipoFiltro, onRegistrarOperacao, onRegistrarProvento, formatarMoeda }) {
     const { dashboardData, loading } = bolsa;
+
+    const posicoesFiltradas = useMemo(() => {
+        if (!dashboardData) return [];
+        return dashboardData.posicoes.filter(p => classificarTicker(p.ticker) === tipoFiltro);
+    }, [dashboardData, tipoFiltro]);
+
+    const resumoFiltrado = useMemo(() => {
+        let valorInvestidoTotal = 0;
+        let valorAtualTotal = 0;
+        let proventosTotal = 0;
+        posicoesFiltradas.forEach(p => {
+            valorInvestidoTotal += p.valorInvestido;
+            if (p.valorAtual != null) valorAtualTotal += p.valorAtual;
+            proventosTotal += p.proventosRecebidos || 0;
+        });
+        const lucroTotal = valorAtualTotal - valorInvestidoTotal;
+        return { valorInvestidoTotal, valorAtualTotal, lucroTotal, proventosTotal, rentabilidadeTotal: lucroTotal + proventosTotal };
+    }, [posicoesFiltradas]);
 
     if (loading || !dashboardData) {
         return (
@@ -594,26 +637,46 @@ function SecaoBolsa({ bolsa, onRegistrarOperacao, formatarMoeda }) {
         );
     }
 
-    const { posicoes, resumo } = dashboardData;
+    const posicoes = posicoesFiltradas;
+    const resumo = resumoFiltrado;
+    const rotulo = tipoFiltro === 'fiis' ? 'FIIs' : 'Ações';
     const lucroPositivo = resumo.lucroTotal >= 0;
+    const rentabilidadePositiva = resumo.rentabilidadeTotal >= 0;
+    const rentabilidadePercentualGeral = resumo.valorInvestidoTotal > 0 ? (resumo.rentabilidadeTotal / resumo.valorInvestidoTotal) * 100 : null;
 
     return (
         <div className="space-y-6">
             {/* HERO: RESUMO DA CARTEIRA */}
             <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
-                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-6 mb-6">
+                    <div>
+                        <p className="text-blue-300 text-sm font-bold tracking-widest uppercase mb-1">Rentabilidade Total ({rotulo})</p>
+                        <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${rentabilidadePositiva ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {rentabilidadePositiva ? '+' : ''}{formatarMoeda(resumo.rentabilidadeTotal)}
+                            {rentabilidadePercentualGeral != null && <span className="text-lg ml-2 font-bold">({rentabilidadePositiva ? '+' : ''}{rentabilidadePercentualGeral.toFixed(2)}%)</span>}
+                        </h1>
+                        <p className="text-blue-200 text-xs mt-2 font-medium">Valorização de preço + proventos recebidos.</p>
+                    </div>
+                </div>
+
+                <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
                         <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Valor Investido</p>
-                        <p className="text-xl font-black">{formatarMoeda(resumo.valorInvestidoTotal)}</p>
+                        <p className="text-xl md:text-lg font-black">{formatarMoeda(resumo.valorInvestidoTotal)}</p>
                     </div>
                     <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
                         <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Valor Atual</p>
-                        <p className="text-xl font-black">{formatarMoeda(resumo.valorAtualTotal)}</p>
+                        <p className="text-xl md:text-lg font-black">{formatarMoeda(resumo.valorAtualTotal)}</p>
                     </div>
                     <div className={`p-4 rounded-2xl border ${lucroPositivo ? 'bg-emerald-900/40 border-emerald-500/30' : 'bg-rose-900/40 border-rose-500/30'}`}>
-                        <p className={`text-[10px] uppercase font-bold mb-1 ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>Lucro / Prejuízo</p>
-                        <p className={`text-xl font-black ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>{lucroPositivo ? '+' : ''}{formatarMoeda(resumo.lucroTotal)}</p>
+                        <p className={`text-[10px] uppercase font-bold mb-1 ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>Lucro de Preço</p>
+                        <p className={`text-xl md:text-lg font-black ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>{lucroPositivo ? '+' : ''}{formatarMoeda(resumo.lucroTotal)}</p>
+                    </div>
+                    <div className="bg-blue-800/40 p-4 rounded-2xl border border-blue-400/30">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Proventos Recebidos</p>
+                        <p className="text-xl md:text-lg font-black text-blue-200">+{formatarMoeda(resumo.proventosTotal)}</p>
                     </div>
                 </div>
             </div>
@@ -622,7 +685,7 @@ function SecaoBolsa({ bolsa, onRegistrarOperacao, formatarMoeda }) {
             <div>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
-                        <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">Minhas Posições</h2>
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">Minhas Posições em {rotulo}</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Preço médio e cotação atual por ativo.</p>
                     </div>
                     <button onClick={onRegistrarOperacao} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
@@ -633,13 +696,13 @@ function SecaoBolsa({ bolsa, onRegistrarOperacao, formatarMoeda }) {
                 {posicoes.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center">
                         <Building2 className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
-                        <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhum ativo cadastrado ainda</h3>
+                        <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhum {rotulo === 'FIIs' ? 'FII' : 'ativo'} cadastrado ainda</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Registre sua primeira compra para acompanhar a cotação.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {posicoes.map(pos => {
-                            const posLucroPositivo = (pos.lucro ?? 0) >= 0;
+                            const posRentabilidadePositiva = pos.rentabilidadeTotal >= 0;
                             return (
                                 <div key={pos.ticker} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
                                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex justify-between items-start gap-2">
@@ -652,18 +715,25 @@ function SecaoBolsa({ bolsa, onRegistrarOperacao, formatarMoeda }) {
                                             <p className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
                                                 {pos.valorAtual != null ? formatarMoeda(pos.valorAtual) : 'Indisponível'}
                                             </p>
-                                            {pos.lucro != null && (
-                                                <p className={`text-[10px] font-bold mt-1 ${posLucroPositivo ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                    {posLucroPositivo ? '+' : ''}{formatarMoeda(pos.lucro)} ({pos.lucroPercentual}%)
-                                                </p>
-                                            )}
+                                            <p className={`text-[10px] font-bold mt-1 ${posRentabilidadePositiva ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {posRentabilidadePositiva ? '+' : ''}{formatarMoeda(pos.rentabilidadeTotal)}
+                                                {pos.rentabilidadePercentual != null && <> ({pos.rentabilidadePercentual}%)</>}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="p-4 flex justify-between items-center">
-                                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                                            Cotação: {pos.cotacaoAtual != null ? formatarMoeda(pos.cotacaoAtual) : 'indisponível'}
-                                        </span>
-                                        <span className="text-xs text-slate-400">Investido: {formatarMoeda(pos.valorInvestido)}</span>
+                                    <div className="p-4 flex flex-col gap-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                Cotação: {pos.cotacaoAtual != null ? formatarMoeda(pos.cotacaoAtual) : 'indisponível'}
+                                            </span>
+                                            <span className="text-xs text-slate-400">Investido: {formatarMoeda(pos.valorInvestido)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-3">
+                                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Proventos: +{formatarMoeda(pos.proventosRecebidos)}</span>
+                                            <button onClick={() => onRegistrarProvento(pos.ticker)} className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+                                                <Plus className="w-3 h-3" strokeWidth={2.5} /> Provento
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );

@@ -76,5 +76,50 @@ export function useBolsa({ API, getHeaders, modal }) {
         return false;
     };
 
-    return { dashboardData, loading, fetchDashboard, criarCompra, excluirCompra };
+    /**
+     * @function criarProvento
+     * @description Registra um provento (dividendo, JCP ou rendimento de FII) recebido de um ativo.
+     */
+    const criarProvento = async (ticker, valor, tipo, data_pagamento) => {
+        try {
+            const res = await fetch(`${API}/investimentos/bolsa/provento`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ ticker, valor, tipo, data_pagamento })
+            });
+            if (res.ok) {
+                fetchDashboard();
+                return true;
+            }
+            throw new Error('Falha ao registrar o provento');
+        } catch (err) {
+            modal.alert('Erro ao registrar o provento. Tente novamente.', '❌ Erro');
+            return false;
+        }
+    };
+
+    /**
+     * @function excluirProvento
+     * @description Remove um provento específico.
+     */
+    const excluirProvento = async (id) => {
+        const ok = await modal.confirm('Deseja excluir este provento? Isso vai reduzir a rentabilidade total do ativo.', '🗑️ Excluir Provento', { confirmColor: 'bg-rose-600 hover:bg-rose-700' });
+        if (!ok) return false;
+
+        try {
+            const res = await fetch(`${API}/investimentos/bolsa/provento/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            if (res.ok) {
+                fetchDashboard();
+                return true;
+            }
+        } catch (err) {
+            modal.alert('Erro de conexão ao excluir o provento.', '❌ Erro');
+        }
+        return false;
+    };
+
+    return { dashboardData, loading, fetchDashboard, criarCompra, excluirCompra, criarProvento, excluirProvento };
 }
