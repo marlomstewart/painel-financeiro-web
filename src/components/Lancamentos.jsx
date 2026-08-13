@@ -109,17 +109,19 @@ export function Lancamentos({
             return;
         }
 
-        const sucesso = await addTransacao(e);
+        try {
+            const resultado = await addTransacao(e);
 
-        if (sucesso) {
-            setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
-            setDataCompra(new Date().toISOString().split('T')[0]);
-            setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
-            setFormaPagamento('pix'); setParcelas(1);
-            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0'); setThirdPartyPhone('');
+            if (resultado === 'sucesso' || resultado === 'offline') {
+                setDescricao(''); setValorStr('0'); setObservacao(''); setKmMoto('');
+                setDataCompra(new Date().toISOString().split('T')[0]);
+                setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
+                setFormaPagamento('pix'); setParcelas(1);
+                setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0'); setThirdPartyPhone('');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
-
-        setIsSubmitting(false);
     };
 
     /**
@@ -530,6 +532,11 @@ export function Lancamentos({
                                                 </span>
                                             )}
                                             {t.observacao && <MessageSquare className="w-3 h-3 text-blue-500 shrink-0" strokeWidth={2} aria-label="Possui observação" />}
+                                            {t._pendingSync && (
+                                                <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200" title="Guardado localmente, ainda não enviado ao servidor">
+                                                    Pendente de sincronização
+                                                </span>
+                                            )}
                                         </h4>
                                         <span className={`shrink-0 text-[9px] uppercase font-bold px-2 py-1 rounded-md ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>{t.status}</span>
                                     </div>
@@ -578,6 +585,11 @@ export function Lancamentos({
                                                     </span>
                                                 )}
                                                 {t.observacao && <Info aria-label="Possui observação" className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block shrink-0 mt-0.5 cursor-help" strokeWidth={2} />}
+                                                {t._pendingSync && (
+                                                    <span className="inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 no-underline shrink-0" title="Guardado localmente, ainda não enviado ao servidor">
+                                                        Pendente de sincronização
+                                                    </span>
+                                                )}
                                             </span>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{t.categoria} • {obterNomePagamento(t.formaPagamento)}</p>
                                         </td>

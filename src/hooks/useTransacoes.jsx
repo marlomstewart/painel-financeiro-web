@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
+import { salvarPendente } from '../utils/offlineQueue';
 
 /**
  * @file src/hooks/useTransacoes.jsx
@@ -115,6 +116,9 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         };
 
         let sucesso = true;
+        let teveOffline = false;
+        let algumaSalvaNoServidor = false;
+        const itensParaFilaOffline = [];
 
         for (let i = 0; i < numParcelas; i++) {
             let mesRef = mesRefInicial + i;
@@ -135,21 +139,46 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
                 descricao: numParcelas > 1 ? `${objBase.descricao} (${i + 1}/${numParcelas})` : objBase.descricao
             };
 
-            const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
-            if (!res.ok) sucesso = false;
+            try {
+                const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
+                if (res.ok) {
+                    algumaSalvaNoServidor = true;
+                } else {
+                    sucesso = false;
+                }
+            } catch (err) {
+                // Falha de rede (offline): guarda o lançamento localmente pra mostrar já na tela.
+                teveOffline = true;
+                await salvarPendente(parcelaObj);
+                itensParaFilaOffline.push({ ...parcelaObj, _pendingSync: true });
+            }
         }
 
-        if (sucesso) {
+        if (algumaSalvaNoServidor) {
             await carregarTransacoes();
             if (veiculo_id && garagem && garagem.carregarDadosGaragem) {
                 await garagem.carregarDadosGaragem();
             }
-            modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
-            return true;
-        } else {
-            modal.alert('Erro ao registrar lançamento.', '❌ Erro');
-            return false;
         }
+
+        // Reaplica os itens que ficaram só na fila offline por cima do que veio do servidor,
+        // pra um refetch de parcelas parcialmente sincronizadas não apagar os pendentes da tela.
+        if (itensParaFilaOffline.length > 0) {
+            setTransacoes(prev => [...prev, ...itensParaFilaOffline]);
+        }
+
+        if (!sucesso) {
+            modal.alert('Erro ao registrar lançamento.', '❌ Erro');
+            return 'erro';
+        }
+
+        if (teveOffline) {
+            modal.alert('Sem conexão — lançamento guardado no aparelho e será enviado automaticamente quando a internet voltar.', '📴 Salvo offline');
+            return 'offline';
+        }
+
+        modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
+        return 'sucesso';
     };
 
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {

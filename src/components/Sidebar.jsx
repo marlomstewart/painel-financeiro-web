@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     X, ChevronDown, LayoutDashboard, Wallet, Plus, ClipboardList,
     TrendingDown, Repeat, HandCoins, Handshake, CreditCard, PiggyBank,
-    Target, TrendingUp, Bike, Settings, Users, LogOut, HelpCircle
+    Target, TrendingUp, Bike, Settings, Users, LogOut, HelpCircle, RefreshCw
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
@@ -57,7 +57,7 @@ const MenuExpansivel = ({ Icone, titulo, telaAtiva, isOpen, onToggle, children }
  * Suporta menus expansíveis, renderização condicional baseada em permissões (Admin e Garagem)
  * e controle fluido em dispositivos móveis (Offcanvas).
  */
-export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen }) {
+export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen, pendentesSync = 0, sincronizarAgora }) {
 
     // Estados para controlar o colapso dos menus expansíveis
     const [openMenus, setOpenMenus] = useState({
@@ -131,6 +131,19 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                         <X className="w-5 h-5" strokeWidth={2} />
                     </button>
                 </div>
+
+                {/* Aviso de Lançamentos Pendentes de Sincronização (Modo Offline) */}
+                {pendentesSync > 0 && (
+                    <button
+                        type="button"
+                        onClick={sincronizarAgora}
+                        className="mx-5 md:mx-6 mt-4 flex items-center gap-2 px-3 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
+                        title="Clique para tentar sincronizar agora"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+                        {pendentesSync} pendente{pendentesSync > 1 ? 's' : ''} de sincronização
+                    </button>
+                )}
 
                 {/* Navegação Principal */}
                 <nav className="flex-1 overflow-y-auto py-4 custom-scrollbar flex flex-col gap-1">
