@@ -10,7 +10,10 @@ Este README documenta o frontend. Para o backend, veja o README do repositório
 [`painel-financeiro-api`](https://github.com/marlomstewart/painel-financeiro-api). Para como o
 sistema inteiro está hospedado (domínio, DNS, monitoramento, backup), veja
 [`INFRAESTRUTURA.md`](https://github.com/marlomstewart/painel-financeiro-api/blob/main/docs/INFRAESTRUTURA.md)
-no repositório da API.
+no repositório da API. Para o catálogo de funcionalidades na visão de quem usa, veja
+[`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md); para a lógica de negócio por trás de cada
+comportamento, veja
+[`REGRAS_DE_NEGOCIO.md`](https://github.com/marlomstewart/painel-financeiro-api/blob/main/docs/REGRAS_DE_NEGOCIO.md).
 
 ## Stack
 
