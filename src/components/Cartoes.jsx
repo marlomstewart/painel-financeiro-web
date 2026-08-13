@@ -12,6 +12,18 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
     const [diaFechamento, setDiaFechamento] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
 
+    const formatCurrencyInput = (value) => {
+        let v = value.replace(/\D/g, '');
+        if (v === '') v = '0';
+        const num = parseInt(v, 10);
+        if (isNaN(num)) return '';
+        const str = num.toString().padStart(3, '0');
+        const intPart = str.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        const centPart = str.slice(-2);
+        return `${intPart},${centPart}`;
+    };
+    const handleLimiteChange = (e) => setLimite(formatCurrencyInput(e.target.value));
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         await addCartao(e);
@@ -25,8 +37,8 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
         const nNome = await modal.prompt(`Passo 1 de 4 — Novo NOME do Cartão?`, c.nome, 'Editar Cartão', { confirmLabel: 'Próximo' });
         if (!nNome) return;
 
-        const nLim = await modal.prompt(`Passo 2 de 4 — Novo LIMITE (R$)?`, String(c.limite || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
-        if (!nLim || isNaN(Number(nLim))) return modal.alert('Valor de limite inválido. Edição cancelada.', 'Erro');
+        const nLim = await modal.prompt(`Passo 2 de 4 — Novo LIMITE (R$)?`, '', 'Editar Cartão', { inputType: 'currency', confirmLabel: 'Próximo' });
+        if (!nLim || isNaN(Number(nLim)) || Number(nLim) <= 0) return modal.alert('Valor de limite inválido. Edição cancelada.', 'Erro');
 
         const nF = await modal.prompt(`Passo 3 de 4 — Novo Dia de FECHAMENTO?`, String(c.melhorDia || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
         if (!nF || isNaN(Number(nF))) return modal.alert('Dia de fechamento inválido. Edição cancelada.', 'Erro');
@@ -90,7 +102,7 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
                         </div>
                         <div>
                             <label className={labelCls}>Limite Total (R$)</label>
-                            <input name="limite" type="number" step="any" min="0.01" value={limite} onChange={(e) => setLimite(e.target.value)} required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} placeholder="0.00" />
+                            <input name="limite" type="text" inputMode="numeric" value={limite} onChange={handleLimiteChange} required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} placeholder="0,00" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>

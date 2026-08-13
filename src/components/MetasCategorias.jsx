@@ -12,6 +12,18 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
     const [tipoCategoria, setTipoCategoria] = useState('despesa');
     const [isGaragem, setIsGaragem] = useState(false);
 
+    const formatCurrencyInput = (value) => {
+        let v = value.replace(/\D/g, '');
+        if (v === '') v = '0';
+        const num = parseInt(v, 10);
+        if (isNaN(num)) return '';
+        const str = num.toString().padStart(3, '0');
+        const intPart = str.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        const centPart = str.slice(-2);
+        return `${intPart},${centPart}`;
+    };
+    const handleMetaChange = (e) => setMetaCategoria(formatCurrencyInput(e.target.value));
+
     /**
      * @function formatarMoeda
      * @description Formata um número para o padrão de moeda brasileiro (BRL).
@@ -39,7 +51,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
         const nNome = await modal.prompt(`Passo 1 de ${temGaragem ? 4 : 3} — Novo NOME da Categoria?`, c.nome, 'Editar Categoria', { confirmLabel: 'Próximo' });
         if (nNome === null) return;
 
-        const nMeta = await modal.prompt(`Passo 2 de ${temGaragem ? 4 : 3} — Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, String(c.meta || 0), 'Editar Categoria', { inputType: 'text', confirmLabel: 'Próximo' });
+        const nMeta = await modal.prompt(`Passo 2 de ${temGaragem ? 4 : 3} — Novo Teto / Meta (R$)?\n(Deixe 0 para categoria simples)`, '', 'Editar Categoria', { inputType: 'currency', confirmLabel: 'Próximo' });
         if (nMeta === null) return;
 
         const nTipoRes = await modal.options(`Passo 3 de ${temGaragem ? 4 : 3} — Qual a Natureza?`, [
@@ -61,8 +73,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
         }
 
         const tipoFinal = typeof nTipoRes === 'object' ? nTipoRes.value : String(nTipoRes);
-        const metaStr = String(nMeta).replace(/\./g, '').replace(',', '.');
-        const metaFormatada = Number(metaStr) || 0;
+        const metaFormatada = Number(nMeta) || 0;
 
         const sucesso = await editarSetup('categorias', c.id, {
             nome: nNome,
@@ -148,9 +159,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                             <div>
                                 <label className={labelCls}>Teto ou Alvo Mensal (R$)</label>
                                 <input
-                                    type="number" name="meta" step="0.01" min="0" required
-                                    value={metaCategoria} onChange={(e) => setMetaCategoria(e.target.value)}
-                                    placeholder="0.00"
+                                    type="text" inputMode="numeric" name="meta" required
+                                    value={metaCategoria} onChange={handleMetaChange}
+                                    placeholder="0,00"
                                     className={`w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 md:p-3 text-sm font-bold text-blue-600 dark:text-blue-400 outline-none focus:border-blue-500 transition-colors shadow-sm`}
                                 />
                                 <div className="mt-2.5 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-3 rounded-lg flex items-start gap-2 shadow-sm">

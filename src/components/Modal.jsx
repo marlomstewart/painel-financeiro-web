@@ -246,19 +246,30 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
   // Ações / FIIs
   const [ticker, setTicker] = useState('');
   const [quantidade, setQuantidade] = useState('');
-  const [preco, setPreco] = useState('');
-  const [outrosCustos, setOutrosCustos] = useState('');
+  const [precoStr, setPrecoStr] = useState('0');
+  const preco = Number(precoStr) / 100;
+  const [outrosCustosStr, setOutrosCustosStr] = useState('0');
+  const outrosCustos = Number(outrosCustosStr) / 100;
 
   // Renda Fixa
   const [caixinhaId, setCaixinhaId] = useState(caixinhas[0]?.id || '');
-  const [valorRendaFixa, setValorRendaFixa] = useState('');
+  const [valorRendaFixaStr, setValorRendaFixaStr] = useState('0');
+  const valorRendaFixa = Number(valorRendaFixaStr) / 100;
 
   // Tesouro Direto
   const [nomeTitulo, setNomeTitulo] = useState('');
   const [tipoTitulo, setTipoTitulo] = useState('selic');
   const [taxaTitulo, setTaxaTitulo] = useState('');
-  const [valorTitulo, setValorTitulo] = useState('');
+  const [valorTituloStr, setValorTituloStr] = useState('0');
+  const valorTitulo = Number(valorTituloStr) / 100;
   const [dataVencimento, setDataVencimento] = useState('');
+
+  const handleMoedaChange = (setter) => (e) => {
+    let v = e.target.value.replace(/\D/g, '');
+    if (!v) v = '0';
+    setter(v);
+  };
+  const displayMoeda = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const ehTesouro = tipoAtivo === 'tesouro';
   const ehRendaFixa = tipoAtivo === 'renda_fixa';
@@ -364,13 +375,13 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
             </div>
             <div>
               <label className={labelCls}>Preço (R$)</label>
-              <input type="number" min="0" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} className={inputCls} />
+              <input type="text" inputMode="numeric" value={displayMoeda(preco)} onChange={handleMoedaChange(setPrecoStr)} className={inputCls} />
             </div>
           </div>
           {operacao === 'compra' && (
             <div>
               <label className={labelCls}>Outros custos (opcional)</label>
-              <input type="number" min="0" step="0.01" value={outrosCustos} onChange={e => setOutrosCustos(e.target.value)} placeholder="Corretagem, emolumentos..." className={inputCls} />
+              <input type="text" inputMode="numeric" value={displayMoeda(outrosCustos)} onChange={handleMoedaChange(setOutrosCustosStr)} placeholder="Corretagem, emolumentos..." className={inputCls} />
             </div>
           )}
         </>
@@ -391,7 +402,7 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
             </div>
             <div>
               <label className={labelCls}>Valor (R$)</label>
-              <input type="number" min="0" step="0.01" value={valorRendaFixa} onChange={e => setValorRendaFixa(e.target.value)} className={inputCls} />
+              <input type="text" inputMode="numeric" value={displayMoeda(valorRendaFixa)} onChange={handleMoedaChange(setValorRendaFixaStr)} className={inputCls} />
             </div>
           </>
         )
@@ -420,7 +431,7 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Valor investido (R$)</label>
-              <input type="number" min="0" step="0.01" value={valorTitulo} onChange={e => setValorTitulo(e.target.value)} className={inputCls} />
+              <input type="text" inputMode="numeric" value={displayMoeda(valorTitulo)} onChange={handleMoedaChange(setValorTituloStr)} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Vencimento (opcional)</label>
