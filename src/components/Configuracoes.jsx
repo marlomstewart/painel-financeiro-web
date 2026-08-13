@@ -9,11 +9,12 @@ import {
  * @description Painel de controlo central do utilizador.
  * Gere os dados de perfil, segurança, exportação, motor de temas e vinculação com o Telegram.
  */
-export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha }) {
+export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha, chavePix }) {
 
     // ================= ESTADOS GERAIS =================
     const [nomeCompleto, setNomeCompleto] = useState('');
     const [nomeExibicao, setNomeExibicao] = useState('');
+    const [chavePixInput, setChavePixInput] = useState(chavePix || '');
 
     // Estados de Segurança
     const [senhaAtual, setSenhaAtual] = useState('');
@@ -36,6 +37,13 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     if (nomeUsuario && nomeUsuario !== nomeUsuarioSincronizado) {
         setNomeUsuarioSincronizado(nomeUsuario);
         setNomeExibicao(nomeUsuario);
+    }
+
+    // Mesmo padrão para a chave PIX, que também chega depois do login.
+    const [chavePixSincronizada, setChavePixSincronizada] = useState(chavePix);
+    if (chavePix !== undefined && chavePix !== chavePixSincronizada) {
+        setChavePixSincronizada(chavePix);
+        setChavePixInput(chavePix);
     }
 
     useEffect(() => {
@@ -92,7 +100,7 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     /** @function handleSalvarPerfil - Envia os dados de personalização */
     const handleSalvarPerfil = (e) => {
         e.preventDefault();
-        if (atualizarPerfil) atualizarPerfil({ nomeCompleto, nomeExibicao });
+        if (atualizarPerfil) atualizarPerfil({ nomeCompleto, nomeExibicao, chave_pix: chavePixInput });
     };
 
     /** @function handleAlterarSenha - Valida as regras de negócio para troca de credencial */
@@ -190,6 +198,11 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                         <div>
                             <label className={labelCls}>Como quer ser chamado</label>
                             <input type="text" value={nomeExibicao} onChange={(e) => setNomeExibicao(e.target.value)} placeholder="Ex: Marlom" required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Chave PIX</label>
+                            <input type="text" value={chavePixInput} onChange={(e) => setChavePixInput(e.target.value)} placeholder="CPF, e-mail, telefone ou chave aleatória" className={inputCls} />
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Usada automaticamente na mensagem de cobrança em "A Receber".</p>
                         </div>
                         <div className="flex justify-end pt-4 mt-auto">
                             <button type="submit" className={btnSalvarCls}>Salvar Perfil</button>

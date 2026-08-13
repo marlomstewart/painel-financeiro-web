@@ -54,6 +54,7 @@ export function Lancamentos({
     const [isThirdParty, setIsThirdParty] = useState(false);
     const [thirdPartyName, setThirdPartyName] = useState('');
     const [thirdPartyValueStr, setThirdPartyValueStr] = useState('0');
+    const [thirdPartyPhone, setThirdPartyPhone] = useState('');
 
     // Estados de Seleção em Lote (Extrato)
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
@@ -115,7 +116,7 @@ export function Lancamentos({
             setDataCompra(new Date().toISOString().split('T')[0]);
             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
             setFormaPagamento('pix'); setParcelas(1);
-            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0');
+            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0'); setThirdPartyPhone('');
         }
 
         setIsSubmitting(false);
@@ -207,7 +208,7 @@ export function Lancamentos({
                             setDataCompra(new Date().toISOString().split('T')[0]);
                             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
                             setFormaPagamento('pix'); setParcelas(1);
-                            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0');
+                            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0'); setThirdPartyPhone('');
                         }} className="w-full md:w-auto text-sm font-bold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-3 md:py-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
                             Limpar Dados
                         </button>
@@ -303,6 +304,16 @@ export function Lancamentos({
                                                     className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3.5 md:p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
                                                 />
                                             </div>
+                                        </div>
+                                        <div className="mt-4">
+                                            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">WhatsApp da Pessoa (opcional)</label>
+                                            <input
+                                                name="thirdPartyPhone" type="tel"
+                                                value={thirdPartyPhone} onChange={(e) => setThirdPartyPhone(e.target.value)}
+                                                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                                                placeholder="Ex: 11987654321 (com DDD)"
+                                            />
+                                            <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-1.5">Salvando o número, a cobrança em "A Receber" abre o WhatsApp direto pra essa pessoa.</p>
                                         </div>
                                         <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-3 font-medium leading-tight flex items-start gap-1.5">
                                             <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} />

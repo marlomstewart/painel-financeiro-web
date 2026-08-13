@@ -18,6 +18,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
     const [formaPagamento, setFormaPagamento] = useState('pix');
     const [paraTerceiros, setParaTerceiros] = useState(false);
     const [nomeTerceiro, setNomeTerceiro] = useState('');
+    const [telefoneTerceiro, setTelefoneTerceiro] = useState('');
 
     const isCredito = formaPagamento.startsWith('credito_');
 
@@ -57,6 +58,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         setFormaPagamento(divida.forma_pagamento || 'pix');
         setParaTerceiros(divida.para_terceiros === 1);
         setNomeTerceiro(divida.nome_terceiro || '');
+        setTelefoneTerceiro(divida.telefone_terceiro || '');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -71,6 +73,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         setFormaPagamento('pix');
         setParaTerceiros(false);
         setNomeTerceiro('');
+        setTelefoneTerceiro('');
     };
 
     const handleSubmit = async (e) => {
@@ -86,7 +89,8 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                 dia_vencimento: Number(diaVencimento),
                 forma_pagamento: formaPagamento,
                 para_terceiros: paraTerceiros ? 1 : 0,
-                nome_terceiro: paraTerceiros ? nomeTerceiro : null
+                nome_terceiro: paraTerceiros ? nomeTerceiro : null,
+                telefone_terceiro: paraTerceiros ? (telefoneTerceiro || null) : null
             });
             if (sucesso) {
                 cancelarEdicao();
@@ -102,7 +106,8 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                 dia_vencimento: Number(diaVencimento),
                 forma_pagamento: formaPagamento,
                 para_terceiros: paraTerceiros ? 1 : 0,
-                nome_terceiro: paraTerceiros ? nomeTerceiro : null
+                nome_terceiro: paraTerceiros ? nomeTerceiro : null,
+                telefone_terceiro: paraTerceiros ? (telefoneTerceiro || null) : null
             };
 
             const fakeEvent = { preventDefault: () => { }, target: { reset: () => { } } };
@@ -222,6 +227,8 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                                 <div className="animate-fade-in-down mt-2 bg-amber-50 dark:bg-amber-900/10 p-4 rounded-lg border border-amber-200 dark:border-amber-800/30">
                                     <label className="block text-xs font-semibold text-amber-700 dark:text-amber-500 mb-1.5 tracking-wide">Nome da Pessoa</label>
                                     <input type="text" value={nomeTerceiro} onChange={e => setNomeTerceiro(e.target.value)} required className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/50 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500 shadow-sm" placeholder="Ex: João da Silva" />
+                                    <label className="block text-xs font-semibold text-amber-700 dark:text-amber-500 mb-1.5 mt-3 tracking-wide">WhatsApp da Pessoa (opcional)</label>
+                                    <input type="tel" value={telefoneTerceiro} onChange={e => setTelefoneTerceiro(e.target.value)} className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/50 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500 shadow-sm" placeholder="Ex: 11987654321 (com DDD)" />
                                 </div>
                             )}
                         </div>

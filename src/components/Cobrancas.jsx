@@ -6,7 +6,7 @@ import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
  * @file src/components/Cobrancas.jsx
  * @description Central de Gestão de Terceiros. Agrupa transações e dívidas por mês.
  */
-export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, alternarStatusTransacao, editarSetup, modal, showToast }) {
+export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, alternarStatusTransacao, editarSetup, modal, showToast, chavePix }) {
 
     const mesAtual = dataVis ? dataVis.mes : new Date().getMonth() + 1;
     const anoAtual = dataVis ? dataVis.ano : new Date().getFullYear();
@@ -23,6 +23,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             if (!mapa[chave]) {
                 mapa[chave] = {
                     nomeExibicao: nomeStr,
+                    telefone: null,
                     totalPendenteGeral: 0,
                     totalPagoGeral: 0,
                     totalMesAtual: 0,
@@ -33,11 +34,17 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             return mapa[chave];
         };
 
+        // Guarda o primeiro telefone encontrado pra essa pessoa (não sobrescreve um já salvo por um vazio)
+        const registrarTelefone = (pessoa, telefone) => {
+            if (telefone && !pessoa.telefone) pessoa.telefone = telefone;
+        };
+
         // 1. PROCESSAR TRANSAÇÕES (Cartão/PIX)
         transacoes.forEach(t => {
             if (!t.isThirdParty || !t.thirdPartyName) return;
 
             const p = registrarNoMapa(t.thirdPartyName);
+            registrarTelefone(p, t.thirdPartyPhone);
             const valorCobrado = Number(t.thirdPartyValue) > 0 ? Number(t.thirdPartyValue) : Number(t.valorParcela || t.valor || 0);
             const isMesAtual = t.mesReferencia === mesAtual && t.anoReferencia === anoAtual;
 
@@ -77,6 +84,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 if (!flagTerceiro || !nomeDoTerceiro) return;
 
                 const p = registrarNoMapa(nomeDoTerceiro);
+                registrarTelefone(p, d.telefone_terceiro);
 
                 // Mapeamento snake_case (banco) para o cálculo
                 const valorParcela = Number(d.valor_parcela || d.valorParcela || 0);
@@ -130,6 +138,13 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     const totalGeralMes = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalMesAtual, 0);
     const totalGeralRestante = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalPendenteGeral, 0);
 
+    // Mantém só dígitos e prefixa 55 (Brasil) se a pessoa não tiver informado o código do país.
+    const formatarTelefoneWhatsApp = (telefone) => {
+        const digitos = String(telefone).replace(/\D/g, '');
+        if (!digitos) return null;
+        return digitos.startsWith('55') ? digitos : `55${digitos}`;
+    };
+
     const gerarTextoCobranca = async (pessoa) => {
         if (pessoa.itensMesAtual.length === 0) {
             modal.alert('Não há cobranças pendentes para esta pessoa no mês atual.', 'Sem cobranças');
@@ -152,12 +167,22 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         });
 
         texto += `💰 *Total do Mês: ${formatarMoeda(pessoa.totalMesAtual)}*\n\n`;
-        texto += `Quando puder, me avisa! Chave PIX: (Sua Chave Aqui) 🚀`;
+        texto += chavePix
+            ? `Quando puder, me avisa! Chave PIX: ${chavePix} 🚀`
+            : `Quando puder, me avisa! 🚀`;
+
+        const telefoneFormatado = formatarTelefoneWhatsApp(pessoa.telefone);
+
+        if (telefoneFormatado) {
+            window.open(`https://wa.me/${telefoneFormatado}?text=${encodeURIComponent(texto)}`, '_blank');
+            return;
+        }
 
         try {
             await navigator.clipboard.writeText(texto);
-            if (showToast) showToast(`Cobrança de ${pessoa.nomeExibicao} copiada!`, 'success');
-            else modal.alert('Resumo do mês copiado! Pronto para colar no WhatsApp.', 'Copiado com sucesso');
+            const avisoSemTelefone = ' Cadastre o WhatsApp dessa pessoa (na compra ou na dívida) pra abrir direto da próxima vez.';
+            if (showToast) showToast(`Cobrança de ${pessoa.nomeExibicao} copiada!${avisoSemTelefone}`, 'success');
+            else modal.alert(`Resumo do mês copiado! Pronto para colar no WhatsApp.${avisoSemTelefone}`, 'Copiado com sucesso');
         } catch (err) {
             modal.alert('Não foi possível copiar automaticamente.', 'Erro');
         }
@@ -331,7 +356,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                     <span className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{formatarMoeda(pessoa.totalMesAtual)}</span>
                                 </div>
                                 <button onClick={() => gerarTextoCobranca(pessoa)} disabled={pessoa.itensMesAtual.length === 0} className="w-full bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 dark:hover:bg-slate-700 disabled:bg-slate-300 disabled:dark:bg-slate-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 cursor-pointer">
-                                    <MessageCircle className="w-4 h-4" strokeWidth={2} /> Copiar Cobrança Mensal
+                                    <MessageCircle className="w-4 h-4" strokeWidth={2} /> {pessoa.telefone ? 'Abrir WhatsApp' : 'Copiar Cobrança Mensal'}
                                 </button>
                             </div>
 

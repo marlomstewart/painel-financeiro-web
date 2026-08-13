@@ -32,6 +32,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
         const isThirdParty = formData.get('isThirdParty') === 'on' || formData.get('isThirdParty') === 'true';
         const thirdPartyName = isThirdParty ? formData.get('thirdPartyName') : null;
+        const thirdPartyPhone = isThirdParty ? (formData.get('thirdPartyPhone') || null) : null;
 
         // 🔥 CAPTURA E FORMATA O VALOR TOTAL DO TERCEIRO
         let thirdPartyTotalRaw = formData.get('thirdPartyValue');
@@ -109,7 +110,8 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             veiculo_emprestado,
             km_moto,
             isThirdParty,
-            thirdPartyName
+            thirdPartyName,
+            thirdPartyPhone
         };
 
         let sucesso = true;

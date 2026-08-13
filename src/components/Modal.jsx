@@ -24,6 +24,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
   const [isThirdParty, setIsThirdParty] = useState(transacao.isThirdParty || false);
   const [thirdPartyName, setThirdPartyName] = useState(transacao.thirdPartyName || '');
+  const [thirdPartyPhone, setThirdPartyPhone] = useState(transacao.thirdPartyPhone || '');
 
   const initThirdValueStr = transacao.thirdPartyValue ? Math.round(Number(transacao.thirdPartyValue) * 100).toString() : '0';
   const [thirdPartyValueStr, setThirdPartyValueStr] = useState(initThirdValueStr);
@@ -68,7 +69,8 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
       descricao, valorParcela: numericValue, dataCompra, tipo, status,
       categoria, formaPagamento, observacao,
       isThirdParty, thirdPartyName: isThirdParty ? thirdPartyName : null,
-      thirdPartyValue: numericThirdValue
+      thirdPartyValue: numericThirdValue,
+      thirdPartyPhone: isThirdParty ? (thirdPartyPhone || null) : null
     });
   };
 
@@ -184,6 +186,16 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
                   className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/50 rounded-xl p-3.5 md:p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500 shadow-sm"
                 />
               </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-[10px] md:text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">WhatsApp da Pessoa (opcional)</label>
+              <input
+                type="tel"
+                value={thirdPartyPhone} onChange={(e) => setThirdPartyPhone(e.target.value)}
+                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/50 rounded-xl p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500 shadow-sm"
+                placeholder="Ex: 11987654321 (com DDD)"
+              />
             </div>
 
             {editandoEmLote ? (

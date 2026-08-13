@@ -30,7 +30,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
     const addCategoria = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const dados = { id: `cat_${Date.now()}`, nome: fd.get('nome'), meta: parseCurrency(fd.get('meta')), tipo: fd.get('tipo'), categoria_pai: fd.get('categoria_pai') || null, is_garagem: fd.get('is_garagem') === '1' };
+        const dados = { id: `cat_${Date.now()}`, nome: fd.get('nome'), meta: parseCurrency(fd.get('meta')), tipo: fd.get('tipo'), is_garagem: fd.get('is_garagem') === '1' };
         const res = await fetch(`${API}/categorias`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
         if (res.ok) { setCategorias([...categorias, dados]); e.target.reset(); modal.alert('Categoria adicionada!', '✅ Sucesso'); }
     };

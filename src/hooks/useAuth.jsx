@@ -21,6 +21,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const [temComprovante, setTemComprovante] = useState(localStorage.getItem('temComprovante') === 'true');
     const [telegramChatId, setTelegramChatId] = useState(localStorage.getItem('telegramChatId') || '');
     const [tutorialDispensado, setTutorialDispensado] = useState(localStorage.getItem('tutorialDispensado') === 'true');
+    const [chavePix, setChavePix] = useState(localStorage.getItem('chavePix') || '');
 
     const [usuarios, setUsuarios] = useState([]);
 
@@ -67,6 +68,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     localStorage.setItem('temComprovante', data.tem_comprovante ? 'true' : 'false');
                     localStorage.setItem('telegramChatId', data.telegram_chat_id || '');
                     localStorage.setItem('tutorialDispensado', data.tutorial_dispensado ? 'true' : 'false');
+                    localStorage.setItem('chavePix', data.chave_pix || '');
 
                     setToken(data.token);
                     setIsAdmin(data.is_admin === true);
@@ -75,6 +77,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     setTemComprovante(data.tem_comprovante === true);
                     setTelegramChatId(data.telegram_chat_id || '');
                     setTutorialDispensado(data.tutorial_dispensado === true);
+                    setChavePix(data.chave_pix || '');
                 }
             } else {
                 setErroLogin(data.message || 'Erro de credenciais.');
@@ -94,6 +97,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         localStorage.removeItem('temComprovante');
         localStorage.removeItem('telegramChatId');
         localStorage.removeItem('tutorialDispensado');
+        localStorage.removeItem('chavePix');
 
         setToken(null);
         setTokenTemp(null);
@@ -105,6 +109,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         setTemComprovante(false);
         setTelegramChatId('');
         setTutorialDispensado(false);
+        setChavePix('');
         setUsuarios([]);
         setUsuarioLogin('');
         setSenhaLogin('');
@@ -161,6 +166,10 @@ export function useAuth({ API, modal, setCarregouAPI }) {
             if (res.ok) {
                 localStorage.setItem('nomeUsuario', dados.nomeExibicao);
                 setNomeUsuario(dados.nomeExibicao);
+                if (dados.chave_pix !== undefined) {
+                    localStorage.setItem('chavePix', dados.chave_pix || '');
+                    setChavePix(dados.chave_pix || '');
+                }
                 await modal.alert('O seu perfil foi atualizado com sucesso e o login permanece protegido.', '✅ Perfil Atualizado');
             } else {
                 await modal.alert('Não foi possível atualizar o perfil. Tente novamente.', '❌ Erro');
@@ -234,7 +243,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const toggleComprovante = async (id, nomeU, atualTemComprovante) => { const acao = atualTemComprovante ? 'REVOGAR o anexo de comprovantes' : 'LIBERAR o anexo de comprovantes'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '📎 Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-comprovante`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
 
     return {
-        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, usuarios, getHeaders,
+        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, chavePix, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
         fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem, toggleComprovante,

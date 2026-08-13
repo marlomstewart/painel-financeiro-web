@@ -78,9 +78,10 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
 - Reúne, por pessoa, tudo que ela te deve — seja de uma compra dividida no cartão/PIX, seja de
   uma dívida cedida em nome dela.
 - Mostra o total pendente, o que já foi pago, e o detalhamento item a item.
-- Botão que gera um texto de cobrança pronto (com os itens do mês e o valor total) e **copia pra
-  área de transferência** — você cola e envia pelo aplicativo que preferir (WhatsApp, SMS, etc.).
-  Não é um envio automático.
+- Se você cadastrou o WhatsApp da pessoa (no lançamento da compra dividida ou no cadastro da
+  dívida), o botão de cobrança **abre o WhatsApp direto**, já com a mensagem pronta (itens do mês,
+  valor total e sua chave PIX, se você tiver cadastrado uma em Configurações). Sem telefone
+  cadastrado, ele copia o texto pra área de transferência pra você colar onde preferir.
 
 ## Metas & Categorias
 
@@ -118,6 +119,7 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
 ## Configurações
 
 - Editar nome de exibição e nome completo.
+- Cadastrar sua chave PIX, usada automaticamente na mensagem de cobrança em "A Receber".
 - Trocar senha.
 - Vincular sua conta a um bot do Telegram, pra receber alertas de vencimento automaticamente.
 - Exportar seus lançamentos em CSV.
