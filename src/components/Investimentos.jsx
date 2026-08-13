@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
 import { useBolsa } from '../hooks/useBolsa';
-import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2 } from 'lucide-react';
+import { useTesouro } from '../hooks/useTesouro';
+import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2, ShieldCheck } from 'lucide-react';
 
 /**
  * @function formatarMoeda
@@ -22,6 +23,7 @@ const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53,
 export function Investimentos({ API, getHeaders, modal }) {
     const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal });
     const bolsa = useBolsa({ API, getHeaders, modal });
+    const tesouro = useTesouro({ API, getHeaders, modal });
 
     const [abaAtiva, setAbaAtiva] = useState('renda_fixa');
 
@@ -183,6 +185,34 @@ export function Investimentos({ API, getHeaders, modal }) {
         bolsa.criarProvento(ticker, valor, 'provento', data);
     };
 
+    const handleRegistrarTitulo = async () => {
+        const nome = await modal.prompt('Passo 1 de 6 — Nome do título?', '', 'Registrar Título', { placeholder: 'Ex: Tesouro Selic 2029', confirmLabel: 'Próximo' });
+        if (!nome) return;
+
+        const tipo = await modal.options('Passo 2 de 6 — Tipo de título?', [
+            { label: '📊 Tesouro Selic', value: 'selic' },
+            { label: '📌 Tesouro Prefixado', value: 'prefixado' },
+            { label: '📈 Tesouro IPCA+', value: 'ipca' }
+        ], 'Registrar Título');
+        if (!tipo) return;
+
+        const rotuloTaxa = tipo === 'selic' ? 'Passo 3 de 6 — Spread sobre a Selic (%)? (ex: 0.05 ou -0.05)'
+            : tipo === 'ipca' ? 'Passo 3 de 6 — Spread sobre o IPCA (%)? (ex: 6.0)'
+            : 'Passo 3 de 6 — Taxa fixa anual contratada (%)? (ex: 11.5)';
+        const taxa = await modal.prompt(rotuloTaxa, '', 'Registrar Título', { inputType: 'number', confirmLabel: 'Próximo' });
+        if (taxa === null || taxa === '' || isNaN(Number(taxa))) return modal.alert('Taxa inválida.');
+
+        const valor = await modal.prompt('Passo 4 de 6 — Valor investido?', '', 'Registrar Título', { inputType: 'currency', confirmLabel: 'Próximo' });
+        if (!valor || valor <= 0) return;
+
+        const dataCompra = await modal.prompt('Passo 5 de 6 — Data da compra?', new Date().toISOString().split('T')[0], 'Registrar Título', { inputType: 'date', confirmLabel: 'Próximo' });
+        if (!dataCompra) return;
+
+        const dataVencimento = await modal.prompt('Passo 6 de 6 — Data de vencimento? (opcional, pode deixar em branco)', '', 'Registrar Título', { inputType: 'date', confirmLabel: 'Registrar' });
+
+        tesouro.criarTitulo(nome, tipo, Number(taxa), valor, dataCompra, dataVencimento || null);
+    };
+
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
@@ -241,10 +271,18 @@ export function Investimentos({ API, getHeaders, modal }) {
                 >
                     FIIs
                 </button>
+                <button
+                    type="button" onClick={() => setAbaAtiva('tesouro')}
+                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'tesouro' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                    Tesouro Direto
+                </button>
             </div>
 
             {(abaAtiva === 'acoes' || abaAtiva === 'fiis') ? (
                 <SecaoBolsa bolsa={bolsa} tipoFiltro={abaAtiva} onRegistrarOperacao={handleRegistrarOperacaoBolsa} onRegistrarProvento={handleRegistrarProvento} formatarMoeda={formatarMoeda} />
+            ) : abaAtiva === 'tesouro' ? (
+                <SecaoTesouro tesouro={tesouro} onRegistrarTitulo={handleRegistrarTitulo} excluirTitulo={tesouro.excluirTitulo} formatarMoeda={formatarMoeda} />
             ) : (
             <>
 
@@ -701,7 +739,7 @@ function SecaoBolsa({ bolsa, tipoFiltro, onRegistrarOperacao, onRegistrarProvent
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {posicoes.map(pos => {
+        {posicoes.map(pos => {
                             const posRentabilidadePositiva = pos.rentabilidadeTotal >= 0;
                             return (
                                 <div key={pos.ticker} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
@@ -734,6 +772,108 @@ function SecaoBolsa({ bolsa, tipoFiltro, onRegistrarOperacao, onRegistrarProvent
                                                 <Plus className="w-3 h-3" strokeWidth={2.5} /> Provento
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * @component SecaoTesouro
+ * @description Aba de Tesouro Direto dentro de Investimentos: lista de títulos com rentabilidade
+ * calculada por tipo (Selic/Prefixado/IPCA+), via useTesouro.
+ */
+function SecaoTesouro({ tesouro, onRegistrarTitulo, excluirTitulo, formatarMoeda }) {
+    const { dashboardData, loading } = tesouro;
+
+    if (loading || !dashboardData) {
+        return (
+            <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[40vh] animate-pulse">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Calculando rentabilidade...</h2>
+                <p className="text-sm text-slate-500">Buscando Selic e IPCA no Banco Central</p>
+            </div>
+        );
+    }
+
+    const { titulos, resumo } = dashboardData;
+    const lucroPositivo = resumo.lucroLiquidoTotal >= 0;
+
+    const rotuloTipo = { selic: 'Tesouro Selic', prefixado: 'Tesouro Prefixado', ipca: 'Tesouro IPCA+' };
+    const rotuloTaxa = (titulo) => titulo.tipo === 'selic' ? `Selic ${titulo.taxa_contratada >= 0 ? '+' : ''}${titulo.taxa_contratada}%`
+        : titulo.tipo === 'ipca' ? `IPCA+ ${titulo.taxa_contratada}%`
+        : `${titulo.taxa_contratada}% a.a.`;
+
+    return (
+        <div className="space-y-6">
+            {/* HERO: RESUMO DA CARTEIRA */}
+            <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
+                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Valor Investido</p>
+                        <p className="text-xl font-black">{formatarMoeda(resumo.valorInvestidoTotal)}</p>
+                    </div>
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Valor Líquido Atual</p>
+                        <p className="text-xl font-black">{formatarMoeda(resumo.valorLiquidoTotal)}</p>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${lucroPositivo ? 'bg-emerald-900/40 border-emerald-500/30' : 'bg-rose-900/40 border-rose-500/30'}`}>
+                        <p className={`text-[10px] uppercase font-bold mb-1 ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>Lucro Líquido</p>
+                        <p className={`text-xl font-black ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>{lucroPositivo ? '+' : ''}{formatarMoeda(resumo.lucroLiquidoTotal)}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* TÍTULOS */}
+            <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">Meus Títulos</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Estimativa de rentabilidade líquida por título (não é a cotação oficial do mercado secundário).</p>
+                    </div>
+                    <button onClick={onRegistrarTitulo} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                        <Plus className="w-4 h-4" strokeWidth={2.5} /> Registrar Título
+                    </button>
+                </div>
+
+                {titulos.length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center">
+                        <ShieldCheck className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
+                        <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhum título cadastrado ainda</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Registre sua primeira compra pra acompanhar a rentabilidade.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {titulos.map(titulo => {
+                            const titLucroPositivo = titulo.lucroLiquido >= 0;
+                            const vencido = titulo.diasAteVencimento != null && titulo.diasAteVencimento < 0;
+                            return (
+                                <div key={titulo.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                                    <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex justify-between items-start gap-2">
+                                        <div className="min-w-0 pr-2">
+                                            <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider mb-1 truncate">{rotuloTipo[titulo.tipo]}</p>
+                                            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight truncate">{titulo.nome}</h3>
+                                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-500 mt-1">{rotuloTaxa(titulo)} • Efetiva: {titulo.taxaAnualEfetiva}% a.a.</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Valor Líquido</p>
+                                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{formatarMoeda(titulo.valorLiquido)}</p>
+                                            <p className={`text-[10px] font-bold mt-1 ${titLucroPositivo ? 'text-emerald-500' : 'text-rose-500'}`}>{titLucroPositivo ? '+' : ''}{formatarMoeda(titulo.lucroLiquido)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 flex justify-between items-center">
+                                        <span className={`text-xs font-bold ${vencido ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                            {titulo.diasAteVencimento == null ? 'Sem vencimento definido' : vencido ? 'Vencido' : `Vence em ${titulo.diasAteVencimento} dias`}
+                                        </span>
+                                        <button onClick={() => excluirTitulo(titulo.id)} className="p-1.5 text-slate-400 hover:text-rose-500 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer active:scale-95" title="Resgatar/Excluir Título">
+                                            <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+                                        </button>
                                     </div>
                                 </div>
                             );
