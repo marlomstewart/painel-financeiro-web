@@ -166,40 +166,38 @@ export function CalculadoraCompra({ API, getHeaders, modal }) {
                             <p className="text-sm text-center text-slate-500 dark:text-slate-400">Preencha os valores para simular.</p>
                         ) : (
                             <>
-                                <div className="flex items-center justify-center gap-2 mb-4">
+                                <div className="flex flex-col items-center gap-1 mb-5">
                                     {resultado.compensaParcelar ? (
-                                        <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                                        <TrendingUp className="w-8 h-8 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
                                     ) : (
-                                        <TrendingDown className="w-6 h-6 text-rose-600 dark:text-rose-400" strokeWidth={2.5} />
+                                        <TrendingDown className="w-8 h-8 text-rose-600 dark:text-rose-400" strokeWidth={2.5} />
                                     )}
-                                    <p className={`text-lg font-black tracking-tight ${resultado.compensaParcelar ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-                                        {resultado.compensaParcelar ? 'Melhor Parcelar' : 'Melhor à Vista'}
+                                    <p className={`text-xl font-black tracking-tight ${resultado.compensaParcelar ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                                        {resultado.compensaParcelar ? 'Pode Parcelar' : 'Compre à Vista'}
                                     </p>
                                 </div>
 
-                                <p className="text-xs text-center text-slate-600 dark:text-slate-400 font-medium mb-5 leading-relaxed">
-                                    {resultado.compensaParcelar
-                                        ? <>Se você parcelar e deixar os {formatarMoeda(precoAVista)} rendendo, em {numParcelas}x você ganha <strong>{formatarMoeda(resultado.diferenca)}</strong> a mais do que pagando à vista.</>
-                                        : <>Se você parcelar e deixar os {formatarMoeda(precoAVista)} rendendo, em {numParcelas}x ainda assim você perde <strong>{formatarMoeda(Math.abs(resultado.diferenca))}</strong> em relação à vista.</>
-                                    }
-                                </p>
+                                <div className="text-center mb-5">
+                                    <p className={`text-[10px] uppercase font-black tracking-wider mb-1 ${resultado.compensaParcelar ? 'text-emerald-600 dark:text-emerald-500' : 'text-rose-600 dark:text-rose-500'}`}>
+                                        {resultado.compensaParcelar ? 'Você economiza' : 'Parcelar custa a mais'}
+                                    </p>
+                                    <p className={`text-3xl md:text-4xl font-black tracking-tight ${resultado.compensaParcelar ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                                        {formatarMoeda(Math.abs(resultado.diferenca))}
+                                    </p>
+                                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-2">
+                                        {resultado.compensaParcelar
+                                            ? 'O rendimento do dinheiro cobre e ainda sobra, comparado a pagar à vista.'
+                                            : 'Mesmo rendendo, o total parcelado ainda fica mais caro que pagar à vista.'}
+                                    </p>
+                                </div>
 
                                 <div className="flex justify-between items-center mb-2.5 pb-2.5 border-b border-slate-300/50 dark:border-slate-700/50">
                                     <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Parcelado</span>
                                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatarMoeda(resultado.totalParcelado)}</span>
                                 </div>
-                                <div className="flex justify-between items-center mb-2.5 pb-2.5 border-b border-slate-300/50 dark:border-slate-700/50">
+                                <div className="flex justify-between items-center">
                                     <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">À Vista Rendendo ({resultado.diasCorridos}d)</span>
                                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatarMoeda(resultado.valorLiquidoFinal)}</span>
-                                </div>
-
-                                <div className="text-center mt-5">
-                                    <p className={`text-[10px] uppercase font-black tracking-wider mb-1 ${resultado.compensaParcelar ? 'text-emerald-600 dark:text-emerald-500' : 'text-rose-600 dark:text-rose-500'}`}>
-                                        Diferença Final
-                                    </p>
-                                    <p className={`text-3xl md:text-4xl font-black tracking-tight ${resultado.compensaParcelar ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-                                        {resultado.compensaParcelar ? '+' : '-'}{formatarMoeda(Math.abs(resultado.diferenca))}
-                                    </p>
                                 </div>
                             </>
                         )}
