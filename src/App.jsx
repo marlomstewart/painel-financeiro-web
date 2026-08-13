@@ -15,6 +15,7 @@ import { RendasFixas } from './components/RendasFixas';
 import { Configuracoes } from './components/Configuracoes';
 import { Dividas } from './components/Dividas';
 import { Investimentos } from './components/Investimentos';
+import { CalculadoraCompra } from './components/CalculadoraCompra';
 import { Cobrancas } from './components/Cobrancas';
 import { Tutorial } from './components/Tutorial';
 import { Ajuda } from './components/Ajuda';
@@ -164,6 +165,10 @@ function App() {
 
     if (telaAtiva === 'investimentos') {
       return <Investimentos API={API} getHeaders={auth.getHeaders} modal={modal} />;
+    }
+
+    if (telaAtiva === 'calculadora_compra') {
+      return <CalculadoraCompra API={API} getHeaders={auth.getHeaders} modal={modal} />;
     }
 
     return <Dashboard

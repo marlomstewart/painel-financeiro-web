@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     X, ChevronDown, LayoutDashboard, Wallet, Plus, ClipboardList,
     TrendingDown, Repeat, HandCoins, Handshake, CreditCard, PiggyBank,
-    Target, TrendingUp, Bike, Settings, Users, LogOut, HelpCircle, RefreshCw
+    Target, TrendingUp, Bike, Settings, Users, LogOut, HelpCircle, RefreshCw, Calculator
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
@@ -165,6 +165,7 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                     <MenuItem id="rendas_fixas" Icone={PiggyBank} titulo="Rendas Fixas" telaAtiva={telaAtiva} onClick={() => handleNavegacao('rendas_fixas')} />
                     <MenuItem id="metas_categorias" Icone={Target} titulo="Metas & Categorias" telaAtiva={telaAtiva} onClick={() => handleNavegacao('metas_categorias')} />
                     <MenuItem id="investimentos" Icone={TrendingUp} titulo="Investimentos" telaAtiva={telaAtiva} onClick={() => handleNavegacao('investimentos')} />
+                    <MenuItem id="calculadora_compra" Icone={Calculator} titulo="À Vista ou Parcelado" telaAtiva={telaAtiva} onClick={() => handleNavegacao('calculadora_compra')} />
 
                     {/* Renderização condicional: só exibe se o usuário tiver a flag temGaragem verdadeira */}
                     {temGaragem && (
