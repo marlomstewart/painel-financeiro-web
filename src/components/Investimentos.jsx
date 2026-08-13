@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
 import { useBolsa } from '../hooks/useBolsa';
 import { useTesouro } from '../hooks/useTesouro';
-import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2, ShieldCheck } from 'lucide-react';
+import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2, ShieldCheck, PieChart } from 'lucide-react';
 
 /**
  * @function formatarMoeda
@@ -25,7 +25,7 @@ export function Investimentos({ API, getHeaders, modal }) {
     const bolsa = useBolsa({ API, getHeaders, modal });
     const tesouro = useTesouro({ API, getHeaders, modal });
 
-    const [abaAtiva, setAbaAtiva] = useState('renda_fixa');
+    const [abaAtiva, setAbaAtiva] = useState('resumo');
 
     // 🎛️ Estados para o Simulador de Longo Prazo
     const [metaSimulador, setMetaSimulador] = useState(100000);
@@ -251,8 +251,14 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </div>
             </div>
 
-            {/* ALTERNADOR DE ABAS: RENDA FIXA / AÇÕES / FIIS */}
-            <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl w-full sm:w-fit">
+            {/* ALTERNADOR DE ABAS: RESUMO / RENDA FIXA / AÇÕES / FIIS / TESOURO */}
+            <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl w-full sm:w-fit overflow-x-auto">
+                <button
+                    type="button" onClick={() => setAbaAtiva('resumo')}
+                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${abaAtiva === 'resumo' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                    Resumo
+                </button>
                 <button
                     type="button" onClick={() => setAbaAtiva('renda_fixa')}
                     className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'renda_fixa' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
@@ -279,7 +285,9 @@ export function Investimentos({ API, getHeaders, modal }) {
                 </button>
             </div>
 
-            {(abaAtiva === 'acoes' || abaAtiva === 'fiis') ? (
+            {abaAtiva === 'resumo' ? (
+                <SecaoResumo dashboardCdb={dashboardData} bolsa={bolsa} tesouro={tesouro} setAbaAtiva={setAbaAtiva} formatarMoeda={formatarMoeda} />
+            ) : (abaAtiva === 'acoes' || abaAtiva === 'fiis') ? (
                 <SecaoBolsa bolsa={bolsa} tipoFiltro={abaAtiva} onRegistrarOperacao={handleRegistrarOperacaoBolsa} onRegistrarProvento={handleRegistrarProvento} formatarMoeda={formatarMoeda} />
             ) : abaAtiva === 'tesouro' ? (
                 <SecaoTesouro tesouro={tesouro} onRegistrarTitulo={handleRegistrarTitulo} excluirTitulo={tesouro.excluirTitulo} formatarMoeda={formatarMoeda} />
@@ -880,6 +888,100 @@ function SecaoTesouro({ tesouro, onRegistrarTitulo, excluirTitulo, formatarMoeda
                         })}
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * @component SecaoResumo
+ * @description Aba "Resumo" dentro de Investimentos: soma os resumos já calculados pelos três
+ * hooks (CDB, Ações/FIIs, Tesouro Direto) num patrimônio único, sem nenhuma chamada extra ao
+ * backend — cada hook já busca seu próprio dashboard de qualquer forma.
+ */
+function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda }) {
+    const carregando = !dashboardCdb || bolsa.loading || !bolsa.dashboardData || tesouro.loading || !tesouro.dashboardData;
+
+    if (carregando) {
+        return (
+            <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[40vh] animate-pulse">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Consolidando seu patrimônio...</h2>
+                <p className="text-sm text-slate-500">Somando Renda Fixa, Ações/FIIs e Tesouro Direto</p>
+            </div>
+        );
+    }
+
+    const cdb = dashboardCdb.resumo;
+    const bolsaResumo = bolsa.dashboardData.resumo;
+    const tesouroResumo = tesouro.dashboardData.resumo;
+
+    const acoesAtual = bolsa.dashboardData.posicoes.filter(p => classificarTicker(p.ticker) === 'acoes').reduce((acc, p) => acc + (p.valorAtual ?? p.valorInvestido), 0);
+    const fiisAtual = bolsa.dashboardData.posicoes.filter(p => classificarTicker(p.ticker) === 'fiis').reduce((acc, p) => acc + (p.valorAtual ?? p.valorInvestido), 0);
+
+    const patrimonioTotal = cdb.patrimonioTotal + bolsaResumo.valorAtualTotal + tesouroResumo.valorLiquidoTotal;
+    const totalInvestido = cdb.aplicadoTotal + bolsaResumo.valorInvestidoTotal + tesouroResumo.valorInvestidoTotal;
+    const lucroTotal = cdb.lucroLiquidoTotal + bolsaResumo.rentabilidadeTotal + tesouroResumo.lucroLiquidoTotal;
+    const rentabilidadePercentual = totalInvestido > 0 ? (lucroTotal / totalInvestido) * 100 : null;
+    const lucroPositivo = lucroTotal >= 0;
+
+    const classes = [
+        { chave: 'renda_fixa', nome: 'Renda Fixa', valor: cdb.patrimonioTotal, cor: 'bg-blue-500' },
+        { chave: 'acoes', nome: 'Ações', valor: acoesAtual, cor: 'bg-emerald-500' },
+        { chave: 'fiis', nome: 'FIIs', valor: fiisAtual, cor: 'bg-amber-500' },
+        { chave: 'tesouro', nome: 'Tesouro Direto', valor: tesouroResumo.valorLiquidoTotal, cor: 'bg-indigo-500' }
+    ];
+
+    return (
+        <div className="space-y-6">
+            {/* HERO: PATRIMÔNIO TOTAL */}
+            <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
+                <div className="relative z-10">
+                    <p className="text-blue-300 text-sm font-bold tracking-widest uppercase mb-1">Patrimônio Total</p>
+                    <h1 className="text-4xl md:text-5xl font-black tracking-tight">{formatarMoeda(patrimonioTotal)}</h1>
+                    <p className={`text-sm mt-2 font-bold ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {lucroPositivo ? '+' : ''}{formatarMoeda(lucroTotal)}
+                        {rentabilidadePercentual != null && <> ({lucroPositivo ? '+' : ''}{rentabilidadePercentual.toFixed(2)}%)</>}
+                    </p>
+                </div>
+
+                <div className="relative z-10 grid grid-cols-2 gap-4 mt-6">
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Total Investido</p>
+                        <p className="text-xl font-black">{formatarMoeda(totalInvestido)}</p>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${lucroPositivo ? 'bg-emerald-900/40 border-emerald-500/30' : 'bg-rose-900/40 border-rose-500/30'}`}>
+                        <p className={`text-[10px] uppercase font-bold mb-1 ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>Rentabilidade Geral</p>
+                        <p className={`text-xl font-black ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>{lucroPositivo ? '+' : ''}{formatarMoeda(lucroTotal)}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* ALOCAÇÃO POR CLASSE */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Alocação por Classe</h2>
+                <div className="flex w-full h-3 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4">
+                    {classes.map(c => {
+                        const pct = patrimonioTotal > 0 ? (c.valor / patrimonioTotal) * 100 : 0;
+                        return pct > 0 ? <div key={c.chave} className={c.cor} style={{ width: `${pct}%` }} title={`${c.nome}: ${pct.toFixed(1)}%`} /> : null;
+                    })}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {classes.map(c => {
+                        const pct = patrimonioTotal > 0 ? (c.valor / patrimonioTotal) * 100 : 0;
+                        return (
+                            <button key={c.chave} onClick={() => setAbaAtiva(c.chave)} className="text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors cursor-pointer">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${c.cor}`}></span>
+                                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 truncate">{c.nome}</span>
+                                </div>
+                                <p className="text-sm font-black text-slate-800 dark:text-slate-100">{formatarMoeda(c.valor)}</p>
+                                <p className="text-[10px] font-bold text-slate-400">{pct.toFixed(1)}%</p>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
