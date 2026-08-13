@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import React, { useState } from 'react';
-import { Lock } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 /**
  * @file src/components/Login.jsx
@@ -94,10 +94,8 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                 {view === 'login' && (
                     <div className="animate-fade-in">
                         <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner border border-blue-200 dark:border-blue-800/50">
-                                <Lock className="w-7 h-7" strokeWidth={2} />
-                            </div>
-                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Painel Financeiro</h1>
+                            <img src={logo} alt="Fincontrole" className="w-16 h-16 mx-auto mb-4 object-contain" />
+                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Fincontrole</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Acesso Restrito</p>
                         </div>
 
