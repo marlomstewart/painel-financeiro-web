@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
-import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle } from 'lucide-react';
+import { useBolsa } from '../hooks/useBolsa';
+import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2 } from 'lucide-react';
 
 /**
  * @function formatarMoeda
@@ -20,6 +21,9 @@ const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53,
  */
 export function Investimentos({ API, getHeaders, modal }) {
     const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal });
+    const bolsa = useBolsa({ API, getHeaders, modal });
+
+    const [abaAtiva, setAbaAtiva] = useState('renda_fixa');
 
     // 🎛️ Estados para o Simulador de Longo Prazo
     const [metaSimulador, setMetaSimulador] = useState(100000);
@@ -146,6 +150,29 @@ export function Investimentos({ API, getHeaders, modal }) {
         criarAporte(caixinhaId, -Math.abs(valor), dataResgate);
     };
 
+    const handleRegistrarOperacaoBolsa = async () => {
+        const ticker = await modal.prompt('Passo 1 de 4 — Qual o ticker do ativo?', '', 'Registrar Operação', { placeholder: 'Ex: PETR4, MXRF11', confirmLabel: 'Próximo' });
+        if (!ticker) return;
+
+        const tipo = await modal.options('Passo 2 de 4 — Compra ou venda?', [
+            { label: '📈 Compra', value: 'compra' },
+            { label: '📉 Venda', value: 'venda' }
+        ], 'Registrar Operação');
+        if (!tipo) return;
+
+        const quantidade = await modal.prompt('Passo 3 de 4 — Quantidade de cotas/ações?', '', 'Registrar Operação', { inputType: 'number', confirmLabel: 'Próximo' });
+        if (!quantidade || isNaN(Number(quantidade)) || Number(quantidade) <= 0) return modal.alert('Quantidade inválida.');
+
+        const preco = await modal.prompt('Passo 4 de 4 — Preço por unidade?', '', 'Registrar Operação', { inputType: 'currency', confirmLabel: 'Próximo' });
+        if (!preco || preco <= 0) return;
+
+        const data = await modal.prompt('Data da operação?', new Date().toISOString().split('T')[0], 'Registrar Operação', { inputType: 'date', confirmLabel: 'Registrar' });
+        if (!data) return;
+
+        const quantidadeFinal = tipo === 'venda' ? -Math.abs(Number(quantidade)) : Math.abs(Number(quantidade));
+        bolsa.criarCompra(ticker, quantidadeFinal, preco, data);
+    };
+
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
@@ -183,6 +210,27 @@ export function Investimentos({ API, getHeaders, modal }) {
                     </div>
                 </div>
             </div>
+
+            {/* ALTERNADOR DE ABAS: RENDA FIXA / AÇÕES & FIIS */}
+            <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl w-full sm:w-fit">
+                <button
+                    type="button" onClick={() => setAbaAtiva('renda_fixa')}
+                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'renda_fixa' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                    Renda Fixa
+                </button>
+                <button
+                    type="button" onClick={() => setAbaAtiva('bolsa')}
+                    className={`flex-1 sm:flex-none px-4 py-2.5 md:py-2 rounded-lg text-sm font-bold transition-colors cursor-pointer ${abaAtiva === 'bolsa' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                    Ações & FIIs
+                </button>
+            </div>
+
+            {abaAtiva === 'bolsa' ? (
+                <SecaoBolsa bolsa={bolsa} onRegistrarOperacao={handleRegistrarOperacaoBolsa} formatarMoeda={formatarMoeda} />
+            ) : (
+            <>
 
             {/* 🌟 HERO: PATRIMÔNIO LÍQUIDO */}
             <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
@@ -519,6 +567,107 @@ export function Investimentos({ API, getHeaders, modal }) {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+            </div>
+            </>
+            )}
+        </div>
+    );
+}
+
+/**
+ * @component SecaoBolsa
+ * @description Aba de Ações e FIIs dentro de Investimentos: posições agregadas por ticker com
+ * cotação ao vivo (via useBolsa), lucro/prejuízo e o wizard de registro de operações.
+ */
+function SecaoBolsa({ bolsa, onRegistrarOperacao, formatarMoeda }) {
+    const { dashboardData, loading } = bolsa;
+
+    if (loading || !dashboardData) {
+        return (
+            <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[40vh] animate-pulse">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Buscando cotações...</h2>
+                <p className="text-sm text-slate-500">Consultando o preço atual dos seus ativos na B3</p>
+            </div>
+        );
+    }
+
+    const { posicoes, resumo } = dashboardData;
+    const lucroPositivo = resumo.lucroTotal >= 0;
+
+    return (
+        <div className="space-y-6">
+            {/* HERO: RESUMO DA CARTEIRA */}
+            <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
+                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Valor Investido</p>
+                        <p className="text-xl font-black">{formatarMoeda(resumo.valorInvestidoTotal)}</p>
+                    </div>
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Valor Atual</p>
+                        <p className="text-xl font-black">{formatarMoeda(resumo.valorAtualTotal)}</p>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${lucroPositivo ? 'bg-emerald-900/40 border-emerald-500/30' : 'bg-rose-900/40 border-rose-500/30'}`}>
+                        <p className={`text-[10px] uppercase font-bold mb-1 ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>Lucro / Prejuízo</p>
+                        <p className={`text-xl font-black ${lucroPositivo ? 'text-emerald-400' : 'text-rose-400'}`}>{lucroPositivo ? '+' : ''}{formatarMoeda(resumo.lucroTotal)}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* POSIÇÕES */}
+            <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">Minhas Posições</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Preço médio e cotação atual por ativo.</p>
+                    </div>
+                    <button onClick={onRegistrarOperacao} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                        <Plus className="w-4 h-4" strokeWidth={2.5} /> Registrar Operação
+                    </button>
+                </div>
+
+                {posicoes.length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center">
+                        <Building2 className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
+                        <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhum ativo cadastrado ainda</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Registre sua primeira compra para acompanhar a cotação.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {posicoes.map(pos => {
+                            const posLucroPositivo = (pos.lucro ?? 0) >= 0;
+                            return (
+                                <div key={pos.ticker} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                                    <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex justify-between items-start gap-2">
+                                        <div className="min-w-0 pr-2">
+                                            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight truncate">{pos.ticker}</h3>
+                                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">{pos.quantidade} cotas/ações • PM {formatarMoeda(pos.precoMedio)}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Valor Atual</p>
+                                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                                                {pos.valorAtual != null ? formatarMoeda(pos.valorAtual) : 'Indisponível'}
+                                            </p>
+                                            {pos.lucro != null && (
+                                                <p className={`text-[10px] font-bold mt-1 ${posLucroPositivo ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {posLucroPositivo ? '+' : ''}{formatarMoeda(pos.lucro)} ({pos.lucroPercentual}%)
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 flex justify-between items-center">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            Cotação: {pos.cotacaoAtual != null ? formatarMoeda(pos.cotacaoAtual) : 'indisponível'}
+                                        </span>
+                                        <span className="text-xs text-slate-400">Investido: {formatarMoeda(pos.valorInvestido)}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
