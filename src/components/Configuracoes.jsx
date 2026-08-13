@@ -9,11 +9,13 @@ import {
  * @description Painel de controlo central do utilizador.
  * Gere os dados de perfil, segurança, exportação, motor de temas e vinculação com o Telegram.
  */
-export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, atualizarPerfil, alterarSenha, chavePix }) {
+export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, nomeCompleto: nomeCompletoProp, atualizarPerfil, alterarSenha, chavePix }) {
 
     // ================= ESTADOS GERAIS =================
-    const [nomeCompleto, setNomeCompleto] = useState('');
-    const [nomeExibicao, setNomeExibicao] = useState('');
+    // Sementes já preenchidas com o valor vindo da sessão (não com string vazia) — senão o campo
+    // fica em branco até o valor "mudar" depois do mount, o que nunca acontece se já chegou certo.
+    const [nomeCompleto, setNomeCompleto] = useState(nomeCompletoProp || '');
+    const [nomeExibicao, setNomeExibicao] = useState(nomeUsuario || '');
     const [chavePixInput, setChavePixInput] = useState(chavePix || '');
 
     // Estados de Segurança
@@ -37,6 +39,13 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     if (nomeUsuario && nomeUsuario !== nomeUsuarioSincronizado) {
         setNomeUsuarioSincronizado(nomeUsuario);
         setNomeExibicao(nomeUsuario);
+    }
+
+    // Mesmo padrão para o nome completo.
+    const [nomeCompletoSincronizado, setNomeCompletoSincronizado] = useState(nomeCompletoProp);
+    if (nomeCompletoProp !== undefined && nomeCompletoProp !== nomeCompletoSincronizado) {
+        setNomeCompletoSincronizado(nomeCompletoProp);
+        setNomeCompleto(nomeCompletoProp);
     }
 
     // Mesmo padrão para a chave PIX, que também chega depois do login.
@@ -193,11 +202,11 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                     <form onSubmit={handleSalvarPerfil} className="space-y-5 flex flex-col flex-1">
                         <div>
                             <label className={labelCls}>Nome Completo</label>
-                            <input type="text" value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: Marlom Stewart Souza" className={inputCls} />
+                            <input type="text" value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva Santos" className={inputCls} />
                         </div>
                         <div>
                             <label className={labelCls}>Como quer ser chamado</label>
-                            <input type="text" value={nomeExibicao} onChange={(e) => setNomeExibicao(e.target.value)} placeholder="Ex: Marlom" required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} />
+                            <input type="text" value={nomeExibicao} onChange={(e) => setNomeExibicao(e.target.value)} placeholder="Ex: João" required className={`${inputCls} font-bold text-blue-600 dark:text-blue-400`} />
                         </div>
                         <div>
                             <label className={labelCls}>Chave PIX</label>

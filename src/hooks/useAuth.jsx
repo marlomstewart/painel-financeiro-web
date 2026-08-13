@@ -14,6 +14,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
 
     // O nome visual agora é baseado no nome de exibição (isolado do login)
     const [nomeUsuario, setNomeUsuario] = useState(localStorage.getItem('nomeUsuario') || '');
+    const [nomeCompleto, setNomeCompleto] = useState(localStorage.getItem('nomeCompleto') || '');
     const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdminPainel') === 'true');
 
     // Controle de acesso ao módulo garagem e notificações preditivas
@@ -64,6 +65,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     localStorage.setItem('tokenPainel', data.token);
                     localStorage.setItem('isAdminPainel', data.is_admin ? 'true' : 'false');
                     localStorage.setItem('nomeUsuario', nomeVisual);
+                    localStorage.setItem('nomeCompleto', data.nomeCompleto || '');
                     localStorage.setItem('temGaragem', data.tem_garagem ? 'true' : 'false');
                     localStorage.setItem('temComprovante', data.tem_comprovante ? 'true' : 'false');
                     localStorage.setItem('telegramChatId', data.telegram_chat_id || '');
@@ -73,6 +75,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     setToken(data.token);
                     setIsAdmin(data.is_admin === true);
                     setNomeUsuario(nomeVisual);
+                    setNomeCompleto(data.nomeCompleto || '');
                     setTemGaragem(data.tem_garagem === true);
                     setTemComprovante(data.tem_comprovante === true);
                     setTelegramChatId(data.telegram_chat_id || '');
@@ -92,6 +95,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const fazerLogout = useCallback(() => {
         localStorage.removeItem('tokenPainel');
         localStorage.removeItem('nomeUsuario');
+        localStorage.removeItem('nomeCompleto');
         localStorage.removeItem('isAdminPainel');
         localStorage.removeItem('temGaragem');
         localStorage.removeItem('temComprovante');
@@ -104,6 +108,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
         setPrecisaTrocarSenha(false);
         setCarregouAPI(false);
         setNomeUsuario('');
+        setNomeCompleto('');
         setIsAdmin(false);
         setTemGaragem(false);
         setTemComprovante(false);
@@ -166,6 +171,8 @@ export function useAuth({ API, modal, setCarregouAPI }) {
             if (res.ok) {
                 localStorage.setItem('nomeUsuario', dados.nomeExibicao);
                 setNomeUsuario(dados.nomeExibicao);
+                localStorage.setItem('nomeCompleto', dados.nomeCompleto || '');
+                setNomeCompleto(dados.nomeCompleto || '');
                 if (dados.chave_pix !== undefined) {
                     localStorage.setItem('chavePix', dados.chave_pix || '');
                     setChavePix(dados.chave_pix || '');
@@ -243,7 +250,7 @@ export function useAuth({ API, modal, setCarregouAPI }) {
     const toggleComprovante = async (id, nomeU, atualTemComprovante) => { const acao = atualTemComprovante ? 'REVOGAR o anexo de comprovantes' : 'LIBERAR o anexo de comprovantes'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '📎 Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-comprovante`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
 
     return {
-        token, precisaTrocarSenha, nomeUsuario, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, chavePix, usuarios, getHeaders,
+        token, precisaTrocarSenha, nomeUsuario, nomeCompleto, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, chavePix, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
         fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem, toggleComprovante,
