@@ -112,9 +112,9 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                 {/* Logo / Header com Botão de Fechar Mobile */}
                 <div className="p-5 md:p-6 border-b border-slate-800/60 flex justify-between items-start md:items-center shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
-                        <img src={logo} alt="Fincontrole" className="w-9 h-9 rounded-xl shrink-0 object-contain" />
+                        <img src={logo} alt="FinControle" className="w-9 h-9 rounded-xl shrink-0 object-contain" />
                         <div className="flex flex-col gap-1 min-w-0">
-                            <h1 className="text-lg font-extrabold text-white tracking-tight truncate">Fincontrole</h1>
+                            <h1 className="text-lg font-extrabold text-white tracking-tight truncate">FinControle</h1>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
                                 Olá, {nomeUsuario || 'Usuário'}
                             </p>

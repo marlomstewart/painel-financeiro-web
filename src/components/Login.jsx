@@ -94,8 +94,8 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                 {view === 'login' && (
                     <div className="animate-fade-in">
                         <div className="text-center mb-8">
-                            <img src={logo} alt="Fincontrole" className="w-16 h-16 mx-auto mb-4 object-contain" />
-                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">Fincontrole</h1>
+                            <img src={logo} alt="FinControle" className="w-16 h-16 mx-auto mb-4 object-contain" />
+                            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">FinControle</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors font-medium">Acesso Restrito</p>
                         </div>
 
