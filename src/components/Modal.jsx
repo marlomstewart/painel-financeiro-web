@@ -232,6 +232,218 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 }
 
 /**
+ * Componente Interno: FormularioNovoInvestimento
+ * Formulário único pra registrar qualquer tipo de investimento (Renda Fixa, Ações, FIIs ou
+ * Tesouro Direto) — substitui os wizards de múltiplos passos que existiam antes por classe.
+ */
+function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
+  const { tipoInicial, caixinhas = [] } = config;
+
+  const [tipoAtivo, setTipoAtivo] = useState(tipoInicial || 'acoes');
+  const [operacao, setOperacao] = useState('compra');
+  const [data, setData] = useState(new Date().toISOString().split('T')[0]);
+
+  // Ações / FIIs
+  const [ticker, setTicker] = useState('');
+  const [quantidade, setQuantidade] = useState('');
+  const [preco, setPreco] = useState('');
+  const [outrosCustos, setOutrosCustos] = useState('');
+
+  // Renda Fixa
+  const [caixinhaId, setCaixinhaId] = useState(caixinhas[0]?.id || '');
+  const [valorRendaFixa, setValorRendaFixa] = useState('');
+
+  // Tesouro Direto
+  const [nomeTitulo, setNomeTitulo] = useState('');
+  const [tipoTitulo, setTipoTitulo] = useState('selic');
+  const [taxaTitulo, setTaxaTitulo] = useState('');
+  const [valorTitulo, setValorTitulo] = useState('');
+  const [dataVencimento, setDataVencimento] = useState('');
+
+  const ehTesouro = tipoAtivo === 'tesouro';
+  const ehRendaFixa = tipoAtivo === 'renda_fixa';
+  const ehBolsa = tipoAtivo === 'acoes' || tipoAtivo === 'fiis';
+
+  const valorTotal = ehBolsa
+    ? (Number(quantidade) || 0) * (Number(preco) || 0) + (operacao === 'compra' ? (Number(outrosCustos) || 0) : 0)
+    : ehRendaFixa
+      ? (Number(valorRendaFixa) || 0)
+      : (Number(valorTitulo) || 0);
+
+  const rotuloTaxaTitulo = tipoTitulo === 'selic' ? 'Spread sobre a Selic (%)'
+    : tipoTitulo === 'ipca' ? 'Spread sobre o IPCA (%)'
+    : 'Taxa fixa anual (%)';
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (ehBolsa) {
+      if (!ticker.trim() || !quantidade || Number(quantidade) <= 0 || !preco || Number(preco) <= 0) {
+        alert('Preencha o ativo, a quantidade e o preço.');
+        return;
+      }
+      const precoEfetivo = operacao === 'compra'
+        ? ((Number(quantidade) * Number(preco)) + (Number(outrosCustos) || 0)) / Number(quantidade)
+        : Number(preco);
+      const quantidadeComSinal = operacao === 'venda' ? -Math.abs(Number(quantidade)) : Math.abs(Number(quantidade));
+      onConfirm({ tipoAtivo, ticker: ticker.trim().toUpperCase(), quantidadeComSinal, precoEfetivo, data });
+      return;
+    }
+
+    if (ehRendaFixa) {
+      if (!caixinhaId || !valorRendaFixa || Number(valorRendaFixa) <= 0) {
+        alert('Selecione a caixinha e informe o valor.');
+        return;
+      }
+      const valorComSinal = operacao === 'venda' ? -Math.abs(Number(valorRendaFixa)) : Math.abs(Number(valorRendaFixa));
+      onConfirm({ tipoAtivo, caixinhaId, valorComSinal, data });
+      return;
+    }
+
+    // Tesouro Direto
+    if (!nomeTitulo.trim() || taxaTitulo === '' || isNaN(Number(taxaTitulo)) || !valorTitulo || Number(valorTitulo) <= 0) {
+      alert('Preencha o nome, a taxa e o valor do título.');
+      return;
+    }
+    onConfirm({
+      tipoAtivo, nome: nomeTitulo.trim(), tipo: tipoTitulo, taxa: Number(taxaTitulo),
+      valor: Number(valorTitulo), data, dataVencimento: dataVencimento || null
+    });
+  };
+
+  const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
+  const labelCls = "block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 md:mb-1 uppercase tracking-wider";
+  const formatarMoedaLocal = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+
+      {/* COMPRA / VENDA */}
+      <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl">
+        <button
+          type="button" disabled={ehTesouro} onClick={() => setOperacao('compra')}
+          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${operacao === 'compra' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'} ${ehTesouro ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+        >
+          Compra
+        </button>
+        <button
+          type="button" disabled={ehTesouro} onClick={() => setOperacao('venda')}
+          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${operacao === 'venda' ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'} ${ehTesouro ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+        >
+          Venda
+        </button>
+      </div>
+      {ehTesouro && <p className="text-[10px] text-slate-400 dark:text-slate-500 -mt-3">Tesouro Direto não tem resgate parcial por aqui — pra resgatar, exclua o título na aba correspondente.</p>}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Tipo de ativo</label>
+          <select value={tipoAtivo} onChange={e => setTipoAtivo(e.target.value)} className={`${inputCls} cursor-pointer`}>
+            <option value="renda_fixa">Renda Fixa (CDB)</option>
+            <option value="acoes">Ações</option>
+            <option value="fiis">FIIs</option>
+            <option value="tesouro">Tesouro Direto</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Data da transação</label>
+          <input type="date" value={data} onChange={e => setData(e.target.value)} required className={inputCls} />
+        </div>
+      </div>
+
+      {ehBolsa && (
+        <>
+          <div>
+            <label className={labelCls}>Ativo</label>
+            <input type="text" value={ticker} onChange={e => setTicker(e.target.value)} placeholder="Ex: PETR4, MXRF11" className={`${inputCls} uppercase`} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Quantidade</label>
+              <input type="number" min="0" step="any" value={quantidade} onChange={e => setQuantidade(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Preço (R$)</label>
+              <input type="number" min="0" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          {operacao === 'compra' && (
+            <div>
+              <label className={labelCls}>Outros custos (opcional)</label>
+              <input type="number" min="0" step="0.01" value={outrosCustos} onChange={e => setOutrosCustos(e.target.value)} placeholder="Corretagem, emolumentos..." className={inputCls} />
+            </div>
+          )}
+        </>
+      )}
+
+      {ehRendaFixa && (
+        caixinhas.length === 0 ? (
+          <p className="text-sm text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-3.5 rounded-xl font-medium">
+            Você ainda não tem uma caixinha de Renda Fixa — crie uma primeiro na aba "Renda Fixa".
+          </p>
+        ) : (
+          <>
+            <div>
+              <label className={labelCls}>Caixinha</label>
+              <select value={caixinhaId} onChange={e => setCaixinhaId(e.target.value)} className={`${inputCls} cursor-pointer`}>
+                {caixinhas.map(cx => <option key={cx.id} value={cx.id}>{cx.instituicao} - {cx.nome_caixinha}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Valor (R$)</label>
+              <input type="number" min="0" step="0.01" value={valorRendaFixa} onChange={e => setValorRendaFixa(e.target.value)} className={inputCls} />
+            </div>
+          </>
+        )
+      )}
+
+      {ehTesouro && (
+        <>
+          <div>
+            <label className={labelCls}>Nome do título</label>
+            <input type="text" value={nomeTitulo} onChange={e => setNomeTitulo(e.target.value)} placeholder="Ex: Tesouro Selic 2029" className={inputCls} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Tipo de título</label>
+              <select value={tipoTitulo} onChange={e => setTipoTitulo(e.target.value)} className={`${inputCls} cursor-pointer`}>
+                <option value="selic">Tesouro Selic</option>
+                <option value="prefixado">Tesouro Prefixado</option>
+                <option value="ipca">Tesouro IPCA+</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>{rotuloTaxaTitulo}</label>
+              <input type="number" step="0.001" value={taxaTitulo} onChange={e => setTaxaTitulo(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Valor investido (R$)</label>
+              <input type="number" min="0" step="0.01" value={valorTitulo} onChange={e => setValorTitulo(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Vencimento (opcional)</label>
+              <input type="date" value={dataVencimento} onChange={e => setDataVencimento(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+        <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Valor total</span>
+        <span className="text-lg font-black text-slate-800 dark:text-slate-100">{formatarMoedaLocal(valorTotal)}</span>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer active:scale-[0.98] order-2 sm:order-1 border border-transparent dark:border-slate-700">Cancelar</button>
+        <button type="submit" disabled={ehRendaFixa && caixinhas.length === 0} className="flex-1 bg-blue-600 text-white py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md cursor-pointer active:scale-[0.98] order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed">+ Adicionar Lançamento</button>
+      </div>
+    </form>
+  );
+}
+
+/**
  * Componente: Modal (Orquestrador Global)
  * Centraliza e renderiza todos os Pop-ups do sistema.
  */
@@ -244,7 +456,7 @@ export function Modal({ config, onClose }) {
   const [configSincronizado, setConfigSincronizado] = useState(config);
   if (config !== configSincronizado) {
     setConfigSincronizado(config);
-    if (config?.type === 'prompt' && config.inputType !== 'editar_transacao') {
+    if (config?.type === 'prompt' && config.inputType !== 'editar_transacao' && config.inputType !== 'novo_investimento') {
       setInputValue(config.inputType === 'currency' ? '0' : (config.defaultValue || ''));
     }
     if (config?.type === 'calendario') {
@@ -293,7 +505,7 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {type === 'prompt' && inputType !== 'editar_transacao' && (
+          {type === 'prompt' && inputType !== 'editar_transacao' && inputType !== 'novo_investimento' && (
             <div className="space-y-5">
               <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{message}</div>
 
@@ -332,6 +544,10 @@ export function Modal({ config, onClose }) {
 
           {type === 'prompt' && inputType === 'editar_transacao' && (
             <FormularioEdicao config={config} onConfirm={onConfirm} onCancel={onCancel} />
+          )}
+
+          {type === 'prompt' && inputType === 'novo_investimento' && (
+            <FormularioNovoInvestimento config={config} onConfirm={onConfirm} onCancel={onCancel} />
           )}
 
           {type === 'options' && (

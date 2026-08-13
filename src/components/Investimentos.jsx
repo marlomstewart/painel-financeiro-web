@@ -152,29 +152,6 @@ export function Investimentos({ API, getHeaders, modal }) {
         criarAporte(caixinhaId, -Math.abs(valor), dataResgate);
     };
 
-    const handleRegistrarOperacaoBolsa = async () => {
-        const ticker = await modal.prompt('Passo 1 de 4 — Qual o ticker do ativo?', '', 'Registrar Operação', { placeholder: 'Ex: PETR4, MXRF11', confirmLabel: 'Próximo' });
-        if (!ticker) return;
-
-        const tipo = await modal.options('Passo 2 de 4 — Compra ou venda?', [
-            { label: '📈 Compra', value: 'compra' },
-            { label: '📉 Venda', value: 'venda' }
-        ], 'Registrar Operação');
-        if (!tipo) return;
-
-        const quantidade = await modal.prompt('Passo 3 de 4 — Quantidade de cotas/ações?', '', 'Registrar Operação', { inputType: 'number', confirmLabel: 'Próximo' });
-        if (!quantidade || isNaN(Number(quantidade)) || Number(quantidade) <= 0) return modal.alert('Quantidade inválida.');
-
-        const preco = await modal.prompt('Passo 4 de 4 — Preço por unidade?', '', 'Registrar Operação', { inputType: 'currency', confirmLabel: 'Próximo' });
-        if (!preco || preco <= 0) return;
-
-        const data = await modal.prompt('Data da operação?', new Date().toISOString().split('T')[0], 'Registrar Operação', { inputType: 'date', confirmLabel: 'Registrar' });
-        if (!data) return;
-
-        const quantidadeFinal = tipo === 'venda' ? -Math.abs(Number(quantidade)) : Math.abs(Number(quantidade));
-        bolsa.criarCompra(ticker, quantidadeFinal, preco, data);
-    };
-
     const handleRegistrarProvento = async (ticker) => {
         const valor = await modal.prompt(`Qual o valor recebido de ${ticker}?`, '', 'Registrar Provento', { inputType: 'currency', confirmLabel: 'Próximo' });
         if (!valor || valor <= 0) return;
@@ -185,32 +162,19 @@ export function Investimentos({ API, getHeaders, modal }) {
         bolsa.criarProvento(ticker, valor, 'provento', data);
     };
 
-    const handleRegistrarTitulo = async () => {
-        const nome = await modal.prompt('Passo 1 de 6 — Nome do título?', '', 'Registrar Título', { placeholder: 'Ex: Tesouro Selic 2029', confirmLabel: 'Próximo' });
-        if (!nome) return;
+    const handleNovoLancamento = async (tipoInicial) => {
+        const resultado = await modal.prompt('', '', 'Adicionar Lançamento', {
+            inputType: 'novo_investimento', tipoInicial, caixinhas: dashboardData?.caixinhas || []
+        });
+        if (!resultado) return;
 
-        const tipo = await modal.options('Passo 2 de 6 — Tipo de título?', [
-            { label: '📊 Tesouro Selic', value: 'selic' },
-            { label: '📌 Tesouro Prefixado', value: 'prefixado' },
-            { label: '📈 Tesouro IPCA+', value: 'ipca' }
-        ], 'Registrar Título');
-        if (!tipo) return;
-
-        const rotuloTaxa = tipo === 'selic' ? 'Passo 3 de 6 — Spread sobre a Selic (%)? (ex: 0.05 ou -0.05)'
-            : tipo === 'ipca' ? 'Passo 3 de 6 — Spread sobre o IPCA (%)? (ex: 6.0)'
-            : 'Passo 3 de 6 — Taxa fixa anual contratada (%)? (ex: 11.5)';
-        const taxa = await modal.prompt(rotuloTaxa, '', 'Registrar Título', { inputType: 'number', confirmLabel: 'Próximo' });
-        if (taxa === null || taxa === '' || isNaN(Number(taxa))) return modal.alert('Taxa inválida.');
-
-        const valor = await modal.prompt('Passo 4 de 6 — Valor investido?', '', 'Registrar Título', { inputType: 'currency', confirmLabel: 'Próximo' });
-        if (!valor || valor <= 0) return;
-
-        const dataCompra = await modal.prompt('Passo 5 de 6 — Data da compra?', new Date().toISOString().split('T')[0], 'Registrar Título', { inputType: 'date', confirmLabel: 'Próximo' });
-        if (!dataCompra) return;
-
-        const dataVencimento = await modal.prompt('Passo 6 de 6 — Data de vencimento? (opcional, pode deixar em branco)', '', 'Registrar Título', { inputType: 'date', confirmLabel: 'Registrar' });
-
-        tesouro.criarTitulo(nome, tipo, Number(taxa), valor, dataCompra, dataVencimento || null);
+        if (resultado.tipoAtivo === 'renda_fixa') {
+            criarAporte(resultado.caixinhaId, resultado.valorComSinal, resultado.data);
+        } else if (resultado.tipoAtivo === 'tesouro') {
+            tesouro.criarTitulo(resultado.nome, resultado.tipo, resultado.taxa, resultado.valor, resultado.data, resultado.dataVencimento);
+        } else {
+            bolsa.criarCompra(resultado.ticker, resultado.quantidadeComSinal, resultado.precoEfetivo, resultado.data);
+        }
     };
 
     if (loading || !dashboardData) {
@@ -286,11 +250,11 @@ export function Investimentos({ API, getHeaders, modal }) {
             </div>
 
             {abaAtiva === 'resumo' ? (
-                <SecaoResumo dashboardCdb={dashboardData} bolsa={bolsa} tesouro={tesouro} setAbaAtiva={setAbaAtiva} formatarMoeda={formatarMoeda} />
+                <SecaoResumo dashboardCdb={dashboardData} bolsa={bolsa} tesouro={tesouro} setAbaAtiva={setAbaAtiva} formatarMoeda={formatarMoeda} onNovoLancamento={() => handleNovoLancamento()} />
             ) : (abaAtiva === 'acoes' || abaAtiva === 'fiis') ? (
-                <SecaoBolsa bolsa={bolsa} tipoFiltro={abaAtiva} onRegistrarOperacao={handleRegistrarOperacaoBolsa} onRegistrarProvento={handleRegistrarProvento} formatarMoeda={formatarMoeda} />
+                <SecaoBolsa bolsa={bolsa} tipoFiltro={abaAtiva} onRegistrarOperacao={() => handleNovoLancamento(abaAtiva)} onRegistrarProvento={handleRegistrarProvento} formatarMoeda={formatarMoeda} />
             ) : abaAtiva === 'tesouro' ? (
-                <SecaoTesouro tesouro={tesouro} onRegistrarTitulo={handleRegistrarTitulo} excluirTitulo={tesouro.excluirTitulo} formatarMoeda={formatarMoeda} />
+                <SecaoTesouro tesouro={tesouro} onRegistrarTitulo={() => handleNovoLancamento('tesouro')} excluirTitulo={tesouro.excluirTitulo} formatarMoeda={formatarMoeda} />
             ) : (
             <>
 
@@ -899,7 +863,7 @@ function SecaoTesouro({ tesouro, onRegistrarTitulo, excluirTitulo, formatarMoeda
  * hooks (CDB, Ações/FIIs, Tesouro Direto) num patrimônio único, sem nenhuma chamada extra ao
  * backend — cada hook já busca seu próprio dashboard de qualquer forma.
  */
-function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda }) {
+function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda, onNovoLancamento }) {
     const carregando = !dashboardCdb || bolsa.loading || !bolsa.dashboardData || tesouro.loading || !tesouro.dashboardData;
 
     if (carregando) {
@@ -934,6 +898,12 @@ function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda 
 
     return (
         <div className="space-y-6">
+            <div className="flex justify-end">
+                <button onClick={onNovoLancamento} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                    <Plus className="w-4 h-4" strokeWidth={2.5} /> Novo Lançamento
+                </button>
+            </div>
+
             {/* HERO: PATRIMÔNIO TOTAL */}
             <div className="bg-gradient-to-tr from-blue-900 to-indigo-950 p-6 md:p-8 rounded-3xl shadow-xl border border-blue-800 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
