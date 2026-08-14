@@ -21,6 +21,8 @@ comportamento, veja
   estado no `App.jsx`, não por `react-router`).
 - **Tailwind CSS** (via `@tailwindcss/vite`) — estilização utilitária, com suporte a tema claro/escuro.
 - **lucide-react** — ícones.
+- **@sentry/react** — monitoramento de erro (opcional, só ativa se `VITE_SENTRY_DSN` estiver
+  configurada).
 - Consome a API via `fetch`, autenticado por token JWT guardado no `localStorage`.
 
 ## Rodando localmente
@@ -33,6 +35,7 @@ Crie um arquivo `.env` na raiz (não versionado) apontando para a API que você 
 
 ```
 VITE_API_URL=http://localhost:3000/api
+VITE_SENTRY_DSN=       # opcional — sem ela, monitoramento de erro simplesmente não inicializa
 ```
 
 ```bash
@@ -48,6 +51,8 @@ estiver na lista de origens permitidas.
 
 ```
 src/
+├── main.jsx              # ponto de entrada: inicializa o Sentry e monta o <App/> dentro de um Error Boundary
+├── sentry.js             # inicialização do monitoramento de erro (opcional, via VITE_SENTRY_DSN)
 ├── App.jsx              # raiz: login, carregamento inicial, roteamento por estado (telaAtiva)
 ├── components/          # uma tela ou peça de UI por arquivo (ver tabela de módulos abaixo)
 ├── hooks/                # um hook por domínio de dados (useAuth, useTransacoes, useDashboard, useOfflineSync, useBolsa, useTesouro...)
@@ -99,6 +104,11 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 - **Máscara de valor em R$**: todo campo monetário guarda o estado em centavos (string) ou já
   formatado como `"1.234,56"`, nunca o número cru — siga o padrão já usado em `Lancamentos.jsx`
   (`valorStr`/`displayValor`) pra qualquer campo novo de dinheiro.
+- **Error Boundary + Sentry**: `main.jsx` envolve `<App/>` num `Sentry.ErrorBoundary` — um erro de
+  renderização não tratado mostra uma tela "Algo deu errado" (com botão de recarregar) em vez de
+  deixar a tela em branco, e é reportado automaticamente (se `VITE_SENTRY_DSN` estiver configurada).
+  Isso cobre bugs de JavaScript não tratados; falhas de chamada à API continuam sendo tratadas
+  individualmente por cada hook (`try/catch` + `modal.alert(...)`), não passam pelo Sentry.
 
 ## Deploy
 
