@@ -379,7 +379,20 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     };
 
     const anexarComprovante = async (t) => { modal.alert("Funcionalidade de anexo está integrada noutro módulo.", "Aviso"); };
-    const verComprovante = (t) => { if (t.comprovante_url) window.open(t.comprovante_url, '_blank'); else modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo'); };
+    // Comprovantes novos usam entrega autenticada no Cloudinary — o link salvo na transação não
+    // funciona sozinho, então sempre busca uma URL assinada (de curta duração) na hora de abrir,
+    // em vez de usar t.comprovante_url direto (que só ainda funciona pra comprovantes antigos).
+    const verComprovante = async (t) => {
+        if (!t.comprovante_public_id && !t.comprovante_url) return modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo');
+        try {
+            const res = await fetch(`${API}/transacoes/${t.id}/comprovante-url`, { headers: getHeaders() });
+            const data = await res.json();
+            if (res.ok && data.comprovante_url) window.open(data.comprovante_url, '_blank');
+            else modal.alert(data.message || 'Não foi possível abrir o comprovante.', '❌ Erro');
+        } catch (err) {
+            modal.alert('Erro de conexão ao tentar abrir o comprovante.', '❌ Erro de Rede');
+        }
+    };
 
     return { addTransacao, alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
 }
