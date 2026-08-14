@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Sparkles, ClipboardList, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
     Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info
@@ -38,6 +38,14 @@ export function Lancamentos({
     // ==========================================
     // ESTADOS DO FORMULÁRIO (NOVO LANÇAMENTO)
     // ==========================================
+    const inputComprovanteRef = useRef(null);
+    const transacaoParaAnexoRef = useRef(null);
+    const handleArquivoComprovanteSelecionado = (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = ''; // permite selecionar o mesmo arquivo de novo depois, se precisar
+        if (file && transacaoParaAnexoRef.current) anexarComprovante(transacaoParaAnexoRef.current, file);
+    };
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [descricao, setDescricao] = useState('');
     const [valorStr, setValorStr] = useState('0');
@@ -173,7 +181,7 @@ export function Lancamentos({
             onEditar: () => editarValor(t),
             onDeletar: () => deletarTransacao(t),
             onVerComprovante: () => verComprovante(t),
-            onAnexarComprovante: () => anexarComprovante(t)
+            onAnexarComprovante: () => { transacaoParaAnexoRef.current = t; inputComprovanteRef.current?.click(); }
         });
     };
 
@@ -396,6 +404,15 @@ export function Lancamentos({
     // ==========================================
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 relative animate-fade-in">
+
+            {/* Input de arquivo oculto, acionado pelo botão "Anexar Comprovante" do modal de detalhes */}
+            <input
+                type="file"
+                ref={inputComprovanteRef}
+                onChange={handleArquivoComprovanteSelecionado}
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                className="hidden"
+            />
 
             {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">

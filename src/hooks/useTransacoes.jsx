@@ -378,7 +378,41 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         } catch (err) { modal.alert('Erro na ação.', '❌ Erro'); }
     };
 
-    const anexarComprovante = async (t) => { modal.alert("Funcionalidade de anexo está integrada noutro módulo.", "Aviso"); };
+    const TIPOS_COMPROVANTE_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    const TAMANHO_MAXIMO_COMPROVANTE = 10 * 1024 * 1024; // 10MB, mesmo limite do multer no backend
+
+    const anexarComprovante = async (t, file) => {
+        if (!file) return;
+        if (!TIPOS_COMPROVANTE_PERMITIDOS.includes(file.type)) {
+            return modal.alert('Envie uma imagem (JPG, PNG ou WEBP) ou um PDF.', '❌ Formato inválido');
+        }
+        if (file.size > TAMANHO_MAXIMO_COMPROVANTE) {
+            return modal.alert('O arquivo precisa ter até 10MB.', '❌ Arquivo muito grande');
+        }
+        try {
+            const fd = new FormData();
+            fd.append('arquivo', file);
+            // Sem getHeaders() aqui de propósito: ela fixa Content-Type: application/json, o que
+            // quebraria o multipart/form-data — o navegador precisa definir o boundary sozinho.
+            const res = await fetch(`${API}/transacoes/${t.id}/comprovante`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: fd
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setTransacoes(prev => prev.map(item => item.id === t.id
+                    ? { ...item, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id }
+                    : item
+                ));
+                await modal.alert('Comprovante anexado com sucesso!', '✅ Sucesso');
+            } else {
+                await modal.alert(data.message || 'Erro ao anexar o comprovante.', '❌ Erro');
+            }
+        } catch (err) {
+            await modal.alert('Erro de conexão ao enviar o comprovante.', '❌ Erro de Rede');
+        }
+    };
     // Comprovantes novos usam entrega autenticada no Cloudinary — o link salvo na transação não
     // funciona sozinho, então sempre busca uma URL assinada (de curta duração) na hora de abrir,
     // em vez de usar t.comprovante_url direto (que só ainda funciona pra comprovantes antigos).
