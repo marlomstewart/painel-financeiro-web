@@ -194,7 +194,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             const desc = (t.descricao || '').replace(/;/g, ',');
             const cat = (t.categoria || '').replace(/;/g, ',');
             const tipo = t.tipo || '';
-            const val = Number(t.valorparcela || t.valorParcela || 0).toFixed(2).replace('.', ',');
+            const val = Number(t.valorparcela || t.valorParcela || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const status = t.status || '';
             const forma = t.formapagamento || t.formaPagamento || '';
             const mes = t.mesreferencia || t.mesReferencia || '';
