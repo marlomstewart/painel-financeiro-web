@@ -43,6 +43,10 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
 - O Extrato lista tudo do mês, com busca, filtros avançados (categoria, forma de pagamento, faixa
   de valor/data), ordenação por coluna, e ações em lote (marcar várias transações como pagas,
   pendentes, ou excluir de uma vez).
+- **Modo offline**: se você tentar cadastrar um lançamento novo sem internet (sinal fraco, área sem
+  cobertura), ele fica salvo no aparelho com uma tag "Pendente de sincronização" e é enviado
+  sozinho pro servidor assim que a conexão voltar — sem precisar refazer o cadastro. Um indicador
+  no menu lateral mostra quantos lançamentos ainda estão nessa fila.
 
 ## Cartões de Crédito
 
@@ -94,13 +98,42 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
 
 ## Investimentos
 
-- Organize aportes em renda fixa por "caixinha" (cada uma representa uma instituição/fundo, com
-  seu próprio percentual do CDI).
-- O sistema calcula automaticamente, em tempo real, quanto cada aporte já rendeu (usando o CDI
-  atual, buscado do Banco Central), descontando IOF (se resgatado em menos de 30 dias) e Imposto
-  de Renda regressivo (conforme o tempo de aplicação).
-- Este módulo funciona de forma **independente** do extrato de lançamentos — não é preciso (nem
-  possível hoje) lançar um aporte como despesa e vinculá-lo a uma caixinha automaticamente.
+Tela com 5 abas, cobrindo as principais classes de ativo. Funciona de forma **independente** do
+extrato de lançamentos — não é preciso (nem possível) lançar uma compra/aporte como despesa e
+vinculá-lo a um investimento automaticamente.
+
+- **Resumo**: visão consolidada de tudo — patrimônio total, quanto já rendeu, e a rentabilidade
+  geral somando as quatro classes. Mostra a alocação (quanto % do seu patrimônio está em cada
+  classe) e a seção **"Meus Ativos"**, com um grupo expansível por classe: ao abrir, mostra uma
+  tabela item a item (quantidade, preço médio, preço atual, variação do dia, rentabilidade, saldo
+  para Ações/FIIs; caixinha, % do CDI, aplicado e rendimento para Renda Fixa; título, tipo, taxa e
+  vencimento para Tesouro Direto). É também de onde parte o botão **"Novo Lançamento"**.
+- **Renda Fixa**: aportes organizados por "caixinha" (cada uma representa uma instituição/fundo,
+  com seu próprio percentual do CDI). Rendimento calculado automaticamente em tempo real (usando o
+  CDI atual, buscado do Banco Central), descontando IOF (se resgatado em menos de 30 dias) e
+  Imposto de Renda regressivo (conforme o tempo de aplicação).
+- **Ações** e **FIIs**: registre suas compras e vendas (ticker, quantidade, preço); a cotação atual
+  é buscada automaticamente, mostrando preço médio, valor de mercado e lucro/prejuízo. Suporta
+  registro de **proventos** (dividendos, JCP, rendimentos de FII) por ativo, que entram na
+  rentabilidade total junto com a valorização de preço — importante principalmente em FIIs, onde o
+  rendimento mensal costuma pesar mais que a variação de cotação.
+- **Tesouro Direto**: registre títulos Selic, Prefixado ou IPCA+ (com a taxa contratada), e o
+  sistema estima a rentabilidade líquida (mesmas regras de IOF/IR da Renda Fixa) considerando a
+  Selic ou o IPCA atuais. É uma estimativa — não é a cotação oficial de mercado secundário do
+  título.
+- **Novo Lançamento**: um formulário único cobre as quatro classes de uma vez — escolhe o tipo de
+  ativo, se é compra ou venda, e os campos certos aparecem (ticker/quantidade/preço pra Ações e
+  FIIs, caixinha/valor pra Renda Fixa, tipo/taxa/vencimento pro Tesouro), com o valor total
+  calculado na hora.
+
+## Simulador "À Vista ou Parcelado"
+
+- Calculadora avulsa (menu lateral) que ajuda a decidir entre pagar à vista ou parcelar uma compra:
+  você informa o preço à vista e as condições do parcelado (valor da parcela e quantidade), e o
+  sistema compara com o rendimento que esse dinheiro teria se ficasse investido (usando a taxa de
+  CDI real da sua Renda Fixa) durante o prazo do parcelamento.
+- Mostra um veredito direto — "Compre à Vista" ou "Pode Parcelar" — com o valor da diferença, além
+  do detalhamento (total parcelado vs. valor rendendo).
 
 ## Garagem (módulo opcional, liberado por administrador)
 

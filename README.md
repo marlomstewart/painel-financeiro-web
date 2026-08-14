@@ -50,9 +50,10 @@ estiver na lista de origens permitidas.
 src/
 ├── App.jsx              # raiz: login, carregamento inicial, roteamento por estado (telaAtiva)
 ├── components/          # uma tela ou peça de UI por arquivo (ver tabela de módulos abaixo)
-├── hooks/                # um hook por domínio de dados (useAuth, useTransacoes, useDashboard...)
+├── hooks/                # um hook por domínio de dados (useAuth, useTransacoes, useDashboard, useOfflineSync, useBolsa, useTesouro...)
 └── utils/
-    └── cartaoUtils.js    # extração do id do cartão a partir de formaPagamento ("credito_<id>")
+    ├── cartaoUtils.js    # extração do id do cartão a partir de formaPagamento ("credito_<id>")
+    └── offlineQueue.js   # fila de lançamentos pendentes de sincronização (IndexedDB)
 ```
 
 Não há Redux/Context API global — cada hook em `hooks/` encapsula seu próprio estado (`useState`)
@@ -63,14 +64,15 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 | Tela | Arquivo | Resumo |
 |---|---|---|
 | Dashboard | `Dashboard.jsx` + `useDashboard.jsx` | Visão geral do mês: rendas pagas, gastos reais, investimentos, faturas abertas, saldo em conta, previsão de fechamento do mês, alertas de vencimento (`AlertasDashboard.jsx`) |
-| Lançamentos | `Lancamentos.jsx` + `useTransacoes.jsx` | Cadastro e extrato de despesas/rendas/reembolsos/investimentos. Suporta parcelamento, divisão com terceiros e anexo de comprovante (se liberado) |
+| Lançamentos | `Lancamentos.jsx` + `useTransacoes.jsx` | Cadastro e extrato de despesas/rendas/reembolsos/investimentos. Suporta parcelamento, divisão com terceiros, anexo de comprovante (se liberado) e cadastro **offline** (fila em IndexedDB, sincroniza sozinho quando a conexão volta — `useOfflineSync.jsx`/`utils/offlineQueue.js`) |
 | Cartões de Crédito | `Cartoes.jsx` + `useCartoesFaturas.jsx` | Cadastro de cartões (dia de fechamento/vencimento/limite) e agrupamento automático de gastos em fatura |
 | Contas Fixas | `ContasFixas.jsx` | Despesas recorrentes (aluguel, internet) — geradas automaticamente todo mês pelo motor no backend |
 | Dívidas | `Dividas.jsx` | Empréstimos/financiamentos parcelados, incluindo dívidas registradas em nome de terceiros |
-| A Receber (Terceiros) | `Cobrancas.jsx` | Consolidado do que cada pessoa deve (de compras divididas ou dívidas de terceiros), com atalho pra cobrar via WhatsApp |
+| A Receber (Terceiros) | `Cobrancas.jsx` | Consolidado do que cada pessoa deve (de compras divididas ou dívidas de terceiros); se o telefone da pessoa estiver salvo, o botão de cobrança abre o WhatsApp direto (`wa.me`) com a mensagem pronta e a chave PIX |
 | Rendas Fixas | `RendasFixas.jsx` | Entradas recorrentes (salário), geradas automaticamente todo mês |
 | Metas & Categorias | `MetasCategorias.jsx` | Limites de gasto por categoria, usados na previsão do Dashboard |
-| Investimentos | `Investimentos.jsx` + `useInvestimentos.jsx` | Aportes em renda fixa, organizados por "caixinha"/instituição |
+| Investimentos | `Investimentos.jsx` + `useInvestimentos.jsx`/`useBolsa.jsx`/`useTesouro.jsx` | 5 abas: Resumo (patrimônio consolidado + "Meus Ativos"), Renda Fixa (CDB por caixinha), Ações, FIIs (com proventos) e Tesouro Direto (Selic/Prefixado/IPCA+). Um formulário único (`FormularioNovoInvestimento` em `Modal.jsx`) cobre o cadastro das 4 classes |
+| Simulador À Vista ou Parcelado | `CalculadoraCompra.jsx` | Calculadora avulsa: compara pagar à vista com parcelar e deixar o valor rendendo no CDB real do usuário |
 | Garagem | `Garagem.jsx` + `useGaragem.jsx` | **Condicional** (`temGaragem`): manutenção por km, abastecimento e histórico de veículos |
 | Configurações | `Configuracoes.jsx` | Perfil, troca de senha, vínculo com Telegram, exportação CSV, geração manual do mês |
 | Tutorial / Ajuda | `Tutorial.jsx` / `Ajuda.jsx` | Tour de boas-vindas (condicional por permissão) e central de FAQ por módulo |
@@ -89,6 +91,14 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
   `"credito_<id-do-cartão>"` no campo `formaPagamento`. Use sempre os helpers de
   `utils/cartaoUtils.js` (`ehPagamentoCredito`, `extrairCartaoId`, `resolverCartao`, `nomeCartao`)
   pra ler esse valor — nunca faça `split('_')` manual (o id do cartão pode conter underscore).
+- **Fila offline**: `useTransacoes.jsx :: addTransacao` captura falha de rede no `POST
+  /transacoes` e grava o lançamento em `utils/offlineQueue.js` (IndexedDB), inserindo-o
+  otimisticamente em `transacoes` com a flag `_pendingSync: true`. `useOfflineSync.jsx` tenta
+  sincronizar a fila no login, no evento `online` do navegador, e por um intervalo de segurança —
+  só funciona com a aba aberta, não é um Service Worker de background sync de verdade.
+- **Máscara de valor em R$**: todo campo monetário guarda o estado em centavos (string) ou já
+  formatado como `"1.234,56"`, nunca o número cru — siga o padrão já usado em `Lancamentos.jsx`
+  (`valorStr`/`displayValor`) pra qualquer campo novo de dinheiro.
 
 ## Deploy
 
