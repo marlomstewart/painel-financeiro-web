@@ -141,9 +141,9 @@ export function useAuth({ API, modal, setCarregouAPI }) {
             const data = await res.json();
 
             if (res.ok) {
-                localStorage.setItem('tokenPainel', tokenTemp);
+                localStorage.setItem('tokenPainel', data.token);
                 localStorage.setItem('nomeUsuario', usuarioLogin);
-                setToken(tokenTemp);
+                setToken(data.token);
                 setNomeUsuario(usuarioLogin);
                 setTokenTemp(null);
                 setPrecisaTrocarSenha(false);
