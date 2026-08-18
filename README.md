@@ -88,7 +88,16 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 - **"Minha fração" vs "Total da conta"**: em compras divididas com terceiros, o sistema mantém
   duas contas paralelas — o valor **integral** (o que realmente saiu/entrou da conta bancária) e a
   **fração que é sua** (`getMeuValor()` em `useDashboard.jsx`, abate `thirdPartyValue`). O
-  Dashboard usa as duas, em cards diferentes.
+  Dashboard usa as duas, em cards diferentes. Qual delas entra no Saldo Líquido depende de
+  `terceiro_recebido` (ver regra 1.5/1.6 em `REGRAS_DE_NEGOCIO.md`): valor integral enquanto a
+  pessoa não devolveu, só a sua fração depois que devolveu.
+- **Agrupamento de parcelamento** (`getTransacoesRelacionadas` em `useTransacoes.jsx`): decide
+  quais lançamentos são "irmãos" de um parcelamento, pra oferecer edição/exclusão em lote. Só trata
+  como parcelamento quando o prefixo do id é **numérico** (timestamp gerado por `addTransacao`,
+  único por compra). Lançamentos gerados pelo motor mensal usam prefixo de palavra fixa
+  (`fixa_`/`renda_`/`divlanc_`), compartilhado por todos — se essa checagem for afrouxada, editar
+  um único "Salário" passa a tratar **todo o histórico recorrente** como um parcelamento só
+  (aconteceu em produção; excluir "todas as parcelas" ali apagaria o histórico inteiro).
 - **Permissões por usuário**: `temGaragem`, `temComprovante` e `isAdmin` vêm do token JWT no login
   (`useAuth.jsx`) e controlam o que aparece na Sidebar, no Tutorial e na Central de Ajuda. Um
   administrador libera essas flags por usuário na tela de Admin.

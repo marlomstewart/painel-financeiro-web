@@ -38,8 +38,10 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
 - Suporte a **compra dividida com terceiro**: marcando essa opção, você informa quem é a pessoa e
   quanto da compra é dela — só a sua parte entra no seu orçamento pessoal, e o valor da outra
   pessoa aparece automaticamente em "A Receber".
-- **Anexo de comprovante** (foto ou PDF) — disponível só para usuários com essa permissão
-  liberada por um administrador.
+- **Anexo de comprovante** (JPG, PNG, WEBP ou PDF, até 10MB) — disponível só para usuários com
+  essa permissão liberada por um administrador. Abra o lançamento no extrato e use "Anexar
+  Comprovante"; depois de anexado, "Ver Comprovante Anexado" abre o arquivo por um link temporário
+  gerado na hora (o arquivo não fica acessível por um link público permanente).
 - O Extrato lista tudo do mês, com busca, filtros avançados (categoria, forma de pagamento, faixa
   de valor/data), ordenação por coluna, e ações em lote (marcar várias transações como pagas,
   pendentes, ou excluir de uma vez).
@@ -86,6 +88,11 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   dívida), o botão de cobrança **abre o WhatsApp direto**, já com a mensagem pronta (itens do mês,
   valor total e sua chave PIX, se você tiver cadastrado uma em Configurações). Sem telefone
   cadastrado, ele copia o texto pra área de transferência pra você colar onde preferir.
+- **"Marcar como Recebido" é sempre manual, e é o que ajusta seu saldo.** Pagar a fatura do cartão
+  não marca nada como recebido — é normal: nesse momento o valor cheio saiu mesmo da sua conta,
+  incluindo a parte da outra pessoa. Quando ela te devolver, marque aqui: o Saldo Líquido no
+  Dashboard passa a considerar só a sua parte daquela compra. Funciona nas duas ordens (marcar
+  antes ou depois de pagar a fatura).
 
 ## Metas & Categorias
 
