@@ -197,8 +197,16 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     };
 
     const getTransacoesRelacionadas = (tTarget) => {
-        if (tTarget.id && String(tTarget.id).includes('_')) {
-            const baseId = String(tTarget.id).split('_')[0];
+        const primeiroSegmentoId = tTarget.id ? String(tTarget.id).split('_')[0] : '';
+        // Parcelamento manual (addTransacao) usa um timestamp puro como prefixo do grupo — só
+        // esse formato garante que o prefixo é único por compra. Lançamentos gerados
+        // automaticamente (fixa_/renda_/divlanc_<id>_<mes>_<ano>) compartilham uma palavra fixa
+        // como prefixo, então startsWith(prefixo) bateria com TODO lançamento recorrente já
+        // gerado no sistema (qualquer mês, qualquer Renda/Conta Fixa) — não só com este.
+        const ehPrefixoDeParcelamentoReal = /^\d+$/.test(primeiroSegmentoId);
+
+        if (tTarget.id && ehPrefixoDeParcelamentoReal) {
+            const baseId = primeiroSegmentoId;
             const currentIndex = parseInt(String(tTarget.id).split('_')[1], 10) + 1;
 
             const encontradas = transacoes.filter(item => String(item.id).startsWith(baseId));
