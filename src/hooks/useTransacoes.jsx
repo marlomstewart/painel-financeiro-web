@@ -215,26 +215,6 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         } catch (err) { console.error("Erro ao marcar recebido:", err); }
     };
 
-    // Ferramenta de uso único (ver rota no backend) — reconcilia parcelas de terceiro antigas que
-    // nasceram "não recebidas" só porque o campo terceiro_recebido não existia antes delas.
-    const reconciliarRecebidosAntigos = async () => {
-        const ok = await modal.confirm(
-            'Isso vai marcar como "já recebidas" todas as parcelas de terceiro (cartão/PIX) de meses anteriores a agosto/2026. Use só se tiver certeza que tudo isso já foi pago de volta. Continuar?',
-            '🔄 Reconciliar parcelas antigas'
-        );
-        if (!ok) return;
-        try {
-            const res = await fetch(`${API}/transacoes/backfill-terceiro-recebido`, { method: 'POST', headers: getHeaders() });
-            const data = await res.json();
-            if (res.ok) {
-                await carregarTransacoes();
-                modal.alert(data.message, '✅ Reconciliado');
-            } else {
-                modal.alert(data.message || 'Falha ao reconciliar.', '❌ Erro do Servidor');
-            }
-        } catch (err) { modal.alert('Erro de conexão ao reconciliar.', '❌ Erro de Rede'); }
-    };
-
     const getTransacoesRelacionadas = (tTarget) => {
         const primeiroSegmentoId = tTarget.id ? String(tTarget.id).split('_')[0] : '';
         // Parcelamento manual (addTransacao) usa um timestamp puro como prefixo do grupo — só
@@ -475,5 +455,5 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         }
     };
 
-    return { addTransacao, alternarStatusTransacao, marcarRecebidoTerceiro, reconciliarRecebidosAntigos, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
+    return { addTransacao, alternarStatusTransacao, marcarRecebidoTerceiro, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
 }

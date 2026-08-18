@@ -6,7 +6,7 @@ import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
  * @file src/components/Cobrancas.jsx
  * @description Central de Gestão de Terceiros. Agrupa transações e dívidas por mês.
  */
-export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, marcarRecebidoTerceiro, reconciliarRecebidosAntigos, editarSetup, modal, showToast, chavePix }) {
+export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, marcarRecebidoTerceiro, editarSetup, modal, showToast, chavePix }) {
 
     const mesAtual = dataVis ? dataVis.mes : new Date().getMonth() + 1;
     const anoAtual = dataVis ? dataVis.ano : new Date().getFullYear();
@@ -289,15 +289,6 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                             Unificação de gastos no cartão e empréstimos cedidos a terceiros.
                         </p>
-                        {reconciliarRecebidosAntigos && (
-                            <button
-                                onClick={reconciliarRecebidosAntigos}
-                                className="mt-2 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                title="Marca como recebidas as parcelas de meses anteriores que você já confirmou terem sido pagas de volta"
-                            >
-                                🔄 Reconciliar parcelas antigas (uso único)
-                            </button>
-                        )}
                     </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
