@@ -132,7 +132,7 @@ function App() {
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} toggleComprovante={auth.toggleComprovante} />;
 
-    if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} dividas={setup.dividas} cartoes={setup.cartoes} dataVis={dataVis} marcarRecebidoTerceiro={transacoesManager.marcarRecebidoTerceiro} editarSetup={setup.editarSetup} modal={modal} showToast={showToast} chavePix={auth.chavePix} />;
+    if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} dividas={setup.dividas} cartoes={setup.cartoes} dataVis={dataVis} marcarRecebidoTerceiro={transacoesManager.marcarRecebidoTerceiro} reconciliarRecebidosAntigos={transacoesManager.reconciliarRecebidosAntigos} editarSetup={setup.editarSetup} modal={modal} showToast={showToast} chavePix={auth.chavePix} />;
 
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
 
