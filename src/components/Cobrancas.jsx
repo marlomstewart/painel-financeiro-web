@@ -42,6 +42,11 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         // 1. PROCESSAR TRANSAÇÕES (Cartão/PIX)
         transacoes.forEach(t => {
             if (!t.isThirdParty || !t.thirdPartyName) return;
+            // Parcelas de dívida geradas automaticamente (gerarLancamentosDoMesParaUsuario) também
+            // vêm marcadas como isThirdParty, pra entrar aqui — mas elas já são cobertas
+            // integralmente pela varredura de "dividas" logo abaixo (passo 2). Sem esse filtro, a
+            // mesma parcela é contada duas vezes: uma aqui, outra na varredura de dívidas.
+            if (t.categoria === 'Dívidas e Empréstimos') return;
 
             const p = registrarNoMapa(t.thirdPartyName);
             registrarTelefone(p, t.thirdPartyPhone);
