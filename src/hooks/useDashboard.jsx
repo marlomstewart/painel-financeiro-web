@@ -223,10 +223,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }
 
             if (t.status === 'pago') {
-                if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') rendaPagaConta += valorTotalIntegral;
-                else if (t.tipo === 'investimento') investidoPagoConta += valorTotalIntegral;
-                else if (t.tipo === 'reembolso') gastoPagoConta -= valorTotalIntegral;
-                else gastoPagoConta += valorTotalIntegral;
+                // Se a parte do terceiro já foi devolvida (terceiro_recebido), só a sua fração
+                // pesa no saldo real — senão, conta o valor cheio (o dinheiro saiu da conta
+                // inteiro, mesmo que parte dele ainda esteja pra receber de volta).
+                const valorParaConta = (t.isThirdParty && t.terceiro_recebido) ? getMeuValor(t) : valorTotalIntegral;
+
+                if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') rendaPagaConta += valorParaConta;
+                else if (t.tipo === 'investimento') investidoPagoConta += valorParaConta;
+                else if (t.tipo === 'reembolso') gastoPagoConta -= valorParaConta;
+                else gastoPagoConta += valorParaConta;
             }
         }
 

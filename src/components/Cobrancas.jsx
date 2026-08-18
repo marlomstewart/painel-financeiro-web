@@ -6,7 +6,7 @@ import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
  * @file src/components/Cobrancas.jsx
  * @description Central de Gestão de Terceiros. Agrupa transações e dívidas por mês.
  */
-export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, alternarStatusTransacao, editarSetup, modal, showToast, chavePix }) {
+export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, marcarRecebidoTerceiro, editarSetup, modal, showToast, chavePix }) {
 
     const mesAtual = dataVis ? dataVis.mes : new Date().getMonth() + 1;
     const anoAtual = dataVis ? dataVis.ano : new Date().getFullYear();
@@ -63,13 +63,15 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
             p.todasTransacoes.push(itemFormatado);
 
-            if (t.status === 'pendente') {
+            // A pessoa já devolveu a parte dela? Isso é independente de você ter pago a
+            // fatura/conta em si (t.status) — ver terceiro_recebido.
+            if (!t.terceiro_recebido) {
                 p.totalPendenteGeral += valorCobrado;
                 if (isMesAtual) {
                     p.totalMesAtual += valorCobrado;
                     p.itensMesAtual.push(itemFormatado);
                 }
-            } else if (t.status === 'pago') {
+            } else {
                 p.totalPagoGeral += valorCobrado;
             }
         });
@@ -236,7 +238,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
             compras[baseName].valorTotal += t.valorCobradoCalculado;
 
-            if (t.status === 'pago') {
+            if (t.terceiro_recebido) {
                 compras[baseName].valorPago += t.valorCobradoCalculado;
                 compras[baseName].parcelasPagas += 1;
             } else {
@@ -262,7 +264,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 await editarSetup('dividas', item.refDivida.id, { parcelas_pagas_iniciais: qtdAtual + 1 });
                 if (showToast) showToast('Parcela do empréstimo avançada!', 'success');
             } else {
-                await alternarStatusTransacao(item.id, 'pendente');
+                await marcarRecebidoTerceiro(item.id, item.terceiro_recebido);
             }
         }
     };

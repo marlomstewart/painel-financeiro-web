@@ -196,6 +196,25 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         } catch (err) { console.error("Erro ao mudar status:", err); }
     };
 
+    // Independente de alternarStatusTransacao: "paguei a fatura/conta" e "o terceiro já me
+    // devolveu a parte dele" são coisas diferentes — antes, Cobranças reaproveitava o campo de
+    // status da fatura pra marcar "recebido", então pagar a fatura no cartão também marcava a
+    // parte do terceiro como recebida sem ele ter devolvido nada de verdade.
+    const marcarRecebidoTerceiro = async (id, recebidoAtual) => {
+        const novoValor = !recebidoAtual;
+        try {
+            const res = await fetch(`${API}/transacoes/${id}/terceiro-recebido`, {
+                method: 'PUT', headers: getHeaders(), body: JSON.stringify({ recebido: novoValor })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setTransacoes(prev => prev.map(t => t.id === id ? { ...t, terceiro_recebido: novoValor } : t));
+            } else {
+                modal.alert(data.message || 'Falha ao atualizar recebimento.', '❌ Erro do Servidor');
+            }
+        } catch (err) { console.error("Erro ao marcar recebido:", err); }
+    };
+
     const getTransacoesRelacionadas = (tTarget) => {
         const primeiroSegmentoId = tTarget.id ? String(tTarget.id).split('_')[0] : '';
         // Parcelamento manual (addTransacao) usa um timestamp puro como prefixo do grupo — só
@@ -436,5 +455,5 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         }
     };
 
-    return { addTransacao, alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
+    return { addTransacao, alternarStatusTransacao, marcarRecebidoTerceiro, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
 }
