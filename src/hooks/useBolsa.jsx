@@ -6,7 +6,7 @@ import { useState, useCallback, useEffect } from 'react';
  * useInvestimentos.jsx: busca o dashboard (posições + cotações), e permite registrar/excluir
  * operações de compra/venda.
  */
-export function useBolsa({ API, getHeaders, modal }) {
+export function useBolsa({ API, getHeaders, modal, showToast }) {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -48,7 +48,7 @@ export function useBolsa({ API, getHeaders, modal }) {
             }
             throw new Error('Falha ao registrar a operação');
         } catch (err) {
-            modal.alert('Erro ao registrar a operação. Verifique o ticker e tente novamente.', '❌ Erro');
+            showToast('Erro ao registrar a operação. Verifique o ticker e tente novamente.', 'error');
             return false;
         }
     };
@@ -71,7 +71,7 @@ export function useBolsa({ API, getHeaders, modal }) {
                 return true;
             }
         } catch (err) {
-            modal.alert('Erro de conexão ao excluir a operação.', '❌ Erro');
+            showToast('Erro de conexão ao excluir a operação.', 'error');
         }
         return false;
     };
@@ -93,7 +93,7 @@ export function useBolsa({ API, getHeaders, modal }) {
             }
             throw new Error('Falha ao registrar o provento');
         } catch (err) {
-            modal.alert('Erro ao registrar o provento. Tente novamente.', '❌ Erro');
+            showToast('Erro ao registrar o provento. Tente novamente.', 'error');
             return false;
         }
     };
@@ -116,7 +116,7 @@ export function useBolsa({ API, getHeaders, modal }) {
                 return true;
             }
         } catch (err) {
-            modal.alert('Erro de conexão ao excluir o provento.', '❌ Erro');
+            showToast('Erro de conexão ao excluir o provento.', 'error');
         }
         return false;
     };

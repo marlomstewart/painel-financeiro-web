@@ -58,7 +58,7 @@ function useModal() {
  */
 function App() {
   const modal = useModal();
-  const { toast, showToast } = useToast();
+  const { toasts, showToast } = useToast();
   const [carregouAPI, setCarregouAPI] = useState(false);
 
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
@@ -67,14 +67,14 @@ function App() {
   const [dataVis, setDataVis] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
   const [transacoes, setTransacoes] = useState([]);
 
-  const auth = useAuth({ API, modal, setCarregouAPI });
-  const setup = useSetup({ API, getHeaders: auth.getHeaders, modal, transacoes, setTransacoes });
+  const auth = useAuth({ API, modal, setCarregouAPI, showToast });
+  const setup = useSetup({ API, getHeaders: auth.getHeaders, modal, transacoes, setTransacoes, showToast });
   const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, temGaragem: auth.temGaragem, showToast });
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
-  const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal });
-  const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem });
+  const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal, showToast });
+  const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast });
   const offlineSync = useOfflineSync({ API, getHeaders: auth.getHeaders, token: auth.token, setTransacoes, showToast });
-  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes });
+  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast });
 
   useEffect(() => {
     const applyTheme = () => {
@@ -121,10 +121,10 @@ function App() {
     if (carregouAPI && !auth.tutorialDispensado) setMostrarTutorial(true);
   }, [carregouAPI, auth.tutorialDispensado]);
 
-  if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toast={toast} /></>;
-  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toast={toast} /></>;
+  if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toasts={toasts} /></>;
+  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toasts={toasts} /></>;
 
-  if (auth.token && !carregouAPI) return <><Skeleton /><Toast toast={toast} /></>;
+  if (auth.token && !carregouAPI) return <><Skeleton /><Toast toasts={toasts} /></>;
 
   /**
    * @function renderizarConteudoAtivo
@@ -134,14 +134,14 @@ function App() {
 
     if (telaAtiva === 'cobrancas') return <Cobrancas transacoes={transacoes} dividas={setup.dividas} cartoes={setup.cartoes} dataVis={dataVis} marcarRecebidoTerceiro={transacoesManager.marcarRecebidoTerceiro} editarSetup={setup.editarSetup} modal={modal} showToast={showToast} chavePix={auth.chavePix} />;
 
-    if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
 
     // Injetando a flag de controle da garagem no componente de Metas & Categorias
-    if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} temGaragem={auth.temGaragem} />;
+    if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} temGaragem={auth.temGaragem} showToast={showToast} />;
 
-    if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} cartoes={setup.cartoes} addDivida={setup.addDivida} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
-    if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} />;
+    if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} cartoes={setup.cartoes} addDivida={setup.addDivida} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
+    if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
+    if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
 
     if (telaAtiva === 'configuracoes') return <Configuracoes API={API} getHeaders={auth.getHeaders} nomeUsuario={auth.nomeUsuario} nomeCompleto={auth.nomeCompleto} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} chavePix={auth.chavePix} />;
 
@@ -164,7 +164,7 @@ function App() {
     }
 
     if (telaAtiva === 'investimentos') {
-      return <Investimentos API={API} getHeaders={auth.getHeaders} modal={modal} />;
+      return <Investimentos API={API} getHeaders={auth.getHeaders} modal={modal} showToast={showToast} />;
     }
 
     if (telaAtiva === 'calculadora_compra') {
@@ -197,7 +197,7 @@ function App() {
       </main>
       <Modal config={modal.config} onClose={modal.close} />
       <Tutorial visivel={mostrarTutorial} onClose={() => setMostrarTutorial(false)} temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} temComprovante={auth.temComprovante} dispensarTutorial={auth.dispensarTutorial} />
-      <Toast toast={toast} />
+      <Toast toasts={toasts} />
     </div>
   );
 }

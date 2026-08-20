@@ -20,10 +20,10 @@ const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53,
  * @file src/components/Investimentos.jsx
  * @description Módulo de gestão de Renda Fixa (CDBs), simuladores de curto/longo prazo e cálculos tributários (IR/IOF).
  */
-export function Investimentos({ API, getHeaders, modal }) {
-    const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal });
-    const bolsa = useBolsa({ API, getHeaders, modal });
-    const tesouro = useTesouro({ API, getHeaders, modal });
+export function Investimentos({ API, getHeaders, modal, showToast }) {
+    const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal, showToast });
+    const bolsa = useBolsa({ API, getHeaders, modal, showToast });
+    const tesouro = useTesouro({ API, getHeaders, modal, showToast });
 
     const [abaAtiva, setAbaAtiva] = useState('resumo');
 
@@ -123,7 +123,7 @@ export function Investimentos({ API, getHeaders, modal }) {
         if (!nome) return;
 
         const taxa = await modal.prompt('Passo 3 de 3 — Percentual do CDI? (Apenas números)', '100', 'Nova Caixinha', { inputType: 'number', confirmLabel: 'Criar' });
-        if (!taxa || isNaN(Number(taxa))) return modal.alert('Taxa inválida.');
+        if (!taxa || isNaN(Number(taxa))) return showToast('Taxa inválida.', 'error');
 
         criarCaixinha(banco, nome, Number(taxa));
     };
@@ -143,7 +143,7 @@ export function Investimentos({ API, getHeaders, modal }) {
         if (!valor || valor <= 0) return;
 
         if (valor > saldoTotal) {
-            return modal.alert(`Você não pode resgatar ${formatarMoeda(valor)} pois o saldo disponível hoje é de ${formatarMoeda(saldoTotal)}.`, 'Saldo Insuficiente');
+            return showToast(`Saldo insuficiente: disponível hoje é ${formatarMoeda(saldoTotal)}.`, 'error');
         }
 
         const dataResgate = await modal.prompt(`Qual foi a data exata deste resgate?`, new Date().toISOString().split('T')[0], 'Confirmar Data', { inputType: 'date', confirmLabel: 'Aprovar Resgate' });

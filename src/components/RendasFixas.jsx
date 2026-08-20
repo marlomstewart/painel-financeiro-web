@@ -6,7 +6,7 @@ import { PiggyBank, Pencil, Trash2, TrendingUp } from 'lucide-react';
  * @description Módulo para gestão de entradas de caixa automatizadas (Salários, Pensões, Mesadas).
  * Alimenta o motor de lançamentos automáticos no início do mês.
  */
-export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSetup, modal }) {
+export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSetup, modal, showToast }) {
     const [editandoId, setEditandoId] = useState(null);
     const [nome, setNome] = useState('');
     const [valorPadrao, setValorPadrao] = useState('0,00');
@@ -46,7 +46,7 @@ export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSet
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (valorPadrao === '0,00') {
-            modal.alert('O valor não pode ser zero.', 'Aviso');
+            showToast('O valor não pode ser zero.', 'error');
             return;
         }
 
@@ -59,7 +59,7 @@ export function RendasFixas({ rendasFixas, addRendaFixa, editarSetup, removerSet
             });
             if (sucesso) {
                 cancelarEdicao();
-                modal.alert('Renda Fixa atualizada com sucesso!', 'Editado');
+                showToast('Renda Fixa atualizada com sucesso!', 'success');
             }
         } else {
             await addRendaFixa(e);

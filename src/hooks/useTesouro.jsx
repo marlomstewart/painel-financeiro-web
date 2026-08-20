@@ -6,7 +6,7 @@ import { useState, useCallback, useEffect } from 'react';
  * useBolsa.jsx/useInvestimentos.jsx: busca o dashboard (títulos + rentabilidade calculada), e
  * permite registrar/excluir títulos.
  */
-export function useTesouro({ API, getHeaders, modal }) {
+export function useTesouro({ API, getHeaders, modal, showToast }) {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -48,7 +48,7 @@ export function useTesouro({ API, getHeaders, modal }) {
             }
             throw new Error('Falha ao registrar o título');
         } catch (err) {
-            modal.alert('Erro ao registrar o título. Tente novamente.', '❌ Erro');
+            showToast('Erro ao registrar o título. Tente novamente.', 'error');
             return false;
         }
     };
@@ -71,7 +71,7 @@ export function useTesouro({ API, getHeaders, modal }) {
                 return true;
             }
         } catch (err) {
-            modal.alert('Erro de conexão ao excluir o título.', '❌ Erro');
+            showToast('Erro de conexão ao excluir o título.', 'error');
         }
         return false;
     };

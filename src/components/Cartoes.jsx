@@ -6,7 +6,7 @@ import { CreditCard, Pencil, Trash2 } from 'lucide-react';
  * @description Módulo de gestão de Cartões de Crédito. 
  * Permite auditar limites disponíveis, separação de gastos (pessoais vs. terceiros) e dias de fechamento.
  */
-export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, removerSetup, modal }) {
+export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, removerSetup, modal, showToast }) {
     const [nomeCartao, setNomeCartao] = useState('');
     const [limite, setLimite] = useState('');
     const [diaFechamento, setDiaFechamento] = useState('');
@@ -38,13 +38,13 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
         if (!nNome) return;
 
         const nLim = await modal.prompt(`Passo 2 de 4 — Novo LIMITE (R$)?`, '', 'Editar Cartão', { inputType: 'currency', confirmLabel: 'Próximo' });
-        if (!nLim || isNaN(Number(nLim)) || Number(nLim) <= 0) return modal.alert('Valor de limite inválido. Edição cancelada.', 'Erro');
+        if (!nLim || isNaN(Number(nLim)) || Number(nLim) <= 0) return showToast('Valor de limite inválido. Edição cancelada.', 'error');
 
         const nF = await modal.prompt(`Passo 3 de 4 — Novo Dia de FECHAMENTO?`, String(c.melhorDia || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Próximo' });
-        if (!nF || isNaN(Number(nF))) return modal.alert('Dia de fechamento inválido. Edição cancelada.', 'Erro');
+        if (!nF || isNaN(Number(nF))) return showToast('Dia de fechamento inválido. Edição cancelada.', 'error');
 
         const nV = await modal.prompt(`Passo 4 de 4 — Novo Dia de VENCIMENTO?`, String(c.vencimento || ''), 'Editar Cartão', { inputType: 'number', confirmLabel: 'Salvar' });
-        if (!nV || isNaN(Number(nV))) return modal.alert('Dia de vencimento inválido. Edição cancelada.', 'Erro');
+        if (!nV || isNaN(Number(nV))) return showToast('Dia de vencimento inválido. Edição cancelada.', 'error');
 
         const sucesso = await editarSetup('cartoes', c.id, {
             nome: nNome,
@@ -53,7 +53,7 @@ export function Cartoes({ transacoes = [], cartoes, addCartao, editarSetup, remo
             vencimento: Number(nV)
         });
 
-        if (sucesso) modal.alert('Cartão atualizado com sucesso!', 'Editado');
+        if (sucesso) showToast('Cartão atualizado com sucesso!', 'success');
     };
 
     const handleExcluir = async (id) => {

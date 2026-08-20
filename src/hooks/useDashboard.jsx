@@ -129,7 +129,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 /**
  * @file src/hooks/useDashboard.jsx
  */
-export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [] }) {
+export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -308,9 +308,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             });
             await Promise.all(promessas);
             const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
-            if (resT.ok) { setTransacoes(await resT.json()); setDataVis({ mes: mesReal, ano: anoReal }); modal.alert(`Importado!`, '✅ Concluído'); }
-        } catch (err) { modal.alert('Erro de conexão.', '❌ Erro'); }
-    }, [API, getHeaders, modal, pendenciasPassadas, setTransacoes, setDataVis, anoReal, mesReal, dataHoje]);
+            if (resT.ok) { setTransacoes(await resT.json()); setDataVis({ mes: mesReal, ano: anoReal }); showToast('Pendências importadas!', 'success'); }
+        } catch (err) { showToast('Erro de conexão.', 'error'); }
+    }, [API, getHeaders, showToast, pendenciasPassadas, setTransacoes, setDataVis, anoReal, mesReal, dataHoje]);
 
     const abrirModalPendencias = useCallback(() => {
         modal.alert(<div className="space-y-3"><p className="text-sm"><b>{pendenciasPassadas.length}</b> pendência(s) antiga(s). Deseja importar para {nomesMeses[mesReal - 1]}?</p><div className="max-h-60 overflow-y-auto space-y-2 pr-2">{pendenciasPassadas.map(t => (<div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between"><div className="truncate"><p className="text-xs font-bold text-rose-800">{t.descricao}</p></div><span className="font-bold text-rose-700 text-sm">{formatarMoeda(t.valorParcela)}</span></div>))}</div><button type="button" onClick={() => { modal.close(); processarRolagemPendencias(); }} className="w-full mt-4 bg-rose-600 text-white font-bold py-3 rounded-lg shadow cursor-pointer">Importar</button></div>, '⚠️ Pendências');

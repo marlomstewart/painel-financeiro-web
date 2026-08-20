@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) {
+export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes, showToast }) {
     const [cartoes, setCartoes] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [metasRenda, setMetasRenda] = useState([]);
@@ -21,9 +21,9 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             const data = await res.json();
             setCartoes([...cartoes, data.cartao]);
             e.target.reset();
-            modal.alert('Cartão adicionado com sucesso!', '✅ Sucesso');
+            showToast('Cartão adicionado com sucesso!', 'success');
         } else {
-            modal.alert('Erro ao cadastrar cartão.', '❌ Erro');
+            showToast('Erro ao cadastrar cartão.', 'error');
         }
     };
 
@@ -32,7 +32,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         const fd = new FormData(e.target);
         const dados = { id: `cat_${Date.now()}`, nome: fd.get('nome'), meta: parseCurrency(fd.get('meta')), tipo: fd.get('tipo'), is_garagem: fd.get('is_garagem') === '1' };
         const res = await fetch(`${API}/categorias`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
-        if (res.ok) { setCategorias([...categorias, dados]); e.target.reset(); modal.alert('Categoria adicionada!', '✅ Sucesso'); }
+        if (res.ok) { setCategorias([...categorias, dados]); e.target.reset(); showToast('Categoria adicionada!', 'success'); }
     };
 
     const addMetaRenda = async (e) => {
@@ -40,7 +40,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         const fd = new FormData(e.target);
         const dados = { id: `meta_${Date.now()}`, nome: fd.get('nome'), valor: parseCurrency(fd.get('valor')) };
         const res = await fetch(`${API}/metas-renda`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
-        if (res.ok) { setMetasRenda([...metasRenda, dados]); e.target.reset(); modal.alert('Meta adicionada!', '✅ Sucesso'); }
+        if (res.ok) { setMetasRenda([...metasRenda, dados]); e.target.reset(); showToast('Meta adicionada!', 'success'); }
     };
 
     // 🔥 CORREÇÃO: Lendo a forma de pagamento do FormData
@@ -55,7 +55,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             forma_pagamento: fd.get('forma_pagamento') || 'pix'
         };
         const res = await fetch(`${API}/contas-fixas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
-        if (res.ok) { setContasFixas([...contasFixas, dados]); e.target.reset(); modal.alert('Conta Fixa adicionada com sucesso!', '✅ Sucesso'); }
+        if (res.ok) { setContasFixas([...contasFixas, dados]); e.target.reset(); showToast('Conta Fixa adicionada com sucesso!', 'success'); }
     };
 
     const addRendaFixa = async (e) => {
@@ -63,7 +63,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         const fd = new FormData(e.target);
         const dados = { id: `rf_${Date.now()}`, nome: fd.get('nome'), valorPadrao: parseCurrency(fd.get('valorPadrao')), diaRecebimento: Number(fd.get('diaRecebimento')) };
         const res = await fetch(`${API}/rendas-fixas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(dados) });
-        if (res.ok) { setRendasFixas([...rendasFixas, dados]); e.target.reset(); modal.alert('Renda Fixa adicionada!', '✅ Sucesso'); }
+        if (res.ok) { setRendasFixas([...rendasFixas, dados]); e.target.reset(); showToast('Renda Fixa adicionada!', 'success'); }
     };
 
     // 🔥 CORREÇÃO: Lendo a forma de pagamento e suportando envio direto do objeto
@@ -91,7 +91,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         if (res.ok) {
             setDividas([...dividas, dados]);
             if (e && e.target && e.target.reset) e.target.reset();
-            modal.alert('Dívida adicionada com sucesso!', '✅ Sucesso');
+            showToast('Dívida adicionada com sucesso!', 'success');
         }
     };
 
@@ -153,9 +153,9 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             if (tipo === 'contas_fixas') setContasFixas(contasFixas.filter(i => i.id !== id));
             if (tipo === 'rendas_fixas') setRendasFixas(rendasFixas.filter(i => i.id !== id));
             if (tipo === 'dividas') setDividas(dividas.filter(i => i.id !== id));
-            modal.alert(`${nomeStr} excluído(a) com sucesso!`, '✅ Removido');
+            showToast(`${nomeStr} excluído(a) com sucesso!`, 'success');
         } else {
-            modal.alert(`Erro ao remover ${nomeStr}.`, '❌ Erro');
+            showToast(`Erro ao remover ${nomeStr}.`, 'error');
         }
     };
 
@@ -169,15 +169,15 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
             });
             const data = await res.json();
             if (res.ok) {
-                modal.alert(data.message, '✅ Mês Gerado');
+                showToast(data.message, 'success');
                 // Força recarregar a página para o App.jsx puxar as novas transações
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                modal.alert(data.error || 'Erro ao gerar mês.', '❌ Erro');
+                showToast(data.error || 'Erro ao gerar mês.', 'error');
             }
         } catch (err) {
             console.error('Erro ao gerar mês:', err);
-            modal.alert('Falha na conexão com o servidor.', '❌ Erro');
+            showToast('Falha na conexão com o servidor.', 'error');
         } finally {
             setGerandoMes(false);
         }
@@ -185,7 +185,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
 
     const exportarCSV = async () => {
         if (!transacoes || transacoes.length === 0) {
-            return modal.alert('Não há transações para exportar.', 'Aviso');
+            return showToast('Não há transações para exportar.', 'error');
         }
 
         const cabecalho = ['ID', 'Data', 'Descrição', 'Categoria', 'Tipo', 'Valor', 'Status', 'Forma Pagamento', 'Mês', 'Ano'].join(';');
@@ -216,7 +216,7 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes }) 
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        modal.alert('O download do seu Extrato Financeiro foi iniciado.', '✅ Exportação Concluída');
+        showToast('Download do extrato iniciado!', 'success');
     };
 
     return {

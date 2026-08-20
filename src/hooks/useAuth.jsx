@@ -7,7 +7,7 @@ const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current in
  * @description Hook Customizado: Gere token JWT, fluxos de login, perfis e controle de acesso granular.
  * @updated Inclui a captura e persistência do 'telegram_chat_id' para alertas preditivos.
  */
-export function useAuth({ API, modal, setCarregouAPI }) {
+export function useAuth({ API, modal, setCarregouAPI, showToast }) {
     const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
     const [tokenTemp, setTokenTemp] = useState(null);
     const [precisaTrocarSenha, setPrecisaTrocarSenha] = useState(false);
@@ -177,13 +177,13 @@ export function useAuth({ API, modal, setCarregouAPI }) {
                     localStorage.setItem('chavePix', dados.chave_pix || '');
                     setChavePix(dados.chave_pix || '');
                 }
-                await modal.alert('O seu perfil foi atualizado com sucesso e o login permanece protegido.', '✅ Perfil Atualizado');
+                showToast('Perfil atualizado com sucesso!', 'success');
             } else {
-                await modal.alert('Não foi possível atualizar o perfil. Tente novamente.', '❌ Erro');
+                showToast('Não foi possível atualizar o perfil. Tente novamente.', 'error');
             }
         } catch (err) {
             console.error("Erro ao atualizar perfil:", err);
-            await modal.alert('Erro de conexão com o servidor.', '❌ Erro de Rede');
+            showToast('Erro de conexão com o servidor.', 'error');
         }
     };
 
@@ -198,13 +198,13 @@ export function useAuth({ API, modal, setCarregouAPI }) {
             if (res.ok) {
                 localStorage.setItem('telegramChatId', dados.telegram_chat_id);
                 setTelegramChatId(dados.telegram_chat_id);
-                await modal.alert('O seu Chat ID foi salvo com sucesso! Você passará a receber notificações preditivas.', '✅ Alertas Ativados');
+                showToast('Chat ID salvo! Você passará a receber notificações preditivas.', 'success');
             } else {
-                await modal.alert('Não foi possível salvar o seu ID do Telegram. Tente novamente.', '❌ Erro');
+                showToast('Não foi possível salvar o seu ID do Telegram. Tente novamente.', 'error');
             }
         } catch (err) {
             console.error("Erro ao atualizar telegram:", err);
-            await modal.alert('Erro de conexão com o servidor.', '❌ Erro de Rede');
+            showToast('Erro de conexão com o servidor.', 'error');
         }
     };
 
@@ -219,13 +219,13 @@ export function useAuth({ API, modal, setCarregouAPI }) {
             const data = await res.json();
 
             if (res.ok) {
-                await modal.alert('A sua palavra-passe foi alterada com sucesso!', '✅ Segurança Atualizada');
+                showToast('Senha alterada com sucesso!', 'success');
             } else {
-                await modal.alert(data.message || 'A palavra-passe atual está incorreta.', '❌ Erro de Validação');
+                showToast(data.message || 'A palavra-passe atual está incorreta.', 'error');
             }
         } catch (err) {
             console.error("Erro ao alterar senha:", err);
-            await modal.alert('Erro de conexão com o servidor.', '❌ Erro de Rede');
+            showToast('Erro de conexão com o servidor.', 'error');
         }
     };
 
@@ -242,12 +242,12 @@ export function useAuth({ API, modal, setCarregouAPI }) {
 
     /** Operações restritas ao Super Admin */
     const carregarUsuarios = async () => { const res = await fetch(`${API}/admin/usuarios`, { headers: getHeaders() }); if (res.ok) setUsuarios(await res.json()); };
-    const criarUsuario = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const usuario = fd.get('usuario'); const is_admin = fd.get('is_admin') === 'on'; const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) }); const data = await res.json(); if (res.ok) { await modal.alert(data.message, '✅ Criado'); e.target.reset(); carregarUsuarios(); } else await modal.alert(data.message || data.error, '❌ Erro'); };
-    const deletarUsuario = async (id, nome) => { const ok = await modal.confirm(`Tem a certeza que deseja EXCLUIR o utilizador "${nome}"?`, '🗑️ Excluir', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() }); const data = await res.json(); if (res.ok) { await modal.alert(data.message, '✅ Excluído'); carregarUsuarios(); } else await modal.alert(data.message, '❌ Erro'); };
-    const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); const data = await res.json(); await modal.alert(data.message, res.ok ? '✅ Resetada' : '❌ Erro'); };
-    const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const acao = atualIsAdmin ? 'remover admin' : 'promover a admin'; const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
-    const toggleGaragem = async (id, nomeU, atualTemGaragem) => { const acao = atualTemGaragem ? 'REVOGAR o acesso à Garagem' : 'LIBERAR o acesso à Garagem'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '🏍️ Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-garagem`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
-    const toggleComprovante = async (id, nomeU, atualTemComprovante) => { const acao = atualTemComprovante ? 'REVOGAR o anexo de comprovantes' : 'LIBERAR o anexo de comprovantes'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '📎 Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-comprovante`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else await modal.alert(data.message, '❌ Erro'); };
+    const criarUsuario = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const usuario = fd.get('usuario'); const is_admin = fd.get('is_admin') === 'on'; const res = await fetch(`${API}/admin/usuarios`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario, is_admin }) }); const data = await res.json(); if (res.ok) { showToast(data.message, 'success'); e.target.reset(); carregarUsuarios(); } else showToast(data.message || data.error, 'error'); };
+    const deletarUsuario = async (id, nome) => { const ok = await modal.confirm(`Tem a certeza que deseja EXCLUIR o utilizador "${nome}"?`, '🗑️ Excluir', { confirmLabel: 'Deletar', confirmColor: 'bg-red-600 hover:bg-red-700' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}`, { method: 'DELETE', headers: getHeaders() }); const data = await res.json(); if (res.ok) { showToast(data.message, 'success'); carregarUsuarios(); } else showToast(data.message, 'error'); };
+    const resetarSenha = async (id, nome) => { const ok = await modal.confirm(`Resetar a senha de "${nome}" para 'admin123'?`, '🔑 Resetar', { confirmLabel: 'Resetar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/resetar-senha`, { method: 'POST', headers: getHeaders() }); const data = await res.json(); showToast(data.message, res.ok ? 'success' : 'error'); };
+    const toggleAdmin = async (id, nomeU, atualIsAdmin) => { const acao = atualIsAdmin ? 'remover admin' : 'promover a admin'; const ok = await modal.confirm(`Deseja ${acao} de "${nomeU}"?`, '⭐ Alterar Permissão', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-admin`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else showToast(data.message, 'error'); };
+    const toggleGaragem = async (id, nomeU, atualTemGaragem) => { const acao = atualTemGaragem ? 'REVOGAR o acesso à Garagem' : 'LIBERAR o acesso à Garagem'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '🏍️ Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-garagem`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else showToast(data.message, 'error'); };
+    const toggleComprovante = async (id, nomeU, atualTemComprovante) => { const acao = atualTemComprovante ? 'REVOGAR o anexo de comprovantes' : 'LIBERAR o anexo de comprovantes'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '📎 Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-comprovante`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else showToast(data.message, 'error'); };
 
     return {
         token, precisaTrocarSenha, nomeUsuario, nomeCompleto, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, chavePix, usuarios, getHeaders,

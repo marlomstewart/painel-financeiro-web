@@ -7,7 +7,7 @@ import { nomeCartao } from '../utils/cartaoUtils';
  * @description Módulo para gestão de despesas recorrentes (água, luz, internet, etc).
  * Os dados cadastrados aqui alimentam o gerador inteligente do motor de faturas.
  */
-export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSetup, removerSetup, modal }) {
+export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSetup, removerSetup, modal, showToast }) {
     const [editandoId, setEditandoId] = useState(null);
     const [nome, setNome] = useState('');
     const [valorPadrao, setValorPadrao] = useState('0,00');
@@ -61,7 +61,7 @@ export function ContasFixas({ contasFixas, cartoes = [], addContaFixa, editarSet
             });
             if (sucesso) {
                 cancelarEdicao();
-                modal.alert('Conta fixa atualizada com sucesso!', 'Editado');
+                showToast('Conta fixa atualizada com sucesso!', 'success');
             }
         } else {
             await addContaFixa(e);

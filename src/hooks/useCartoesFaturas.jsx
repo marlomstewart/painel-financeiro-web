@@ -18,7 +18,7 @@ const getValorTerceiro = (t) => {
  * @description Hook Customizado para Gestão de Faturas de Cartão de Crédito.
  * Suporta abates de estornos (reembolsos) e o novo modelo de Split (divisão fracionada com terceiros).
  */
-export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal }) {
+export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal, showToast }) {
 
     const pagarFaturaCartao = useCallback(async (cartaoId) => {
         const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
@@ -28,18 +28,21 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         if (!confirmacao) return;
 
         const pendentes = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
+        const hojeISO = new Date().toISOString();
+
+        // UI otimista: marca a fatura como paga na hora e já fecha o modal; desfaz se a API recusar.
+        setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago', data_pagamento: hojeISO } : t));
+        modal.close();
 
         try {
-            const promessas = pendentes.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago' }) }));
-            await Promise.all(promessas);
-
-            const hojeISO = new Date().toISOString();
-            setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago', data_pagamento: hojeISO } : t));
-
-            modal.close();
-            modal.alert('Fatura marcada como paga com sucesso!', '✅ Concluído');
-        } catch (err) { modal.alert('Erro ao processar pagamento da fatura.', '❌ Erro'); }
-    }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes]);
+            const respostas = await Promise.all(pendentes.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago' }) })));
+            if (respostas.some(r => !r.ok)) throw new Error('Falha ao pagar fatura');
+            showToast('Fatura marcada como paga com sucesso!', 'success');
+        } catch (err) {
+            setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
+            showToast('Erro ao processar pagamento da fatura. Revertido.', 'error');
+        }
+    }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
 
     const reverterFaturaCartao = useCallback(async (cartaoId) => {
         const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
@@ -49,17 +52,21 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         if (!confirmacao) return;
 
         const pagos = transacoes.filter(t => t.status === 'pago' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
+        const datasPagamentoAnteriores = new Map(pagos.map(t => [t.id, t.data_pagamento]));
+
+        // UI otimista: reverte pra pendente na hora; desfaz se a API recusar.
+        setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
+        modal.close();
 
         try {
-            const promessas = pagos.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente' }) }));
-            await Promise.all(promessas);
-
-            setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
-
-            modal.close();
-            modal.alert('Fatura revertida com sucesso!', '✅ Concluído');
-        } catch (err) { modal.alert('Erro na reversão.', '❌ Erro'); }
-    }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes]);
+            const respostas = await Promise.all(pagos.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente' }) })));
+            if (respostas.some(r => !r.ok)) throw new Error('Falha ao reverter fatura');
+            showToast('Fatura revertida com sucesso!', 'success');
+        } catch (err) {
+            setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pago', data_pagamento: datasPagamentoAnteriores.get(t.id) } : t));
+            showToast('Erro na reversão. Desfeito.', 'error');
+        }
+    }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
 
     const verFaturasPorCartao = useCallback(() => {
         const porCartao = {};

@@ -6,7 +6,7 @@ import { Tag, Plus, Pencil, Trash2, TrendingDown, TrendingUp, Wallet, Bike, XCir
  * @description Módulo de gestão de Categorias Orçamentais e Metas Estratégicas.
  * Permite a criação de categorias simples (sem meta) ou categorias rastreáveis no Dashboard (com meta > 0).
  */
-export function MetasCategorias({ categorias, addCategoria, editarSetup, removerSetup, modal, temGaragem }) {
+export function MetasCategorias({ categorias, addCategoria, editarSetup, removerSetup, modal, temGaragem, showToast }) {
     const [nomeCategoria, setNomeCategoria] = useState('');
     const [metaCategoria, setMetaCategoria] = useState('');
     const [tipoCategoria, setTipoCategoria] = useState('despesa');
@@ -83,9 +83,9 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
         });
 
         if (sucesso) {
-            modal.alert('Sua categoria foi atualizada com sucesso no banco de dados!', 'Salvo com Sucesso');
+            showToast('Categoria atualizada com sucesso!', 'success');
         } else {
-            modal.alert('Houve um erro ao atualizar a categoria. Verifique o servidor.', 'Erro');
+            showToast('Houve um erro ao atualizar a categoria. Verifique o servidor.', 'error');
         }
     };
 

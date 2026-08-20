@@ -156,7 +156,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
     const gerarTextoCobranca = async (pessoa) => {
         if (pessoa.itensMesAtual.length === 0) {
-            modal.alert('Não há cobranças pendentes para esta pessoa no mês atual.', 'Sem cobranças');
+            showToast('Não há cobranças pendentes para esta pessoa no mês atual.', 'error');
             return;
         }
 
@@ -190,10 +190,9 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         try {
             await navigator.clipboard.writeText(texto);
             const avisoSemTelefone = ' Cadastre o WhatsApp dessa pessoa (na compra ou na dívida) pra abrir direto da próxima vez.';
-            if (showToast) showToast(`Cobrança de ${pessoa.nomeExibicao} copiada!${avisoSemTelefone}`, 'success');
-            else modal.alert(`Resumo do mês copiado! Pronto para colar no WhatsApp.${avisoSemTelefone}`, 'Copiado com sucesso');
+            showToast(`Cobrança de ${pessoa.nomeExibicao} copiada!${avisoSemTelefone}`, 'success');
         } catch (err) {
-            modal.alert('Não foi possível copiar automaticamente.', 'Erro');
+            showToast('Não foi possível copiar automaticamente.', 'error');
         }
     };
 

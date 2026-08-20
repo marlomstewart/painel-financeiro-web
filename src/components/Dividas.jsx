@@ -7,7 +7,7 @@ import { nomeCartao } from '../utils/cartaoUtils';
  * @description Módulo de gestão de passivos longo prazo (Empréstimos, Consórcios, Financiamentos).
  * Controla os pagamentos efetuados e permite isolar dívidas contraídas para terceiros (nome sujo).
  */
-export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSetup, removerSetup, modal }) {
+export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSetup, removerSetup, modal, showToast }) {
     const [editandoId, setEditandoId] = useState(null);
     const [descricao, setDescricao] = useState('');
     const [valorTotal, setValorTotal] = useState('');
@@ -94,7 +94,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
             });
             if (sucesso) {
                 cancelarEdicao();
-                modal.alert('Dívida atualizada com sucesso!', 'Editado');
+                showToast('Dívida atualizada com sucesso!', 'success');
             }
         } else {
             const novaDivida = {

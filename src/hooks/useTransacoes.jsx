@@ -7,7 +7,7 @@ import { salvarPendente } from '../utils/offlineQueue';
  * @description Hook customizado para gerir o CRUD de transações financeiras.
  * Refatorado para suportar valores fracionados de Terceiros (Split).
  */
-export function useTransacoes({ API, getHeaders, modal, token, temGaragem, transacoes, setTransacoes, categorias, cartoes, garagem }) {
+export function useTransacoes({ API, getHeaders, modal, token, temGaragem, transacoes, setTransacoes, categorias, cartoes, garagem, showToast }) {
 
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
@@ -168,32 +168,44 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         }
 
         if (!sucesso) {
-            modal.alert('Erro ao registrar lançamento.', '❌ Erro');
+            showToast('Erro ao registrar lançamento.', 'error');
             return 'erro';
         }
 
         if (teveOffline) {
-            modal.alert('Sem conexão — lançamento guardado no aparelho e será enviado automaticamente quando a internet voltar.', '📴 Salvo offline');
+            showToast('Sem conexão — lançamento guardado no aparelho e será enviado quando a internet voltar.', 'error');
             return 'offline';
         }
 
-        modal.alert('Lançamento registrado com sucesso!', '✅ Sucesso');
+        showToast('Lançamento registrado com sucesso!', 'success');
         return 'sucesso';
     };
 
+    // UI otimista: alterna o status na tela imediatamente e só chama a API em paralelo — se a
+    // API recusar (ex: transação de outro usuário, erro de rede), desfaz o toggle e avisa por toast.
     const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
+        const dataPagamentoAnterior = transacoes.find(t => t.id === id)?.data_pagamento ?? null;
+        const dataPagamentoOtimista = novoStatus === 'pago' ? new Date().toISOString() : null;
+
+        setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: dataPagamentoOtimista } : t));
+
         try {
             const res = await fetch(`${API}/transacoes/${id}/status`, {
                 method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus })
             });
             const data = await res.json();
             if (res.ok) {
-                setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: data.data_pagamento } : t));
+                setTransacoes(prev => prev.map(t => t.id === id ? { ...t, data_pagamento: data.data_pagamento } : t));
             } else {
-                modal.alert(`Falha ao alterar status:\n${data.error}`, '❌ Erro do Servidor');
+                setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: statusAtual, data_pagamento: dataPagamentoAnterior } : t));
+                showToast(`Falha ao alterar status: ${data.error}`, 'error');
             }
-        } catch (err) { console.error("Erro ao mudar status:", err); }
+        } catch (err) {
+            console.error("Erro ao mudar status:", err);
+            setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: statusAtual, data_pagamento: dataPagamentoAnterior } : t));
+            showToast('Erro de conexão ao alterar status.', 'error');
+        }
     };
 
     // Independente de alternarStatusTransacao: "paguei a fatura/conta" e "o terceiro já me
@@ -210,7 +222,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             if (res.ok) {
                 setTransacoes(prev => prev.map(t => t.id === id ? { ...t, terceiro_recebido: novoValor } : t));
             } else {
-                modal.alert(data.message || 'Falha ao atualizar recebimento.', '❌ Erro do Servidor');
+                showToast(data.message || 'Falha ao atualizar recebimento.', 'error');
             }
         } catch (err) { console.error("Erro ao marcar recebido:", err); }
     };
@@ -343,13 +355,15 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             await Promise.all(promessas);
 
             await carregarTransacoes();
-            modal.alert(transacoesAEditar.length > 1 ? `${transacoesAEditar.length} parcelas atualizadas com sucesso!` : 'Lançamento atualizado com segurança!', '✅ Sucesso');
+            showToast(transacoesAEditar.length > 1 ? `${transacoesAEditar.length} parcelas atualizadas com sucesso!` : 'Lançamento atualizado com segurança!', 'success');
 
         } catch (err) {
-            modal.alert(`Erro de conexão: ${err.message}`, '❌ Erro de Rede');
+            showToast(`Erro de conexão: ${err.message}`, 'error');
         }
     };
 
+    // UI otimista: remove o(s) lançamento(s) da tela imediatamente e só então chama a API — se a
+    // exclusão falhar (rede, transação de outro usuário), os itens voltam pra tela e avisa por toast.
     const deletarTransacao = async (t) => {
         const { isParcelado, relacionadas } = getTransacoesRelacionadas(t);
         let idsParaDeletar = [t.id];
@@ -378,20 +392,22 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             if (!ok) return;
         }
 
+        const itensRemovidos = transacoes.filter(item => idsParaDeletar.includes(item.id));
+        setTransacoes(prev => prev.filter(item => !idsParaDeletar.includes(item.id)));
+
         try {
-            const promessas = idsParaDeletar.map(id =>
+            const respostas = await Promise.all(idsParaDeletar.map(id =>
                 fetch(`${API}/transacoes/${id}`, { method: 'DELETE', headers: getHeaders() })
-            );
+            ));
 
-            await Promise.all(promessas);
-
-            setTransacoes(prev => prev.filter(item => !idsParaDeletar.includes(item.id)));
+            if (respostas.some(r => !r.ok)) throw new Error('Falha ao excluir lançamento(s)');
 
             if (idsParaDeletar.length > 1) {
-                modal.alert(`${idsParaDeletar.length} parcelas foram excluídas com sucesso!`, '✅ Excluído');
+                showToast(`${idsParaDeletar.length} parcelas foram excluídas com sucesso!`, 'success');
             }
         } catch (err) {
-            modal.alert('Falha de rede ao tentar excluir lançamentos.', '❌ Erro');
+            setTransacoes(prev => [...prev, ...itensRemovidos]);
+            showToast('Falha ao excluir. Lançamento(s) restaurado(s).', 'error');
         }
     };
 
@@ -402,7 +418,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         try {
             const res = await fetch(`${API}/transacoes/massa/acao`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ids: idsSelecionados, acao }) });
             if (res.ok) await carregarTransacoes();
-        } catch (err) { modal.alert('Erro na ação.', '❌ Erro'); }
+        } catch (err) { showToast('Erro na ação.', 'error'); }
     };
 
     const TIPOS_COMPROVANTE_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
@@ -411,10 +427,10 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     const anexarComprovante = async (t, file) => {
         if (!file) return;
         if (!TIPOS_COMPROVANTE_PERMITIDOS.includes(file.type)) {
-            return modal.alert('Envie uma imagem (JPG, PNG ou WEBP) ou um PDF.', '❌ Formato inválido');
+            return showToast('Envie uma imagem (JPG, PNG ou WEBP) ou um PDF.', 'error');
         }
         if (file.size > TAMANHO_MAXIMO_COMPROVANTE) {
-            return modal.alert('O arquivo precisa ter até 10MB.', '❌ Arquivo muito grande');
+            return showToast('O arquivo precisa ter até 10MB.', 'error');
         }
         try {
             const fd = new FormData();
@@ -432,26 +448,26 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
                     ? { ...item, comprovante_url: data.comprovante_url, comprovante_public_id: data.comprovante_public_id }
                     : item
                 ));
-                await modal.alert('Comprovante anexado com sucesso!', '✅ Sucesso');
+                showToast('Comprovante anexado com sucesso!', 'success');
             } else {
-                await modal.alert(data.message || 'Erro ao anexar o comprovante.', '❌ Erro');
+                showToast(data.message || 'Erro ao anexar o comprovante.', 'error');
             }
         } catch (err) {
-            await modal.alert('Erro de conexão ao enviar o comprovante.', '❌ Erro de Rede');
+            showToast('Erro de conexão ao enviar o comprovante.', 'error');
         }
     };
     // Comprovantes novos usam entrega autenticada no Cloudinary — o link salvo na transação não
     // funciona sozinho, então sempre busca uma URL assinada (de curta duração) na hora de abrir,
     // em vez de usar t.comprovante_url direto (que só ainda funciona pra comprovantes antigos).
     const verComprovante = async (t) => {
-        if (!t.comprovante_public_id && !t.comprovante_url) return modal.alert('Nenhum comprovante anexado a esta transação.', 'Sem Anexo');
+        if (!t.comprovante_public_id && !t.comprovante_url) return showToast('Nenhum comprovante anexado a esta transação.', 'error');
         try {
             const res = await fetch(`${API}/transacoes/${t.id}/comprovante-url`, { headers: getHeaders() });
             const data = await res.json();
             if (res.ok && data.comprovante_url) window.open(data.comprovante_url, '_blank');
-            else modal.alert(data.message || 'Não foi possível abrir o comprovante.', '❌ Erro');
+            else showToast(data.message || 'Não foi possível abrir o comprovante.', 'error');
         } catch (err) {
-            modal.alert('Erro de conexão ao tentar abrir o comprovante.', '❌ Erro de Rede');
+            showToast('Erro de conexão ao tentar abrir o comprovante.', 'error');
         }
     };
 

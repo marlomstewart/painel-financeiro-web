@@ -1,19 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 /**
  * Hook Customizado: useToast
- * Gerencia o estado e o tempo de vida das notificações flutuantes na tela.
+ * Gerencia uma fila de notificações flutuantes na tela. Suporta múltiplos toasts
+ * simultâneos (empilhados) — cada um some sozinho após seu próprio timer.
  */
 export function useToast() {
-    const [toast, setToast] = useState(null);
+    const [toasts, setToasts] = useState([]);
+    const proximoId = useRef(0);
 
     const showToast = useCallback((message, type = 'error') => {
-        setToast({ message, type });
-        // Remove a notificação da tela automaticamente após 3.5 segundos
+        const id = proximoId.current++;
+        setToasts(prev => [...prev, { id, message, type }]);
         setTimeout(() => {
-            setToast(null);
+            setToasts(prev => prev.filter(t => t.id !== id));
         }, 3500);
     }, []);
 
-    return { toast, showToast };
+    return { toasts, showToast };
 }

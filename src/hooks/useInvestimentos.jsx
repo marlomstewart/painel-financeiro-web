@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from 'react';
  * @description Hook Customizado para Gestão do Módulo de Investimentos (Renda Fixa / CDB).
  * Gerencia o estado global do dashboard, realiza as requisições para a API e controla as interações do usuário.
  */
-export function useInvestimentos({ API, getHeaders, modal }) {
+export function useInvestimentos({ API, getHeaders, modal, showToast }) {
     // Estado principal que guarda o resumo financeiro calculado pelo back-end
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -54,13 +54,13 @@ export function useInvestimentos({ API, getHeaders, modal }) {
                 body: JSON.stringify({ instituicao, nome_caixinha, percentual_cdi })
             });
             if (res.ok) {
-                modal.alert(`A caixinha "${nome_caixinha}" foi criada!`, '✅ Sucesso');
+                showToast(`Caixinha "${nome_caixinha}" criada!`, 'success');
                 fetchDashboard(); // Atualiza a tela com a nova caixinha
                 return true;
             }
             throw new Error('Falha na criação da caixinha');
         } catch (err) {
-            modal.alert('Erro ao tentar criar a caixinha de investimentos. Tente novamente.', '❌ Erro');
+            showToast('Erro ao tentar criar a caixinha de investimentos. Tente novamente.', 'error');
             return false;
         }
     };
@@ -80,13 +80,13 @@ export function useInvestimentos({ API, getHeaders, modal }) {
                 body: JSON.stringify({ caixinha_id, valor, data_aporte })
             });
             if (res.ok) {
-                modal.alert('Seu aporte foi registrado e o cálculo de IOF/IR já iniciou!', '📈 Aporte Realizado');
+                showToast('Aporte registrado! O cálculo de IOF/IR já iniciou.', 'success');
                 fetchDashboard(); // Atualiza os cálculos de juros
                 return true;
             }
             throw new Error('Falha ao registrar o aporte');
         } catch (err) {
-            modal.alert('Erro de conexão ao registrar o aporte.', '❌ Erro');
+            showToast('Erro de conexão ao registrar o aporte.', 'error');
             return false;
         }
     };
@@ -110,7 +110,7 @@ export function useInvestimentos({ API, getHeaders, modal }) {
                 return true;
             }
         } catch (err) {
-            modal.alert('Erro de conexão ao excluir caixinha.', '❌ Erro');
+            showToast('Erro de conexão ao excluir caixinha.', 'error');
         }
         return false;
     };
@@ -134,7 +134,7 @@ export function useInvestimentos({ API, getHeaders, modal }) {
                 return true;
             }
         } catch (err) {
-            modal.alert('Erro de conexão ao excluir o aporte.', '❌ Erro');
+            showToast('Erro de conexão ao excluir o aporte.', 'error');
         }
         return false;
     };
