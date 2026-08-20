@@ -35,6 +35,7 @@ import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
 import { Skeleton } from './components/Skeleton';
 import { obterDesdeISO } from './utils/janelaTransacoes';
+import { lerTelaDaURL, lerDataVisDaURL, montarURL } from './utils/urlEstado';
 
 /**
  * @constant {string} API
@@ -65,11 +66,22 @@ function App() {
   const { toasts, showToast } = useToast();
   const [carregouAPI, setCarregouAPI] = useState(false);
 
-  const [telaAtiva, setTelaAtiva] = useState('dashboard');
+  const [telaAtiva, setTelaAtivaState] = useState(() => lerTelaDaURL('dashboard'));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mostrarTutorial, setMostrarTutorial] = useState(false);
-  const [dataVis, setDataVis] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
+  const [dataVis, setDataVis] = useState(() => lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
   const [transacoes, setTransacoes] = useState([]);
+
+  // Navegação com deep linking: troca de tela empilha uma entrada no histórico do navegador
+  // (botão voltar funciona) e atualiza a URL, permitindo recarregar ou compartilhar um link
+  // direto pra uma tela específica em vez de sempre cair no Dashboard.
+  const setTelaAtiva = useCallback((novaTela) => {
+    setTelaAtivaState(atual => {
+      if (atual === novaTela) return atual;
+      window.history.pushState({ tela: novaTela }, '', montarURL(novaTela, dataVis));
+      return novaTela;
+    });
+  }, [dataVis]);
 
   const auth = useAuth({ API, modal, setCarregouAPI, showToast });
   const setup = useSetup({ API, getHeaders: auth.getHeaders, modal, transacoes, setTransacoes, showToast });
@@ -79,6 +91,30 @@ function App() {
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast });
   const offlineSync = useOfflineSync({ API, getHeaders: auth.getHeaders, token: auth.token, setTransacoes, showToast });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas });
+
+  // Mantém a URL correta quando o mês/ano visualizado muda (troca de mês em Lançamentos/Dashboard)
+  // sem empilhar uma entrada no histórico pra cada clique — só a troca de TELA gera "voltar".
+  useEffect(() => {
+    window.history.replaceState({ tela: telaAtiva }, '', montarURL(telaAtiva, dataVis));
+  }, [dataVis.mes, dataVis.ano]);
+
+  // Botão voltar/avançar do navegador: sincroniza telaAtiva com a URL em vez de só navegar a
+  // página (que antes não fazia nada visível, já que é uma SPA sem rotas reais).
+  useEffect(() => {
+    const aoNavegar = () => {
+      setTelaAtivaState(lerTelaDaURL('dashboard'));
+      setDataVis(lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
+    };
+    window.addEventListener('popstate', aoNavegar);
+    return () => window.removeEventListener('popstate', aoNavegar);
+  }, []);
+
+  // Guarda contra deep link pra uma tela que o usuário não tem permissão de ver (ex: alguém
+  // compartilha/salva um link com ?tela=admin e outro usuário sem esse privilégio abre depois).
+  useEffect(() => {
+    if (telaAtiva === 'admin' && !auth.isAdmin) setTelaAtiva('dashboard');
+    if (telaAtiva === 'garagem' && !auth.temGaragem) setTelaAtiva('dashboard');
+  }, [telaAtiva, auth.isAdmin, auth.temGaragem, setTelaAtiva]);
 
   useEffect(() => {
     const applyTheme = () => {
