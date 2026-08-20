@@ -184,12 +184,24 @@ export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes, sh
     };
 
     const exportarCSV = async () => {
-        if (!transacoes || transacoes.length === 0) {
+        // 🔥 Busca dedicada e SEM o filtro `desde`: `transacoes` em memória só cobre os últimos
+        // 24 meses (paginação por período, ver src/utils/janelaTransacoes.js), mas o extrato
+        // exportado precisa do histórico completo — paga esse custo só aqui, sob demanda.
+        let transacoesCompletas;
+        try {
+            const res = await fetch(`${API}/transacoes`, { headers: getHeaders() });
+            if (!res.ok) throw new Error('Falha ao buscar histórico completo');
+            transacoesCompletas = await res.json();
+        } catch (err) {
+            return showToast('Erro ao buscar o histórico completo pra exportação.', 'error');
+        }
+
+        if (!transacoesCompletas || transacoesCompletas.length === 0) {
             return showToast('Não há transações para exportar.', 'error');
         }
 
         const cabecalho = ['ID', 'Data', 'Descrição', 'Categoria', 'Tipo', 'Valor', 'Status', 'Forma Pagamento', 'Mês', 'Ano'].join(';');
-        const linhas = transacoes.map(t => {
+        const linhas = transacoesCompletas.map(t => {
             const data = t.datacompra || t.dataCompra || '';
             const desc = (t.descricao || '').replace(/;/g, ',');
             const cat = (t.categoria || '').replace(/;/g, ',');

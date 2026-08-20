@@ -34,6 +34,7 @@ import { useOfflineSync } from './hooks/useOfflineSync';
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
 import { Skeleton } from './components/Skeleton';
+import { obterDesdeISO } from './utils/janelaTransacoes';
 
 /**
  * @constant {string} API
@@ -108,7 +109,7 @@ function App() {
     const carregar = async () => {
       try {
         const [resT, resC, resCat, resR, resF, resRF, resDiv] = await Promise.all([
-          fetch(`${API}/transacoes`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers }), fetch(`${API}/dividas`, { headers })
+          fetch(`${API}/transacoes?desde=${obterDesdeISO()}`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers }), fetch(`${API}/dividas`, { headers })
         ]);
         if (!resT.ok) { auth.fazerLogout(); return; }
         setTransacoes(await resT.json()); setup.setCartoes(await resC.json()); setup.setCategorias(await resCat.json()); setup.setMetasRenda(await resR.json()); setup.setContasFixas(await resF.json()); setup.setRendasFixas(await resRF.json()); setup.setDividas(await resDiv.json());

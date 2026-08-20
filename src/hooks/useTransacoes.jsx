@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { salvarPendente } from '../utils/offlineQueue';
+import { obterDesdeISO } from '../utils/janelaTransacoes';
 
 /**
  * @file src/hooks/useTransacoes.jsx
@@ -12,7 +13,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
-            const res = await fetch(`${API}/transacoes`, { headers: getHeaders() });
+            const res = await fetch(`${API}/transacoes?desde=${obterDesdeISO()}`, { headers: getHeaders() });
             if (res.ok) setTransacoes(await res.json());
         } catch (err) { console.error("Erro ao recarregar transações:", err); }
     }, [API, getHeaders, token, setTransacoes]);

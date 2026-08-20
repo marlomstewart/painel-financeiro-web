@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
+import { obterDesdeISO } from '../utils/janelaTransacoes';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -307,7 +308,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 return [reqUpdate, reqCreate];
             });
             await Promise.all(promessas);
-            const resT = await fetch(`${API}/transacoes`, { headers: getHeaders() });
+            const resT = await fetch(`${API}/transacoes?desde=${obterDesdeISO()}`, { headers: getHeaders() });
             if (resT.ok) { setTransacoes(await resT.json()); setDataVis({ mes: mesReal, ano: anoReal }); showToast('Pendências importadas!', 'success'); }
         } catch (err) { showToast('Erro de conexão.', 'error'); }
     }, [API, getHeaders, showToast, pendenciasPassadas, setTransacoes, setDataVis, anoReal, mesReal, dataHoje]);
