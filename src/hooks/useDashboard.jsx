@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { obterDesdeISO } from '../utils/janelaTransacoes';
+import { calcularFluxoProjetado } from '../utils/fluxoProjetado';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -130,7 +131,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 /**
  * @file src/hooks/useDashboard.jsx
  */
-export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast }) {
+export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast, rendasFixas = [], contasFixas = [], dividas = [] }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -291,6 +292,68 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
     const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;
     const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
+
+    // Fluxo de caixa projetado: usa o previsto de fim do mês atual como ponto de partida do
+    // acumulado dos próximos 6 meses, com base só no que é recorrente/conhecido (rendas fixas,
+    // contas fixas, parcelas de dívida restantes) — não prevê gastos avulsos ainda não lançados.
+    const fluxoProjetado = useMemo(() => calcularFluxoProjetado({
+        mesAtual: dataVis.mes, anoAtual: dataVis.ano, horizonteMeses: 6, saldoInicial: previstoFimMes,
+        rendasFixas, contasFixas, dividas, cartoes, transacoes
+    }), [dataVis.mes, dataVis.ano, previstoFimMes, rendasFixas, contasFixas, dividas, cartoes, transacoes]);
+
+    const abrirDetalheMesProjetado = useCallback((mesProjetado) => {
+        const { mes, ano, renda, contas, dividasParcelas, net, saldoAcumulado, detalhes } = mesProjetado;
+
+        const linhaItem = (nome, valor, cor) => (
+            <div key={nome} className="flex justify-between items-center text-sm py-1">
+                <span className="text-slate-600 dark:text-slate-300 truncate pr-2">{nome}</span>
+                <strong className={cor}>{formatarMoeda(valor)}</strong>
+            </div>
+        );
+
+        const conteudo = (
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+                        <p className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold mb-1">Renda prevista</p>
+                        <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(renda)}</p>
+                    </div>
+                    <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
+                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Contas + Dívidas</p>
+                        <p className="text-lg font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(contas + dividasParcelas)}</p>
+                    </div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                    <p className="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase mb-1">Saldo acumulado projetado</p>
+                    <p className={`text-xl font-black ${saldoAcumulado >= 0 ? 'text-blue-900 dark:text-blue-200' : 'text-rose-700 dark:text-rose-400'}`}>{formatarMoeda(saldoAcumulado)}</p>
+                    <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">Resultado do mês: {net >= 0 ? '+' : ''}{formatarMoeda(net)}</p>
+                </div>
+                {detalhes.rendas.length > 0 && (
+                    <div>
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">Rendas fixas</p>
+                        {detalhes.rendas.map(r => linhaItem(r.nome, r.valor, 'text-emerald-600 dark:text-emerald-400'))}
+                    </div>
+                )}
+                {detalhes.contas.length > 0 && (
+                    <div>
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">Contas fixas</p>
+                        {detalhes.contas.map(c => linhaItem(c.nome, c.valor, 'text-rose-600 dark:text-rose-400'))}
+                    </div>
+                )}
+                {detalhes.dividas.length > 0 && (
+                    <div>
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">Parcelas de dívidas</p>
+                        {detalhes.dividas.map((d, i) => linhaItem(`${d.nome} (#${i + 1})`, d.valor, 'text-rose-600 dark:text-rose-400'))}
+                    </div>
+                )}
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                    Projeção baseada só no que já é recorrente/conhecido — não prevê gastos avulsos que você ainda vai lançar no dia a dia.
+                </p>
+            </div>
+        );
+
+        modal.alert(conteudo, `Projeção: ${nomesMeses[mes - 1]}/${ano}`);
+    }, [modal]);
 
     const dataHoje = new Date();
     const mesReal = dataHoje.getMonth() + 1;
@@ -556,8 +619,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
         mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
-        saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes,
-        categoriasDinamicas, gCat, pendenciasPassadas, 
-        abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard
+        saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado,
+        categoriasDinamicas, gCat, pendenciasPassadas,
+        abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard, abrirDetalheMesProjetado
     };
 }

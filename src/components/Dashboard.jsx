@@ -2,7 +2,7 @@ import React from 'react';
 import { AlertasDashboard } from './AlertasDashboard';
 import {
     LayoutDashboard, ChevronLeft, ChevronRight, AlertTriangle, AlertOctagon,
-    Target, Tag, History, Wrench
+    Target, Tag, History, Wrench, TrendingUp
 } from 'lucide-react';
 
 /**
@@ -25,7 +25,8 @@ export function Dashboard({
     totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
     saldoAtual, previstoFimMes, somarSaldoAnterior, setSomarSaldoAnterior,
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
-    verFaturasPorCartao, transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], garagem = null, temGaragem = false
+    verFaturasPorCartao, transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], garagem = null, temGaragem = false,
+    fluxoProjetado = [], abrirDetalheMesProjetado
 }) {
 
     const ultimosCinco = [...transacoesMes]
@@ -186,6 +187,58 @@ export function Dashboard({
                     </div>
                 )}
             </div>
+
+            {fluxoProjetado.length > 0 && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-6 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3 mb-5 md:mb-6 border-b border-slate-100 dark:border-slate-800 pb-3 md:pb-4">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                            <TrendingUp className="w-4.5 h-4.5" strokeWidth={2} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Fluxo de Caixa Projetado</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Saldo acumulado nos próximos 6 meses, com base só no que já é recorrente/conhecido.</p>
+                        </div>
+                    </div>
+
+                    {(() => {
+                        const maiorAbs = Math.max(1, ...fluxoProjetado.map(m => Math.abs(m.saldoAcumulado)));
+                        return (
+                            <div className="grid grid-cols-6 gap-2 md:gap-4 items-end h-40 md:h-48">
+                                {fluxoProjetado.map(m => {
+                                    const alturaPct = Math.max(4, (Math.abs(m.saldoAcumulado) / maiorAbs) * 100);
+                                    const positivo = m.saldoAcumulado >= 0;
+                                    return (
+                                        <button
+                                            key={`${m.mes}-${m.ano}`}
+                                            type="button"
+                                            onClick={() => abrirDetalheMesProjetado(m)}
+                                            className="flex flex-col items-center justify-end h-full cursor-pointer group"
+                                            title={formatarMoeda(m.saldoAcumulado)}
+                                        >
+                                            <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 truncate w-full text-center">
+                                                {formatarMoeda(m.saldoAcumulado).replace('R$', '').trim()}
+                                            </span>
+                                            <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
+                                                <div
+                                                    className={`w-full max-w-10 rounded-t-md transition-all group-hover:opacity-80 ${positivo ? 'bg-blue-500' : 'bg-rose-500'}`}
+                                                    style={{ height: `${alturaPct}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-wider">
+                                                {nomesMeses[m.mes - 1].slice(0, 3)}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-4 text-center">
+                        Toque numa barra pra ver o detalhamento. Não considera gastos avulsos ainda não lançados.
+                    </p>
+                </div>
+            )}
 
             <AlertasDashboard transacoesMes={transacoesMes} transacoesGlobais={transacoesGlobais} cartoes={cartoes} dividas={dividas} dataVis={dataVis} />
 
