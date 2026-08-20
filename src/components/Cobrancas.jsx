@@ -265,8 +265,14 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             if (item.isEmprestimo) {
                 // Atualiza usando a nomenclatura exata do banco
                 const qtdAtual = Number(item.refDivida.parcelas_pagas_iniciais || item.refDivida.pagas || 0);
-                await editarSetup('dividas', item.refDivida.id, { parcelas_pagas_iniciais: qtdAtual + 1 });
-                if (showToast) showToast('Parcela do empréstimo avançada!', 'success');
+                const sucesso = await editarSetup('dividas', item.refDivida.id, { parcelas_pagas_iniciais: qtdAtual + 1 });
+                // 🔒 CORREÇÃO: antes mostrava "sucesso" mesmo quando editarSetup falhava (res.ok
+                // false), escondendo o erro real e deixando a parcela travada sem nenhum aviso.
+                if (sucesso) {
+                    if (showToast) showToast('Parcela do empréstimo avançada!', 'success');
+                } else {
+                    if (showToast) showToast('Não foi possível marcar como recebido. Tente novamente.', 'error');
+                }
             } else {
                 await marcarRecebidoTerceiro(item.id, item.terceiro_recebido);
             }
