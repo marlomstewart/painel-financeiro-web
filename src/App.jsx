@@ -1,24 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Modal } from './components/Modal';
 import { Login } from './components/Login';
 import { TrocaSenha } from './components/TrocaSenha';
-import { Admin } from './components/Admin';
-import { Dashboard } from './components/Dashboard';
-import { Lancamentos } from './components/Lancamentos';
-import { Garagem } from './components/Garagem';
 import { Sidebar } from './components/Sidebar';
-
-import { Cartoes } from './components/Cartoes';
-import { MetasCategorias } from './components/MetasCategorias';
-import { ContasFixas } from './components/ContasFixas';
-import { RendasFixas } from './components/RendasFixas';
-import { Configuracoes } from './components/Configuracoes';
-import { Dividas } from './components/Dividas';
-import { Investimentos } from './components/Investimentos';
-import { CalculadoraCompra } from './components/CalculadoraCompra';
-import { Cobrancas } from './components/Cobrancas';
 import { Tutorial } from './components/Tutorial';
-import { Ajuda } from './components/Ajuda';
+
+// Telas roteadas por `telaAtiva` — carregadas sob demanda (code splitting), já que num único
+// acesso o usuário normalmente só visita 2-3 dessas telas. Login/TrocaSenha/Modal/Sidebar/Tutorial
+// ficam eager acima porque são necessários já na primeira renderização (ou sempre montados).
+const Admin = lazy(() => import('./components/Admin').then(m => ({ default: m.Admin })));
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const Lancamentos = lazy(() => import('./components/Lancamentos').then(m => ({ default: m.Lancamentos })));
+const Garagem = lazy(() => import('./components/Garagem').then(m => ({ default: m.Garagem })));
+const Cartoes = lazy(() => import('./components/Cartoes').then(m => ({ default: m.Cartoes })));
+const MetasCategorias = lazy(() => import('./components/MetasCategorias').then(m => ({ default: m.MetasCategorias })));
+const ContasFixas = lazy(() => import('./components/ContasFixas').then(m => ({ default: m.ContasFixas })));
+const RendasFixas = lazy(() => import('./components/RendasFixas').then(m => ({ default: m.RendasFixas })));
+const Configuracoes = lazy(() => import('./components/Configuracoes').then(m => ({ default: m.Configuracoes })));
+const Dividas = lazy(() => import('./components/Dividas').then(m => ({ default: m.Dividas })));
+const Investimentos = lazy(() => import('./components/Investimentos').then(m => ({ default: m.Investimentos })));
+const CalculadoraCompra = lazy(() => import('./components/CalculadoraCompra').then(m => ({ default: m.CalculadoraCompra })));
+const Cobrancas = lazy(() => import('./components/Cobrancas').then(m => ({ default: m.Cobrancas })));
+const Ajuda = lazy(() => import('./components/Ajuda').then(m => ({ default: m.Ajuda })));
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';
@@ -193,7 +196,9 @@ function App() {
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
           </button>
         </div>
-        {renderizarConteudoAtivo()}
+        <Suspense fallback={<Skeleton />}>
+          {renderizarConteudoAtivo()}
+        </Suspense>
       </main>
       <Modal config={modal.config} onClose={modal.close} />
       <Tutorial visivel={mostrarTutorial} onClose={() => setMostrarTutorial(false)} temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} temComprovante={auth.temComprovante} dispensarTutorial={auth.dispensarTutorial} />
