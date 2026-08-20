@@ -6,7 +6,7 @@ import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
  * @file src/components/Cobrancas.jsx
  * @description Central de Gestão de Terceiros. Agrupa transações e dívidas por mês.
  */
-export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, marcarRecebidoTerceiro, editarSetup, modal, showToast, chavePix }) {
+export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis, marcarRecebidoTerceiro, modal, showToast, chavePix }) {
 
     const mesAtual = dataVis ? dataVis.mes : new Date().getMonth() + 1;
     const anoAtual = dataVis ? dataVis.ano : new Date().getFullYear();
@@ -116,23 +116,31 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 if (parcelasPendentes > 0) {
                     p.totalPendenteGeral += valorPendenteTotal;
                     p.totalPagoGeral += valorPagoTotal;
-
-                    p.totalMesAtual += valorParcela;
-
-                    const diaVenc = Number(d.dia_vencimento || d.diaVencimento || 10);
-                    let dataVencimento = new Date(anoAtual, mesAtual - 1, diaVenc);
-
-                    p.itensMesAtual.push({
-                        id: `divida_${d.id}`,
-                        isEmprestimo: true,
-                        descricao: `Parcela: ${d.descricao} (${parcelasPagas + 1}/${qtdTotalParcelas})`,
-                        valorCobradoCalculado: valorParcela,
-                        dataVencimento: dataVencimento,
-                        nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
-                        refDivida: d
-                    });
                 } else {
                     p.totalPagoGeral += valorPagoTotal;
+                }
+
+                // 🔒 CORREÇÃO (2026-08-20): a pendência do mês NÃO vem mais de um contador solto
+                // (`parcelas_pagas_iniciais`) — ele é só o ponto de partida da dívida e também
+                // governa até onde o motor de geração de lançamentos já avançou; incrementá-lo aqui
+                // a cada clique inflava esse número e podia fazer o motor parar de gerar parcelas
+                // futuras cedo demais, além de nunca "sumir" da lista (sem noção de mês nenhum).
+                // Agora só existe pendência se a parcela REAL deste mês já foi gerada pelo motor
+                // (mesmo grupo_id usado lá) e ainda não foi marcada como recebida NELA — exatamente
+                // o mesmo controle (`terceiro_recebido` por transação) que as compras normais usam.
+                const parcelaDoMes = transacoes.find(t => t.grupo_id === `divida_${d.id}` && t.mesReferencia === mesAtual && t.anoReferencia === anoAtual);
+                if (parcelaDoMes && !parcelaDoMes.terceiro_recebido) {
+                    const valorCobrado = Number(parcelaDoMes.thirdPartyValue) > 0 ? Number(parcelaDoMes.thirdPartyValue) : Number(parcelaDoMes.valorParcela || 0);
+                    p.totalMesAtual += valorCobrado;
+                    p.itensMesAtual.push({
+                        id: parcelaDoMes.id,
+                        isEmprestimo: true,
+                        descricao: `Parcela: ${d.descricao} (${parcelasPagas + 1}/${qtdTotalParcelas})`,
+                        valorCobradoCalculado: valorCobrado,
+                        dataVencimento: new Date(parcelaDoMes.dataCompra),
+                        nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
+                        terceiro_recebido: parcelaDoMes.terceiro_recebido
+                    });
                 }
             });
         }
@@ -262,20 +270,10 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         );
 
         if (confirm) {
-            if (item.isEmprestimo) {
-                // Atualiza usando a nomenclatura exata do banco
-                const qtdAtual = Number(item.refDivida.parcelas_pagas_iniciais || item.refDivida.pagas || 0);
-                const sucesso = await editarSetup('dividas', item.refDivida.id, { parcelas_pagas_iniciais: qtdAtual + 1 });
-                // 🔒 CORREÇÃO: antes mostrava "sucesso" mesmo quando editarSetup falhava (res.ok
-                // false), escondendo o erro real e deixando a parcela travada sem nenhum aviso.
-                if (sucesso) {
-                    if (showToast) showToast('Parcela do empréstimo avançada!', 'success');
-                } else {
-                    if (showToast) showToast('Não foi possível marcar como recebido. Tente novamente.', 'error');
-                }
-            } else {
-                await marcarRecebidoTerceiro(item.id, item.terceiro_recebido);
-            }
+            // Parcela de empréstimo e compra normal de terceiro agora usam o mesmo controle
+            // (terceiro_recebido na transação real) — ver correção de 2026-08-20 acima, que parou
+            // de usar o contador solto da dívida pra isso.
+            await marcarRecebidoTerceiro(item.id, item.terceiro_recebido);
         }
     };
 
