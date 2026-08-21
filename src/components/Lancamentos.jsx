@@ -29,7 +29,7 @@ export function Lancamentos({
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela,
     alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa,
-    modal, nomeUsuario, temGaragem = false, temComprovante = false, anexarComprovante, verComprovante,
+    modal, showToast, nomeUsuario, temGaragem = false, temComprovante = false, anexarComprovante, verComprovante,
     dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
     mesAnterior = () => { },
     mesProximo = () => { },
@@ -112,7 +112,7 @@ export function Lancamentos({
 
         // Regra de Negócio: Terceiro não pode dever mais que o valor total da compra
         if (isThirdParty && numericThirdValue > numericValue) {
-            alert('Erro: O valor do terceiro não pode ser maior que o valor total da compra.');
+            showToast('O valor do terceiro não pode ser maior que o valor total da compra.', 'error');
             setIsSubmitting(false);
             return;
         }

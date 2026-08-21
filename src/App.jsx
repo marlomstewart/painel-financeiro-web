@@ -183,7 +183,7 @@ function App() {
     if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
 
-    if (telaAtiva === 'configuracoes') return <Configuracoes API={API} getHeaders={auth.getHeaders} nomeUsuario={auth.nomeUsuario} nomeCompleto={auth.nomeCompleto} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} chavePix={auth.chavePix} />;
+    if (telaAtiva === 'configuracoes') return <Configuracoes API={API} getHeaders={auth.getHeaders} nomeUsuario={auth.nomeUsuario} nomeCompleto={auth.nomeCompleto} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} chavePix={auth.chavePix} showToast={showToast} modal={modal} />;
 
     if (telaAtiva === 'ajuda') return <Ajuda temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} abrirTutorial={() => setMostrarTutorial(true)} />;
 
@@ -197,7 +197,7 @@ function App() {
         setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados}
         setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao}
         dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor}
-        deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal}
+        deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} showToast={showToast}
         nomeUsuario={auth.nomeUsuario} temGaragem={auth.temGaragem} temComprovante={auth.temComprovante} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante}
         dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} garagem={garagem}
       />;

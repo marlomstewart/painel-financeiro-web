@@ -112,13 +112,21 @@ export function Login({ fazerLogin, usuarioLogin, setUsuarioLogin, senhaLogin, s
                             <div>
                                 <div className="flex justify-between items-center mb-1.5 md:mb-1">
                                     <label className={labelCls} style={{ marginBottom: 0 }}>Senha</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => { setView('forgot'); setLocalSuccess(''); setLocalError(''); }}
-                                        className="text-[10px] md:text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors"
-                                    >
-                                        Esqueci minha senha
-                                    </button>
+                                    {/*
+                                      ⚠️ BOTÃO "ESQUECI MINHA SENHA" DESATIVADO (20/08/2026).
+                                      O fluxo de recuperação (views 'forgot' → 'verify' → 'reset', logo abaixo neste
+                                      arquivo) nunca foi implementado de verdade: são três MOCKs sem nenhuma chamada
+                                      à API. Ele aceitava QUALQUER código de 5+ dígitos, para QUALQUER usuário
+                                      (inclusive inexistente), e terminava exibindo "Senha redefinida com sucesso!"
+                                      sem alterar absolutamente nada no servidor. Não era falha de segurança (nada
+                                      era gravado, ninguém acessava conta alheia), mas mentia pro usuário: quem
+                                      esquecesse a senha de verdade seguiria o fluxo, receberia a confirmação de
+                                      sucesso e continuaria sem conseguir entrar, sem entender o motivo.
+                                      Hoje o único caminho real de reset é um administrador usar a tela de Admin.
+                                      O código do fluxo foi mantido abaixo (inofensivo, inalcançável) para servir de
+                                      esqueleto quando for implementado de verdade — o que exige endpoints novos no
+                                      backend (envio de código por e-mail ou Telegram + validação server-side).
+                                    */}
                                 </div>
                                 <input
                                     type="password" value={senhaLogin} onChange={(e) => setSenhaLogin(e.target.value)}

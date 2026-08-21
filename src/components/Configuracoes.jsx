@@ -9,7 +9,7 @@ import {
  * @description Painel de controlo central do utilizador.
  * Gere os dados de perfil, segurança, exportação, motor de temas e vinculação com o Telegram.
  */
-export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, nomeCompleto: nomeCompletoProp, atualizarPerfil, alterarSenha, chavePix }) {
+export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, nomeCompleto: nomeCompletoProp, atualizarPerfil, alterarSenha, chavePix, showToast, modal }) {
 
     // ================= ESTADOS GERAIS =================
     // Sementes já preenchidas com o valor vindo da sessão (não com string vazia) — senão o campo
@@ -115,8 +115,8 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     /** @function handleAlterarSenha - Valida as regras de negócio para troca de credencial */
     const handleAlterarSenha = (e) => {
         e.preventDefault();
-        if (novaSenha !== confirmarSenha) return alert('As senhas não coincidem. Verifique e tente novamente.');
-        if (novaSenha.length < 6) return alert('A nova senha deve conter pelo menos 6 caracteres.');
+        if (novaSenha !== confirmarSenha) return showToast('As senhas não coincidem. Verifique e tente novamente.', 'error');
+        if (novaSenha.length < 6) return showToast('A nova senha deve conter pelo menos 6 caracteres.', 'error');
         if (alterarSenha) {
             alterarSenha({ senhaAtual, novaSenha });
             setSenhaAtual(''); setNovaSenha(''); setConfirmarSenha('');
@@ -136,11 +136,11 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                 const data = await res.json();
                 setPinGerado(data.pin);
             } else {
-                alert('Erro ao gerar PIN. Verifique sua conexão ou faça login novamente.');
+                showToast('Erro ao gerar PIN. Verifique sua conexão ou faça login novamente.', 'error');
             }
         } catch (error) {
             console.error('Erro ao gerar PIN:', error);
-            alert('Erro de conexão ao gerar PIN.');
+            showToast('Erro de conexão ao gerar PIN.', 'error');
         } finally {
             setGerandoPin(false);
         }
@@ -148,7 +148,8 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
 
     /** @function desvincularTelegram - Remove o ChatID da base de dados */
     const desvincularTelegram = async () => {
-        if (!window.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.')) return;
+        const ok = await modal.confirm('Tem certeza que deseja desvincular seu Telegram? Você deixará de receber os alertas diários.', 'Desvincular Telegram', { confirmLabel: 'Desvincular', confirmColor: 'bg-rose-600 hover:bg-rose-700' });
+        if (!ok) return;
 
         try {
             const res = await fetch(`${API}/telegram/desvincular`, {
@@ -160,11 +161,11 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                 setStatusTelegram('nao_vinculado');
                 setPinGerado(null);
             } else {
-                alert('Erro ao desvincular. Tente novamente.');
+                showToast('Erro ao desvincular. Tente novamente.', 'error');
             }
         } catch (error) {
             console.error('Erro ao desvincular:', error);
-            alert('Erro de conexão ao desvincular.');
+            showToast('Erro de conexão ao desvincular.', 'error');
         }
     };
 

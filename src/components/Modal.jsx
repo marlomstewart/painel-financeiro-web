@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Users, Lightbulb, Undo2, CheckCircle2, RotateCcw, Pencil,
-  Paperclip, Trash2, FileText, CreditCard
+  Paperclip, Trash2, FileText, CreditCard, AlertCircle
 } from 'lucide-react';
 
 /**
@@ -29,6 +29,10 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
   const initThirdValueStr = transacao.thirdPartyValue ? Math.round(Number(transacao.thirdPartyValue) * 100).toString() : '0';
   const [thirdPartyValueStr, setThirdPartyValueStr] = useState(initThirdValueStr);
 
+  // Erro de validação exibido inline, junto ao formulário — substitui o alert() nativo do
+  // navegador (bloqueante, com visual do sistema operacional, destoando do app no modo PWA).
+  const [erro, setErro] = useState('');
+
   const handleValorChange = (e) => {
     let val = e.target.value.replace(/\D/g, '');
     if (val === '') val = '0';
@@ -47,6 +51,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErro('');
     const numericValue = parseInt(valorStr, 10) / 100;
 
     let numericThirdValue = null;
@@ -56,12 +61,12 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
     }
 
     if (numericValue <= 0) {
-      alert('O valor deve ser maior que zero.');
+      setErro('O valor deve ser maior que zero.');
       return;
     }
 
     if (numericThirdValue !== null && numericThirdValue > numericValue) {
-      alert('O valor do terceiro não pode ser maior que o valor total da parcela.');
+      setErro('O valor do terceiro não pode ser maior que o valor total da parcela.');
       return;
     }
 
@@ -223,6 +228,12 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
 
       <div><label className={labelCls}>Observação</label><textarea value={observacao} onChange={e => setObservacao(e.target.value)} className={`${inputCls} resize-none`} rows="3"></textarea></div>
 
+      {erro && (
+        <p role="alert" className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 text-sm font-bold p-3.5 rounded-xl flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2.5} /> {erro}
+        </p>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
         <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer active:scale-[0.98] order-2 sm:order-1 border border-transparent dark:border-slate-700">Cancelar</button>
         <button type="submit" className="flex-1 bg-blue-600 text-white py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md cursor-pointer active:scale-[0.98] order-1 sm:order-2">Salvar Alterações</button>
@@ -264,6 +275,9 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
   const valorTitulo = Number(valorTituloStr) / 100;
   const [dataVencimento, setDataVencimento] = useState('');
 
+  // Erro de validação inline (ver nota equivalente em FormularioEdicao).
+  const [erro, setErro] = useState('');
+
   const handleMoedaChange = (setter) => (e) => {
     let v = e.target.value.replace(/\D/g, '');
     if (!v) v = '0';
@@ -287,10 +301,11 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErro('');
 
     if (ehBolsa) {
       if (!ticker.trim() || !quantidade || Number(quantidade) <= 0 || !preco || Number(preco) <= 0) {
-        alert('Preencha o ativo, a quantidade e o preço.');
+        setErro('Preencha o ativo, a quantidade e o preço.');
         return;
       }
       const precoEfetivo = operacao === 'compra'
@@ -303,7 +318,7 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
 
     if (ehRendaFixa) {
       if (!caixinhaId || !valorRendaFixa || Number(valorRendaFixa) <= 0) {
-        alert('Selecione a caixinha e informe o valor.');
+        setErro('Selecione a caixinha e informe o valor.');
         return;
       }
       const valorComSinal = operacao === 'venda' ? -Math.abs(Number(valorRendaFixa)) : Math.abs(Number(valorRendaFixa));
@@ -313,7 +328,7 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
 
     // Tesouro Direto
     if (!nomeTitulo.trim() || taxaTitulo === '' || isNaN(Number(taxaTitulo)) || !valorTitulo || Number(valorTitulo) <= 0) {
-      alert('Preencha o nome, a taxa e o valor do título.');
+      setErro('Preencha o nome, a taxa e o valor do título.');
       return;
     }
     onConfirm({
@@ -446,6 +461,12 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
         <span className="text-lg font-black text-slate-800 dark:text-slate-100">{formatarMoedaLocal(valorTotal)}</span>
       </div>
 
+      {erro && (
+        <p role="alert" className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 text-sm font-bold p-3.5 rounded-xl flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2.5} /> {erro}
+        </p>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
         <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer active:scale-[0.98] order-2 sm:order-1 border border-transparent dark:border-slate-700">Cancelar</button>
         <button type="submit" disabled={ehRendaFixa && caixinhas.length === 0} className="flex-1 bg-blue-600 text-white py-4 md:py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md cursor-pointer active:scale-[0.98] order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed">+ Adicionar Lançamento</button>
@@ -461,6 +482,9 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
   const [localDiasMarcados, setLocalDiasMarcados] = useState([]);
+  const dialogRef = useRef(null);
+  const focoAnteriorRef = useRef(null);
+  const tituloId = 'modal-titulo';
 
   // Sincroniza (durante a renderização, sem efeito) o estado local sempre que um NOVO config
   // chega (cada chamada de modal.alert/prompt/etc. cria um objeto novo), sem precisar de useEffect.
@@ -475,6 +499,58 @@ export function Modal({ config, onClose }) {
     }
   }
 
+  // ♿ ACESSIBILIDADE: fechar com Esc, prender o foco dentro do diálogo enquanto ele estiver
+  // aberto, e devolver o foco pro elemento que abriu o modal ao fechar. Sem isso, o Tab escapava
+  // pra página atrás (o usuário de teclado "sumia" atrás do overlay) e Esc não fazia nada.
+  // Fica antes do early return abaixo porque hook não pode ser condicional.
+  const fecharRef = useRef(null);
+  fecharRef.current = config ? (config.onCancel || onClose) : null;
+
+  useEffect(() => {
+    if (!config) return;
+
+    focoAnteriorRef.current = document.activeElement;
+
+    // Só move o foco pro diálogo se nada dentro dele já tiver assumido o foco — vários
+    // formulários usam autoFocus no campo principal, e roubar isso pioraria a experiência.
+    const jaTemFocoDentro = dialogRef.current?.contains(document.activeElement);
+    if (!jaTemFocoDentro) dialogRef.current?.focus();
+
+    const aoTeclar = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        fecharRef.current?.();
+        return;
+      }
+
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+
+      const focaveis = dialogRef.current.querySelectorAll(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focaveis.length === 0) return;
+
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+
+      // Ciclo circular: Tab no último volta pro primeiro, Shift+Tab no primeiro vai pro último.
+      if (e.shiftKey && document.activeElement === primeiro) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault();
+        primeiro.focus();
+      }
+    };
+
+    document.addEventListener('keydown', aoTeclar);
+    return () => {
+      document.removeEventListener('keydown', aoTeclar);
+      // Devolve o foco pra onde estava (ex: o botão que abriu o modal).
+      if (focoAnteriorRef.current instanceof HTMLElement) focoAnteriorRef.current.focus();
+    };
+  }, [config, onClose]);
+
   if (!config) return null;
 
   const { type, title, message, onConfirm, onCancel, options, inputType } = config;
@@ -486,11 +562,18 @@ export function Modal({ config, onClose }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel || onClose}></div>
-      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={tituloId}
+        tabIndex={-1}
+        className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in outline-none"
+      >
 
         <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center shrink-0">
-          <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">{title || 'Aviso'}</h3>
-          <button onClick={onCancel || onClose} className="text-slate-400 hover:text-rose-500 bg-white dark:bg-slate-800 rounded-full p-2 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors cursor-pointer active:scale-95">
+          <h3 id={tituloId} className="text-lg font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">{title || 'Aviso'}</h3>
+          <button onClick={onCancel || onClose} aria-label="Fechar" className="text-slate-400 hover:text-rose-500 bg-white dark:bg-slate-800 rounded-full p-2 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors cursor-pointer active:scale-95">
             <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
         </div>
