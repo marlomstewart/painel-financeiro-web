@@ -14,6 +14,10 @@ no repositório da API. Para o catálogo de funcionalidades na visão de quem us
 [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md); para a lógica de negócio por trás de cada
 comportamento, veja
 [`REGRAS_DE_NEGOCIO.md`](https://github.com/marlomstewart/painel-financeiro-api/blob/main/docs/REGRAS_DE_NEGOCIO.md).
+Para uma visão consolidada de tudo (inventário técnico completo, histórico recente e checklist de
+transferência de posse), veja
+[`RELATORIO_COMPLETO_HANDOFF.md`](https://github.com/marlomstewart/painel-financeiro-api/blob/main/docs/RELATORIO_COMPLETO_HANDOFF.md)
+no repositório da API.
 
 ## Stack
 
