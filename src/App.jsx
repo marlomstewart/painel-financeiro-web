@@ -176,7 +176,6 @@ function App() {
 
     if (telaAtiva === 'cartoes') return <Cartoes transacoes={transacoes} cartoes={setup.cartoes} addCartao={setup.addCartao} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
 
-    // Injetando a flag de controle da garagem no componente de Metas & Categorias
     if (telaAtiva === 'metas_categorias') return <MetasCategorias categorias={setup.categorias} addCategoria={setup.addCategoria} metasRenda={setup.metasRenda} addMetaRenda={setup.addMetaRenda} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} temGaragem={auth.temGaragem} showToast={showToast} />;
 
     if (telaAtiva === 'dividas') return <Dividas dividas={setup.dividas} transacoes={transacoes} cartoes={setup.cartoes} addDivida={setup.addDivida} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
@@ -225,7 +224,7 @@ function App() {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
-      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} sincronizarAgora={offlineSync.sincronizarAgora} />
+      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} sincronizarAgora={offlineSync.sincronizarAgora} isSyncing={offlineSync.isSyncing} />
 
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
         <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-30 sticky top-0">
