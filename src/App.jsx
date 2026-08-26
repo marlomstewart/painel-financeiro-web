@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { RefreshCw, Cloud, CloudOff } from 'lucide-react'; // 🔥 Importação dos ícones adicionada
 import { Modal } from './components/Modal';
 import { Login } from './components/Login';
 import { TrocaSenha } from './components/TrocaSenha';
@@ -72,9 +73,7 @@ function App() {
   const [dataVis, setDataVis] = useState(() => lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
   const [transacoes, setTransacoes] = useState([]);
 
-  // Navegação com deep linking: troca de tela empilha uma entrada no histórico do navegador
-  // (botão voltar funciona) e atualiza a URL, permitindo recarregar ou compartilhar um link
-  // direto pra uma tela específica em vez de sempre cair no Dashboard.
+  // Navegação com deep linking
   const setTelaAtiva = useCallback((novaTela) => {
     setTelaAtivaState(atual => {
       if (atual === novaTela) return atual;
@@ -92,14 +91,10 @@ function App() {
   const offlineSync = useOfflineSync({ API, getHeaders: auth.getHeaders, token: auth.token, setTransacoes, showToast });
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas });
 
-  // Mantém a URL correta quando o mês/ano visualizado muda (troca de mês em Lançamentos/Dashboard)
-  // sem empilhar uma entrada no histórico pra cada clique — só a troca de TELA gera "voltar".
   useEffect(() => {
     window.history.replaceState({ tela: telaAtiva }, '', montarURL(telaAtiva, dataVis));
   }, [dataVis.mes, dataVis.ano]);
 
-  // Botão voltar/avançar do navegador: sincroniza telaAtiva com a URL em vez de só navegar a
-  // página (que antes não fazia nada visível, já que é uma SPA sem rotas reais).
   useEffect(() => {
     const aoNavegar = () => {
       setTelaAtivaState(lerTelaDaURL('dashboard'));
@@ -109,8 +104,6 @@ function App() {
     return () => window.removeEventListener('popstate', aoNavegar);
   }, []);
 
-  // Guarda contra deep link pra uma tela que o usuário não tem permissão de ver (ex: alguém
-  // compartilha/salva um link com ?tela=admin e outro usuário sem esse privilégio abre depois).
   useEffect(() => {
     if (telaAtiva === 'admin' && !auth.isAdmin) setTelaAtiva('dashboard');
     if (telaAtiva === 'garagem' && !auth.temGaragem) setTelaAtiva('dashboard');
@@ -155,8 +148,6 @@ function App() {
     carregar();
   }, [auth.token]);
 
-  // Exibe o tour de boas-vindas automaticamente após o carregamento, uma vez por sessão,
-  // a menos que o usuário já tenha marcado "Não mostrar novamente" (persistido no perfil dele).
   useEffect(() => {
     if (carregouAPI && !auth.tutorialDispensado) setMostrarTutorial(true);
   }, [carregouAPI, auth.tutorialDispensado]);
@@ -166,9 +157,6 @@ function App() {
 
   if (auth.token && !carregouAPI) return <><Skeleton /><Toast toasts={toasts} /></>;
 
-  /**
-   * @function renderizarConteudoAtivo
-   */
   const renderizarConteudoAtivo = () => {
     if (telaAtiva === 'admin') return <Admin ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} criarUsuario={auth.criarUsuario} carregarUsuarios={auth.carregarUsuarios} usuarios={auth.usuarios} toggleAdmin={auth.toggleAdmin} resetarSenha={auth.resetarSenha} deletarUsuario={auth.deletarUsuario} toggleGaragem={auth.toggleGaragem} toggleComprovante={auth.toggleComprovante} />;
 
@@ -227,9 +215,35 @@ function App() {
       <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} sincronizarAgora={offlineSync.sincronizarAgora} isSyncing={offlineSync.isSyncing} />
 
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
+        {/* BARRA SUPERIOR MOBILE */}
         <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-30 sticky top-0">
-          <h1 className="text-lg font-black tracking-tight flex items-center gap-2"><span className="text-blue-500">⚡</span> Financeiro</h1>
-          <button onClick={() => setIsMobileMenuOpen(true)} className="text-2xl cursor-pointer hover:text-blue-400 transition-colors p-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-black tracking-tight flex items-center gap-2"><span className="text-blue-500">⚡</span> Financeiro</h1>
+
+            {/* 🔥 ÍCONE DE NUVEM NO MOBILE */}
+            <button
+              type="button"
+              onClick={offlineSync.sincronizarAgora}
+              className="group flex items-center justify-center transition-all focus:outline-none shrink-0 mt-0.5"
+              title={offlineSync.isSyncing ? "Sincronizando..." : offlineSync.pendentes.length > 0 ? "Aguardando rede" : "Tudo salvo"}
+            >
+              {offlineSync.isSyncing ? (
+                <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" strokeWidth={2.5} />
+              ) : offlineSync.pendentes.length > 0 ? (
+                <div className="relative">
+                  <CloudOff className="w-4 h-4 text-amber-500" strokeWidth={2.5} />
+                  <span className="absolute -top-1 -right-1.5 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-slate-900 text-[8px] font-black text-white items-center justify-center">{offlineSync.pendentes.length}</span>
+                  </span>
+                </div>
+              ) : (
+                <Cloud className="w-4 h-4 text-emerald-500/30" strokeWidth={2.5} />
+              )}
+            </button>
+          </div>
+
+          <button onClick={() => setIsMobileMenuOpen(true)} className="text-2xl cursor-pointer hover:text-blue-400 transition-colors p-1" aria-label="Abrir Menu">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
           </button>
         </div>
