@@ -116,10 +116,10 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             thirdPartyPhone
         };
 
-        let sucesso = true;
+        let sucesso = false;
         let teveOffline = false;
-        let algumaSalvaNoServidor = false;
         const itensParaFilaOffline = [];
+        const parcelas = [];
 
         for (let i = 0; i < numParcelas; i++) {
             let mesRef = mesRefInicial + i;
@@ -140,22 +140,30 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
                 descricao: numParcelas > 1 ? `${objBase.descricao} (${i + 1}/${numParcelas})` : objBase.descricao
             };
 
-            try {
-                const res = await fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(parcelaObj) });
-                if (res.ok) {
-                    algumaSalvaNoServidor = true;
-                } else {
-                    sucesso = false;
-                }
-            } catch (err) {
-                // Falha de rede (offline): guarda o lançamento localmente pra mostrar já na tela.
-                teveOffline = true;
+            parcelas.push(parcelaObj);
+        }
+
+        try {
+            const res = await fetch(`${API}/transacoes/lote`, {
+                method: 'POST', headers: getHeaders(), body: JSON.stringify({ transacoes: parcelas })
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                showToast(data.message || 'Erro ao registrar lançamento.', 'error');
+                return 'erro';
+            }
+            sucesso = true;
+        } catch (err) {
+            // Falha de rede (offline): guarda todas as parcelas. O endpoint usa ON CONFLICT, então
+            // um timeout depois do COMMIT também é seguro para reprocessar.
+            teveOffline = true;
+            for (const parcelaObj of parcelas) {
                 await salvarPendente(parcelaObj);
                 itensParaFilaOffline.push({ ...parcelaObj, _pendingSync: true });
             }
         }
 
-        if (algumaSalvaNoServidor) {
+        if (sucesso) {
             await carregarTransacoes();
             if (veiculo_id && garagem && garagem.carregarDadosGaragem) {
                 await garagem.carregarDadosGaragem();
@@ -168,7 +176,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             setTransacoes(prev => [...prev, ...itensParaFilaOffline]);
         }
 
-        if (!sucesso) {
+        if (!sucesso && !teveOffline) {
             showToast('Erro ao registrar lançamento.', 'error');
             return 'erro';
         }
