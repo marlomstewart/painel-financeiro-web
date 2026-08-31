@@ -51,6 +51,17 @@ o valor de `VITE_API_URL` — mas lembre que a API em produção restringe CORS 
 (veja `server.js` no repo da API), então testar contra produção só funciona se `localhost:5173`
 estiver na lista de origens permitidas.
 
+## Testes e CI
+
+```bash
+npm test        # suíte Vitest em modo não-interativo
+npm run build   # valida o bundle de produção
+```
+
+O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executa `npm ci`, a suíte Vitest
+e o build a cada push ou pull request para `main`. Os testes cobrem o cadastro de lançamentos e o
+fluxo offline de sincronização; a cobertura unitária/e2e ainda é parcial.
+
 ## Estrutura de pastas
 
 ```
