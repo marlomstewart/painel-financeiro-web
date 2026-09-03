@@ -2,6 +2,22 @@ import { useState, useCallback } from 'react';
 
 const loadingIcon = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
+const lerSaldoConciliadoLocal = () => {
+    const valor = Number(localStorage.getItem('saldoConciliadoValor'));
+    const data = localStorage.getItem('saldoConciliadoData');
+    return Number.isFinite(valor) && data ? { valor, data } : null;
+};
+
+const salvarSaldoConciliadoLocal = (saldo) => {
+    if (!saldo) {
+        localStorage.removeItem('saldoConciliadoValor');
+        localStorage.removeItem('saldoConciliadoData');
+        return;
+    }
+    localStorage.setItem('saldoConciliadoValor', String(saldo.valor));
+    localStorage.setItem('saldoConciliadoData', saldo.data);
+};
+
 /**
  * @function useAuth
  * @description Hook Customizado: Gere token JWT, fluxos de login, perfis e controle de acesso granular.
@@ -23,6 +39,7 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
     const [telegramChatId, setTelegramChatId] = useState(localStorage.getItem('telegramChatId') || '');
     const [tutorialDispensado, setTutorialDispensado] = useState(localStorage.getItem('tutorialDispensado') === 'true');
     const [chavePix, setChavePix] = useState(localStorage.getItem('chavePix') || '');
+    const [saldoConciliado, setSaldoConciliado] = useState(lerSaldoConciliadoLocal);
 
     const [usuarios, setUsuarios] = useState([]);
 
@@ -71,6 +88,7 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
                     localStorage.setItem('telegramChatId', data.telegram_chat_id || '');
                     localStorage.setItem('tutorialDispensado', data.tutorial_dispensado ? 'true' : 'false');
                     localStorage.setItem('chavePix', data.chave_pix || '');
+                    salvarSaldoConciliadoLocal(data.saldo_conciliado);
 
                     setToken(data.token);
                     setIsAdmin(data.is_admin === true);
@@ -81,6 +99,7 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
                     setTelegramChatId(data.telegram_chat_id || '');
                     setTutorialDispensado(data.tutorial_dispensado === true);
                     setChavePix(data.chave_pix || '');
+                    setSaldoConciliado(data.saldo_conciliado || null);
                 }
             } else {
                 setErroLogin(data.message || 'Erro de credenciais.');
@@ -102,6 +121,7 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
         localStorage.removeItem('telegramChatId');
         localStorage.removeItem('tutorialDispensado');
         localStorage.removeItem('chavePix');
+        salvarSaldoConciliadoLocal(null);
 
         setToken(null);
         setTokenTemp(null);
@@ -115,6 +135,7 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
         setTelegramChatId('');
         setTutorialDispensado(false);
         setChavePix('');
+        setSaldoConciliado(null);
         setUsuarios([]);
         setUsuarioLogin('');
         setSenhaLogin('');
@@ -187,6 +208,30 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
         }
     };
 
+    /** Salva o saldo real confirmado que passa a ser a base do caixa a partir da data informada. */
+    const atualizarSaldoConciliado = async ({ valor, data }) => {
+        try {
+            const res = await fetch(`${API}/perfil`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify({ saldoConciliadoValor: valor, saldoConciliadoData: data })
+            });
+            const resposta = await res.json();
+            if (!res.ok) {
+                showToast(resposta.message || 'Não foi possível salvar o saldo conciliado.', 'error');
+                return false;
+            }
+            salvarSaldoConciliadoLocal(resposta.saldo_conciliado);
+            setSaldoConciliado(resposta.saldo_conciliado);
+            showToast('Saldo conciliado salvo. O caixa passa a partir deste marco.', 'success');
+            return true;
+        } catch (err) {
+            console.error('Erro ao salvar saldo conciliado:', err);
+            showToast('Erro de conexão ao salvar o saldo conciliado.', 'error');
+            return false;
+        }
+    };
+
     /** Atualiza o ID do Telegram para Notificações */
     const atualizarTelegram = async (dados) => {
         try {
@@ -250,10 +295,10 @@ export function useAuth({ API, modal, setCarregouAPI, showToast }) {
     const toggleComprovante = async (id, nomeU, atualTemComprovante) => { const acao = atualTemComprovante ? 'REVOGAR o anexo de comprovantes' : 'LIBERAR o anexo de comprovantes'; const ok = await modal.confirm(`Deseja ${acao} para "${nomeU}"?`, '📎 Alterar Acesso', { confirmLabel: 'Confirmar' }); if (!ok) return; const res = await fetch(`${API}/admin/usuarios/${id}/toggle-comprovante`, { method: 'PUT', headers: getHeaders() }); const data = await res.json(); if (res.ok) carregarUsuarios(); else showToast(data.message, 'error'); };
 
     return {
-        token, precisaTrocarSenha, nomeUsuario, nomeCompleto, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, chavePix, usuarios, getHeaders,
+        token, precisaTrocarSenha, nomeUsuario, nomeCompleto, isAdmin, temGaragem, temComprovante, telegramChatId, tutorialDispensado, chavePix, saldoConciliado, usuarios, getHeaders,
         usuarioLogin, setUsuarioLogin, senhaLogin, setSenhaLogin, erroLogin,
         novaSenha, setNovaSenha, confirmarSenha, setConfirmarSenha, erroTrocaSenha,
         fazerLogin, fazerLogout, enviarNovaSenha, carregarUsuarios, criarUsuario, deletarUsuario, resetarSenha, toggleAdmin, toggleGaragem, toggleComprovante,
-        atualizarPerfil, atualizarTelegram, alterarSenha, dispensarTutorial
+        atualizarPerfil, atualizarSaldoConciliado, atualizarTelegram, alterarSenha, dispensarTutorial
     };
 }

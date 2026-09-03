@@ -25,7 +25,11 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   ("no ritmo atual, você vai fechar o mês gastando X a mais que sua meta").
 - **Radar de Vencimentos**: destaca contas, dívidas e faturas de cartão que vencem nos próximos 7
   dias.
-- Opção de somar (ou não) o saldo acumulado dos meses anteriores ao saldo do mês atual.
+- Opção de somar (ou não) o saldo acumulado dos meses anteriores ao saldo do mês atual. Quando o
+  histórico não representa mais o dinheiro que realmente ficou no banco, você pode registrar em
+  **Configurações** um **saldo conciliado**: o valor conferido no extrato em uma data. A partir
+  desse marco, o Saldo Líquido começa exatamente naquele valor e considera somente entradas e
+  saídas efetivamente pagas depois dele — inclusive uma fatura comprada em um mês e paga no outro.
 - Se houver lançamentos pendentes de meses passados, um aviso permite "importar" esses valores
   pro mês atual de uma vez.
 
@@ -53,7 +57,9 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   aparece como "Falha de sincronização" e não fica tentando sozinho indefinidamente.
 - **Saldo Líquido**: mostra somente dinheiro efetivamente recebido ou pago. Ao virar o mês, ele
   mantém a mesma regra para compras divididas: depois que a parte do terceiro foi recebida, apenas
-  a sua fração permanece descontada no caixa.
+  a sua fração permanece descontada no caixa. Para lançamentos pagos, a data de pagamento é a que
+  determina em que mês o dinheiro saiu da conta; o mês da compra continua organizando orçamento e
+  fatura do cartão.
 
 ## Cartões de Crédito
 
@@ -164,6 +170,9 @@ vinculá-lo a um investimento automaticamente.
 ## Configurações
 
 - Editar nome de exibição e nome completo.
+- Registrar um **saldo conciliado** (valor e data conferidos no banco) para definir um ponto de
+  partida confiável do Saldo Líquido. Não é uma renda nem um lançamento novo; serve para que o
+  dinheiro que sobrou de um mês seja carregado corretamente para o próximo.
 - Cadastrar sua chave PIX, usada automaticamente na mensagem de cobrança em "A Receber".
 - Trocar senha.
 - Vincular sua conta a um bot do Telegram, pra receber alertas de vencimento automaticamente.

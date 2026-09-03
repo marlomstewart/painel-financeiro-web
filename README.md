@@ -83,7 +83,7 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 
 | Tela | Arquivo | Resumo |
 |---|---|---|
-| Dashboard | `Dashboard.jsx` + `useDashboard.jsx` | Visão geral do mês: rendas pagas, gastos reais, investimentos, faturas abertas, saldo em conta, previsão de fechamento do mês, alertas de vencimento (`AlertasDashboard.jsx`) |
+| Dashboard | `Dashboard.jsx` + `useDashboard.jsx` | Visão geral do mês: rendas pagas, gastos reais, investimentos, faturas abertas, saldo em conta, previsão de fechamento e alertas de vencimento (`AlertasDashboard.jsx`). Suporta marco de saldo conciliado para partir de um fechamento bancário confirmado. |
 | Lançamentos | `Lancamentos.jsx` + `useTransacoes.jsx` | Cadastro e extrato de despesas/rendas/reembolsos/investimentos. Suporta parcelamento, divisão com terceiros, anexo de comprovante (se liberado) e cadastro **offline** (fila em IndexedDB, sincroniza sozinho quando a conexão volta — `useOfflineSync.jsx`/`utils/offlineQueue.js`) |
 | Cartões de Crédito | `Cartoes.jsx` + `useCartoesFaturas.jsx` | Cadastro de cartões (dia de fechamento/vencimento/limite) e agrupamento automático de gastos em fatura |
 | Contas Fixas | `ContasFixas.jsx` | Despesas recorrentes (aluguel, internet) — geradas automaticamente todo mês pelo motor no backend |
@@ -106,6 +106,11 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
   Dashboard usa as duas, em cards diferentes. Qual delas entra no Saldo Líquido depende de
   `terceiro_recebido` (ver regra 1.5/1.6 em `REGRAS_DE_NEGOCIO.md`): valor integral enquanto a
   pessoa não devolveu, só a sua fração depois que devolveu.
+- **Saldo conciliado e data de caixa**: o usuário pode informar em Configurações um saldo bancário
+  confirmado e sua data. A partir desse marco, o Saldo Líquido usa `data_pagamento` (com fallback
+  para `dataCompra` em registros antigos) para decidir quando uma entrada ou saída afetou o banco.
+  `mesReferencia` continua sendo a competência de orçamento e de fatura; não é usado como data de
+  saída de caixa após a conciliação.
 - **Agrupamento de parcelamento** (`getTransacoesRelacionadas` em `useTransacoes.jsx`): decide
   quais lançamentos são "irmãos" de um parcelamento, pra oferecer edição/exclusão em lote. Só trata
   como parcelamento quando o prefixo do id é **numérico** (timestamp gerado por `addTransacao`,

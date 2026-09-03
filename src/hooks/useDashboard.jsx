@@ -21,6 +21,15 @@ const getValorParaConta = (t) => {
     return (t.isThirdParty && t.terceiro_recebido) ? getMeuValor(t) : valorIntegral;
 };
 
+const ehRenda = (t) => t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa';
+const dataISO = (valor) => {
+    const texto = String(valor || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : null;
+};
+const fimDaCompetenciaISO = (mes, ano) => `${ano}-${String(mes).padStart(2, '0')}-${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`;
+const inicioDaCompetenciaISO = (mes, ano) => `${ano}-${String(mes).padStart(2, '0')}-01`;
+const arredondarCentavos = (valor) => Math.round((valor + Number.EPSILON) * 100) / 100;
+
 // 🔥 FUNÇÃO BLINDADA: Detecta se é um empréstimo oriundo do módulo de dívidas
 const isDividaTerceiro = (t) => {
     // Motor atual (desde a correcao de 10/08): marca divida de terceiro via isThirdParty,
@@ -31,6 +40,15 @@ const isDividaTerceiro = (t) => {
     // Compatibilidade com lancamentos antigos, gerados antes da correcao, que usavam essa categoria.
     return t.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'divida de terceiros';
 };
+
+const resumirMovimentosDeCaixa = (itens) => itens.reduce((resumo, t) => {
+    if (isDividaTerceiro(t) || t.status !== 'pago') return resumo;
+    const valor = getValorParaConta(t);
+    if (ehRenda(t) || t.tipo === 'reembolso') resumo.rendas += valor;
+    else if (t.tipo === 'investimento') resumo.investimentos += valor;
+    else resumo.gastos += valor;
+    return resumo;
+}, { rendas: 0, gastos: 0, investimentos: 0 });
 
 // 🔥 NOVO: Componente Acordeão Interno (Para faturas agrupadas)
 const InnerAcordeao = ({ grupo }) => {
@@ -139,7 +157,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 /**
  * @file src/hooks/useDashboard.jsx
  */
-export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast, rendasFixas = [], contasFixas = [], dividas = [] }) {
+export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast, rendasFixas = [], contasFixas = [], dividas = [], saldoConciliado = null }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -173,7 +191,29 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [transacoes]);
 
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
-    const saldoMesAnterior = useMemo(() => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano), [calcularSaldoAcumuladoAte, mesAntRef]);
+    const marcoSaldoConciliado = useMemo(() => {
+        const valor = Number(saldoConciliado?.valor);
+        const data = dataISO(saldoConciliado?.data);
+        return Number.isFinite(valor) && data ? { valor, data } : null;
+    }, [saldoConciliado]);
+
+    const dataInicioMesVisivel = inicioDaCompetenciaISO(dataVis.mes, dataVis.ano);
+    const dataFimMesVisivel = fimDaCompetenciaISO(dataVis.mes, dataVis.ano);
+    const marcoAplicaNoMes = Boolean(marcoSaldoConciliado && dataFimMesVisivel >= marcoSaldoConciliado.data);
+    const marcoFoiInformadoNoMes = Boolean(marcoSaldoConciliado && marcoSaldoConciliado.data >= dataInicioMesVisivel && marcoSaldoConciliado.data <= dataFimMesVisivel);
+
+    const dataDeCaixa = useCallback((t) => dataISO(t.data_pagamento) || dataISO(t.dataCompra), []);
+    const calcularSaldoComMarcoAte = useCallback((mes, ano) => {
+        if (!marcoSaldoConciliado) return null;
+        const fim = fimDaCompetenciaISO(mes, ano);
+        if (fim < marcoSaldoConciliado.data) return null;
+        const movimentos = transacoes.filter(t => {
+            const data = dataDeCaixa(t);
+            return t.status === 'pago' && data && data > marcoSaldoConciliado.data && data <= fim;
+        });
+        const resumo = resumirMovimentosDeCaixa(movimentos);
+        return arredondarCentavos(marcoSaldoConciliado.valor + resumo.rendas - resumo.gastos - resumo.investimentos);
+    }, [marcoSaldoConciliado, transacoes, dataDeCaixa]);
 
     const mudarOrdenacao = useCallback((coluna) => {
         setOrdenacao(prev => ({ coluna, direcao: prev.coluna === coluna ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc' }));
@@ -296,8 +336,32 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         metaNaoComprometida += Math.max(0, c.meta - (gCat[c.nome] || 0));
     });
 
+    const transacoesDoCaixaNoMes = marcoAplicaNoMes
+        ? transacoes.filter(t => {
+            const data = dataDeCaixa(t);
+            return t.status === 'pago' && data && data > marcoSaldoConciliado.data && data >= dataInicioMesVisivel && data <= dataFimMesVisivel;
+        })
+        : transacoesMes;
+    const resumoCaixaNoMes = marcoAplicaNoMes ? resumirMovimentosDeCaixa(transacoesDoCaixaNoMes) : null;
+
+    if (resumoCaixaNoMes) {
+        rendaPagaConta = resumoCaixaNoMes.rendas;
+        gastoPagoConta = resumoCaixaNoMes.gastos;
+        investidoPagoConta = resumoCaixaNoMes.investimentos;
+    }
+
+    const saldoMesAnteriorLegado = useMemo(
+        () => calcularSaldoAcumuladoAte(mesAntRef.mes, mesAntRef.ano),
+        [calcularSaldoAcumuladoAte, mesAntRef]
+    );
+    const saldoMesAnteriorComMarco = useMemo(
+        () => calcularSaldoComMarcoAte(mesAntRef.mes, mesAntRef.ano),
+        [calcularSaldoComMarcoAte, mesAntRef]
+    );
+    const saldoMesAnterior = saldoMesAnteriorComMarco ?? saldoMesAnteriorLegado;
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
-    const saldoAtual = saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0);
+    const saldoAtualComMarco = marcoAplicaNoMes ? calcularSaldoComMarcoAte(dataVis.mes, dataVis.ano) : null;
+    const saldoAtual = saldoAtualComMarco ?? (saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0));
     const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;
     const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
 
@@ -510,9 +574,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             return [...gruposArray, ...itensSoltos].sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor));
         };
 
-        const listRendaPagaConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa'));
-        const listGastoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo !== 'renda' && t.categoria !== 'Renda' && t.categoria !== 'Renda Fixa' && t.tipo !== 'investimento');
-        const listInvestidoPagoConta = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo === 'investimento');
+        const listRendaPagaConta = transacoesDoCaixaNoMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && ehRenda(t));
+        const listGastoPagoConta = transacoesDoCaixaNoMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && !ehRenda(t) && t.tipo !== 'investimento');
+        const listInvestidoPagoConta = transacoesDoCaixaNoMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && t.tipo === 'investimento');
 
         const listRendaPagaMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pago' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
         const listRendaPendenteMeu = transacoesMes.filter(t => !isDividaTerceiro(t) && t.status === 'pendente' && (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') && getMeuValor(t) > 0);
@@ -571,7 +635,12 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <RowAcordeao titulo="Rendas Pagas" valorStr={formatarMoeda(rendaPagaConta)} textColor="text-emerald-600 dark:text-emerald-400" sinal="+" itens={mapAgrupado(listRendaPagaConta, false)} />
                     <RowAcordeao titulo="Gastos Pagos (Totais)" valorStr={formatarMoeda(Math.abs(gastoPagoConta))} textColor={gastoPagoConta >= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={gastoPagoConta >= 0 ? '-' : '+'} itens={mapAgrupado(listGastoPagoConta, false)} />
                     <RowAcordeao titulo="Investimentos Efetivados" valorStr={formatarMoeda(Math.abs(investidoPagoConta))} textColor={investidoPagoConta >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'} sinal={investidoPagoConta >= 0 ? '-' : '+'} itens={mapAgrupado(listInvestidoPagoConta, false)} />
-                    {somarSaldoAnterior && (
+                    {marcoFoiInformadoNoMes ? (
+                        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                            <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo conciliado em {new Date(`${marcoSaldoConciliado.data}T12:00:00`).toLocaleDateString('pt-BR')}</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 font-bold">{marcoSaldoConciliado.valor >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(marcoSaldoConciliado.valor))}</span>
+                        </div>
+                    ) : somarSaldoAnterior && (
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
                             <span className="text-slate-600 dark:text-slate-300 text-sm">Saldo Mês Anterior</span>
                             <span className="text-indigo-600 dark:text-indigo-400 font-bold">{saldoMesAnterior >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(saldoMesAnterior))}</span>
@@ -620,7 +689,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes]); 
+    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesDoCaixaNoMes, marcoFoiInformadoNoMes, marcoSaldoConciliado]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,

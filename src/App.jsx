@@ -89,7 +89,7 @@ function App() {
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal, showToast });
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast });
   const offlineSync = useOfflineSync({ API, getHeaders: auth.getHeaders, token: auth.token, setTransacoes, showToast });
-  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas });
+  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas, saldoConciliado: auth.saldoConciliado });
 
   useEffect(() => {
     window.history.replaceState({ tela: telaAtiva }, '', montarURL(telaAtiva, dataVis));
@@ -170,7 +170,7 @@ function App() {
     if (telaAtiva === 'contas_fixas') return <ContasFixas contasFixas={setup.contasFixas} cartoes={setup.cartoes} addContaFixa={setup.addContaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
     if (telaAtiva === 'rendas_fixas') return <RendasFixas rendasFixas={setup.rendasFixas} addRendaFixa={setup.addRendaFixa} editarSetup={setup.editarSetup} removerSetup={setup.removerSetup} modal={modal} showToast={showToast} />;
 
-    if (telaAtiva === 'configuracoes') return <Configuracoes API={API} getHeaders={auth.getHeaders} nomeUsuario={auth.nomeUsuario} nomeCompleto={auth.nomeCompleto} atualizarPerfil={auth.atualizarPerfil} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} chavePix={auth.chavePix} showToast={showToast} modal={modal} />;
+    if (telaAtiva === 'configuracoes') return <Configuracoes API={API} getHeaders={auth.getHeaders} nomeUsuario={auth.nomeUsuario} nomeCompleto={auth.nomeCompleto} atualizarPerfil={auth.atualizarPerfil} atualizarSaldoConciliado={auth.atualizarSaldoConciliado} saldoConciliado={auth.saldoConciliado} alterarSenha={auth.alterarSenha} exportarCSV={setup.exportarCSV} gerarMesManual={setup.gerarMesManual} gerandoMes={setup.gerandoMes} removerSetup={setup.removerSetup} telegramChatId={auth.telegramChatId} atualizarTelegram={auth.atualizarTelegram} chavePix={auth.chavePix} showToast={showToast} modal={modal} />;
 
     if (telaAtiva === 'ajuda') return <Ajuda temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} abrirTutorial={() => setMostrarTutorial(true)} />;
 

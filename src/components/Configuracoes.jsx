@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Settings, User, Send, CheckCircle2, Bot, Rocket, ArrowLeft, Palette,
-    Sun, Moon, Monitor, Lock, Wrench, Download, Hourglass, Zap, AlertTriangle
+    Sun, Moon, Monitor, Lock, Wrench, Download, Hourglass, Zap, AlertTriangle, Landmark
 } from 'lucide-react';
 
 /**
@@ -9,7 +9,7 @@ import {
  * @description Painel de controlo central do utilizador.
  * Gere os dados de perfil, segurança, exportação, motor de temas e vinculação com o Telegram.
  */
-export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, nomeCompleto: nomeCompletoProp, atualizarPerfil, alterarSenha, chavePix, showToast, modal }) {
+export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, gerandoMes, removerSetup, nomeUsuario, nomeCompleto: nomeCompletoProp, atualizarPerfil, atualizarSaldoConciliado, saldoConciliado, alterarSenha, chavePix, showToast, modal }) {
 
     // ================= ESTADOS GERAIS =================
     // Sementes já preenchidas com o valor vindo da sessão (não com string vazia) — senão o campo
@@ -17,6 +17,8 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     const [nomeCompleto, setNomeCompleto] = useState(nomeCompletoProp || '');
     const [nomeExibicao, setNomeExibicao] = useState(nomeUsuario || '');
     const [chavePixInput, setChavePixInput] = useState(chavePix || '');
+    const [saldoConciliadoValor, setSaldoConciliadoValor] = useState(saldoConciliado ? String(saldoConciliado.valor).replace('.', ',') : '');
+    const [saldoConciliadoData, setSaldoConciliadoData] = useState(saldoConciliado?.data || '');
 
     // Estados de Segurança
     const [senhaAtual, setSenhaAtual] = useState('');
@@ -110,6 +112,17 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
     const handleSalvarPerfil = (e) => {
         e.preventDefault();
         if (atualizarPerfil) atualizarPerfil({ nomeCompleto, nomeExibicao, chave_pix: chavePixInput });
+    };
+
+    const handleSalvarSaldoConciliado = async (e) => {
+        e.preventDefault();
+        const texto = saldoConciliadoValor.trim();
+        const valor = Number(texto.includes(',') ? texto.replace(/\./g, '').replace(',', '.') : texto);
+        if (!Number.isFinite(valor) || !saldoConciliadoData) {
+            showToast('Informe um saldo e uma data de conciliação válidos.', 'error');
+            return;
+        }
+        await atualizarSaldoConciliado?.({ valor, data: saldoConciliadoData });
     };
 
     /** @function handleAlterarSenha - Valida as regras de negócio para troca de credencial */
@@ -216,6 +229,26 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
                         </div>
                         <div className="flex justify-end pt-4 mt-auto">
                             <button type="submit" className={btnSalvarCls}>Salvar Perfil</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 p-5 md:p-6 rounded-xl shadow-sm flex flex-col transition-colors">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-lg flex items-center gap-2"><Landmark className="w-4.5 h-4.5 text-indigo-600 dark:text-indigo-400" strokeWidth={2} /> Caixa conciliado</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Informe o saldo real confirmado da conta em uma data. A partir desse marco, o Saldo Líquido acompanha apenas o que entrou ou saiu de verdade.</p>
+
+                    <form onSubmit={handleSalvarSaldoConciliado} className="space-y-4 flex flex-col flex-1">
+                        <div>
+                            <label className={labelCls}>Saldo confirmado (R$)</label>
+                            <input inputMode="decimal" value={saldoConciliadoValor} onChange={(e) => setSaldoConciliadoValor(e.target.value)} placeholder="Ex: 43,90" className={inputCls} required />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Data de referência</label>
+                            <input type="date" value={saldoConciliadoData} onChange={(e) => setSaldoConciliadoData(e.target.value)} className={inputCls} required />
+                        </div>
+                        <p className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-lg p-3">Use o fechamento já conferido no banco. Não cadastre esse valor como renda: ele é o ponto de partida do caixa.</p>
+                        <div className="flex justify-end mt-auto pt-2">
+                            <button type="submit" className={btnSalvarCls}>Salvar saldo conciliado</button>
                         </div>
                     </form>
                 </div>

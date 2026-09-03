@@ -15,10 +15,10 @@ const transacoes = [
   },
 ]
 
-function criarProps(dataVis) {
+function criarProps(dataVis, lista = transacoes, saldoConciliado = null) {
   return {
-    transacoes,
-    transacoesMes: transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano),
+    transacoes: lista,
+    transacoesMes: lista.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano),
     setTransacoes: vi.fn(),
     categorias: [],
     dataVis,
@@ -32,6 +32,7 @@ function criarProps(dataVis) {
     rendasFixas: [],
     contasFixas: [],
     dividas: [],
+    saldoConciliado,
   }
 }
 
@@ -48,4 +49,28 @@ test('saldo de um mês vira saldo anterior idêntico no mês seguinte após spli
 
   assert.equal(result.current.saldoMesAnterior, 916.45)
   assert.equal(result.current.saldoAtual, 916.45)
+})
+
+test('saldo conciliado inicia setembro pelo fechamento real de agosto e usa a data do pagamento', () => {
+  const lista = [
+    {
+      id: 'combustivel-setembro', descricao: 'Combustível', tipo: 'despesa', categoria: 'Gasolina', valorParcela: 21.63,
+      status: 'pago', dataCompra: '2026-09-02', data_pagamento: '2026-09-02', mesReferencia: 9, anoReferencia: 2026,
+    },
+    {
+      id: 'fatura-agosto-paga-setembro', descricao: 'Fatura de agosto', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 100,
+      status: 'pago', dataCompra: '2026-08-20', data_pagamento: '2026-09-03', mesReferencia: 8, anoReferencia: 2026,
+    },
+  ]
+  const saldoConciliado = { valor: 43.90, data: '2026-08-31' }
+  const { result, rerender } = renderHook(({ dataVis }) => useDashboard(criarProps(dataVis, lista, saldoConciliado)), {
+    initialProps: { dataVis: { mes: 8, ano: 2026 } },
+  })
+
+  assert.equal(result.current.saldoAtual, 43.90)
+
+  rerender({ dataVis: { mes: 9, ano: 2026 } })
+
+  assert.equal(result.current.saldoMesAnterior, 43.90)
+  assert.equal(result.current.saldoAtual, -77.73)
 })
