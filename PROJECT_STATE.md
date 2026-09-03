@@ -1,0 +1,60 @@
+# Estado atual — Web FinControle
+
+**Atualizado em:** 03/09/2026
+
+## Objetivo atual
+
+Manter o frontend estável para evolução de longo prazo e registrar contexto suficiente para novas
+sessões independentes.
+
+## Estado geral
+
+- Repositório limpo na inspeção desta atualização; `main` está em `e908c8d`.
+- Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
+  pode ser deduzida somente do Git.
+- Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
+  distribuídos por props.
+
+## Entregas relevantes
+
+- Fila offline IndexedDB preserva atomicidade de lotes e interrompe retries automáticos em falha
+  permanente.
+- Dashboard preserva compras divididas no saldo histórico.
+- Configurações permite saldo conciliado; depois do marco, o Saldo Líquido usa datas efetivas de
+  pagamento para representar caixa real entre meses.
+- CI em GitHub Actions executa testes Vitest e build a cada push/pull request.
+
+## Trabalho em andamento
+
+Nenhuma alteração funcional em andamento nesta inspeção.
+
+## Pendências e riscos
+
+- Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
+  essa informação não é confirmável pelo repositório.
+- `npm run lint` falha por débitos preexistentes em `App.jsx`, `Configuracoes.jsx`, `useAuth.jsx`,
+  `useDashboard.jsx` e configuração de globals dos testes. Tratar em objetivo próprio, sem misturar
+  com feature financeira.
+- Há arquivos de alta complexidade registrados no backlog da API: `Investimentos.jsx`, `Modal.jsx`,
+  `Lancamentos.jsx` e `useDashboard.jsx`.
+
+## Arquivos importantes
+
+- `src/App.jsx`, `src/hooks/useAuth.jsx`, `src/hooks/useDashboard.jsx`
+- `src/hooks/useTransacoes.jsx`, `src/hooks/useOfflineSync.jsx`
+- `src/utils/offlineQueue.js`, `src/utils/cartaoUtils.js`
+- `src/components/Dashboard.jsx`, `src/components/Configuracoes.jsx`, `src/components/Lancamentos.jsx`
+- `src/hooks/*.test.jsx`, `.github/workflows/ci.yml`, `docs/FUNCIONALIDADES.md`
+
+## Validações recentes
+
+- `npm test`: 7 testes aprovados nesta sessão.
+- `npm run build`: bundle de produção aprovado nesta sessão.
+- Lint direcionado confirmou que os erros reportados são preexistentes; não houve erro novo do
+  marco conciliado.
+
+## Próximos passos recomendados
+
+1. Fazer smoke test do Dashboard/Configurações em produção após deploy.
+2. Validar manualmente saldo de setembro a partir do fechamento conciliado.
+3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
