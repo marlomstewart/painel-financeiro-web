@@ -51,6 +51,9 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   parceladas são guardadas e enviadas juntas, sem registrar só parte delas. Um indicador no menu
   lateral mostra os lotes pendentes; se o servidor rejeitar o lote por uma regra definitiva, ele
   aparece como "Falha de sincronização" e não fica tentando sozinho indefinidamente.
+- **Saldo Líquido**: mostra somente dinheiro efetivamente recebido ou pago. Ao virar o mês, ele
+  mantém a mesma regra para compras divididas: depois que a parte do terceiro foi recebida, apenas
+  a sua fração permanece descontada no caixa.
 
 ## Cartões de Crédito
 

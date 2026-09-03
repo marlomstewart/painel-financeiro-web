@@ -13,6 +13,14 @@ const getMeuValor = (t) => {
     return Math.max(0, vp - vt);
 };
 
+// Caixa real: enquanto o terceiro não devolveu, o dinheiro inteiro saiu da conta. Depois da
+// devolução, só a sua fração continua pesando no saldo. Esta regra precisa ser idêntica tanto
+// no mês visível quanto no saldo histórico carregado para o mês seguinte.
+const getValorParaConta = (t) => {
+    const valorIntegral = Number(t.valorParcela);
+    return (t.isThirdParty && t.terceiro_recebido) ? getMeuValor(t) : valorIntegral;
+};
+
 // 🔥 FUNÇÃO BLINDADA: Detecta se é um empréstimo oriundo do módulo de dívidas
 const isDividaTerceiro = (t) => {
     // Motor atual (desde a correcao de 10/08): marca divida de terceiro via isThirdParty,
@@ -150,15 +158,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         todasAteOMes.forEach(t => {
             if (isDividaTerceiro(t)) return; // IGNORA DÍVIDAS DE TERCEIROS NO SALDO HISTÓRICO
             
-            const valorIntegral = Number(t.valorParcela);
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') { 
-                if (t.status === 'pago') rendaPaga += valorIntegral; 
+            const valorParaConta = getValorParaConta(t);
+            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
+                if (t.status === 'pago') rendaPaga += valorParaConta;
             }
             else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorIntegral; 
+                if (t.status === 'pago') gastoPago -= valorParaConta;
             }
-            else { 
-                if (t.status === 'pago') gastoPago += valorIntegral; 
+            else {
+                if (t.status === 'pago') gastoPago += valorParaConta;
             }
         });
         return rendaPaga - gastoPago;
@@ -228,7 +236,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 // Se a parte do terceiro já foi devolvida (terceiro_recebido), só a sua fração
                 // pesa no saldo real — senão, conta o valor cheio (o dinheiro saiu da conta
                 // inteiro, mesmo que parte dele ainda esteja pra receber de volta).
-                const valorParaConta = (t.isThirdParty && t.terceiro_recebido) ? getMeuValor(t) : valorTotalIntegral;
+                const valorParaConta = getValorParaConta(t);
 
                 if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') rendaPagaConta += valorParaConta;
                 else if (t.tipo === 'investimento') investidoPagoConta += valorParaConta;
