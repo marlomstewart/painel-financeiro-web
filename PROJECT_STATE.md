@@ -9,7 +9,7 @@ sessões independentes.
 
 ## Estado geral
 
-- Repositório limpo na inspeção desta atualização; `main` está em `e908c8d`.
+- Correção do detalhamento do Fluxo de Caixa Projetado preparada para publicação em `main`.
 - Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
   pode ser deduzida somente do Git.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
@@ -48,13 +48,13 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 
 ## Validações recentes
 
-- `npm test`: 7 testes aprovados nesta sessão.
+- `npm test`: 8 testes aprovados nesta sessão, incluindo o clique em mês projetado.
 - `npm run build`: bundle de produção aprovado nesta sessão.
 - Lint direcionado confirmou que os erros reportados são preexistentes; não houve erro novo do
   marco conciliado.
 
 ## Próximos passos recomendados
 
-1. Fazer smoke test do Dashboard/Configurações em produção após deploy.
+1. Confirmar o deploy da correção e repetir o clique numa barra do Fluxo de Caixa Projetado em produção.
 2. Validar manualmente saldo de setembro a partir do fechamento conciliado.
 3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

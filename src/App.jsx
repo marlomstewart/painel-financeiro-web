@@ -206,7 +206,7 @@ function App() {
       setSomarSaldoAnterior={dashboardManager.setSomarSaldoAnterior} categorias={dashboardManager.categoriasDinamicas} gCat={dashboardManager.gCat}
       abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias}
       abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao}
-      fluxoProjetado={dashboardManager.fluxoProjetado}
+      fluxoProjetado={dashboardManager.fluxoProjetado} abrirDetalheMesProjetado={dashboardManager.abrirDetalheMesProjetado}
     />;
   };
 
