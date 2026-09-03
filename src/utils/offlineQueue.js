@@ -1,8 +1,7 @@
 /**
  * @file src/utils/offlineQueue.js
- * @description Fila de lançamentos pendentes de sincronização, persistida em IndexedDB.
- * Usada quando o cadastro de um novo lançamento falha por falta de conexão: o item fica
- * guardado localmente até o app conseguir reenviá-lo pro servidor.
+ * @description Fila IndexedDB para lançamentos sem rede. Um lançamento parcelado é persistido
+ * como um único lote, preservando no aparelho a mesma atomicidade do endpoint /transacoes/lote.
  */
 
 const DB_NAME = 'fincontrole-offline';
@@ -29,46 +28,78 @@ async function comStore(modo, executar) {
     const db = await abrirDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, modo);
-        const store = tx.objectStore(STORE_NAME);
-        const resultadoPromise = executar(store);
+        executar(tx.objectStore(STORE_NAME));
 
-        tx.oncomplete = () => resolve(resultadoPromise);
+        tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
     });
 }
 
-/** Grava um novo lançamento pendente na fila. */
+/**
+ * Persiste todas as parcelas de uma compra em uma única escrita IndexedDB. O ID determinístico
+ * também evita duplicar o lote se o usuário recarregar o app antes da rede voltar.
+ */
+export async function salvarLotePendente(transacoes) {
+    if (!Array.isArray(transacoes) || transacoes.length === 0 || !transacoes[0]?.id) {
+        throw new Error('Não foi possível guardar um lote offline sem transações válidas.');
+    }
+
+    const id = `lote_${transacoes[0].id}`;
+    await comStore('readwrite', (store) => {
+        store.put({
+            id,
+            tipo: 'lote',
+            payload: { transacoes },
+            criadoEm: Date.now(),
+            tentativas: 0,
+            estado: 'pendente',
+            erro: null
+        });
+    });
+    return id;
+}
+
+/**
+ * Compatibilidade com registros gravados antes da fila por lote. Novos fluxos devem usar
+ * salvarLotePendente; estes itens antigos continuam podendo ser enviados sem perda de dados.
+ */
 export async function salvarPendente(payload) {
     await comStore('readwrite', (store) => {
-        store.put({ id: payload.id, payload, criadoEm: Date.now(), tentativas: 0, erro: null });
+        store.put({ id: payload.id, tipo: 'legado', payload, criadoEm: Date.now(), tentativas: 0, estado: 'pendente', erro: null });
     });
 }
 
-/** Lista todos os lançamentos ainda pendentes de sincronização. */
+/** Lista itens pendentes em ordem de criação, incluindo falhas permanentes para a UI informar. */
 export async function listarPendentes() {
     const db = await abrirDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readonly');
         const request = tx.objectStore(STORE_NAME).getAll();
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => resolve(request.result.sort((a, b) => a.criadoEm - b.criadoEm));
         request.onerror = () => reject(request.error);
     });
 }
 
-/** Remove um lançamento da fila (após sincronizar com sucesso). */
+/** Remove um item somente após sucesso confirmado pelo servidor. */
 export async function removerPendente(id) {
-    await comStore('readwrite', (store) => {
-        store.delete(id);
-    });
+    await comStore('readwrite', (store) => store.delete(id));
 }
 
-/** Atualiza contagem de tentativas/erro de um item da fila, sem removê-lo. */
+/** Atualiza estado, contagem e erro de um item sem sobrescrever seu payload. */
 export async function atualizarPendente(id, patch) {
-    await comStore('readwrite', (store) => {
+    const db = await abrirDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
         const getRequest = store.get(id);
         getRequest.onsuccess = () => {
             const item = getRequest.result;
             if (item) store.put({ ...item, ...patch });
         };
+        getRequest.onerror = () => reject(getRequest.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
     });
 }

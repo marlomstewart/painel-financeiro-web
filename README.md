@@ -121,10 +121,12 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
   `utils/cartaoUtils.js` (`ehPagamentoCredito`, `extrairCartaoId`, `resolverCartao`, `nomeCartao`)
   pra ler esse valor — nunca faça `split('_')` manual (o id do cartão pode conter underscore).
 - **Fila offline**: `useTransacoes.jsx :: addTransacao` captura falha de rede no `POST
-  /transacoes` e grava o lançamento em `utils/offlineQueue.js` (IndexedDB), inserindo-o
-  otimisticamente em `transacoes` com a flag `_pendingSync: true`. `useOfflineSync.jsx` tenta
-  sincronizar a fila no login, no evento `online` do navegador, e por um intervalo de segurança —
-  só funciona com a aba aberta, não é um Service Worker de background sync de verdade.
+  /transacoes/lote` e grava todas as parcelas como **um único lote** no IndexedDB, inserindo-as
+  otimisticamente em `transacoes` com `_pendingSync: true`. `useOfflineSync.jsx` reenvia o lote
+  pela mesma rota transacional no login, no evento `online` e por intervalo de segurança. Respostas
+  4xx (exceto 408/429) são marcadas como falha permanente, ficam visíveis na tela e não entram em
+  retry automático; o usuário ainda pode tentar novamente pelo ícone de nuvem. Só funciona com a
+  aba aberta, não é um Service Worker de background sync de verdade.
 - **Máscara de valor em R$**: todo campo monetário guarda o estado em centavos (string) ou já
   formatado como `"1.234,56"`, nunca o número cru — siga o padrão já usado em `Lancamentos.jsx`
   (`valorStr`/`displayValor`) pra qualquer campo novo de dinheiro.

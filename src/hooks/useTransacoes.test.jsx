@@ -4,7 +4,7 @@ import { vi } from 'vitest'
 import { useTransacoes } from './useTransacoes'
 
 vi.mock('../utils/offlineQueue', () => ({
-  salvarPendente: vi.fn(),
+  salvarLotePendente: vi.fn(),
 }))
 
 function campo(form, name, value, type = 'text') {
@@ -73,8 +73,8 @@ test('cria todas as parcelas em uma única chamada e divide o terceiro', async (
   assert.equal(requestBody.transacoes[0].formaPagamento, 'credito_card-1')
 })
 
-test('guarda todas as parcelas na fila quando o backend está offline', async () => {
-  const { salvarPendente } = await import('../utils/offlineQueue')
+test('guarda todas as parcelas como um único lote quando o backend está offline', async () => {
+  const { salvarLotePendente } = await import('../utils/offlineQueue')
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
   const props = propsBase()
   const setTransacoes = vi.fn()
@@ -90,7 +90,8 @@ test('guarda todas as parcelas na fila quando o backend está offline', async ()
   })
 
   assert.equal(retorno, 'offline')
-  assert.equal(salvarPendente.mock.calls.length, 2)
+  assert.equal(salvarLotePendente.mock.calls.length, 1)
+  assert.equal(salvarLotePendente.mock.calls[0][0].length, 2)
   assert.equal(setTransacoes.mock.calls.length, 1)
   assert.equal(props.showToast.mock.calls.at(-1)[0], 'Sem conexão — lançamento guardado no aparelho e será enviado quando a internet voltar.')
 })

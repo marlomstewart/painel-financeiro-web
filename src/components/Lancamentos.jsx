@@ -550,8 +550,8 @@ export function Lancamentos({
                                             )}
                                             {t.observacao && <MessageSquare className="w-3 h-3 text-blue-500 shrink-0" strokeWidth={2} aria-label="Possui observação" />}
                                             {t._pendingSync && (
-                                                <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200" title="Guardado localmente, ainda não enviado ao servidor">
-                                                    Pendente de sincronização
+                                                <span className={`inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${t._syncError ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`} title={t._syncError || 'Guardado localmente, ainda não enviado ao servidor'}>
+                                                    {t._syncError ? 'Falha de sincronização' : 'Pendente de sincronização'}
                                                 </span>
                                             )}
                                         </h4>
@@ -603,8 +603,8 @@ export function Lancamentos({
                                                 )}
                                                 {t.observacao && <Info aria-label="Possui observação" className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block shrink-0 mt-0.5 cursor-help" strokeWidth={2} />}
                                                 {t._pendingSync && (
-                                                    <span className="inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 no-underline shrink-0" title="Guardado localmente, ainda não enviado ao servidor">
-                                                        Pendente de sincronização
+                                                    <span className={`inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border no-underline shrink-0 ${t._syncError ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`} title={t._syncError || 'Guardado localmente, ainda não enviado ao servidor'}>
+                                                        {t._syncError ? 'Falha de sincronização' : 'Pendente de sincronização'}
                                                     </span>
                                                 )}
                                             </span>

@@ -47,8 +47,10 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   pendentes, ou excluir de uma vez).
 - **Modo offline**: se você tentar cadastrar um lançamento novo sem internet (sinal fraco, área sem
   cobertura), ele fica salvo no aparelho com uma tag "Pendente de sincronização" e é enviado
-  sozinho pro servidor assim que a conexão voltar — sem precisar refazer o cadastro. Um indicador
-  no menu lateral mostra quantos lançamentos ainda estão nessa fila.
+  sozinho pro servidor assim que a conexão voltar — sem precisar refazer o cadastro. Compras
+  parceladas são guardadas e enviadas juntas, sem registrar só parte delas. Um indicador no menu
+  lateral mostra os lotes pendentes; se o servidor rejeitar o lote por uma regra definitiva, ele
+  aparece como "Falha de sincronização" e não fica tentando sozinho indefinidamente.
 
 ## Cartões de Crédito
 

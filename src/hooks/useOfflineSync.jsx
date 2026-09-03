@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { listarPendentes, removerPendente, atualizarPendente } from '../utils/offlineQueue';
 
-const MAX_TENTATIVAS = 5;
 const INTERVALO_RETRY_MS = 60 * 1000;
+
+const ehFalhaPermanente = (status) => status >= 400 && status < 500 && status !== 408 && status !== 429;
+const idsDoItem = (item) => Array.isArray(item.payload?.transacoes)
+    ? item.payload.transacoes.map(transacao => transacao.id)
+    : [item.payload?.id || item.id];
 
 /**
  * @file src/hooks/useOfflineSync.jsx
- * @description Sincroniza em segundo plano os lançamentos que ficaram pendentes por falta de
- * conexão. Agora exporta o status 'isSyncing' para UI/UX tátil em tempo real.
+ * @description Sincroniza a fila offline. Lotes novos são enviados pela rota transacional; erros
+ * permanentes ficam visíveis e não entram em retry automático, evitando tráfego infinito.
  */
 export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToast }) {
     const [pendentes, setPendentes] = useState([]);
-    const [isSyncing, setIsSyncing] = useState(false); // 🔥 NOVO: Sensor de Sincronização
+    const [isSyncing, setIsSyncing] = useState(false);
     const sincronizandoRef = useRef(false);
 
     const recarregarPendentes = useCallback(async () => {
@@ -20,40 +24,58 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
         } catch (err) { console.error('Erro ao ler fila offline:', err); }
     }, []);
 
-    const sincronizarAgora = useCallback(async () => {
+    const sincronizarAgora = useCallback(async (opcoes = {}) => {
+        const forcarFalhas = opcoes?.forcarFalhas === true;
         if (!token || sincronizandoRef.current) return;
 
         sincronizandoRef.current = true;
-        setIsSyncing(true); // Acende o indicador visual na tela
+        setIsSyncing(true);
 
         try {
             const fila = await listarPendentes();
             let sincronizados = 0;
+            let falhasPermanentesNovas = 0;
 
             for (const item of fila) {
+                if (item.estado === 'falha_permanente' && !forcarFalhas) continue;
+
+                const lote = Array.isArray(item.payload?.transacoes);
                 let res;
                 try {
-                    res = await fetch(`${API}/transacoes`, {
-                        method: 'POST', headers: getHeaders(), body: JSON.stringify(item.payload)
+                    res = await fetch(`${API}/transacoes${lote ? '/lote' : ''}`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify(item.payload)
                     });
-                } catch (err) {
-                    // Falha de rede: ainda offline, aborta a rodada e tenta de novo mais tarde.
+                } catch {
+                    // Sem rede: preserva ordem e deixa a próxima rodada tentar novamente.
                     break;
                 }
 
+                const ids = idsDoItem(item);
                 if (res.ok) {
                     await removerPendente(item.id);
-                    setTransacoes(prev => prev.map(t =>
-                        t.id === item.id ? { ...t, _pendingSync: false } : t
+                    setTransacoes(prev => prev.map(t => ids.includes(t.id)
+                        ? { ...t, _pendingSync: false, _syncError: null }
+                        : t
                     ));
-                    sincronizados += 1;
+                    sincronizados += ids.length;
+                    continue;
+                }
+
+                const dadosErro = await res.json().catch(() => ({}));
+                const erro = dadosErro.message || dadosErro.error || `HTTP ${res.status}`;
+                const tentativas = (item.tentativas || 0) + 1;
+
+                if (ehFalhaPermanente(res.status)) {
+                    await atualizarPendente(item.id, { tentativas, estado: 'falha_permanente', erro });
+                    setTransacoes(prev => prev.map(t => ids.includes(t.id)
+                        ? { ...t, _pendingSync: true, _syncError: erro }
+                        : t
+                    ));
+                    if (item.estado !== 'falha_permanente') falhasPermanentesNovas += 1;
                 } else {
-                    const tentativas = (item.tentativas || 0) + 1;
-                    if (tentativas >= MAX_TENTATIVAS) {
-                        await atualizarPendente(item.id, { tentativas, erro: `HTTP ${res.status}` });
-                    } else {
-                        await atualizarPendente(item.id, { tentativas });
-                    }
+                    await atualizarPendente(item.id, { tentativas, estado: 'pendente', erro });
                 }
             }
 
@@ -67,9 +89,17 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
                     'success'
                 );
             }
+            if (falhasPermanentesNovas > 0 && showToast) {
+                showToast(
+                    falhasPermanentesNovas === 1
+                        ? 'Um lote precisa de correção e não será reenviado automaticamente.'
+                        : `${falhasPermanentesNovas} lotes precisam de correção e não serão reenviados automaticamente.`,
+                    'error'
+                );
+            }
         } finally {
             sincronizandoRef.current = false;
-            setIsSyncing(false); // Apaga o indicador visual
+            setIsSyncing(false);
         }
     }, [API, getHeaders, token, setTransacoes, showToast, recarregarPendentes]);
 
@@ -86,11 +116,11 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
     }, [sincronizarAgora]);
 
     useEffect(() => {
-        if (pendentes.length === 0) return;
+        if (!pendentes.some(item => item.estado !== 'falha_permanente')) return;
         const intervalo = setInterval(sincronizarAgora, INTERVALO_RETRY_MS);
         return () => clearInterval(intervalo);
-    }, [pendentes.length, sincronizarAgora]);
+    }, [pendentes, sincronizarAgora]);
 
-    // 🔥 NOVO: Exportamos a flag isSyncing para a UI consumir
-    return { pendentes, sincronizarAgora, isSyncing };
+    const falhasPermanentes = pendentes.filter(item => item.estado === 'falha_permanente').length;
+    return { pendentes, falhasPermanentes, sincronizarAgora, isSyncing };
 }

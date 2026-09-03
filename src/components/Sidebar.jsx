@@ -44,7 +44,7 @@ const MenuExpansivel = ({ Icone, titulo, telaAtiva, isOpen, onToggle, children }
     );
 };
 
-export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen, pendentesSync = 0, sincronizarAgora, isSyncing = false }) {
+export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen, pendentesSync = 0, falhasSync = 0, sincronizarAgora, isSyncing = false }) {
 
     const [openMenus, setOpenMenus] = useState({
         lancamentos: ['novo_lancamento', 'extrato'].includes(telaAtiva),
@@ -89,7 +89,7 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                                     type="button"
                                     onClick={sincronizarAgora}
                                     className="group flex items-center justify-center transition-all focus:outline-none shrink-0"
-                                    title={isSyncing ? "Sincronizando com a nuvem..." : pendentesSync > 0 ? `${pendentesSync} item(ns) aguardando rede. Clique para forçar.` : "Tudo salvo na nuvem"}
+                                    title={isSyncing ? "Sincronizando com a nuvem..." : falhasSync > 0 ? `${falhasSync} lote(s) precisa(m) de correção. Clique para tentar novamente.` : pendentesSync > 0 ? `${pendentesSync} item(ns) aguardando rede. Clique para forçar.` : "Tudo salvo na nuvem"}
                                 >
                                     {isSyncing ? (
                                         <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" strokeWidth={2.5} />

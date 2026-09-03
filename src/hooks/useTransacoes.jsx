@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
-import { salvarPendente } from '../utils/offlineQueue';
+import { salvarLotePendente } from '../utils/offlineQueue';
 import { obterDesdeISO } from '../utils/janelaTransacoes';
 
 /**
@@ -154,13 +154,11 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             }
             sucesso = true;
         } catch (err) {
-            // Falha de rede (offline): guarda todas as parcelas. O endpoint usa ON CONFLICT, então
-            // um timeout depois do COMMIT também é seguro para reprocessar.
+            // Falha de rede: guarda todo o conjunto em uma única escrita IndexedDB. O endpoint usa
+            // ON CONFLICT e transação SQL, então um timeout depois do COMMIT é seguro no retry.
             teveOffline = true;
-            for (const parcelaObj of parcelas) {
-                await salvarPendente(parcelaObj);
-                itensParaFilaOffline.push({ ...parcelaObj, _pendingSync: true });
-            }
+            await salvarLotePendente(parcelas);
+            itensParaFilaOffline.push(...parcelas.map(parcelaObj => ({ ...parcelaObj, _pendingSync: true })));
         }
 
         if (sucesso) {

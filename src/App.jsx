@@ -212,7 +212,7 @@ function App() {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
-      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} sincronizarAgora={offlineSync.sincronizarAgora} isSyncing={offlineSync.isSyncing} />
+      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} falhasSync={offlineSync.falhasPermanentes} sincronizarAgora={() => offlineSync.sincronizarAgora({ forcarFalhas: true })} isSyncing={offlineSync.isSyncing} />
 
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
         {/* BARRA SUPERIOR MOBILE */}
@@ -223,9 +223,9 @@ function App() {
             {/* 🔥 ÍCONE DE NUVEM NO MOBILE */}
             <button
               type="button"
-              onClick={offlineSync.sincronizarAgora}
+              onClick={() => offlineSync.sincronizarAgora({ forcarFalhas: true })}
               className="group flex items-center justify-center transition-all focus:outline-none shrink-0 mt-0.5"
-              title={offlineSync.isSyncing ? "Sincronizando..." : offlineSync.pendentes.length > 0 ? "Aguardando rede" : "Tudo salvo"}
+              title={offlineSync.isSyncing ? "Sincronizando..." : offlineSync.falhasPermanentes > 0 ? "Há itens que precisam de correção. Clique para tentar novamente." : offlineSync.pendentes.length > 0 ? "Aguardando rede" : "Tudo salvo"}
             >
               {offlineSync.isSyncing ? (
                 <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" strokeWidth={2.5} />
