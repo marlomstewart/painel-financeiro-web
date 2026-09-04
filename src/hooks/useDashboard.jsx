@@ -361,7 +361,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const saldoMesAnterior = saldoMesAnteriorComMarco ?? saldoMesAnteriorLegado;
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtualComMarco = marcoAplicaNoMes ? calcularSaldoComMarcoAte(dataVis.mes, dataVis.ano) : null;
-    const saldoAtual = marcoAplicaNoMes && Number.isFinite(Number(saldoCaixaCanonico?.valor))
+    const saldoAtual = marcoAplicaNoMes && saldoCaixaCanonico?.ate === dataFimMesVisivel && Number.isFinite(Number(saldoCaixaCanonico?.valor))
         ? Number(saldoCaixaCanonico.valor)
         : (saldoAtualComMarco ?? (saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0)));
     const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;

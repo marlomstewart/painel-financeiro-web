@@ -152,10 +152,15 @@ function App() {
   useEffect(() => {
     if (!auth.token || !auth.saldoConciliado?.data) { setSaldoCaixaCanonico(null); return; }
     const ate = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}-${String(new Date(dataVis.ano, dataVis.mes, 0).getDate()).padStart(2, '0')}`;
+    let ativo = true;
+    // Nunca reutilizar o resultado de outro mês: enquanto a API responde, o Dashboard usa o
+    // cálculo local com os mesmos movimentos que aparecem no detalhamento.
+    setSaldoCaixaCanonico(null);
     fetch(`${API}/transacoes/caixa?ate=${ate}`, { headers: auth.getHeaders() })
       .then(res => res.ok ? res.json() : null)
-      .then(data => setSaldoCaixaCanonico(data?.caixa || null))
-      .catch(() => setSaldoCaixaCanonico(null));
+      .then(data => { if (ativo) setSaldoCaixaCanonico(data?.caixa ? { ate, ...data.caixa } : null); })
+      .catch(() => { if (ativo) setSaldoCaixaCanonico(null); });
+    return () => { ativo = false; };
   }, [API, auth.token, auth.saldoConciliado, auth.getHeaders, dataVis, transacoes]);
 
   useEffect(() => {

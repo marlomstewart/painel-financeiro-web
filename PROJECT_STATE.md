@@ -54,6 +54,10 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 
 ## Validações recentes
 
+- Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
+  de setembro; R$ 43,90 menos despesa paga de R$ 21,63 resulta em R$ 22,27.
+- `npm test`: 11 testes aprovados nesta sessão.
+- `npm run build`: bundle de produção aprovado nesta sessão.
 - `npm test`: 8 testes aprovados nesta sessão, incluindo o clique em mês projetado.
 - `npm run build`: bundle de produção aprovado nesta sessão.
 - Smoke test em produção confirmou o Dashboard e a abertura do detalhamento de Outubro/2026 no

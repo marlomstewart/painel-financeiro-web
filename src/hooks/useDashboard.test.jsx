@@ -15,7 +15,7 @@ const transacoes = [
   },
 ]
 
-function criarProps(dataVis, lista = transacoes, saldoConciliado = null) {
+function criarProps(dataVis, lista = transacoes, saldoConciliado = null, saldoCaixaCanonico = null) {
   return {
     transacoes: lista,
     transacoesMes: lista.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano),
@@ -33,6 +33,7 @@ function criarProps(dataVis, lista = transacoes, saldoConciliado = null) {
     contasFixas: [],
     dividas: [],
     saldoConciliado,
+    saldoCaixaCanonico,
   }
 }
 
@@ -49,6 +50,18 @@ test('saldo de um mês vira saldo anterior idêntico no mês seguinte após spli
 
   assert.equal(result.current.saldoMesAnterior, 916.45)
   assert.equal(result.current.saldoAtual, 916.45)
+})
+
+test('ignora saldo canônico de agosto ao renderizar setembro e mantém a despesa paga no líquido', () => {
+  const lista = [{
+    id: 'combustivel-setembro', descricao: 'Combustível', tipo: 'despesa', categoria: 'Gasolina', valorParcela: 21.63,
+    status: 'pago', dataCompra: '2026-09-02', data_pagamento: '2026-09-02', mesReferencia: 9, anoReferencia: 2026,
+  }]
+  const marco = { valor: 43.90, data: '2026-08-31' }
+  const respostaAntiga = { ate: '2026-08-31', valor: 43.90 }
+  const { result } = renderHook(() => useDashboard(criarProps({ mes: 9, ano: 2026 }, lista, marco, respostaAntiga)))
+
+  assert.equal(result.current.saldoAtual, 22.27)
 })
 
 test('saldo conciliado inicia setembro pelo fechamento real de agosto e usa a data do pagamento', () => {
