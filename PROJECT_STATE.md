@@ -23,6 +23,11 @@ sessões independentes.
 - Dashboard preserva compras divididas no saldo histórico.
 - Configurações permite saldo conciliado; depois do marco, o Saldo Líquido usa datas efetivas de
   pagamento para representar caixa real entre meses.
+- A busca de transações agora preserva também movimentos pagos após o marco de caixa, mesmo se a
+  data de compra estiver fora da janela padrão de 24 meses. O pagamento/reversão de fatura usa
+  uma operação atômica da API, em vez de uma requisição por parcela.
+- O Dashboard consulta o saldo conciliado canônico da API para o mês visível; Configurações mostra
+  uma prévia confirmável antes de substituir o marco.
 - CI em GitHub Actions executa testes Vitest e build a cada push/pull request.
 
 ## Trabalho em andamento

@@ -38,3 +38,15 @@
   entram pela `data_pagamento`. `mesReferencia` continua para orçamento/fatura.
 - **Motivo:** permitir carregar dinheiro real entre meses sem criar lançamento artificial de renda.
 - **Consequência:** não alterar esse cálculo para usar competência sem reavaliar a decisão no API.
+
+## D-005 — A API é a autoridade do saldo conciliado
+
+- **Data:** 03/09/2026
+- **Status:** aceita
+- **Contexto:** a Web precisava filtrar e somar dados históricos para apresentar caixa real.
+- **Decisão:** quando houver marco, o Dashboard consulta o saldo calculado pela API para o fim do
+  mês visível; o cálculo local permanece apenas como fallback de disponibilidade.
+- **Motivo:** concentrar a regra financeira que depende do banco e reduzir divergência entre
+  dispositivos.
+- **Consequência:** alterações no cálculo de caixa devem evoluir primeiro na API e manter a Web
+  compatível com a resposta canônica.

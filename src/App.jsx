@@ -35,7 +35,7 @@ import { useOfflineSync } from './hooks/useOfflineSync';
 import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
 import { Skeleton } from './components/Skeleton';
-import { obterDesdeISO } from './utils/janelaTransacoes';
+import { montarConsultaTransacoes } from './utils/janelaTransacoes';
 import { lerTelaDaURL, lerDataVisDaURL, montarURL } from './utils/urlEstado';
 
 /**
@@ -72,6 +72,7 @@ function App() {
   const [mostrarTutorial, setMostrarTutorial] = useState(false);
   const [dataVis, setDataVis] = useState(() => lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
   const [transacoes, setTransacoes] = useState([]);
+  const [saldoCaixaCanonico, setSaldoCaixaCanonico] = useState(null);
 
   // Navegação com deep linking
   const setTelaAtiva = useCallback((novaTela) => {
@@ -87,9 +88,9 @@ function App() {
   const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, temGaragem: auth.temGaragem, showToast });
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal, showToast });
-  const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast });
+  const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast, saldoConciliado: auth.saldoConciliado });
   const offlineSync = useOfflineSync({ API, getHeaders: auth.getHeaders, token: auth.token, setTransacoes, showToast });
-  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas, saldoConciliado: auth.saldoConciliado });
+  const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas, saldoConciliado: auth.saldoConciliado, saldoCaixaCanonico });
 
   useEffect(() => {
     window.history.replaceState({ tela: telaAtiva }, '', montarURL(telaAtiva, dataVis));
@@ -138,7 +139,7 @@ function App() {
     const carregar = async () => {
       try {
         const [resT, resC, resCat, resR, resF, resRF, resDiv] = await Promise.all([
-          fetch(`${API}/transacoes?desde=${obterDesdeISO()}`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers }), fetch(`${API}/dividas`, { headers })
+          fetch(`${API}/transacoes?${montarConsultaTransacoes(auth.saldoConciliado)}`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers }), fetch(`${API}/dividas`, { headers })
         ]);
         if (!resT.ok) { auth.fazerLogout(); return; }
         setTransacoes(await resT.json()); setup.setCartoes(await resC.json()); setup.setCategorias(await resCat.json()); setup.setMetasRenda(await resR.json()); setup.setContasFixas(await resF.json()); setup.setRendasFixas(await resRF.json()); setup.setDividas(await resDiv.json());
@@ -146,7 +147,16 @@ function App() {
       } catch (err) { console.error("Erro ao sincronizar:", err); }
     };
     carregar();
-  }, [auth.token]);
+  }, [auth.token, auth.saldoConciliado]);
+
+  useEffect(() => {
+    if (!auth.token || !auth.saldoConciliado?.data) { setSaldoCaixaCanonico(null); return; }
+    const ate = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}-${String(new Date(dataVis.ano, dataVis.mes, 0).getDate()).padStart(2, '0')}`;
+    fetch(`${API}/transacoes/caixa?ate=${ate}`, { headers: auth.getHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setSaldoCaixaCanonico(data?.caixa || null))
+      .catch(() => setSaldoCaixaCanonico(null));
+  }, [API, auth.token, auth.saldoConciliado, auth.getHeaders, dataVis, transacoes]);
 
   useEffect(() => {
     if (carregouAPI && !auth.tutorialDispensado) setMostrarTutorial(true);

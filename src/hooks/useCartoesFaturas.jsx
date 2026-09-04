@@ -27,20 +27,16 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         const confirmacao = await modal.confirm(`Deseja marcar TODOS os lançamentos pendentes na fatura do "${cartao.nome}" como PAGO?`, '💳 Pagar Fatura');
         if (!confirmacao) return;
 
-        const pendentes = transacoes.filter(t => t.status === 'pendente' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
-        const hojeISO = new Date().toISOString();
-
-        // UI otimista: marca a fatura como paga na hora e já fecha o modal; desfaz se a API recusar.
-        setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pago', data_pagamento: hojeISO } : t));
-        modal.close();
-
         try {
-            const respostas = await Promise.all(pendentes.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pago' }) })));
-            if (respostas.some(r => !r.ok)) throw new Error('Falha ao pagar fatura');
+            const resposta = await fetch(`${API}/transacoes/fatura/${cartaoId}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ mes: dataVis.mes, ano: dataVis.ano, status: 'pago' }) });
+            const dados = await resposta.json();
+            if (!resposta.ok) throw new Error(dados.message || 'Falha ao pagar fatura');
+            const ids = new Set(dados.ids);
+            setTransacoes(prev => prev.map(t => ids.has(t.id) ? { ...t, status: 'pago', data_pagamento: dados.data_pagamento } : t));
+            modal.close();
             showToast('Fatura marcada como paga com sucesso!', 'success');
         } catch (err) {
-            setTransacoes(prev => prev.map(t => pendentes.find(p => p.id === t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
-            showToast('Erro ao processar pagamento da fatura. Revertido.', 'error');
+            showToast(err.message || 'Erro ao processar pagamento da fatura.', 'error');
         }
     }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
 
@@ -51,20 +47,16 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         const confirmacao = await modal.confirm(`Deseja REVERTER os pagamentos da fatura do "${cartao.nome}" para PENDENTE?`, '↩️ Reverter Fatura');
         if (!confirmacao) return;
 
-        const pagos = transacoes.filter(t => t.status === 'pago' && String(t.formaPagamento) === `credito_${cartaoId}` && Number(t.mesReferencia) === Number(dataVis.mes) && Number(t.anoReferencia) === Number(dataVis.ano));
-        const datasPagamentoAnteriores = new Map(pagos.map(t => [t.id, t.data_pagamento]));
-
-        // UI otimista: reverte pra pendente na hora; desfaz se a API recusar.
-        setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
-        modal.close();
-
         try {
-            const respostas = await Promise.all(pagos.map(t => fetch(`${API}/transacoes/${t.id}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'pendente' }) })));
-            if (respostas.some(r => !r.ok)) throw new Error('Falha ao reverter fatura');
+            const resposta = await fetch(`${API}/transacoes/fatura/${cartaoId}/status`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ mes: dataVis.mes, ano: dataVis.ano, status: 'pendente' }) });
+            const dados = await resposta.json();
+            if (!resposta.ok) throw new Error(dados.message || 'Falha ao reverter fatura');
+            const ids = new Set(dados.ids);
+            setTransacoes(prev => prev.map(t => ids.has(t.id) ? { ...t, status: 'pendente', data_pagamento: null } : t));
+            modal.close();
             showToast('Fatura revertida com sucesso!', 'success');
         } catch (err) {
-            setTransacoes(prev => prev.map(t => pagos.find(p => p.id === t.id) ? { ...t, status: 'pago', data_pagamento: datasPagamentoAnteriores.get(t.id) } : t));
-            showToast('Erro na reversão. Desfeito.', 'error');
+            showToast(err.message || 'Erro na reversão.', 'error');
         }
     }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
 

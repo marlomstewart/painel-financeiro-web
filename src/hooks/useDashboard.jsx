@@ -157,7 +157,7 @@ const CardAcordeao = ({ titulo, valorStr, textColor, bgColor, borderColor, itens
 /**
  * @file src/hooks/useDashboard.jsx
  */
-export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast, rendasFixas = [], contasFixas = [], dividas = [], saldoConciliado = null }) {
+export function useDashboard({ transacoes, setTransacoes, transacoesMes, categorias, dataVis, setDataVis, modal, API, getHeaders, temGaragem = false, garagem, cartoes = [], showToast, rendasFixas = [], contasFixas = [], dividas = [], saldoConciliado = null, saldoCaixaCanonico = null }) {
 
     const [buscaTexto, setBuscaTexto] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -361,7 +361,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const saldoMesAnterior = saldoMesAnteriorComMarco ?? saldoMesAnteriorLegado;
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtualComMarco = marcoAplicaNoMes ? calcularSaldoComMarcoAte(dataVis.mes, dataVis.ano) : null;
-    const saldoAtual = saldoAtualComMarco ?? (saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0));
+    const saldoAtual = marcoAplicaNoMes && Number.isFinite(Number(saldoCaixaCanonico?.valor))
+        ? Number(saldoCaixaCanonico.valor)
+        : (saldoAtualComMarco ?? (saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0)));
     const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;
     const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
 

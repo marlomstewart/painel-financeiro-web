@@ -1,22 +1,22 @@
 import { useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { salvarLotePendente } from '../utils/offlineQueue';
-import { obterDesdeISO } from '../utils/janelaTransacoes';
+import { montarConsultaTransacoes } from '../utils/janelaTransacoes';
 
 /**
  * @file src/hooks/useTransacoes.jsx
  * @description Hook customizado para gerir o CRUD de transações financeiras.
  * Refatorado para suportar valores fracionados de Terceiros (Split).
  */
-export function useTransacoes({ API, getHeaders, modal, token, temGaragem, transacoes, setTransacoes, categorias, cartoes, garagem, showToast }) {
+export function useTransacoes({ API, getHeaders, modal, token, temGaragem, transacoes, setTransacoes, categorias, cartoes, garagem, showToast, saldoConciliado }) {
 
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
-            const res = await fetch(`${API}/transacoes?desde=${obterDesdeISO()}`, { headers: getHeaders() });
+            const res = await fetch(`${API}/transacoes?${montarConsultaTransacoes(saldoConciliado)}`, { headers: getHeaders() });
             if (res.ok) setTransacoes(await res.json());
         } catch (err) { console.error("Erro ao recarregar transações:", err); }
-    }, [API, getHeaders, token, setTransacoes]);
+    }, [API, getHeaders, token, setTransacoes, saldoConciliado]);
 
     const addTransacao = async (e) => {
         e.preventDefault();

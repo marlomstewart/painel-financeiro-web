@@ -122,6 +122,21 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
             showToast('Informe um saldo e uma data de conciliação válidos.', 'error');
             return;
         }
+        try {
+            const res = await fetch(`${API}/transacoes/caixa/previa?${new URLSearchParams({ valor: String(valor), data: saldoConciliadoData })}`, { headers: getHeaders() });
+            const previa = res.ok ? await res.json() : null;
+            const valorPrevisto = previa?.caixa?.valor;
+            const confirmacao = await modal.confirm(
+                Number.isFinite(Number(valorPrevisto))
+                    ? `Com este marco, o caixa calculado até hoje será R$ ${Number(valorPrevisto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Confirmar?`
+                    : 'Confirmar este novo marco de saldo conciliado?',
+                'Confirmar saldo conciliado'
+            );
+            if (!confirmacao) return;
+        } catch {
+            const confirmacao = await modal.confirm('Não foi possível gerar a prévia agora. Deseja salvar o marco mesmo assim?', 'Confirmar saldo conciliado');
+            if (!confirmacao) return;
+        }
         await atualizarSaldoConciliado?.({ valor, data: saldoConciliadoData });
     };
 
