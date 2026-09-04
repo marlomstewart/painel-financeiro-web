@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 03/09/2026
+**Atualizado em:** 04/09/2026
 
 ## Objetivo atual
 
@@ -56,12 +56,12 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
   de setembro; R$ 43,90 menos despesa paga de R$ 21,63 resulta em R$ 22,27.
-- `npm test`: 11 testes aprovados nesta sessão.
-- `npm run build`: bundle de produção aprovado nesta sessão.
-- `npm test`: 8 testes aprovados nesta sessão, incluindo o clique em mês projetado.
-- `npm run build`: bundle de produção aprovado nesta sessão.
 - Smoke test em produção confirmou o Dashboard e a abertura do detalhamento de Outubro/2026 no
   Fluxo de Caixa Projetado.
+- Previsão de setembro confirmada em produção: R$ 22,27 + R$ 2.463,35 − R$ 1.521,12 −
+  R$ 938,39 = R$ 26,11; despesas já lançadas não são duplicadas na reserva de metas.
+- `npm test`: 11 testes aprovados nesta sessão.
+- `npm run build`: bundle de produção aprovado nesta sessão.
 - Lint direcionado confirmou que os erros reportados são preexistentes; não houve erro novo do
   marco conciliado.
 
