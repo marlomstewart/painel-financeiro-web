@@ -28,6 +28,9 @@ sessões independentes.
   uma operação atômica da API, em vez de uma requisição por parcela.
 - O Dashboard consulta o saldo conciliado canônico da API para o mês visível; Configurações mostra
   uma prévia confirmável antes de substituir o marco.
+- Extrato evidencia quando uma parcela de terceiro foi recebida sem confundir esse fato com o
+  pagamento da conta; Dívidas calcula parcelas geradas como `despesa` e usa
+  `terceiro_recebido` somente para dívidas para terceiros.
 - CI em GitHub Actions executa testes Vitest e build a cada push/pull request.
 
 ## Trabalho em andamento
@@ -54,6 +57,8 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 
 ## Validações recentes
 
+- Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
+  `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
   de setembro; R$ 43,90 menos despesa paga de R$ 21,63 resulta em R$ 22,27.
 - Smoke test em produção confirmou o Dashboard e a abertura do detalhamento de Outubro/2026 no
@@ -67,5 +72,6 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 
 ## Próximos passos recomendados
 
-1. Validar manualmente saldo de setembro a partir do fechamento conciliado.
+1. Após o deploy, validar no produto uma cobrança recebida de terceiro e uma dívida própria paga,
+   confirmando que os dois indicadores permanecem independentes.
 2. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import { TrendingDown, Pencil, Trash2, CheckCircle2, Hourglass, Users } from 'lucide-react';
 import { nomeCartao } from '../utils/cartaoUtils';
 
+export const obterProgressoDivida = (divida, transacoes) => {
+    const paraTerceiros = divida.para_terceiros == 1 || divida.para_terceiros === true;
+    const historico = transacoes.filter(t =>
+        t.grupo_id === `divida_${divida.id}` &&
+        t.tipo === 'despesa' &&
+        (paraTerceiros ? t.terceiro_recebido === true : t.status === 'pago')
+    ).length;
+    const totalPago = (divida.parcelas_pagas_iniciais || 0) + historico;
+    const total = divida.qtd_parcelas;
+    return { pagas: totalPago, total, percentual: total === 0 ? 0 : Math.min(100, Math.round((totalPago / total) * 100)) };
+};
+
 /**
  * @file src/components/Dividas.jsx
  * @description Módulo de gestão de passivos longo prazo (Empréstimos, Consórcios, Financiamentos).
@@ -130,16 +142,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         return forma;
     };
 
-    const getProgresso = (divida) => {
-        const historicoPagamentos = transacoes.filter(t =>
-            t.grupo_id === `divida_${divida.id}` &&
-            t.status === 'pago' &&
-            t.tipo === 'saida'
-        ).length;
-        const totalPago = (divida.parcelas_pagas_iniciais || 0) + historicoPagamentos;
-        const total = divida.qtd_parcelas;
-        return { pagas: totalPago, total, percentual: total === 0 ? 0 : Math.min(100, Math.round((totalPago / total) * 100)) };
-    };
+    const getProgresso = (divida) => obterProgressoDivida(divida, transacoes);
 
     // UI Constantes (Mobile-First)
     const inputCls = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors shadow-sm";

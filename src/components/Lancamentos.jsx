@@ -378,6 +378,7 @@ export function Lancamentos({
                                                     <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
                                                 </span>
                                             )}
+                                            {t.isThirdParty && t.terceiro_recebido && <span className="inline-flex shrink-0 text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">Recebido do terceiro</span>}
                                         </p>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                     </div>
@@ -601,6 +602,7 @@ export function Lancamentos({
                                                         <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
                                                     </span>
                                                 )}
+                                                {t.isThirdParty && t.terceiro_recebido && <span className="inline-flex ml-1 text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 no-underline shrink-0">Recebido do terceiro</span>}
                                                 {t.observacao && <Info aria-label="Possui observação" className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block shrink-0 mt-0.5 cursor-help" strokeWidth={2} />}
                                                 {t._pendingSync && (
                                                     <span className={`inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border no-underline shrink-0 ${t._syncError ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`} title={t._syncError || 'Guardado localmente, ainda não enviado ao servidor'}>
