@@ -258,7 +258,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                             </div>
                             <input type="hidden" name="tipo" value={tipoVeiculoForm} />
                         </div>
-                        <div><label className={labelCls}>{tipoVeiculoForm === 'convidado' ? 'Nome/Descrição' : 'Modelo'}</label><input name="modelo" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.modelo : ''} placeholder={tipoVeiculoForm === 'convidado' ? 'Ex: Carro do meu pai' : 'Ex: Honda Biz 125'} required className={inputCls} /></div>
+                        <div><label className={labelCls}>{tipoVeiculoForm === 'convidado' ? 'Nome/Descrição' : 'Modelo'}</label><input name="modelo" defaultValue={modalVeiculo !== 'novo' ? modalVeiculo.modelo : ''} placeholder={tipoVeiculoForm === 'convidado' ? 'Ex: Carro do meu pai' : 'Ex: Veículo principal'} required className={inputCls} /></div>
                         {tipoVeiculoForm === 'proprio' && (
                             <>
                                 <div className="flex gap-4">
@@ -311,6 +311,11 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, ModalComponent, 
                         </button>
                     </div>
                 </div>
+
+                {garagem && <button type="button" onClick={e => garagem.abrirCalendarioGasolina(e)} className="w-full text-left bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-blue-800 dark:text-blue-200">
+                    <span className="font-bold flex items-center gap-2"><Calendar className="w-5 h-5" /> Planejamento de combustível</span>
+                    <span className="block text-sm mt-1">Configure dias e valor padrão. Antecipe, cancele ou ajuste cada abastecimento do veículo.</span>
+                </button>}
 
                 {carregando ? (
                     <div className="text-center py-20 text-slate-400 dark:text-slate-500 animate-pulse font-bold">Carregando frota do banco de dados...</div>

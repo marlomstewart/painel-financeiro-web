@@ -85,7 +85,7 @@ function App() {
 
   const auth = useAuth({ API, modal, setCarregouAPI, showToast });
   const setup = useSetup({ API, getHeaders: auth.getHeaders, modal, transacoes, setTransacoes, showToast });
-  const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, temGaragem: auth.temGaragem, showToast });
+  const garagem = useGaragem({ API, getHeaders: auth.getHeaders, modal, temGaragem: auth.temGaragem, token: auth.token, dataVis, transacoes });
   const transacoesMes = transacoes.filter(t => t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano);
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal, showToast });
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast, saldoConciliado: auth.saldoConciliado });

@@ -1,7 +1,32 @@
 import { render, renderHook, screen } from '@testing-library/react'
 import assert from 'node:assert/strict'
-import { vi } from 'vitest'
+import { vi, test } from 'vitest'
 import { useDashboard } from './useDashboard'
+import { criarPlano } from '../testUtils/planoCombustivel'
+
+test('planejamento zerado não volta à meta antiga e mantém acesso ao Raio-X', () => {
+  const plano = criarPlano('2026-09', { config: { diasSemana: [], valorCentavos: 2300, categoriaId: 'gas', veiculoId: null } })
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, []),
+    temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 299 }], garagem: { planoMes: plano } }))
+  assert.equal(result.current.categoriasDinamicas[0].meta, 0)
+  assert.equal(result.current.categoriasDinamicas[0].planejamentoCombustivel, true)
+  assert.equal(result.current.previstoFimMes, 0)
+})
+
+test('reserva somente os abastecimentos não atendidos e usa previsão canônica no Raio-X', () => {
+  const plano = criarPlano()
+  plano.resumo = { planejadoCentavos: 29900, registradoCentavos: 2163, restanteCentavos: 27600, previstoCentavos: 29763 }
+  const lista = [{ id: 't1', descricao: 'Combustível', categoria: 'Gasolina', tipo: 'despesa', valorParcela: 21.63,
+    mesReferencia: 9, anoReferencia: 2026, status: 'pago' }]
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, lista), modal,
+    temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 299 }], garagem: { planoMes: plano } }))
+  assert.equal(result.current.previstoFimMes, -297.63)
+  result.current.abrirDetalhesCategoria('Gasolina', 21.63, 299, 'despesa')
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText(/Previsão pelo planejamento: R\$\s*297,63/))
+  unmount()
+})
 
 const transacoes = [
   {

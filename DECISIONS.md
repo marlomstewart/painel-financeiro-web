@@ -63,3 +63,15 @@
 - **Motivo:** evitar inferências que alterariam retrospectivamente valores, status ou rótulos
   financeiros.
 - **Consequência:** o usuário deve ancorar cada dívida legada antes de retomar sua geração mensal.
+
+## D-007 — Combustível é planejado por abastecimento e conciliado com o Extrato
+
+- **Data:** 05/09/2026
+- **Status:** aceita
+- **Contexto:** dias de abastecimento não representam literalmente dias trabalhados, e uma folga
+  pode apenas antecipar ou reduzir o próximo abastecimento.
+- **Decisão:** a Garagem configura a rotina e os ajustes mensais; o Dashboard usa a resposta
+  canônica da API para substituir previsões atendidas pelo valor já lançado.
+- **Motivo:** representar valores parciais e mudanças de data sem criar nem alterar transações.
+- **Consequência:** a Web nunca infere consumo ou quilometragem; ambiguidades entre lançamentos na
+  mesma data exigem vínculo explícito do usuário.

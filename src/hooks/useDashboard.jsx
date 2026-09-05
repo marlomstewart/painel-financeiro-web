@@ -327,13 +327,17 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
     });
 
+    const competenciaPlano = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}`;
+    const planoCombustivel = temGaragem && garagem?.planoMes?.competencia === competenciaPlano ? garagem.planoMes : null;
     const categoriasDinamicas = useMemo(() => {
-        return categorias.map(c => c.nome === 'Gasolina' && temGaragem ? { ...c, meta: garagem?.calcularMetaGasolina(dataVis.mes, dataVis.ano) || c.meta } : c);
-    }, [categorias, temGaragem, garagem, dataVis]);
+        return categorias.map(c => c.id === planoCombustivel?.config.categoriaId
+            ? { ...c, meta: planoCombustivel.resumo.planejadoCentavos / 100, planejamentoCombustivel: true } : c);
+    }, [categorias, planoCombustivel]);
 
     let metaNaoComprometida = 0;
     categoriasDinamicas.forEach(c => {
-        metaNaoComprometida += Math.max(0, c.meta - (gCat[c.nome] || 0));
+        metaNaoComprometida += c.planejamentoCombustivel ? planoCombustivel.resumo.restanteCentavos / 100
+            : Math.max(0, c.meta - (gCat[c.nome] || 0));
     });
 
     const transacoesDoCaixaNoMes = marcoAplicaNoMes
@@ -468,7 +472,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         let previsaoFimMesCat = vGasto;
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
 
-        if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
+        const usaPlanoCombustivel = planoCombustivel?.categoriaNome === nCat;
+        if (usaPlanoCombustivel) {
+            previsaoFimMesCat = planoCombustivel.resumo.previstoCentavos / 100;
+            analiseIA = `Previsão pelo planejamento: ${formatarMoeda(previsaoFimMesCat)} no mês. São ${formatarMoeda(planoCombustivel.resumo.registradoCentavos / 100)} já lançados na categoria e ${formatarMoeda(planoCombustivel.resumo.restanteCentavos / 100)} ainda a reservar. Abastecimentos vinculados ao Extrato não são contados novamente.`;
+        } else if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
             const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
             const diaHoje = dataHoje.getDate();
             previsaoFimMesCat = (vGasto / diaHoje) * diasNoMes;
@@ -539,15 +547,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum lançamento nesta categoria no período.</p>
                     )}
                 </div>
-                {nCat === 'Gasolina' && temGaragem && (
+                {temGaragem && (usaPlanoCombustivel || (!planoCombustivel?.categoriaNome && nCat === 'Gasolina')) && (
                     <button type="button" onClick={(e) => garagem?.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md cursor-pointer">
-                        📅 Ajustar Dias Não Rodados
+                        📅 Planejar abastecimentos do veículo
                     </button>
                 )}
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoes, dataVis, dataHoje, modal, temGaragem, garagem]);
+    }, [transacoes, dataVis, dataHoje, modal, temGaragem, garagem, planoCombustivel]);
 
     // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
     const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {

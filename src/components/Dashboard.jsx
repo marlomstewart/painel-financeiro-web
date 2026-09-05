@@ -51,8 +51,8 @@ export function Dashboard({
 
     const showGarageAlerts = temGaragem && alertasGaragem.length > 0;
 
-    // Filtra apenas categorias que possuem meta maior que zero para exibir no Dashboard
-    const categoriasEstrategicas = categorias.filter(c => Number(c.meta) > 0);
+    // Um planejamento zerado continua acessível para revisão e reativação.
+    const categoriasEstrategicas = categorias.filter(c => Number(c.meta) > 0 || c.planejamentoCombustivel);
 
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
@@ -127,6 +127,7 @@ export function Dashboard({
                 </div>
                 <div onClick={() => abrirResumoCard('previsao', cartoes)} className={`p-4 md:p-5 rounded-2xl shadow-sm border cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group active:scale-[0.98] ${previstoFimMes >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 hover:border-red-400'}`}>
                     <p className={`text-[10px] uppercase font-bold mb-1 transition-colors tracking-wider ${previstoFimMes >= 0 ? 'text-emerald-700 dark:text-emerald-500' : 'text-red-700 dark:text-red-500'}`}>Previsão Mês</p>
+                    {temGaragem && garagem?.erroPlanejamento && <p className="text-xs text-amber-700 dark:text-amber-400">Planejamento de combustível indisponível. Usando a meta cadastrada; confira na Garagem.</p>}
                     <h3 className={`text-xl font-extrabold tracking-tight ${previstoFimMes >= 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-red-800 dark:text-red-400'}`}>{formatarMoeda(previstoFimMes)}</h3>
                 </div>
             </div>

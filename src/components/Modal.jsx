@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PlanejamentoCombustivel } from './PlanejamentoCombustivel';
 import {
   X, Users, Lightbulb, Undo2, CheckCircle2, RotateCcw, Pencil,
   Paperclip, Trash2, FileText, CreditCard, AlertCircle
@@ -481,7 +482,6 @@ function FormularioNovoInvestimento({ config, onConfirm, onCancel }) {
  */
 export function Modal({ config, onClose }) {
   const [inputValue, setInputValue] = useState('');
-  const [localDiasMarcados, setLocalDiasMarcados] = useState([]);
   const dialogRef = useRef(null);
   const focoAnteriorRef = useRef(null);
   const tituloId = 'modal-titulo';
@@ -493,9 +493,6 @@ export function Modal({ config, onClose }) {
     setConfigSincronizado(config);
     if (config?.type === 'prompt' && config.inputType !== 'editar_transacao' && config.inputType !== 'novo_investimento') {
       setInputValue(config.inputType === 'currency' ? '0' : (config.defaultValue || ''));
-    }
-    if (config?.type === 'calendario') {
-      setLocalDiasMarcados(config.diasMarcados || []);
     }
   }
 
@@ -725,88 +722,7 @@ export function Modal({ config, onClose }) {
             </div>
           )}
 
-          {type === 'calendario' && (
-            <div className="space-y-5">
-              <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/30 shadow-sm">
-                <p className="text-xs md:text-sm text-indigo-800 dark:text-indigo-300 text-center font-medium leading-relaxed">
-                  Ajuste sua rotina (Padrão: Seg, Qua, Sex).<br />
-                  Clique para registrar <strong className="font-bold text-rose-600 dark:text-rose-400">faltas</strong> ou <strong className="font-bold text-blue-600 dark:text-blue-400">dias extras</strong> rodados.
-                </p>
-              </div>
-              <div className="grid grid-cols-7 gap-1.5 md:gap-2 text-center mb-1">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i} className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">{d}</div>)}
-              </div>
-              <div className="grid grid-cols-7 gap-1.5 md:gap-2">
-
-                {Array.from({ length: new Date(config.ano, config.mes - 1, 1).getDay() }).map((_, i) => (
-                  <div key={`empty-${i}`} className="p-2" />
-                ))}
-
-                {Array.from({ length: new Date(config.ano, config.mes, 0).getDate() }).map((_, i) => {
-                  const dia = i + 1;
-                  const dataStr = `${config.ano}-${String(config.mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-
-                  const isMarcado = localDiasMarcados.includes(dataStr);
-
-                  const diaSemana = new Date(config.ano, config.mes - 1, dia).getDay();
-                  const isDiaTrabalho = diaSemana === 1 || diaSemana === 3 || diaSemana === 5;
-
-                  let btnClass;
-                  let titleHint;
-
-                  if (isDiaTrabalho) {
-                    if (isMarcado) {
-                      btnClass = 'bg-rose-500 text-white shadow-inner scale-95 border border-rose-600';
-                      titleHint = 'Faltou (Abate R$ 23)';
-                    } else {
-                      btnClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/50';
-                      titleHint = 'Rodou (Padrão)';
-                    }
-                  } else {
-                    if (isMarcado) {
-                      btnClass = 'bg-blue-600 text-white shadow-inner scale-95 border border-blue-700';
-                      titleHint = 'Rodou Extra (Soma R$ 23)';
-                    } else {
-                      btnClass = 'bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/80';
-                      titleHint = 'Folga (Padrão)';
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={dia}
-                      title={titleHint}
-                      onClick={async () => {
-                        const jaEstavaMarcado = localDiasMarcados.includes(dataStr);
-
-                        setLocalDiasMarcados(prev =>
-                          jaEstavaMarcado
-                            ? prev.filter(d => d !== dataStr)
-                            : [...prev, dataStr]
-                        );
-
-                        const sucesso = await config.onToggle(dataStr);
-
-                        if (!sucesso) {
-                          setLocalDiasMarcados(prev =>
-                            jaEstavaMarcado
-                              ? [...prev, dataStr]
-                              : prev.filter(d => d !== dataStr)
-                          );
-                        }
-                      }}
-                      className={`py-3 md:py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer active:scale-90 ${btnClass}`}
-                    >
-                      {dia}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex justify-end pt-5 border-t border-slate-100 dark:border-slate-800 mt-4">
-                <button onClick={onCancel} className="px-6 py-4 md:py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all cursor-pointer shadow-md w-full active:scale-[0.98]">Concluir Ajustes do Calendário</button>
-              </div>
-            </div>
-          )}
+          {type === 'combustivel' && <PlanejamentoCombustivel key={config.competencia} competenciaInicial={config.competencia} carregar={config.carregar} salvar={config.salvar} />}
 
           {type === 'detalhes' && config.transacao && (
             <div className="space-y-6">
