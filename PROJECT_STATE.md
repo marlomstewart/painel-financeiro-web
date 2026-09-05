@@ -18,6 +18,10 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- O Raio-X de cada meta estratégica agora abre também sem progresso (0%), preserva total,
+  média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
+  houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
+  do mais recente ao mais antigo, em área rolável.
 - Fila offline IndexedDB preserva atomicidade de lotes e interrompe retries automáticos em falha
   permanente.
 - Dashboard preserva compras divididas no saldo histórico.
@@ -61,8 +65,6 @@ para não deslocar parcelas quando meses futuros já foram gerados.
 ## Validações recentes
 
 - Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
-- `npm test`: 13 testes aprovados no checkpoint de 04/09, incluindo as regressões de dívida própria e de terceiro.
-- `npm run build`: bundle de produção aprovado no checkpoint de 04/09. Permanece somente o aviso conhecido de chunk principal acima de 500 kB.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
   `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
@@ -71,13 +73,11 @@ para não deslocar parcelas quando meses futuros já foram gerados.
   Fluxo de Caixa Projetado.
 - Previsão de setembro confirmada em produção: R$ 22,27 + R$ 2.463,35 − R$ 1.521,12 −
   R$ 938,39 = R$ 26,11; despesas já lançadas não são duplicadas na reserva de metas.
-- `npm test`: 11 testes aprovados nesta sessão.
-- `npm run build`: bundle de produção aprovado nesta sessão.
-- Lint direcionado confirmou que os erros reportados são preexistentes; não houve erro novo do
-  marco conciliado.
-- `npm test`: 14 testes aprovados em 04/09, incluindo projeção de dívida ancorada.
-- `npm run build`: aprovado em 04/09; permanece somente o aviso conhecido de chunk principal
-  acima de 500 kB.
+- Raio-X de metas validado em 04/09: abre sem lançamentos e lista os lançamentos filtrados por
+  categoria/competência quando existirem; `npm test` aprovou 16 testes e `npm run build` foi
+  concluído com apenas o aviso conhecido de chunk principal acima de 500 kB.
+- Lint direcionado em `useDashboard` e seus testes continua com débitos preexistentes (incluindo
+  configuração que não reconhece `test`); a comparação com `HEAD` não identificou erro novo.
 
 ## Próximos passos recomendados
 

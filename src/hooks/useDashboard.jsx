@@ -455,14 +455,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }, [modal, pendenciasPassadas, mesReal, processarRolagemPendencias]);
 
     const abrirDetalhesCategoria = useCallback((nCat, vGasto, vMeta, tCat) => {
-        const ts = transacoes.filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0); 
-        if (ts.length === 0) return;
+        const ts = transacoes
+            .filter(t => !isDividaTerceiro(t) && t.categoria === nCat && t.mesReferencia === dataVis.mes && t.anoReferencia === dataVis.ano && getMeuValor(t) > 0)
+            .sort((a, b) => String(b.dataCompra || '').localeCompare(String(a.dataCompra || '')));
 
         const qtd = ts.length;
-        const med = vGasto / qtd;
+        const med = qtd > 0 ? vGasto / qtd : 0;
         
-        const maior = ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]);
-        const menor = ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]);
+        const maior = qtd > 0 ? ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]) : null;
+        const menor = qtd > 0 ? ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]) : null;
 
         let previsaoFimMesCat = vGasto;
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
@@ -494,7 +495,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                         <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">Média do Seu Gasto</p>
                         <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatarMoeda(med)}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">em {qtd}x transações</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">em {qtd} {qtd === 1 ? 'transação' : 'transações'}</p>
                     </div>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
@@ -504,14 +505,39 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
                         <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Maior Gasto (Seu)</p>
-                        <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(getMeuValor(maior))}</p>
-                        <p className="text-[9px] text-rose-500 dark:text-rose-400 mt-1 truncate" title={maior.descricao}>{new Date(maior.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maior.descricao}</p>
+                        {maior ? <>
+                            <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(getMeuValor(maior))}</p>
+                            <p className="text-[9px] text-rose-500 dark:text-rose-400 mt-1 truncate" title={maior.descricao}>{new Date(maior.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {maior.descricao}</p>
+                        </> : <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">Nenhum gasto no período.</p>}
                     </div>
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
                         <p className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold mb-1">Menor Gasto (Seu)</p>
-                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(getMeuValor(menor))}</p>
-                        <p className="text-[9px] text-emerald-500 dark:text-emerald-400 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
+                        {menor ? <>
+                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(getMeuValor(menor))}</p>
+                            <p className="text-[9px] text-emerald-500 dark:text-emerald-400 mt-1 truncate" title={menor.descricao}>{new Date(menor.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {menor.descricao}</p>
+                        </> : <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Nenhum gasto no período.</p>}
                     </div>
+                </div>
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold">Lançamentos desta categoria</p>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{qtd} {qtd === 1 ? 'lançamento' : 'lançamentos'}</span>
+                    </div>
+                    {qtd > 0 ? (
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                            {ts.map(t => (
+                                <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2.5">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200" title={t.descricao}>{t.descricao}</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} · {t.status === 'pago' ? 'Pago' : 'Pendente'}</p>
+                                    </div>
+                                    <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(getMeuValor(t))}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum lançamento nesta categoria no período.</p>
+                    )}
                 </div>
                 {nCat === 'Gasolina' && temGaragem && (
                     <button type="button" onClick={(e) => garagem?.abrirCalendarioGasolina(e, dataVis.mes, dataVis.ano)} className="w-full mt-4 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md cursor-pointer">

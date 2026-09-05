@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react'
+import { render, renderHook, screen } from '@testing-library/react'
 import assert from 'node:assert/strict'
 import { vi } from 'vitest'
 import { useDashboard } from './useDashboard'
@@ -86,4 +86,47 @@ test('saldo conciliado inicia setembro pelo fechamento real de agosto e usa a da
 
   assert.equal(result.current.saldoMesAnterior, 43.90)
   assert.equal(result.current.saldoAtual, -77.73)
+})
+
+test('abre o Raio-X de uma categoria estratégica sem progresso', () => {
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({
+    ...criarProps({ mes: 9, ano: 2026 }, []),
+    modal,
+  }))
+
+  result.current.abrirDetalhesCategoria('Corte de Cabelo', 0, 70, 'despesa')
+
+  assert.equal(modal.alert.mock.calls.length, 1)
+  assert.equal(modal.alert.mock.calls[0][1], 'Raio-X: Corte de Cabelo')
+  render(modal.alert.mock.calls[0][0])
+  assert.equal(screen.getAllByText('Nenhum gasto no período.').length, 2)
+  assert.ok(screen.getByText('Nenhum lançamento nesta categoria no período.'))
+  assert.ok(screen.getByText('em 0 transações'))
+})
+
+test('exibe os lançamentos da categoria no Raio-X', () => {
+  const modal = { alert: vi.fn() }
+  const lista = [
+    {
+      id: 'corte-antigo', descricao: 'Corte simples', tipo: 'despesa', categoria: 'Corte de Cabelo', valorParcela: 30,
+      status: 'pago', dataCompra: '2026-09-05', mesReferencia: 9, anoReferencia: 2026,
+    },
+    {
+      id: 'corte-recente', descricao: 'Barbearia completa', tipo: 'despesa', categoria: 'Corte de Cabelo', valorParcela: 40,
+      status: 'pendente', dataCompra: '2026-09-15', mesReferencia: 9, anoReferencia: 2026,
+    },
+  ]
+  const { result } = renderHook(() => useDashboard({
+    ...criarProps({ mes: 9, ano: 2026 }, lista),
+    modal,
+  }))
+
+  result.current.abrirDetalhesCategoria('Corte de Cabelo', 70, 70, 'despesa')
+
+  render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText('Lançamentos desta categoria'))
+  assert.ok(screen.getByText('Barbearia completa'))
+  assert.ok(screen.getByText('Corte simples'))
+  assert.ok(screen.getByText('2 lançamentos'))
 })
