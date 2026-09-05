@@ -57,6 +57,9 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 
 ## Validações recentes
 
+- Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
+- `npm test`: 13 testes aprovados no checkpoint de 04/09, incluindo as regressões de dívida própria e de terceiro.
+- `npm run build`: bundle de produção aprovado no checkpoint de 04/09. Permanece somente o aviso conhecido de chunk principal acima de 500 kB.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
   `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
