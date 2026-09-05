@@ -26,6 +26,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
     const [valorParcela, setValorParcela] = useState('');
     const [qtdParcelas, setQtdParcelas] = useState('');
     const [parcelasPagasIniciais, setParcelasPagasIniciais] = useState('0');
+    const [competenciaPrimeiraParcela, setCompetenciaPrimeiraParcela] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
     const [formaPagamento, setFormaPagamento] = useState('pix');
     const [paraTerceiros, setParaTerceiros] = useState(false);
@@ -50,6 +51,11 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
 
     const parseCurrency = (val) => Number(String(val).replace(/\./g, '').replace(',', '.'));
 
+    const partesCompetencia = () => {
+        const [ano, mes] = competenciaPrimeiraParcela.split('-').map(Number);
+        return { mes_primeira_parcela: mes, ano_primeira_parcela: ano };
+    };
+
     const calcularParcelas = () => {
         const total = parseCurrency(valorTotal);
         const parcela = parseCurrency(valorParcela);
@@ -66,6 +72,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         setValorParcela(Number(divida.valor_parcela).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         setQtdParcelas(String(divida.qtd_parcelas));
         setParcelasPagasIniciais(String(divida.parcelas_pagas_iniciais || 0));
+        setCompetenciaPrimeiraParcela(divida.mes_primeira_parcela && divida.ano_primeira_parcela ? `${divida.ano_primeira_parcela}-${String(divida.mes_primeira_parcela).padStart(2, '0')}` : '');
         setDiaVencimento(String(divida.dia_vencimento));
         setFormaPagamento(divida.forma_pagamento || 'pix');
         setParaTerceiros(divida.para_terceiros === 1);
@@ -81,6 +88,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         setValorParcela('');
         setQtdParcelas('');
         setParcelasPagasIniciais('0');
+        setCompetenciaPrimeiraParcela('');
         setDiaVencimento('');
         setFormaPagamento('pix');
         setParaTerceiros(false);
@@ -98,6 +106,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                 valor_parcela: parseCurrency(valorParcela),
                 qtd_parcelas: Number(qtdParcelas),
                 parcelas_pagas_iniciais: Number(parcelasPagasIniciais),
+                ...partesCompetencia(),
                 dia_vencimento: Number(diaVencimento),
                 forma_pagamento: formaPagamento,
                 para_terceiros: paraTerceiros ? 1 : 0,
@@ -115,6 +124,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                 valor_parcela: parseCurrency(valorParcela),
                 qtd_parcelas: Number(qtdParcelas),
                 parcelas_pagas_iniciais: Number(parcelasPagasIniciais),
+                ...partesCompetencia(),
                 dia_vencimento: Number(diaVencimento),
                 forma_pagamento: formaPagamento,
                 para_terceiros: paraTerceiros ? 1 : 0,
@@ -197,6 +207,11 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                                 <label className={labelCls}>Quantas já foram pagas?</label>
                                 <input type="number" min="0" value={parcelasPagasIniciais} onChange={e => setParcelasPagasIniciais(e.target.value)} className={inputCls} placeholder="Ex: 0" />
                             </div>
+                            <div>
+                                <label className={labelCls}>Competência da 1ª parcela</label>
+                                <input type="month" value={competenciaPrimeiraParcela} onChange={e => setCompetenciaPrimeiraParcela(e.target.value)} required className={inputCls} />
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 leading-tight">Mês em que a parcela 1 aparece no Extrato. Esta âncora mantém a numeração correta mesmo ao gerar meses antecipadamente.</p>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -252,6 +267,11 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
 
             <div className="pt-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 pl-1">Acompanhamento</h3>
+                {dividas.some(d => !d.mes_primeira_parcela || !d.ano_primeira_parcela) && (
+                    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/10 dark:text-amber-300">
+                        Algumas dívidas antigas ainda não têm a competência da 1ª parcela. Edite cada uma para definir a âncora e retomar a geração mensal com a numeração correta; os lançamentos já existentes não serão alterados.
+                    </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                     {dividas.length === 0 ? (
                         <div className="md:col-span-2 lg:col-span-3 text-center p-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/30">
@@ -314,10 +334,15 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                                         </div>
                                     </div>
 
-                                    <div className="bg-slate-100/50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 py-2.5 px-4 text-center mt-auto">
-                                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                            {dividaIsCredito ? 'Compra dia' : 'Vence dia'} <strong className="text-slate-800 dark:text-slate-200">{divida.dia_vencimento}</strong>
-                                        </span>
+                                        <div className="bg-slate-100/50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 py-2.5 px-4 text-center mt-auto">
+                                            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                {dividaIsCredito ? 'Compra dia' : 'Vence dia'} <strong className="text-slate-800 dark:text-slate-200">{divida.dia_vencimento}</strong>
+                                            </span>
+                                            {divida.mes_primeira_parcela && divida.ano_primeira_parcela && (
+                                                <span className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1 normal-case tracking-normal">
+                                                    Parcela 1: {String(divida.mes_primeira_parcela).padStart(2, '0')}/{divida.ano_primeira_parcela}
+                                                </span>
+                                            )}
                                     </div>
                                 </div>
                             );

@@ -35,7 +35,10 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Nenhuma alteração funcional em andamento nesta inspeção.
+Correção da sequência de dívidas concluída localmente: o cadastro exige a competência da primeira
+parcela, exibe-a no acompanhamento e alerta sobre registros legados que precisam ser ancorados.
+O Extrato continua preservando lançamentos existentes; a projeção usa a competência da âncora
+para não deslocar parcelas quando meses futuros já foram gerados.
 
 ## Pendências e riscos
 
@@ -72,9 +75,14 @@ Nenhuma alteração funcional em andamento nesta inspeção.
 - `npm run build`: bundle de produção aprovado nesta sessão.
 - Lint direcionado confirmou que os erros reportados são preexistentes; não houve erro novo do
   marco conciliado.
+- `npm test`: 14 testes aprovados em 04/09, incluindo projeção de dívida ancorada.
+- `npm run build`: aprovado em 04/09; permanece somente o aviso conhecido de chunk principal
+  acima de 500 kB.
 
 ## Próximos passos recomendados
 
 1. Após o deploy, validar no produto uma cobrança recebida de terceiro e uma dívida própria paga,
    confirmando que os dois indicadores permanecem independentes.
-2. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+2. Após o deploy, editar cada dívida legada, informar a competência da parcela 1 e conferir no
+   Extrato que a próxima parcela recebeu o rótulo correto sem alteração de valor/status.
+3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

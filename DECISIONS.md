@@ -50,3 +50,16 @@
   dispositivos.
 - **Consequência:** alterações no cálculo de caixa devem evoluir primeiro na API e manter a Web
   compatível com a resposta canônica.
+
+## D-006 — A Web coleta e exibe a âncora da parcela de dívida
+
+- **Data:** 04/09/2026
+- **Status:** aceita
+- **Contexto:** a numeração de dívidas não pode depender de quantos lançamentos pendentes a API
+  já criou.
+- **Decisão:** o cadastro informa a competência em que a parcela 1 aparece no Extrato, e a
+  projeção usa essa competência diretamente; dívidas antigas sem esse dado são sinalizadas para
+  correção explícita.
+- **Motivo:** evitar inferências que alterariam retrospectivamente valores, status ou rótulos
+  financeiros.
+- **Consequência:** o usuário deve ancorar cada dívida legada antes de retomar sua geração mensal.

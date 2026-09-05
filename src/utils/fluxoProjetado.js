@@ -82,9 +82,9 @@ export function calcularFluxoProjetado({
         });
     });
 
-    // Dívidas: só entram enquanto restarem parcelas. Conta quantas já foram "usadas" (pagas
-    // manualmente + já lançadas em transacoes com o grupo_id da dívida) pra saber onde parar —
-    // mesma lógica do motor de geração (setupController.js:515-518).
+    // Dívidas ancoradas entram exatamente na competência correspondente ao seu número. Assim,
+    // uma geração antecipada não desloca a projeção nem a sequência da parcela. Registros
+    // antigos sem âncora mantêm a projeção legada até serem corrigidos no cadastro.
     const restantesPorDivida = {};
     dividas.forEach(d => {
         const pagasIniciais = Number(d.parcelas_pagas_iniciais) || 0;
@@ -94,13 +94,24 @@ export function calcularFluxoProjetado({
 
     competencias.forEach(({ mes, ano }) => {
         dividas.forEach(d => {
-            if (restantesPorDivida[d.id] <= 0) return;
-            const { mes: mesEf, ano: anoEf } = resolverMesEfetivo(mes, ano, d.dia_vencimento, d.forma_pagamento, cartoes);
+            const temAncora = d.mes_primeira_parcela && d.ano_primeira_parcela;
+            const numeroParcela = temAncora
+                ? ((ano - Number(d.ano_primeira_parcela)) * 12) + (mes - Number(d.mes_primeira_parcela)) + 1
+                : null;
+            if (temAncora && (numeroParcela < 1 || numeroParcela > Number(d.qtd_parcelas))) return;
+            if (!temAncora && restantesPorDivida[d.id] <= 0) return;
+            const { mes: mesEf, ano: anoEf } = temAncora
+                ? { mes, ano }
+                : resolverMesEfetivo(mes, ano, d.dia_vencimento, d.forma_pagamento, cartoes);
+            const jaLancadaNestaCompetencia = transacoes.some(t =>
+                t.grupo_id === `divida_${d.id}` && Number(t.mesReferencia) === mesEf && Number(t.anoReferencia) === anoEf
+            );
+            if (jaLancadaNestaCompetencia) return;
             const bucket = garantirBucket(mesEf, anoEf);
             const valor = Number(d.valor_parcela) || 0;
             bucket.dividasParcelas += valor;
             bucket.detalhes.dividas.push({ nome: d.descricao, valor });
-            restantesPorDivida[d.id] -= 1;
+            if (!temAncora) restantesPorDivida[d.id] -= 1;
         });
     });
 
