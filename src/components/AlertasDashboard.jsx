@@ -1,4 +1,3 @@
-import React from 'react';
 import { Radar, CreditCard, Users, Hourglass, Wallet } from 'lucide-react';
 
 /**
@@ -6,7 +5,7 @@ import { Radar, CreditCard, Users, Hourglass, Wallet } from 'lucide-react';
  * @description Componente visual responsável por calcular e exibir avisos de vencimentos
  * próximos (Contas, Faturas de Cartão, Dívidas e Entradas de Renda).
  */
-export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], dataVis }) {
+export function AlertasDashboard({ transacoesMes = [], cartoes = [], dividas = [], dataVis }) {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
@@ -35,16 +34,18 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
 
             let parcelaInfo = null;
             let isDivida = t.tipo === 'divida';
+            let isTerceiro = false;
 
             // INTELIGÊNCIA EM TEMPO REAL: Busca a dívida na memória e calcula a parcela atual (mesmo se for o 1º mês)
-            const dividaRelacionada = dividas.find(d => String(d.descricao).toLowerCase() === String(t.nomeContaFixa || t.descricao).toLowerCase());
+            const idDivida = String(t.grupo_id || '').startsWith('divida_') ? String(t.grupo_id).slice('divida_'.length) : null;
+            const dividaRelacionada = idDivida
+                ? dividas.find(d => String(d.id) === idDivida)
+                : dividas.find(d => String(d.descricao).toLowerCase() === String(t.nomeContaFixa || t.descricao).toLowerCase());
 
             if (dividaRelacionada) {
                 isDivida = true;
-                const pagasIniciais = Number(dividaRelacionada.parcelas_pagas_iniciais || 0);
-                const pagasNoExtrato = transacoesGlobais.filter(tx => String(tx.nomeContaFixa).toLowerCase() === String(dividaRelacionada.descricao).toLowerCase() && tx.status === 'pago').length;
-                const parcelaAtual = pagasIniciais + pagasNoExtrato + 1;
-                parcelaInfo = `${parcelaAtual}/${dividaRelacionada.qtd_parcelas}`;
+                isTerceiro = dividaRelacionada.para_terceiros == 1 || dividaRelacionada.para_terceiros === true;
+                parcelaInfo = String(t.descricao || '').match(/\((\d+\/\d+)\)$/)?.[1] || null;
             } else if (t.observacao && t.observacao.includes('Parcela')) {
                 const match = t.observacao.match(/Parcela (\d+\/\d+)/);
                 if (match) parcelaInfo = match[1];
@@ -57,7 +58,8 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
                 dias: diffDays,
                 tipo: isDivida ? 'divida' : t.tipo,
                 parcelaInfo: parcelaInfo,
-                isRenda: t.tipo === 'renda'
+                isRenda: t.tipo === 'renda',
+                isTerceiro
             });
         }
     });
@@ -141,7 +143,7 @@ export function AlertasDashboard({ transacoesMes = [], transacoesGlobais = [], c
                                             <CreditCard className="w-2.5 h-2.5" strokeWidth={2.5} /> Fatura
                                         </span>
                                     )}
-                                    {alerta.tipo === 'terceiros' && (
+                                    {alerta.isTerceiro && (
                                         <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm">
                                             <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> Terceiros
                                         </span>

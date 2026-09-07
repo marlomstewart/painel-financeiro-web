@@ -32,6 +32,9 @@ sessões independentes.
 - Fila offline IndexedDB preserva atomicidade de lotes e interrompe retries automáticos em falha
   permanente.
 - Dashboard preserva compras divididas no saldo histórico.
+- Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
+  recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
+  conta/fatura.
 - Configurações permite saldo conciliado; depois do marco, o Saldo Líquido usa datas efetivas de
   pagamento para representar caixa real entre meses.
 - A busca de transações agora preserva também movimentos pagos após o marco de caixa, mesmo se a
@@ -46,8 +49,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Melhorias de responsividade concluídas localmente; aguardam validação autenticada no produto e
-deploy da Web.
+Nenhuma implementação em curso. As correções de terceiros, projeção e linguagem do combustível
+aguardam validação autenticada no produto e deploy da Web.
 
 ## Pendências e riscos
 
@@ -87,10 +90,14 @@ deploy da Web.
   concluído com apenas o aviso conhecido de chunk principal acima de 500 kB.
 - Lint direcionado em `useDashboard` e seus testes continua com débitos preexistentes (incluindo
   configuração que não reconhece `test`); a comparação com `HEAD` não identificou erro novo.
+- Regressões de terceiros e planejamento em 07/09: `A Receber` reduz uma parcela de dívida já
+  recebida no Extrato; dívida de terceiro não reduz o Fluxo de Caixa Projetado; os três estados da
+  mensagem de combustível (em dia, acima do planejado e concluído) foram validados em teste.
 
 ## Próximos passos recomendados
 
-1. Após o deploy da Web, configurar uma rotina de combustível e validar antecipação, cancelamento,
-   valor parcial e reconhecimento de um lançamento no Extrato.
-2. Confirmar no Dashboard que a reserva diminui uma única vez quando um abastecimento é lançado.
+1. Após o deploy da Web, validar autenticado o recebimento de uma parcela de terceiro em A Receber,
+   o selo correspondente no Extrato e a ausência dela no Fluxo de Caixa Projetado.
+2. Configurar uma rotina de combustível e validar antecipação, cancelamento, valor parcial,
+   reconhecimento de lançamento e os textos de previsão no Dashboard.
 3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

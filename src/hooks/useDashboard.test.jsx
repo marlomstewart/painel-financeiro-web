@@ -24,7 +24,31 @@ test('reserva somente os abastecimentos não atendidos e usa previsão canônica
   assert.equal(result.current.previstoFimMes, -297.63)
   result.current.abrirDetalhesCategoria('Gasolina', 21.63, 299, 'despesa')
   const { unmount } = render(modal.alert.mock.calls[0][0])
-  assert.ok(screen.getByText(/Previsão pelo planejamento: R\$\s*297,63/))
+  assert.ok(screen.getByText(/Planejamento em dia: você deve gastar cerca de R\$\s*297,63/))
+  unmount()
+})
+
+test('Raio-X de combustível alerta quando o gasto registrado ultrapassa o planejado', () => {
+  const plano = criarPlano()
+  plano.resumo = { planejadoCentavos: 2300, registradoCentavos: 2500, restanteCentavos: 0, previstoCentavos: 2500 }
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, []), modal,
+    temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 23 }], garagem: { planoMes: plano } }))
+  result.current.abrirDetalhesCategoria('Gasolina', 25, 23, 'despesa')
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText(/Atenção: você já gastou R\$\s*25,00/))
+  unmount()
+})
+
+test('Raio-X de combustível confirma quando todos os abastecimentos planejados foram registrados', () => {
+  const plano = criarPlano()
+  plano.resumo = { planejadoCentavos: 2300, registradoCentavos: 2300, restanteCentavos: 0, previstoCentavos: 2300 }
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, []), modal,
+    temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 23 }], garagem: { planoMes: plano } }))
+  result.current.abrirDetalhesCategoria('Gasolina', 23, 23, 'despesa')
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText(/Planejamento concluído: os abastecimentos previstos/))
   unmount()
 })
 

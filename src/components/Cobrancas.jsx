@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Handshake, Eye, CheckCircle2, MessageCircle, X, Landmark, CreditCard } from 'lucide-react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 
@@ -96,7 +96,16 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 // Mapeamento snake_case (banco) para o cálculo
                 const valorParcela = Number(d.valor_parcela || d.valorParcela || 0);
                 const qtdTotalParcelas = Number(d.qtd_parcelas || d.qtdParcelas || 1);
-                const parcelasPagas = Number(d.parcelas_pagas_iniciais || d.pagas || 0);
+                const parcelasIniciais = Number(d.parcelas_pagas_iniciais || d.pagas || 0);
+                // As parcelas geradas depois do cadastro têm o recebimento gravado no Extrato.
+                // O contador inicial é apenas o histórico anterior à entrada no sistema e não
+                // pode apagar nem duplicar esses recebimentos reais.
+                const parcelasRecebidasNoExtrato = transacoes.filter(t =>
+                    t.grupo_id === `divida_${d.id}` &&
+                    t.tipo === 'despesa' &&
+                    t.terceiro_recebido === true
+                ).length;
+                const parcelasPagas = Math.min(qtdTotalParcelas, parcelasIniciais + parcelasRecebidasNoExtrato);
 
                 const parcelasPendentes = qtdTotalParcelas - parcelasPagas;
                 const valorPendenteTotal = parcelasPendentes * valorParcela;
@@ -131,11 +140,12 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 const parcelaDoMes = transacoes.find(t => t.grupo_id === `divida_${d.id}` && t.mesReferencia === mesAtual && t.anoReferencia === anoAtual);
                 if (parcelaDoMes && !parcelaDoMes.terceiro_recebido) {
                     const valorCobrado = Number(parcelaDoMes.thirdPartyValue) > 0 ? Number(parcelaDoMes.thirdPartyValue) : Number(parcelaDoMes.valorParcela || 0);
+                    const numeroDaParcela = String(parcelaDoMes.descricao || '').match(/\((\d+\/\d+)\)$/)?.[1] || `${parcelasPagas + 1}/${qtdTotalParcelas}`;
                     p.totalMesAtual += valorCobrado;
                     p.itensMesAtual.push({
                         id: parcelaDoMes.id,
                         isEmprestimo: true,
-                        descricao: `Parcela: ${d.descricao} (${parcelasPagas + 1}/${qtdTotalParcelas})`,
+                        descricao: `Parcela: ${d.descricao} (${numeroDaParcela})`,
                         valorCobradoCalculado: valorCobrado,
                         dataVencimento: new Date(parcelaDoMes.dataCompra),
                         nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
@@ -200,7 +210,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             await navigator.clipboard.writeText(texto);
             const avisoSemTelefone = ' Cadastre o WhatsApp dessa pessoa (na compra ou na dívida) pra abrir direto da próxima vez.';
             showToast(`Cobrança de ${pessoa.nomeExibicao} copiada!${avisoSemTelefone}`, 'success');
-        } catch (err) {
+        } catch {
             showToast('Não foi possível copiar automaticamente.', 'error');
         }
     };

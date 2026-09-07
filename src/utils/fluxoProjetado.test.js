@@ -21,3 +21,18 @@ test('projeção respeita a competência âncora da dívida, sem deslocar parcel
 
   assert.deepEqual(fluxo.map(mes => mes.dividasParcelas), [100, 100, 0])
 })
+
+test('dívida feita para terceiro não reduz o caixa futuro pessoal', () => {
+  const fluxo = calcularFluxoProjetado({
+    mesAtual: 8,
+    anoAtual: 2026,
+    horizonteMeses: 2,
+    dividas: [{
+      id: 'emprestimo-terceiro', descricao: 'Empréstimo do João', valor_parcela: 150,
+      qtd_parcelas: 2, mes_primeira_parcela: 9, ano_primeira_parcela: 2026,
+      para_terceiros: 1, forma_pagamento: 'pix'
+    }]
+  })
+
+  assert.deepEqual(fluxo.map(mes => mes.dividasParcelas), [0, 0])
+})

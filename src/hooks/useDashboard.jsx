@@ -469,17 +469,25 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const maior = qtd > 0 ? ts.reduce((max, t) => getMeuValor(t) > getMeuValor(max) ? t : max, ts[0]) : null;
         const menor = qtd > 0 ? ts.reduce((min, t) => getMeuValor(t) < getMeuValor(min) ? t : min, ts[0]) : null;
 
-        let previsaoFimMesCat = vGasto;
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
 
         const usaPlanoCombustivel = planoCombustivel?.categoriaNome === nCat;
         if (usaPlanoCombustivel) {
-            previsaoFimMesCat = planoCombustivel.resumo.previstoCentavos / 100;
-            analiseIA = `Previsão pelo planejamento: ${formatarMoeda(previsaoFimMesCat)} no mês. São ${formatarMoeda(planoCombustivel.resumo.registradoCentavos / 100)} já lançados na categoria e ${formatarMoeda(planoCombustivel.resumo.restanteCentavos / 100)} ainda a reservar. Abastecimentos vinculados ao Extrato não são contados novamente.`;
+            const previsaoFimMesCat = planoCombustivel.resumo.previstoCentavos / 100;
+            const planejado = planoCombustivel.resumo.planejadoCentavos / 100;
+            const registrado = planoCombustivel.resumo.registradoCentavos / 100;
+            const restante = planoCombustivel.resumo.restanteCentavos / 100;
+            if (registrado > planejado) {
+                analiseIA = `⚠️ Atenção: você já gastou ${formatarMoeda(registrado)}, ${formatarMoeda(registrado - planejado)} acima dos ${formatarMoeda(planejado)} planejados para combustível neste mês.`;
+            } else if (restante <= 0) {
+                analiseIA = '✅ Planejamento concluído: os abastecimentos previstos para este mês já foram registrados.';
+            } else {
+                analiseIA = `✅ Planejamento em dia: você deve gastar cerca de ${formatarMoeda(previsaoFimMesCat)} com combustível neste mês. Já foram ${formatarMoeda(registrado)}; faltam aproximadamente ${formatarMoeda(restante)} nos próximos abastecimentos.`;
+            }
         } else if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
             const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
             const diaHoje = dataHoje.getDate();
-            previsaoFimMesCat = (vGasto / diaHoje) * diasNoMes;
+            const previsaoFimMesCat = (vGasto / diaHoje) * diasNoMes;
 
             if (tCat === 'despesa' || tCat === 'Gasto' || tCat === 'gasto') {
                 if (vGasto > vMeta) analiseIA = `🔴 Alerta! O limite de ${formatarMoeda(vMeta)} já foi estourado. Se mantiver o ritmo atual, fechará o mês com ${formatarMoeda(previsaoFimMesCat)} (gastando a mais ${formatarMoeda(previsaoFimMesCat - vMeta)}).`;

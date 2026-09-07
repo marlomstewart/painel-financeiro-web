@@ -87,6 +87,10 @@ export function calcularFluxoProjetado({
     // antigos sem âncora mantêm a projeção legada até serem corrigidos no cadastro.
     const restantesPorDivida = {};
     dividas.forEach(d => {
+        // Dívida assumida para outra pessoa é acompanhada em A Receber e não é um
+        // compromisso do orçamento/caixa pessoal. O Dashboard atual já a exclui;
+        // manter esta projeção alinhada evita reduzir o saldo futuro indevidamente.
+        if (d.para_terceiros == 1 || d.para_terceiros === true || d.isThirdParty) return;
         const pagasIniciais = Number(d.parcelas_pagas_iniciais) || 0;
         const jaLancadas = transacoes.filter(t => t.grupo_id === `divida_${d.id}`).length;
         restantesPorDivida[d.id] = Math.max(0, Number(d.qtd_parcelas) - (pagasIniciais + jaLancadas));
@@ -94,6 +98,7 @@ export function calcularFluxoProjetado({
 
     competencias.forEach(({ mes, ano }) => {
         dividas.forEach(d => {
+            if (d.para_terceiros == 1 || d.para_terceiros === true || d.isThirdParty) return;
             const temAncora = d.mes_primeira_parcela && d.ano_primeira_parcela;
             const numeroParcela = temAncora
                 ? ((ano - Number(d.ano_primeira_parcela)) * 12) + (mes - Number(d.mes_primeira_parcela)) + 1

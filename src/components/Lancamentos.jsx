@@ -549,6 +549,7 @@ export function Lancamentos({
                                                     <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
                                                 </span>
                                             )}
+                                            {t.isThirdParty && t.terceiro_recebido && <span className="inline-flex shrink-0 text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">Recebido do terceiro</span>}
                                             {t.observacao && <MessageSquare className="w-3 h-3 text-blue-500 shrink-0" strokeWidth={2} aria-label="Possui observação" />}
                                             {t._pendingSync && (
                                                 <span className={`inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${t._syncError ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`} title={t._syncError || 'Guardado localmente, ainda não enviado ao servidor'}>

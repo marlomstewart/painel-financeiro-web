@@ -734,13 +734,16 @@ export function Modal({ config, onClose }) {
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 {config.transacao.isThirdParty && (
-                  <span className="inline-flex items-center mt-4 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm relative z-10">
-                    <Users className="w-3 h-3 shrink-0 mr-1.5" strokeWidth={2.5} />
-                    Terceiro: {config.transacao.thirdPartyName}
-                    <br className="sm:hidden" />
-                    <span className="hidden sm:inline">&nbsp;—&nbsp;</span>
-                    Responsável por {config.transacao.thirdPartyValue ? Number(config.transacao.thirdPartyValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '100%'}
-                  </span>
+                  <div className="flex flex-wrap justify-center gap-2 mt-4 relative z-10">
+                    <span className="inline-flex items-center bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm">
+                      <Users className="w-3 h-3 shrink-0 mr-1.5" strokeWidth={2.5} />
+                      Terceiro: {config.transacao.thirdPartyName}
+                      <br className="sm:hidden" />
+                      <span className="hidden sm:inline">&nbsp;—&nbsp;</span>
+                      Responsável por {config.transacao.thirdPartyValue ? Number(config.transacao.thirdPartyValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '100%'}
+                    </span>
+                    {config.transacao.terceiro_recebido && <span className="inline-flex items-center bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800/50 shadow-sm">Recebido do terceiro</span>}
+                  </div>
                 )}
               </div>
 

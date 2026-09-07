@@ -28,3 +28,16 @@ test('empilha os valores do detalhamento em telas estreitas', () => {
   expect(screen.getByText('Dívida Restante (Geral)').parentElement.parentElement.className).toContain('sm:grid-cols-2')
   expect(screen.getByText('0 Pagas').parentElement.parentElement.className).toContain('grid-cols-1')
 })
+
+test('recebimento no Extrato reduz o total geral de uma dívida de terceiro', () => {
+  render(<Cobrancas {...baseProps}
+    dividas={[{ id: 'd1', descricao: 'Empréstimo', valor_parcela: 100, qtd_parcelas: 3, parcelas_pagas_iniciais: 0, para_terceiros: 1, nome_terceiro: 'Bia' }]}
+    transacoes={[
+      { id: 'parcela-1', grupo_id: 'divida_d1', tipo: 'despesa', categoria: 'Dívidas e Empréstimos', valorParcela: 100, thirdPartyValue: 100, terceiro_recebido: true, mesReferencia: 8, anoReferencia: 2026 },
+      { id: 'parcela-2', grupo_id: 'divida_d1', tipo: 'despesa', categoria: 'Dívidas e Empréstimos', valorParcela: 100, thirdPartyValue: 100, terceiro_recebido: false, mesReferencia: 9, anoReferencia: 2026, dataCompra: '2026-09-10' },
+    ]}
+  />)
+
+  expect(screen.getByText('Total Restante (Geral)').parentElement.textContent).toContain('200,00')
+  expect(screen.getByRole('heading', { name: 'Bia' })).toBeTruthy()
+})
