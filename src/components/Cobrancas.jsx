@@ -152,6 +152,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
     const totalGeralMes = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalMesAtual, 0);
     const totalGeralRestante = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalPendenteGeral, 0);
+    const cobrancasDoMes = cobrancasPorPessoa.filter(pessoa => pessoa.itensMesAtual.length > 0 && pessoa.totalMesAtual > 0);
 
     // Mantém só dígitos e prefixa 55 (Brasil) se a pessoa não tiver informado o código do país.
     // Decide pela quantidade de dígitos (DDD+número = 10 ou 11) em vez do prefixo, já que o
@@ -310,15 +311,15 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 </div>
             </div>
 
-            {cobrancasPorPessoa.length === 0 ? (
+            {cobrancasDoMes.length === 0 ? (
                 <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center shadow-sm">
                     <Handshake className="w-12 h-12 mx-auto mb-4 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
-                    <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Nenhuma cobrança registrada</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Não há dívidas ou compras de terceiros em aberto no seu nome.</p>
+                    <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Nenhuma cobrança pendente neste mês</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Altere a competência para consultar cobranças pendentes de outro período.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {cobrancasPorPessoa.map((pessoa, index) => (
+                    {cobrancasDoMes.map((pessoa, index) => (
                         <div key={index} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm flex flex-col transition-colors">
 
                             <div className="p-5 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-950/50 flex justify-between items-center gap-2">
@@ -349,7 +350,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                             <div className="flex justify-between items-start gap-2">
                                                 <div className="min-w-0">
                                                     {item.isEmprestimo && <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 mb-1 uppercase tracking-wider">Empréstimo</span>}
-                                                    <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1" title={item.descricao}>{item.descricao}</p>
+                                                    <p className="text-sm font-black text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight mb-1" title={item.descricao}>{item.descricao}</p>
                                                     <p className="text-[10px] font-bold text-slate-500">Venc: {item.dataVencimento.toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' })} <span className="uppercase text-slate-400">({item.nomeForma})</span></p>
                                                 </div>
                                                 <span className="text-sm font-black text-rose-600 dark:text-rose-400 shrink-0">{formatarMoeda(item.valorCobradoCalculado)}</span>
@@ -393,14 +394,14 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 p-6 border-b border-slate-100 dark:border-slate-800">
-                            <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 p-4 rounded-2xl">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800">
+                            <div className="min-w-0 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 p-3 sm:p-4 rounded-2xl">
                                 <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider mb-1">Total Já Pago</p>
-                                <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{formatarMoeda(pessoaDetalhe.totalPagoGeral)}</p>
+                                <p className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400 break-words">{formatarMoeda(pessoaDetalhe.totalPagoGeral)}</p>
                             </div>
-                            <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800/30 p-4 rounded-2xl">
+                            <div className="min-w-0 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800/30 p-3 sm:p-4 rounded-2xl">
                                 <p className="text-[10px] font-bold text-rose-600 dark:text-rose-500 uppercase tracking-wider mb-1">Dívida Restante (Geral)</p>
-                                <p className="text-2xl font-black text-rose-700 dark:text-rose-400">{formatarMoeda(pessoaDetalhe.totalPendenteGeral)}</p>
+                                <p className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-400 break-words">{formatarMoeda(pessoaDetalhe.totalPendenteGeral)}</p>
                             </div>
                         </div>
 
@@ -424,14 +425,14 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2 items-center bg-slate-50 dark:bg-slate-900 rounded-lg p-2.5 border border-slate-100 dark:border-slate-800">
-                                        <div className="flex-1 flex items-center justify-between px-2 border-r border-slate-200 dark:border-slate-700">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900 rounded-lg p-2.5 border border-slate-100 dark:border-slate-800">
+                                        <div className="min-w-0 flex flex-col gap-1 px-2 sm:border-r border-slate-200 dark:border-slate-700">
                                             <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{compra.parcelasPagas} Pagas</span>
-                                            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{formatarMoeda(compra.valorPago)}</span>
+                                            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 break-words">{formatarMoeda(compra.valorPago)}</span>
                                         </div>
-                                        <div className="flex-1 flex items-center justify-between px-2">
+                                        <div className="min-w-0 flex flex-col gap-1 px-2">
                                             <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">{compra.parcelasPendentes} A Receber</span>
-                                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400">{formatarMoeda(compra.valorPendente)}</span>
+                                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 break-words">{formatarMoeda(compra.valorPendente)}</span>
                                         </div>
                                     </div>
                                 </div>

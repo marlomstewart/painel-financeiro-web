@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 05/09/2026
+**Atualizado em:** 07/09/2026
 
 ## Objetivo atual
 
@@ -18,6 +18,10 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- Metas & Categorias, A Receber e Planejamento de combustível receberam ajustes responsivos:
+  nomes de categorias de Garagem ocupam até duas linhas, a cobrança mostra somente pessoas com
+  pendência na competência visível, descrições e valores longos se adaptam ao celular, e o mês de
+  combustível usa seletor próprio com navegação e escolha de mês/ano sem tocar no Extrato.
 - O calendário fixo da gasolina foi substituído por planejamento configurável na Garagem: categoria,
   veículo opcional, dias habituais e valor padrão. Cada abastecimento pode ser antecipado no mês,
   ajustado ou cancelado; o Dashboard reserva somente previsões ainda não atendidas por lançamentos.
@@ -42,8 +46,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Nenhuma implementação em curso. O planejamento de combustível foi concluído localmente e aguarda
-o deploy conjunto da API e da Web.
+Melhorias de responsividade concluídas localmente; aguardam validação autenticada no produto e
+deploy da Web.
 
 ## Pendências e riscos
 
@@ -65,9 +69,10 @@ o deploy conjunto da API e da Web.
 
 ## Validações recentes
 
-- Planejamento de combustível validado com 24 testes Web, build de produção e inspeção visual da
-  tela e do formulário de antecipação. Os arquivos novos passaram no lint direcionado; permanecem
-  apenas os débitos globais anteriores já registrados.
+- Responsividade validada por testes de componente: categorias com tag Garagem preservam nome e
+  ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
+  troca competência por navegação e seletores próprios. `npm test` aprovou 28 testes e `npm run
+  build` foi concluído em 07/09, com apenas o aviso conhecido de chunk principal acima de 500 kB.
 - Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
   `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
@@ -85,7 +90,7 @@ o deploy conjunto da API e da Web.
 
 ## Próximos passos recomendados
 
-1. Após o deploy conjunto, configurar uma rotina de combustível e validar antecipação, cancelamento,
+1. Após o deploy da Web, configurar uma rotina de combustível e validar antecipação, cancelamento,
    valor parcial e reconhecimento de um lançamento no Extrato.
 2. Confirmar no Dashboard que a reserva diminui uma única vez quando um abastecimento é lançado.
 3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

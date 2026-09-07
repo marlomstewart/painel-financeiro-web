@@ -57,9 +57,20 @@ test('bloqueia envio duplo enquanto salva e recarrega ao trocar de mês', async 
     const botao = screen.getByRole('button', { name: 'Cancelar previsão' });
     fireEvent.click(botao); fireEvent.click(botao);
     expect(salvar).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText('Mês do planejamento').disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Mês anterior' }).disabled).toBe(true);
     concluir(); await screen.findByText(/Planejamento salvo/);
-    fireEvent.change(screen.getByLabelText('Mês do planejamento'), { target: { value: '2026-10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo mês' }));
     await screen.findByRole('button', { name: /Abastecimento 01\/10/ });
     await waitFor(() => expect(carregar.mock.calls.at(-1)[0]).toBe('2026-10'));
+});
+
+test('permite escolher mês e ano sem depender do seletor nativo', async () => {
+    const { carregar } = montar();
+    await screen.findByRole('button', { name: /Abastecimento 11\/09/ });
+    expect(screen.getByText('Setembro de 2026')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Mês'), { target: { value: '10' } });
+    await waitFor(() => expect(carregar.mock.calls.at(-1)[0]).toBe('2026-10'));
+    fireEvent.change(screen.getByLabelText('Ano'), { target: { value: '2027' } });
+    await waitFor(() => expect(carregar.mock.calls.at(-1)[0]).toBe('2027-10'));
+    expect(screen.getByText('Outubro de 2027')).toBeTruthy();
 });

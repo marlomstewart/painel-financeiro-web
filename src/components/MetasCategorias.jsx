@@ -237,12 +237,12 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
                                 }
 
                                 return (
-                                    <div key={c.id} className={`bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl border shadow-sm flex justify-between items-center group transition-all hover:shadow-md ${borderColor}`}>
+                                    <div key={c.id} className={`bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl border shadow-sm flex justify-between items-start group transition-all hover:shadow-md ${borderColor}`}>
                                         <div className="flex items-center gap-3.5 min-w-0 pr-2 flex-1">
                                             <span className={`w-12 h-12 flex items-center justify-center rounded-full shadow-inner shrink-0 border border-slate-100 dark:border-slate-700/50 ${iconBg}`}><Icone className="w-5 h-5" strokeWidth={2} /></span>
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 mb-0.5 min-w-0">
-                                                    <h4 className="font-black text-slate-800 dark:text-slate-100 leading-tight truncate text-sm md:text-base">
+                                                <div className="flex flex-col items-start gap-1 mb-0.5 min-w-0">
+                                                    <h4 className="font-black text-slate-800 dark:text-slate-100 leading-tight break-words line-clamp-2 text-sm md:text-base">
                                                         {c.nome}
                                                     </h4>
                                                     {isGaragemFlag && <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800/50 shadow-sm"><Bike className="w-2.5 h-2.5" strokeWidth={2.5} /> Garagem</span>}

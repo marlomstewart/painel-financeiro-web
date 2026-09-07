@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const moeda = centavos => (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dataCurta = data => `${data.slice(8, 10)}/${data.slice(5, 7)}`;
 const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const campo = 'w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100';
 const botao = 'rounded-lg px-3 py-2 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed';
 const secundario = 'rounded-lg px-3 py-2 text-sm font-semibold border border-slate-300 dark:border-slate-700 disabled:opacity-50';
@@ -82,6 +83,15 @@ export function PlanejamentoCombustivel({ competenciaInicial, carregar, salvar }
     const [origem, setOrigem] = useState(null);
     const [recarga, setRecarga] = useState(0);
     const salvando = useRef(false);
+    const [anoSelecionado, mesSelecionado] = competencia.split('-').map(Number);
+    const alterarCompetencia = novaCompetencia => {
+        if (novaCompetencia < '2000-01' || novaCompetencia > '2100-12') return;
+        setCompetencia(novaCompetencia); setOrigem(null); setRotina(false); setMensagem(''); setErro('');
+    };
+    const navegarCompetencia = deslocamento => {
+        const data = new Date(Date.UTC(anoSelecionado, mesSelecionado - 1 + deslocamento, 1));
+        alterarCompetencia(`${data.getUTCFullYear()}-${String(data.getUTCMonth() + 1).padStart(2, '0')}`);
+    };
     useEffect(() => {
         const controller = new AbortController();
         carregar(competencia, null, controller.signal).then(p => {
@@ -103,8 +113,26 @@ export function PlanejamentoCombustivel({ competenciaInicial, carregar, salvar }
     const dia = visivel?.dias.find(d => d.origem === origem);
     const nomeVeiculo = visivel?.veiculos.find(v => v.id === visivel.config.veiculoId)?.modelo || 'Veículo';
     return <div className="space-y-4 text-slate-800 dark:text-slate-100">
-        <label className="block text-sm font-semibold">Mês do planejamento<input type="month" aria-label="Mês do planejamento" min="2000-01" max="2100-12" className={campo} value={competencia} disabled={ocupado}
-            onChange={e => { if (e.target.value) { setCompetencia(e.target.value); setOrigem(null); setRotina(false); setMensagem(''); setErro(''); } }} /></label>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3" role="group" aria-label="Competência do planejamento">
+            <div className="flex items-center justify-between gap-2 mb-3">
+                <p className="text-sm font-semibold">Mês do planejamento</p>
+                <span className="text-sm font-black text-slate-800 dark:text-slate-100" aria-live="polite">{nomesMeses[mesSelecionado - 1]} de {anoSelecionado}</span>
+            </div>
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                <button type="button" className={secundario} aria-label="Mês anterior" disabled={ocupado || competencia === '2000-01'} onClick={() => navegarCompetencia(-1)}>←</button>
+                <div className="grid grid-cols-2 gap-2 min-w-0">
+                    <label className="sr-only" htmlFor="mes-planejamento">Mês</label>
+                    <select id="mes-planejamento" aria-label="Mês" className={campo} value={mesSelecionado} disabled={ocupado} onChange={e => alterarCompetencia(`${anoSelecionado}-${String(e.target.value).padStart(2, '0')}`)}>
+                        {nomesMeses.map((nome, indice) => <option key={nome} value={indice + 1}>{nome}</option>)}
+                    </select>
+                    <label className="sr-only" htmlFor="ano-planejamento">Ano</label>
+                    <select id="ano-planejamento" aria-label="Ano" className={campo} value={anoSelecionado} disabled={ocupado} onChange={e => alterarCompetencia(`${e.target.value}-${String(mesSelecionado).padStart(2, '0')}`)}>
+                        {Array.from({ length: 101 }, (_, indice) => 2000 + indice).map(ano => <option key={ano} value={ano}>{ano}</option>)}
+                    </select>
+                </div>
+                <button type="button" className={secundario} aria-label="Próximo mês" disabled={ocupado || competencia === '2100-12'} onClick={() => navegarCompetencia(1)}>→</button>
+            </div>
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400">Planeje quando abastecer e quanto reservar. Folga não cancela combustível automaticamente. Registre o valor efetivamente gasto no Extrato.</p>
         {erro && <div role="alert" className="rounded-lg bg-rose-50 dark:bg-rose-950 p-3 text-sm text-rose-700 dark:text-rose-300">{erro}
             <button disabled={ocupado} className={`${secundario} mt-2 block`} onClick={() => { setPlano(null); setOrigem(null); setRotina(false); setRecarga(x => x + 1); }}>Recarregar planejamento</button></div>}
