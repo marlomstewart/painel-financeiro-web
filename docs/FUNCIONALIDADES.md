@@ -21,8 +21,9 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   e uma previsão de como o mês deve fechar.
 - Cada card é clicável e abre o detalhamento de quais lançamentos formam aquele valor.
 - **Raio-X por categoria**: clicando numa categoria com meta definida, mostra quanto já foi
-  gasto/investido, sua média por transação, o maior e o menor lançamento, e uma previsão em texto
-  ("no ritmo atual, você vai fechar o mês gastando X a mais que sua meta").
+  gasto/investido, sua média por transação, o maior e o menor lançamento, uma previsão em texto
+  e a lista rolável dos lançamentos pessoais daquela categoria na competência exibida. Também abre
+  sem movimento, apresentando valores e estados vazios seguros.
 - **Radar de Vencimentos**: destaca contas, dívidas e faturas de cartão que vencem nos próximos 7
   dias.
 - Opção de somar (ou não) o saldo acumulado dos meses anteriores ao saldo do mês atual. Quando o
@@ -83,12 +84,15 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
 ## Dívidas
 
 - Cadastro de empréstimos e financiamentos parcelados, com valor da parcela, quantidade de
-  parcelas e dia de vencimento.
+  parcelas, dia de vencimento e o mês/ano em que a parcela 1 aparece no Extrato. Essa referência
+  mantém a numeração correta mesmo quando meses futuros são gerados antes.
 - Suporte a **dívida de terceiro** ("nome sujo") — quando você empresta dinheiro ou assume uma
   dívida em nome de outra pessoa, ela é marcada como tal e some do seu controle financeiro
   pessoal, aparecendo só como algo a cobrar em "A Receber".
 - Acompanha visualmente o progresso de pagamento (quantas parcelas já foram pagas de quantas no
   total).
+- Dívidas antigas sem a referência da parcela 1 aparecem com um aviso: edite o cadastro para
+  informá-la antes de retomar a geração mensal. Os lançamentos existentes não são modificados.
 
 ## A Receber (Terceiros)
 

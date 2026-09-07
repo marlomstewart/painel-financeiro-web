@@ -21,8 +21,8 @@ no repositório da API.
 
 ## Stack
 
-- **React 19** + **Vite** — SPA, sem roteamento por URL (a navegação entre telas é controlada por
-  estado no `App.jsx`, não por `react-router`).
+- **React 19** + **Vite** — SPA sem `react-router`; o `App.jsx` controla a navegação e a sincroniza
+  com a URL pela History API (`?tela=&mes=&ano=`), permitindo deep links e uso de voltar/avançar.
 - **Tailwind CSS** (via `@tailwindcss/vite`) — estilização utilitária, com suporte a tema claro/escuro.
 - **lucide-react** — ícones.
 - **@sentry/react** — monitoramento de erro (opcional, só ativa se `VITE_SENTRY_DSN` estiver
@@ -87,7 +87,7 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 | Lançamentos | `Lancamentos.jsx` + `useTransacoes.jsx` | Cadastro e extrato de despesas/rendas/reembolsos/investimentos. Suporta parcelamento, divisão com terceiros, anexo de comprovante (se liberado) e cadastro **offline** (fila em IndexedDB, sincroniza sozinho quando a conexão volta — `useOfflineSync.jsx`/`utils/offlineQueue.js`) |
 | Cartões de Crédito | `Cartoes.jsx` + `useCartoesFaturas.jsx` | Cadastro de cartões (dia de fechamento/vencimento/limite) e agrupamento automático de gastos em fatura |
 | Contas Fixas | `ContasFixas.jsx` | Despesas recorrentes (aluguel, internet) — geradas automaticamente todo mês pelo motor no backend |
-| Dívidas | `Dividas.jsx` | Empréstimos/financiamentos parcelados, incluindo dívidas registradas em nome de terceiros |
+| Dívidas | `Dividas.jsx` | Empréstimos/financiamentos parcelados, incluindo dívidas registradas em nome de terceiros; a competência da parcela 1 ancora a numeração e a geração mensal |
 | A Receber (Terceiros) | `Cobrancas.jsx` | Consolidado do que cada pessoa deve (de compras divididas ou dívidas de terceiros); se o telefone da pessoa estiver salvo, o botão de cobrança abre o WhatsApp direto (`wa.me`) com a mensagem pronta e a chave PIX |
 | Rendas Fixas | `RendasFixas.jsx` | Entradas recorrentes (salário), geradas automaticamente todo mês |
 | Metas & Categorias | `MetasCategorias.jsx` | Limites de gasto por categoria, usados na previsão do Dashboard |
@@ -118,6 +118,10 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
   (`fixa_`/`renda_`/`divlanc_`), compartilhado por todos — se essa checagem for afrouxada, editar
   um único "Salário" passa a tratar **todo o histórico recorrente** como um parcelamento só
   (aconteceu em produção; excluir "todas as parcelas" ali apagaria o histórico inteiro).
+- **Âncora de dívidas**: novos cadastros informam o mês/ano em que a parcela 1 aparece no
+  Extrato. A API e `fluxoProjetado.js` usam essa competência para determinar cada parcela, mesmo
+  se meses futuros forem gerados antes. Dívidas legadas sem a âncora são sinalizadas para correção
+  explícita e não são alteradas automaticamente.
 - **Permissões por usuário**: `temGaragem`, `temComprovante` e `isAdmin` vêm do token JWT no login
   (`useAuth.jsx`) e controlam o que aparece na Sidebar, no Tutorial e na Central de Ajuda. Um
   administrador libera essas flags por usuário na tela de Admin.

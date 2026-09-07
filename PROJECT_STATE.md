@@ -11,6 +11,8 @@ sessões independentes.
 
 - Correção do detalhamento do Fluxo de Caixa Projetado publicada em `main` (`588102b`) e
   confirmada em produção.
+- Checkpoint documental concluído em 07/09: a documentação de uso e técnica cobre o Raio-X de
+  metas e a âncora de competência das dívidas.
 - Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
   pode ser deduzida somente do Git.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
@@ -74,7 +76,7 @@ aguardam validação autenticada no produto e deploy da Web.
 
 - Responsividade validada por testes de componente: categorias com tag Garagem preservam nome e
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
-  troca competência por navegação e seletores próprios. `npm test` aprovou 28 testes e `npm run
+  troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run
   build` foi concluído em 07/09, com apenas o aviso conhecido de chunk principal acima de 500 kB.
 - Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
@@ -93,6 +95,9 @@ aguardam validação autenticada no produto e deploy da Web.
 - Regressões de terceiros e planejamento em 07/09: `A Receber` reduz uma parcela de dívida já
   recebida no Extrato; dívida de terceiro não reduz o Fluxo de Caixa Projetado; os três estados da
   mensagem de combustível (em dia, acima do planejado e concluído) foram validados em teste.
+- Revisão documental em 07/09: `git diff --check` aprovou as alterações; `npm test` aprovou 32
+  testes e `npm run build` concluiu com apenas o aviso conhecido de chunk acima de 500 kB. Não houve
+  mudança de código, configuração, infraestrutura ou decisão técnica.
 
 ## Próximos passos recomendados
 
