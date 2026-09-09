@@ -75,3 +75,15 @@
 - **Motivo:** representar valores parciais e mudanças de data sem criar nem alterar transações.
 - **Consequência:** a Web nunca infere consumo ou quilometragem; ambiguidades entre lançamentos na
   mesma data exigem vínculo explícito do usuário.
+
+## D-008 — Antecipação de parcela altera a fatura, não a liquidação
+
+- **Data:** 08/09/2026
+- **Status:** aceita
+- **Contexto:** antecipar uma compra parcelada no crédito precisa trazê-la para uma fatura anterior,
+  sem reescrever o histórico da compra nem afirmar que a conta foi paga.
+- **Decisão:** a Web solicita uma prévia canônica à API e confirma quantidade, total e destino; a
+  operação altera somente `mesReferencia`/`anoReferencia` das parcelas futuras pendentes elegíveis.
+- **Motivo:** manter a competência da fatura separada do caixa e impedir que antecipação gere renda,
+  pagamento ou alteração de valor.
+- **Consequência:** status e `data_pagamento` continuam exclusivos do fluxo de quitar fatura.

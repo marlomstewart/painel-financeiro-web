@@ -3,7 +3,7 @@ import {
     Sparkles, ClipboardList, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
     Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info
 } from 'lucide-react';
-import { nomeCartao } from '../utils/cartaoUtils';
+import { ehPagamentoCredito, nomeCartao } from '../utils/cartaoUtils';
 
 /**
  * @function IconeOrdenacao
@@ -28,12 +28,13 @@ export function Lancamentos({
     filtroStatus, setFiltroStatus, buscaTexto, setBuscaTexto,
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela,
-    alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa,
+    alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa, anteciparParcelasCredito,
     modal, showToast, nomeUsuario, temGaragem = false, temComprovante = false, anexarComprovante, verComprovante,
     dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
     mesAnterior = () => { },
     mesProximo = () => { },
-    garagem = null
+    garagem = null,
+    transacoes = []
 }) {
     // ==========================================
     // ESTADOS DO FORMULÁRIO (NOVO LANÇAMENTO)
@@ -150,6 +151,13 @@ export function Lancamentos({
 
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    const podeAnteciparParcelas = (t) => {
+        const grupo = String(t.grupo_id || '');
+        if (!ehPagamentoCredito(t.formaPagamento) || !grupo || t.tipo !== 'despesa' || t.categoria === 'Dívidas e Empréstimos' || t.categoria === 'Contas Fixas' || /^(divida_|fixa_|renda_)/.test(grupo)) return false;
+        return transacoes.some(item => item.grupo_id === t.grupo_id && item.status === 'pendente'
+            && (item.anoReferencia > t.anoReferencia || (item.anoReferencia === t.anoReferencia && item.mesReferencia > t.mesReferencia)));
+    };
+
     /**
      * @function obterNomePagamento
      * @description Converte o slug do meio de pagamento para um label legível em tela.
@@ -180,6 +188,7 @@ export function Lancamentos({
             onAlternarStatus: () => alternarStatusTransacao(t.id, t.status, t.valorParcela, t.dataCompra),
             onEditar: () => editarValor(t),
             onDeletar: () => deletarTransacao(t),
+            onAnteciparParcelas: podeAnteciparParcelas(t) ? () => anteciparParcelasCredito(t) : null,
             onVerComprovante: () => verComprovante(t),
             onAnexarComprovante: () => { transacaoParaAnexoRef.current = t; inputComprovanteRef.current?.click(); }
         });

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PlanejamentoCombustivel } from './PlanejamentoCombustivel';
 import {
   X, Users, Lightbulb, Undo2, CheckCircle2, RotateCcw, Pencil,
-  Paperclip, Trash2, FileText, CreditCard, AlertCircle
+  Paperclip, Trash2, FileText, CreditCard, AlertCircle, FastForward
 } from 'lucide-react';
 
 /**
@@ -780,6 +780,11 @@ export function Modal({ config, onClose }) {
                 <button onClick={() => { onClose(); config.onAlternarStatus(); }} className="p-3.5 md:p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3 flex items-center justify-center gap-2">
                   <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.25} /> {config.transacao.status === 'pago' ? 'Tornar Pendente' : 'Marcar Pago (Liquidado)'}
                 </button>
+                {config.onAnteciparParcelas && (
+                  <button onClick={() => config.onAnteciparParcelas()} className="p-3.5 md:p-2.5 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-xl border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition cursor-pointer active:scale-95 shadow-sm col-span-1 sm:col-span-3 flex items-center justify-center gap-2">
+                    <FastForward className="w-3.5 h-3.5" strokeWidth={2.25} /> Antecipar parcelas
+                  </button>
+                )}
                 <button onClick={() => config.onEditar()} className="p-3.5 md:p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer active:scale-95 shadow-sm flex items-center justify-center gap-2">
                   <Pencil className="w-3.5 h-3.5" strokeWidth={2.25} /> Editar
                 </button>

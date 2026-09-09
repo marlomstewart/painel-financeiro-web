@@ -478,5 +478,47 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         }
     };
 
-    return { addTransacao, alternarStatusTransacao, marcarRecebidoTerceiro, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante };
+    const anteciparParcelasCredito = async (t) => {
+        try {
+            const previaRes = await fetch(`${API}/transacoes/${t.id}/antecipacao/previa`, { headers: getHeaders() });
+            const previa = await previaRes.json();
+            if (!previaRes.ok) return showToast(previa.message || 'Não foi possível consultar as parcelas para antecipação.', 'error');
+
+            const opcoes = previa.parcelas.map((parcela, indice) => {
+                const selecionadas = previa.parcelas.slice(0, indice + 1);
+                const total = selecionadas.reduce((soma, item) => soma + Number(item.valorParcela || 0), 0);
+                return {
+                    value: indice + 1,
+                    label: `${indice + 1} parcela${indice ? 's' : ''} — ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                };
+            });
+            const quantidade = await modal.options(
+                `Há ${previa.quantidadeDisponivel} parcelas futuras pendentes. Selecione quantas deseja trazer para a fatura ${String(previa.destino.mes).padStart(2, '0')}/${previa.destino.ano}.${previa.destino.faturasQuitadasIgnoradas ? ' A fatura inicialmente calculada já foi quitada; esta é a próxima disponível.' : ''}`,
+                opcoes,
+                'Antecipar parcelas'
+            );
+            if (!quantidade) return;
+
+            const total = previa.parcelas.slice(0, quantidade).reduce((soma, item) => soma + Number(item.valorParcela || 0), 0);
+            const confirmar = await modal.confirm(
+                `Antecipar ${quantidade} parcela${quantidade > 1 ? 's' : ''} (${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) para a fatura ${String(previa.destino.mes).padStart(2, '0')}/${previa.destino.ano}? Elas continuarão pendentes e serão quitadas apenas ao pagar a fatura.`,
+                'Confirmar antecipação',
+                { confirmLabel: 'Antecipar parcelas' }
+            );
+            if (!confirmar) return;
+
+            const res = await fetch(`${API}/transacoes/${t.id}/antecipar-parcelas`, {
+                method: 'POST', headers: getHeaders(), body: JSON.stringify({ quantidade })
+            });
+            const data = await res.json();
+            if (!res.ok) return showToast(data.message || 'Não foi possível antecipar as parcelas.', 'error');
+            await carregarTransacoes();
+            showToast(data.message || 'Parcelas antecipadas com sucesso.', 'success');
+        } catch (err) {
+            console.error('Erro ao antecipar parcelas:', err);
+            showToast('Erro de conexão ao antecipar parcelas.', 'error');
+        }
+    };
+
+    return { addTransacao, alternarStatusTransacao, marcarRecebidoTerceiro, editarValor, deletarTransacao, executarAcaoEmMassa, anexarComprovante, verComprovante, anteciparParcelasCredito };
 }

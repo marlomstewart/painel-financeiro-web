@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 07/09/2026
+**Atualizado em:** 08/09/2026
 
 ## Objetivo atual
 
@@ -11,8 +11,8 @@ sessões independentes.
 
 - Correção do detalhamento do Fluxo de Caixa Projetado publicada em `main` (`588102b`) e
   confirmada em produção.
-- Checkpoint documental concluído em 07/09: a documentação de uso e técnica cobre o Raio-X de
-  metas e a âncora de competência das dívidas.
+- Checkpoint da antecipação de parcelas concluído em 08/09; a entrega aguarda apenas deploy e
+  validação autenticada.
 - Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
   pode ser deduzida somente do Git.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
@@ -20,6 +20,9 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
+  crédito. A confirmação mostra quantidade, total e fatura canônica de destino; antecipar não quita
+  nem modifica os dados financeiros da compra.
 - Metas & Categorias, A Receber e Planejamento de combustível receberam ajustes responsivos:
   nomes de categorias de Garagem ocupam até duas linhas, a cobrança mostra somente pessoas com
   pendência na competência visível, descrições e valores longos se adaptam ao celular, e o mês de
@@ -51,8 +54,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Nenhuma implementação em curso. As correções de terceiros, projeção e linguagem do combustível
-aguardam validação autenticada no produto e deploy da Web.
+Nenhuma implementação em curso. A antecipação de parcelas, além das correções anteriores, aguarda
+deploy conjunto e validação autenticada no produto.
 
 ## Pendências e riscos
 
@@ -74,6 +77,9 @@ aguardam validação autenticada no produto e deploy da Web.
 
 ## Validações recentes
 
+- Antecipação de crédito validada localmente em 08/09: `npm test` aprovou 32 testes e `npm run build`
+  concluiu; o fluxo usa somente `utils/cartaoUtils.js` para reconhecer crédito e recarrega o Extrato
+  depois da confirmação. Permanece o aviso conhecido de chunk principal acima de 500 kB.
 - Responsividade validada por testes de componente: categorias com tag Garagem preservam nome e
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
   troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run
@@ -101,8 +107,7 @@ aguardam validação autenticada no produto e deploy da Web.
 
 ## Próximos passos recomendados
 
-1. Após o deploy da Web, validar autenticado o recebimento de uma parcela de terceiro em A Receber,
-   o selo correspondente no Extrato e a ausência dela no Fluxo de Caixa Projetado.
-2. Configurar uma rotina de combustível e validar antecipação, cancelamento, valor parcial,
-   reconhecimento de lançamento e os textos de previsão no Dashboard.
+1. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
+   destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
+2. Validar também os fluxos pendentes de terceiros e planejamento de combustível já documentados.
 3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

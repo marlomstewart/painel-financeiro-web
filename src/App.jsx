@@ -199,9 +199,9 @@ function App() {
         setMostrarFiltrosAvancados={dashboardManager.setMostrarFiltrosAvancados} filtrosAvancados={dashboardManager.filtrosAvancados}
         setFiltrosAvancados={dashboardManager.setFiltrosAvancados} mudarOrdenacao={dashboardManager.mudarOrdenacao} ordenacao={dashboardManager.ordenacao}
         dadosTabela={dashboardManager.dadosTabela} alternarStatusTransacao={transacoesManager.alternarStatusTransacao} editarValor={transacoesManager.editarValor}
-        deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} modal={modal} showToast={showToast}
+        deletarTransacao={transacoesManager.deletarTransacao} executarAcaoEmMassa={transacoesManager.executarAcaoEmMassa} anteciparParcelasCredito={transacoesManager.anteciparParcelasCredito} modal={modal} showToast={showToast}
         nomeUsuario={auth.nomeUsuario} temGaragem={auth.temGaragem} temComprovante={auth.temComprovante} anexarComprovante={transacoesManager.anexarComprovante} verComprovante={transacoesManager.verComprovante}
-        dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} garagem={garagem}
+        dataVis={dataVis} mesAnterior={dashboardManager.mesAnterior} mesProximo={dashboardManager.mesProximo} garagem={garagem} transacoes={transacoes}
       />;
     }
 
