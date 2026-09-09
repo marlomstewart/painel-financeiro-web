@@ -22,7 +22,7 @@ no repositório da API.
 ## Stack
 
 - **React 19** + **Vite** — SPA sem `react-router`; o `App.jsx` controla a navegação e a sincroniza
-  com a URL pela History API (`?tela=&mes=&ano=`), permitindo deep links e uso de voltar/avançar.
+  com a URL pela History API (`/extrato?mes=&ano=`), permitindo deep links e uso de voltar/avançar.
 - **Tailwind CSS** (via `@tailwindcss/vite`) — estilização utilitária, com suporte a tema claro/escuro.
 - **lucide-react** — ícones.
 - **@sentry/react** — monitoramento de erro (opcional, só ativa se `VITE_SENTRY_DSN` estiver

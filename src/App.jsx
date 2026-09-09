@@ -36,7 +36,7 @@ import { useToast } from './hooks/useToast';
 import { Toast } from './components/Toast';
 import { Skeleton } from './components/Skeleton';
 import { montarConsultaTransacoes } from './utils/janelaTransacoes';
-import { lerTelaDaURL, lerDataVisDaURL, montarURL } from './utils/urlEstado';
+import { lerTelaDaURL, lerDataVisDaURL, lerRotaDeRetorno, montarURL, montarURLLogin, rotaAtual } from './utils/urlEstado';
 
 /**
  * @constant {string} API
@@ -93,8 +93,40 @@ function App() {
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas, saldoConciliado: auth.saldoConciliado, saldoCaixaCanonico });
 
   useEffect(() => {
+    if (!auth.token || window.location.pathname === '/login') return;
     window.history.replaceState({ tela: telaAtiva }, '', montarURL(telaAtiva, dataVis));
-  }, [dataVis.mes, dataVis.ano]);
+  }, [auth.token, telaAtiva, dataVis.mes, dataVis.ano]);
+
+  // A guarda fica no nível da SPA para que um acesso direto, uma recarga e a expiração
+  // detectada durante o carregamento obedeçam ao mesmo contrato de retorno pós-login.
+  useEffect(() => {
+    const estaNoLogin = window.location.pathname === '/login';
+
+    if (!auth.token) {
+      if (!estaNoLogin && window.location.pathname !== '/') {
+        window.history.replaceState(null, '', montarURLLogin(rotaAtual()));
+      } else if (window.location.pathname === '/') {
+        window.history.replaceState(null, '', montarURLLogin());
+      }
+      return;
+    }
+
+    if (estaNoLogin || window.location.pathname === '/') {
+      const retorno = lerRotaDeRetorno();
+      if (retorno) {
+        window.history.replaceState(null, '', retorno);
+        setTelaAtivaState(lerTelaDaURL('dashboard'));
+        setDataVis(lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
+      } else {
+        window.history.replaceState({ tela: 'dashboard' }, '', montarURL('dashboard', dataVis));
+        setTelaAtivaState('dashboard');
+      }
+      return;
+    }
+
+    const urlCanonica = montarURL(telaAtiva, dataVis);
+    if (rotaAtual() !== urlCanonica) window.history.replaceState({ tela: telaAtiva }, '', urlCanonica);
+  }, [auth.token, telaAtiva, dataVis]);
 
   useEffect(() => {
     const aoNavegar = () => {

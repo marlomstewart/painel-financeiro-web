@@ -18,13 +18,31 @@ const salvarSaldoConciliadoLocal = (saldo) => {
     localStorage.setItem('saldoConciliadoData', saldo.data);
 };
 
+const tokenEstaExpirado = (token) => {
+    try {
+        const payload = token.split('.')[1];
+        const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        const { exp } = JSON.parse(json);
+        return Number.isFinite(exp) && exp * 1000 <= Date.now();
+    } catch {
+        return true;
+    }
+};
+
 /**
  * @function useAuth
  * @description Hook Customizado: Gere token JWT, fluxos de login, perfis e controle de acesso granular.
  * @updated Inclui a captura e persistência do 'telegram_chat_id' para alertas preditivos.
  */
 export function useAuth({ API, modal, setCarregouAPI, showToast }) {
-    const [token, setToken] = useState(localStorage.getItem('tokenPainel') || null);
+    const [token, setToken] = useState(() => {
+        const tokenSalvo = localStorage.getItem('tokenPainel');
+        if (!tokenSalvo || tokenEstaExpirado(tokenSalvo)) {
+            localStorage.removeItem('tokenPainel');
+            return null;
+        }
+        return tokenSalvo;
+    });
     const [tokenTemp, setTokenTemp] = useState(null);
     const [precisaTrocarSenha, setPrecisaTrocarSenha] = useState(false);
 

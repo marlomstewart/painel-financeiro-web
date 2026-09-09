@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 08/09/2026
+**Atualizado em:** 09/09/2026
 
 ## Objetivo atual
 
@@ -17,6 +17,8 @@ sessões independentes.
   pode ser deduzida somente do Git.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
   distribuídos por props.
+- Navegação pública usa caminhos amigáveis, com fallback de SPA na Vercel. A History API nativa
+  preserva voltar/avançar; `mes` e `ano` permanecem como parâmetros de consulta.
 
 ## Entregas relevantes
 
@@ -51,6 +53,9 @@ sessões independentes.
   pagamento da conta; Dívidas calcula parcelas geradas como `despesa` e usa
   `terceiro_recebido` somente para dívidas para terceiros.
 - CI em GitHub Actions executa testes Vitest e build a cada push/pull request.
+- Aberturas diretas em módulos protegidos guardam a URL solicitada em `/login?retorno=...` e a
+  restauram após autenticação. JWTs localmente expirados são descartados antes do carregamento;
+  tokens inválidos são tratados quando a API recusa a primeira sincronização.
 
 ## Trabalho em andamento
 
@@ -69,7 +74,8 @@ deploy conjunto e validação autenticada no produto.
 
 ## Arquivos importantes
 
-- `src/App.jsx`, `src/hooks/useAuth.jsx`, `src/hooks/useDashboard.jsx`
+- `src/App.jsx`, `src/hooks/useAuth.jsx`, `src/utils/urlEstado.js`, `vercel.json`,
+  `src/hooks/useDashboard.jsx`
 - `src/hooks/useTransacoes.jsx`, `src/hooks/useOfflineSync.jsx`
 - `src/utils/offlineQueue.js`, `src/utils/cartaoUtils.js`
 - `src/components/Dashboard.jsx`, `src/components/Configuracoes.jsx`, `src/components/Lancamentos.jsx`
@@ -104,10 +110,16 @@ deploy conjunto e validação autenticada no produto.
 - Revisão documental em 07/09: `git diff --check` aprovou as alterações; `npm test` aprovou 32
   testes e `npm run build` concluiu com apenas o aviso conhecido de chunk acima de 500 kB. Não houve
   mudança de código, configuração, infraestrutura ou decisão técnica.
+- Migração de URLs por caminho em 09/09: testes de utilitário cobrem caminhos, compatibilidade de
+  leitura de links antigos e retorno pós-login. `npm test` aprovou 35 testes, `npm run build`
+  concluiu (mantido apenas o aviso conhecido do chunk principal), e a prévia respondeu `200` para
+  `/extrato?mes=9&ano=2026`.
 
 ## Próximos passos recomendados
 
-1. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
+1. Publicar a Web e validar em produção uma abertura direta sem sessão em `/extrato?mes=9&ano=2026`,
+   o retorno à rota após login e uma recarga autenticada em cada módulo crítico.
+2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
    destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
-2. Validar também os fluxos pendentes de terceiros e planejamento de combustível já documentados.
-3. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+3. Validar também os fluxos pendentes de terceiros e planejamento de combustível já documentados.
+4. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
