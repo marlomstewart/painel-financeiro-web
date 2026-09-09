@@ -113,11 +113,12 @@ deploy conjunto e validação autenticada no produto.
 - Migração de URLs por caminho em 09/09: testes de utilitário cobrem caminhos, compatibilidade de
   leitura de links antigos e retorno pós-login. `npm test` aprovou 35 testes, `npm run build`
   concluiu (mantido apenas o aviso conhecido do chunk principal), e a prévia respondeu `200` para
-  `/extrato?mes=9&ano=2026`.
+  `/extrato?mes=9&ano=2026`. O commit `fbf4217` foi publicado em produção; o bundle e a rota
+  direta em `fincontrole.online` foram confirmados.
 
 ## Próximos passos recomendados
 
-1. Publicar a Web e validar em produção uma abertura direta sem sessão em `/extrato?mes=9&ano=2026`,
+1. Validar manualmente em produção uma abertura direta sem sessão em `/extrato?mes=9&ano=2026`,
    o retorno à rota após login e uma recarga autenticada em cada módulo crítico.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
    destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
