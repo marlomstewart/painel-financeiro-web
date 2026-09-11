@@ -65,8 +65,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Nenhuma implementação em curso. O Dashboard foi validado autenticado em produção; o smoke test
-visual de abastecimentos aguarda uma conta de validação com Garagem habilitada.
+Correção de categoria simples concluída localmente; aguarda deploy da Web e retomada do smoke test
+de abastecimentos com a conta de validação já habilitada para Garagem.
 
 ## Pendências e riscos
 
@@ -122,6 +122,10 @@ visual de abastecimentos aguarda uma conta de validação com Garagem habilitada
 - Checkpoint final de abastecimentos em 11/09: `npm test` aprovou 35 testes e `npm run build`
   concluiu. A conta de validação acessou o Dashboard em produção sem erro, mas não exibiu Garagem
   por não ter essa permissão; não houve alteração de dados ou permissões durante o smoke test.
+- Correção de categorias em 11/09: a meta inicial agora é `0,00`, coerente com o campo opcional,
+  e não bloqueia o envio nativo do formulário. O teste de componente cobre o cadastro simples;
+  testes focados e build concluíram com sucesso. A API não precisou mudar e sua regressão completa
+  em homologação aprovou 39 testes.
 
 ## Próximos passos recomendados
 
@@ -129,6 +133,6 @@ visual de abastecimentos aguarda uma conta de validação com Garagem habilitada
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
    destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
-3. Com uma conta de validação que tenha Garagem habilitada, abrir um veículo próprio e confirmar
-   visualmente o formulário e o histórico de abastecimentos sem salvar dados reais.
+3. Após o deploy da Web, usar a conta de validação com Garagem habilitada para criar a categoria
+   de teste e concluir o smoke test de abastecimento, incluindo o vínculo no Extrato.
 4. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

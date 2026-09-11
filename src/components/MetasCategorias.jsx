@@ -8,7 +8,9 @@ import { Tag, Plus, Pencil, Trash2, TrendingDown, TrendingUp, Wallet, Bike, XCir
  */
 export function MetasCategorias({ categorias, addCategoria, editarSetup, removerSetup, modal, temGaragem, showToast }) {
     const [nomeCategoria, setNomeCategoria] = useState('');
-    const [metaCategoria, setMetaCategoria] = useState('');
+    // A categoria simples é um fluxo válido: iniciar em zero evita que o `required` do campo
+    // bloqueie silenciosamente o submit quando o usuário não quer cadastrar uma meta.
+    const [metaCategoria, setMetaCategoria] = useState('0,00');
     const [tipoCategoria, setTipoCategoria] = useState('despesa');
     const [isGaragem, setIsGaragem] = useState(false);
 
@@ -38,7 +40,7 @@ export function MetasCategorias({ categorias, addCategoria, editarSetup, remover
         e.preventDefault();
         await addCategoria(e);
         setNomeCategoria('');
-        setMetaCategoria('');
+        setMetaCategoria('0,00');
         setTipoCategoria('despesa');
         setIsGaragem(false);
     };
