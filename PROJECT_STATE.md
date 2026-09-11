@@ -65,8 +65,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Nenhuma implementação em curso. Antecipação de parcelas e abastecimentos aguardam deploy conjunto
-e validação autenticada no produto.
+Nenhuma implementação em curso. O Dashboard foi validado autenticado em produção; o smoke test
+visual de abastecimentos aguarda uma conta de validação com Garagem habilitada.
 
 ## Pendências e riscos
 
@@ -119,6 +119,9 @@ e validação autenticada no produto.
 - Roteamento por caminhos validado em 11/09: testes da URL cobrem Dashboard, Novo Lançamento,
   links legados, competência fora da URL e retorno pós-login; `npm test` aprovou 35 testes e
   `npm run build` concluiu com o aviso conhecido de chunk principal acima de 500 kB.
+- Checkpoint final de abastecimentos em 11/09: `npm test` aprovou 35 testes e `npm run build`
+  concluiu. A conta de validação acessou o Dashboard em produção sem erro, mas não exibiu Garagem
+  por não ter essa permissão; não houve alteração de dados ou permissões durante o smoke test.
 
 ## Próximos passos recomendados
 
@@ -126,5 +129,6 @@ e validação autenticada no produto.
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
    destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
-3. Validar também os fluxos pendentes de terceiros e planejamento de combustível já documentados.
+3. Com uma conta de validação que tenha Garagem habilitada, abrir um veículo próprio e confirmar
+   visualmente o formulário e o histórico de abastecimentos sem salvar dados reais.
 4. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
