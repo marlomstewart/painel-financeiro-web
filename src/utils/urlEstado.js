@@ -1,15 +1,9 @@
 /**
  * @file src/utils/urlEstado.js
- * @description Sincroniza a navegação interna (tela ativa + mês/ano visualizado) com a URL via
- * History API nativa — sem react-router. As telas usam caminhos amigáveis e a consulta fica
- * restrita a estado secundário, como competência e filtros.
+ * @description Sincroniza a tela ativa com a URL via History API nativa — sem react-router.
+ * A competência visível fica no estado/histórico do navegador, para que os caminhos públicos
+ * permaneçam legíveis (ex.: `/dividas`), sem parâmetros de consulta.
  */
-
-const TELAS_VALIDAS = new Set([
-    'dashboard', 'admin', 'cobrancas', 'cartoes', 'metas_categorias', 'dividas',
-    'contas_fixas', 'rendas_fixas', 'configuracoes', 'ajuda', 'garagem',
-    'novo_lancamento', 'extrato', 'lancamentos', 'investimentos', 'calculadora_compra'
-]);
 
 const ROTA_POR_TELA = {
     dashboard: '/dashboard',
@@ -30,6 +24,7 @@ const ROTA_POR_TELA = {
     calculadora_compra: '/calculadora-compra'
 };
 
+const TELAS_VALIDAS = new Set(Object.keys(ROTA_POR_TELA));
 const TELA_POR_ROTA = Object.fromEntries(Object.entries(ROTA_POR_TELA).map(([tela, rota]) => [rota, tela]));
 
 function normalizarCaminho(pathname) {
@@ -41,8 +36,7 @@ export function lerTelaDaURL(padrao = 'dashboard') {
     const telaPeloCaminho = TELA_POR_ROTA[normalizarCaminho(window.location.pathname)];
     if (telaPeloCaminho) return telaPeloCaminho;
 
-    // Migração suave para links compartilhados antes das rotas por caminho. A URL é
-    // normalizada pelo App assim que uma sessão válida assume a navegação.
+    // Compatibilidade temporária com links gerados antes dos caminhos legíveis.
     const telaLegada = new URLSearchParams(window.location.search).get('tela');
     return telaLegada && TELAS_VALIDAS.has(telaLegada) ? telaLegada : padrao;
 }
@@ -55,14 +49,8 @@ export function lerDataVisDaURL(padrao) {
     return padrao;
 }
 
-export function montarURL(tela, dataVis) {
-    const params = new URLSearchParams();
-    if (dataVis) {
-        params.set('mes', dataVis.mes);
-        params.set('ano', dataVis.ano);
-    }
-    const consulta = params.toString();
-    return `${ROTA_POR_TELA[tela] || ROTA_POR_TELA.dashboard}${consulta ? `?${consulta}` : ''}`;
+export function montarURL(tela) {
+    return ROTA_POR_TELA[tela] || ROTA_POR_TELA.dashboard;
 }
 
 export function lerRotaDeRetorno() {

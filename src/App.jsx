@@ -78,7 +78,7 @@ function App() {
   const setTelaAtiva = useCallback((novaTela) => {
     setTelaAtivaState(atual => {
       if (atual === novaTela) return atual;
-      window.history.pushState({ tela: novaTela }, '', montarURL(novaTela, dataVis));
+      window.history.pushState({ tela: novaTela, dataVis }, '', montarURL(novaTela));
       return novaTela;
     });
   }, [dataVis]);
@@ -94,7 +94,7 @@ function App() {
 
   useEffect(() => {
     if (!auth.token || window.location.pathname === '/login') return;
-    window.history.replaceState({ tela: telaAtiva }, '', montarURL(telaAtiva, dataVis));
+    window.history.replaceState({ tela: telaAtiva, dataVis }, '', montarURL(telaAtiva));
   }, [auth.token, telaAtiva, dataVis.mes, dataVis.ano]);
 
   // A guarda fica no nível da SPA para que um acesso direto, uma recarga e a expiração
@@ -118,20 +118,20 @@ function App() {
         setTelaAtivaState(lerTelaDaURL('dashboard'));
         setDataVis(lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
       } else {
-        window.history.replaceState({ tela: 'dashboard' }, '', montarURL('dashboard', dataVis));
+        window.history.replaceState({ tela: 'dashboard', dataVis }, '', montarURL('dashboard'));
         setTelaAtivaState('dashboard');
       }
       return;
     }
 
-    const urlCanonica = montarURL(telaAtiva, dataVis);
-    if (rotaAtual() !== urlCanonica) window.history.replaceState({ tela: telaAtiva }, '', urlCanonica);
+    const urlCanonica = montarURL(telaAtiva);
+    if (rotaAtual() !== urlCanonica) window.history.replaceState({ tela: telaAtiva, dataVis }, '', urlCanonica);
   }, [auth.token, telaAtiva, dataVis]);
 
   useEffect(() => {
     const aoNavegar = () => {
       setTelaAtivaState(lerTelaDaURL('dashboard'));
-      setDataVis(lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
+      setDataVis(window.history.state?.dataVis || lerDataVisDaURL({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }));
     };
     window.addEventListener('popstate', aoNavegar);
     return () => window.removeEventListener('popstate', aoNavegar);

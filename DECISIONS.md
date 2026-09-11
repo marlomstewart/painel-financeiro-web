@@ -5,7 +5,9 @@
 - **Data:** não confirmada
 - **Status:** aceita
 - **Contexto:** o projeto é uma SPA React sem roteador externo ou store global.
-- **Decisão:** `App.jsx` instancia hooks de domínio e controla tela/URL pela History API.
+- **Decisão:** `App.jsx` instancia hooks de domínio e controla tela/URL pela History API. As
+  telas autenticadas usam caminhos canônicos legíveis (por exemplo, `/dashboard` e `/extrato`);
+  competência mensal fica no estado do histórico, não em parâmetros de consulta.
 - **Motivo:** arquitetura existente simples e funcional para o tamanho atual do produto.
 - **Consequência:** não introduzir Redux/Context/Zustand em feature pequena; reavaliar apenas em
   refatoração dedicada ao prop-drilling/re-renderização.
