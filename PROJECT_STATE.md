@@ -33,6 +33,9 @@ sessões independentes.
 - O calendário fixo da gasolina foi substituído por planejamento configurável na Garagem: categoria,
   veículo opcional, dias habituais e valor padrão. Cada abastecimento pode ser antecipado no mês,
   ajustado ou cancelado; o Dashboard reserva somente previsões ainda não atendidas por lançamentos.
+- O detalhe de veículo próprio permite registrar abastecimento técnico com litros, preço, total
+  calculado, tanque cheio e observação. O usuário escolhe criar a despesa no Extrato ou vincular
+  uma existente; o histórico mostra a ficha técnica sem criar nova previsão.
 - O Raio-X de cada meta estratégica agora abre também sem progresso (0%), preserva total,
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
@@ -62,8 +65,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Nenhuma implementação em curso. A antecipação de parcelas, além das correções anteriores, aguarda
-deploy conjunto e validação autenticada no produto.
+Nenhuma implementação em curso. Antecipação de parcelas e abastecimentos aguardam deploy conjunto
+e validação autenticada no produto.
 
 ## Pendências e riscos
 
