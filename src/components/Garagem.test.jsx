@@ -41,6 +41,7 @@ test('padroniza os painéis técnicos com cabeçalho fixo e área rolável no de
 test('lista despesas do veículo no seletor próprio com data, valor e preço por litro monetário', async () => {
   vi.stubGlobal('fetch', vi.fn((url) => {
     if (String(url).includes('consumo-combustivel')) return Promise.resolve(resposta({ dados_suficientes: false, motivo_insuficiencia: 'Sem dados', ultimo_abastecimento: null, km_por_litro_medio: null, custo_medio_por_km: null, custo_medio_diario: null, preco_medio_por_litro: null, distancia_desde_ultimo_abastecimento_km: null, variacao_ultimo_consumo_percentual: null }))
+    if (String(url).includes('/abastecimentos')) return Promise.resolve(resposta([{ id: 'hist-1', data_abastecimento: '2026-09-10', odometro: 10000, litros: 5, preco_litro: 5, valor_total: 25, tanque_cheio: true }]))
     return Promise.resolve(resposta([]))
   }))
   const veiculo = { id: 'veiculo-vinculo', modelo: 'Veículo de vínculo', km_atual: 10000, tipo: 'proprio' }
@@ -50,6 +51,9 @@ test('lista despesas do veículo no seletor próprio com data, valor e preço po
 
   fireEvent.click(screen.getByText('Veículo de vínculo').closest('[role="button"]'))
   await screen.findByText('Registrar abastecimento')
+  expect(screen.getByRole('button', { name: '30 dias' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: '3 meses' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Todo histórico' })).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: /Registrar abastecimento/ }))
   const odometro = container.querySelector('input[name="odometro"]')
   expect(odometro.value).toBe('10.000')

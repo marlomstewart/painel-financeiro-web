@@ -156,12 +156,16 @@ sessões independentes.
   concluiu com o aviso conhecido de chunk acima de 500 kB.
 - Formulário e consumo da Garagem ajustados em 11/09: o vínculo de despesa usa seletor visual com
   descrição, data e valor; preço por litro aceita máscara monetária. O card exibe também custo
-  médio diário retornado pela API. `npm test` aprovou 40 testes e o build concluiu com o aviso
+  médio por dia útil retornado pela API. `npm test` aprovou 40 testes e o build concluiu com o aviso
   conhecido de chunk principal acima de 500 kB.
 - Quilometragem do abastecimento ajustada em 11/09: o campo aceita a escrita brasileira, com ponto
   para milhar e vírgula para decimal, e normaliza o valor antes de enviar à API. O teste focado da
   Garagem aprovou `84.437` e `84.660,5`; build concluído com o aviso conhecido de chunk principal
   acima de 500 kB.
+- Histórico e consumo de abastecimentos ajustados em 11/09: a Garagem filtra visualmente os últimos
+  30 dias, 3 meses ou todo o histórico, sem alterar registros. O indicador passou a identificar o
+  custo por dia útil e os dias úteis observados em Aracaju/SE. Teste focado e build concluíram com
+  sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 
 ## Próximos passos recomendados
 
@@ -184,4 +188,6 @@ sessões independentes.
    preço por litro e o custo médio diário para dois tanques cheios em dias diferentes.
 9. Após o deploy web, validar no formulário de abastecimento a quilometragem com ponto de milhar e
    vírgula decimal, confirmando o valor no histórico e no Extrato vinculado.
-10. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+10. Após o deploy conjunto, validar os filtros de histórico e o custo por dia útil, incluindo um
+    intervalo que atravesse fim de semana ou feriado de Aracaju/SE.
+11. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
