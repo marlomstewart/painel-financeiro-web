@@ -221,7 +221,7 @@ function App() {
 
     if (telaAtiva === 'ajuda') return <Ajuda temGaragem={auth.temGaragem} isAdmin={auth.isAdmin} abrirTutorial={() => setMostrarTutorial(true)} />;
 
-    if (telaAtiva === 'garagem' && auth.temGaragem) return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} setTransacoes={setTransacoes} cartoes={setup.cartoes} garagem={garagem} />;
+    if (telaAtiva === 'garagem' && auth.temGaragem) return <Garagem ModalComponent={Modal} modalConfig={modal.config} modalClose={modal.close} setTelaAtiva={setTelaAtiva} getHeaders={auth.getHeaders} transacoes={transacoes} setTransacoes={setTransacoes} cartoes={setup.cartoes} garagem={garagem} dataVis={dataVis} />;
 
     if (['novo_lancamento', 'extrato', 'lancamentos'].includes(telaAtiva)) {
       return <Lancamentos

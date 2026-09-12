@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
     X, Bike, Car, Users, Plus, Pencil, Trash2, Settings, Wrench,
     AlertTriangle, Stethoscope, ClipboardList, Wallet, CreditCard,
-    Calendar, ArrowLeft, Lightbulb
+    Calendar, ArrowLeft, Lightbulb, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { calcularDesgasteItem } from '../utils/desgasteVeiculo';
 
@@ -47,7 +47,7 @@ const ModalInterno = ({ titulo, children, onFechar }) => (
  * @description Módulo de gestão automotiva preditiva. Controla veículos, desgaste de peças por odômetro, 
  * linha do tempo de manutenções e rastreio de despesas financeiras associadas.
  */
-export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, cartoes = [], ModalComponent, modalConfig, modalClose, garagem }) {
+export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, cartoes = [], ModalComponent, modalConfig, modalClose, garagem, dataVis }) {
 
     // ==========================================
     // ESTADOS GLOBAIS DO MÓDULO
@@ -63,6 +63,10 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
     const [manutencoes, setManutencoes] = useState([]);
     const [abastecimentos, setAbastecimentos] = useState([]);
     const [consumoCombustivel, setConsumoCombustivel] = useState(null);
+    const [competenciaCustos, setCompetenciaCustos] = useState(() => ({
+        mes: dataVis?.mes || new Date().getMonth() + 1,
+        ano: dataVis?.ano || new Date().getFullYear()
+    }));
 
     // Estados de Controle de Modais
     const [modalVeiculo, setModalVeiculo] = useState(null);
@@ -283,6 +287,16 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
     const lancamentosVeiculo = veiculoSelecionado
         ? transacoes.filter(t => t.veiculo_id === veiculoSelecionado.id).sort((a, b) => new Date(b.dataCompra) - new Date(a.dataCompra))
         : [];
+    const custosVeiculoNoMes = lancamentosVeiculo.filter(t => t.tipo === 'despesa'
+        && Number(t.mesReferencia) === competenciaCustos.mes && Number(t.anoReferencia) === competenciaCustos.ano);
+    const mudarCompetenciaCustos = (direcao) => setCompetenciaCustos(atual => {
+        const mes = atual.mes + direcao;
+        if (mes === 0) return { mes: 12, ano: atual.ano - 1 };
+        if (mes === 13) return { mes: 1, ano: atual.ano + 1 };
+        return { ...atual, mes };
+    });
+    const tituloCompetenciaCustos = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+        .format(new Date(Date.UTC(competenciaCustos.ano, competenciaCustos.mes - 1, 1)));
     const lancamentosParaVinculo = lancamentosVeiculo.filter(t => t.tipo === 'despesa' && !abastecimentos.some(a => a.transacao_id === t.id));
     const categoriaPlanejada = garagem?.planoMes?.config?.categoriaId || '';
     const valorLancamentoVinculado = rascunhoAbastecimento.modo === 'vincular'
@@ -708,19 +722,26 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                 {/* BLOCO: LANÇAMENTOS FINANCEIROS ATRELADOS (Para Próprios e Convidados) */}
                 <div className={`bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col lg:h-[560px] ${veiculoSelecionado.tipo === 'convidado' ? 'lg:col-span-2' : 'lg:col-span-2 xl:col-span-2'}`}>
                     <div className="shrink-0 min-h-[84px]">
-                        <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-1 flex items-center gap-2"><Wallet className="w-4 h-4" strokeWidth={2} /> Custos Associados (Extrato)</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Transações extraídas automaticamente do Livro-Razão atreladas a esta placa.</p>
+                        <div className="flex items-center justify-between gap-3 mb-1">
+                            <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Wallet className="w-4 h-4" strokeWidth={2} /> Custos Associados (Extrato)</h2>
+                            <div className="flex items-center gap-1 shrink-0" aria-label="Navegação de mês dos custos associados">
+                                <button type="button" onClick={() => mudarCompetenciaCustos(-1)} className="p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" aria-label="Mês anterior dos custos" title="Mês anterior"><ChevronLeft className="w-4 h-4" /></button>
+                                <span className="min-w-[102px] text-center text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">{tituloCompetenciaCustos}</span>
+                                <button type="button" onClick={() => mudarCompetenciaCustos(1)} className="p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" aria-label="Próximo mês dos custos" title="Próximo mês"><ChevronRight className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Despesas do Extrato vinculadas a este veículo no mês selecionado.</p>
                     </div>
 
-                    {lancamentosVeiculo.length === 0 ? (
+                    {custosVeiculoNoMes.length === 0 ? (
                         <div className="text-center py-10 px-4 text-slate-400 dark:text-slate-500 text-sm border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl font-semibold bg-slate-50 dark:bg-slate-900/30">
                             <CreditCard className="w-9 h-9 opacity-50 mb-3 mx-auto text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
-                            <p>Nenhum custo registrado para este veículo.</p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-normal">Ao registrar uma despesa no painel principal, selecione a categoria Gasolina/Manutenção e vincule a quilometragem.</p>
+                            <p>Nenhuma despesa deste veículo em {tituloCompetenciaCustos}.</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-normal">Use as setas para consultar os custos de outros meses.</p>
                         </div>
                     ) : (
                         <div className="flex-1 min-h-[240px] lg:min-h-0 overflow-y-auto custom-scrollbar pr-1 md:pr-2 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
-                            {lancamentosVeiculo.map(t => (
+                            {custosVeiculoNoMes.map(t => (
                                 <div key={t.id} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800">
                                     <div className="min-w-0 flex-1 pr-4">
                                         <p className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate leading-tight">{t.descricao}</p>

@@ -72,6 +72,8 @@ sessões independentes.
   e validação visual em produção.
 - Correção de peças vencidas e padronização dos painéis internos da Garagem concluída localmente;
   aguarda deploy e validação visual responsiva.
+- Custos Associados da Garagem agora filtram despesas por competência e têm navegação mensal local;
+  aguardam deploy e validação visual.
 
 ## Pendências e riscos
 
@@ -148,6 +150,10 @@ sessões independentes.
   Associados agora preservam cabeçalho fora da área rolável e altura alinhada no desktop, sem
   comprimir a leitura no mobile. `npm test` aprovou 39 testes e `npm run build` concluiu com o
   aviso conhecido de chunk acima de 500 kB.
+- Custos Associados ajustados em 11/09: o painel exibe somente despesas do veículo na competência
+  selecionada, com navegação entre meses sem alterar o Dashboard. A descrição agora usa o termo
+  familiar “Extrato”, em vez de “Livro-Razão”. `npm test` aprovou 39 testes e `npm run build`
+  concluiu com o aviso conhecido de chunk acima de 500 kB.
 
 ## Próximos passos recomendados
 
@@ -164,4 +170,6 @@ sessões independentes.
    confirmando médias, distância e estado de dados insuficientes.
 6. Após o deploy web, validar peças vencidas em % e km, além da rolagem dos três painéis em
    desktop e mobile.
-7. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+7. Após o deploy web, validar a navegação mensal de Custos Associados e a ausência de despesas
+   fora da competência selecionada.
+8. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
