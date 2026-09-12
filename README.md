@@ -22,7 +22,8 @@ no repositório da API.
 ## Stack
 
 - **React 19** + **Vite** — SPA sem `react-router`; o `App.jsx` controla a navegação e a sincroniza
-  com a URL pela History API (`/extrato?mes=&ano=`), permitindo deep links e uso de voltar/avançar.
+  com a URL pela History API, usando caminhos canônicos como `/dashboard` e `/extrato` e mantendo a
+  competência mensal no estado do histórico.
 - **Tailwind CSS** (via `@tailwindcss/vite`) — estilização utilitária, com suporte a tema claro/escuro.
 - **lucide-react** — ícones.
 - **@sentry/react** — monitoramento de erro (opcional, só ativa se `VITE_SENTRY_DSN` estiver
@@ -93,7 +94,7 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 | Metas & Categorias | `MetasCategorias.jsx` | Limites de gasto por categoria, usados na previsão do Dashboard |
 | Investimentos | `Investimentos.jsx` + `useInvestimentos.jsx`/`useBolsa.jsx`/`useTesouro.jsx` | 5 abas: Resumo (patrimônio consolidado + "Meus Ativos"), Renda Fixa (CDB por caixinha), Ações, FIIs (com proventos) e Tesouro Direto (Selic/Prefixado/IPCA+). Um formulário único (`FormularioNovoInvestimento` em `Modal.jsx`) cobre o cadastro das 4 classes |
 | Simulador À Vista ou Parcelado | `CalculadoraCompra.jsx` | Calculadora avulsa: compara pagar à vista com parcelar e deixar o valor rendendo no CDB real do usuário |
-| Garagem | `Garagem.jsx` + `useGaragem.jsx` | **Condicional** (`temGaragem`): manutenção por km, abastecimento e histórico de veículos |
+| Garagem | `Garagem.jsx` + `useGaragem.jsx` | **Condicional** (`temGaragem`): manutenção, planejamento mensal, abastecimentos técnicos vinculados ao Extrato e consumo por veículo próprio |
 | Configurações | `Configuracoes.jsx` | Perfil, troca de senha, vínculo com Telegram, exportação CSV, geração manual do mês |
 | Tutorial / Ajuda | `Tutorial.jsx` / `Ajuda.jsx` | Tour de boas-vindas (condicional por permissão) e central de FAQ por módulo |
 | Administração | `Admin.jsx` | **Condicional** (`isAdmin`): CRUD de usuários, liberar/revogar módulos por pessoa |

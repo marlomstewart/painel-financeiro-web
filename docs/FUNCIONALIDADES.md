@@ -163,12 +163,18 @@ vinculá-lo a um investimento automaticamente.
   (só pra organizar gastos eventuais, sem rastrear km ou peças).
 - Controle de manutenção por item (pneus, óleo, etc.), cada um com um intervalo de km — o sistema
   avisa visualmente (barra de progresso e alertas) quando está perto ou já passou do intervalo.
-  **Você precisa atualizar a quilometragem atual manualmente** de vez em quando; o sistema não
-  descobre isso sozinho pelos lançamentos.
+  A quilometragem é atualizada ao registrar uma manutenção ou abastecimento técnico; lançar uma
+  despesa no Extrato, por si só, não muda o odômetro.
 - Histórico de manutenções realizadas, por veículo.
-- Calendário de "dias não rodados": pra quem tem um veículo com padrão fixo de uso (ex: só anda de
-  segunda, quarta e sexta), marcar um dia excepcional (que não rodou, ou que rodou fora do
-  padrão) ajusta automaticamente a meta de gastos com combustível daquele mês.
+- Planejamento de combustível por mês: escolha categoria, veículo opcional, dias habituais e valor
+  padrão. Cada previsão pode ser antecipada, ajustada ou cancelada sem criar uma despesa nova; o
+  Dashboard reserva apenas o que ainda não foi atendido no Extrato.
+- Registro de abastecimento técnico com odômetro, litros, preço por litro, total, tanque cheio e
+  observação. Ele pode criar uma despesa ou ser vinculado a uma existente; no vínculo, o total do
+  Extrato é preservado e a ficha apenas complementa os dados técnicos.
+- Painel de consumo para veículos próprios, com médias de km/L, custo/km, preço/litro e custo por
+  dia útil entre tanques cheios. Abastecimentos parciais ficam no histórico, mas não entram nessas
+  médias; antes de haver dados suficientes, a tela explica a limitação.
 - Excluir um veículo não apaga o histórico financeiro dele no extrato.
 
 ## Configurações

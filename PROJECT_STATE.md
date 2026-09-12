@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 11/09/2026
+**Atualizado em:** 12/09/2026
 
 ## Objetivo atual
 
@@ -13,6 +13,8 @@ sessões independentes.
   confirmada em produção.
 - Checkpoint da antecipação de parcelas concluído em 08/09; a entrega aguarda apenas deploy e
   validação autenticada.
+- Checkpoint documental concluído em 12/09; README e catálogo funcional foram alinhados à
+  navegação por caminhos, planejamento, abastecimentos técnicos e consumo de combustível.
 - Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
   pode ser deduzida somente do Git.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
@@ -166,6 +168,8 @@ sessões independentes.
   30 dias, 3 meses ou todo o histórico, sem alterar registros. O indicador passou a identificar o
   custo por dia útil e os dias úteis observados em Aracaju/SE. Teste focado e build concluíram com
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
+- Checkpoint documental em 12/09: `npm test` aprovou 40 testes e `npm run build` concluiu com
+  apenas o aviso conhecido de chunk principal acima de 500 kB.
 
 ## Próximos passos recomendados
 
