@@ -154,6 +154,10 @@ sessões independentes.
   selecionada, com navegação entre meses sem alterar o Dashboard. A descrição agora usa o termo
   familiar “Extrato”, em vez de “Livro-Razão”. `npm test` aprovou 39 testes e `npm run build`
   concluiu com o aviso conhecido de chunk acima de 500 kB.
+- Formulário e consumo da Garagem ajustados em 11/09: o vínculo de despesa usa seletor visual com
+  descrição, data e valor; preço por litro aceita máscara monetária. O card exibe também custo
+  médio diário retornado pela API. `npm test` aprovou 40 testes e o build concluiu com o aviso
+  conhecido de chunk principal acima de 500 kB.
 
 ## Próximos passos recomendados
 
@@ -172,4 +176,6 @@ sessões independentes.
    desktop e mobile.
 7. Após o deploy web, validar a navegação mensal de Custos Associados e a ausência de despesas
    fora da competência selecionada.
-8. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+8. Após o deploy conjunto, validar o seletor de vínculo com descrição, data e valor, a máscara do
+   preço por litro e o custo médio diário para dois tanques cheios em dias diferentes.
+9. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

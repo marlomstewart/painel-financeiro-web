@@ -37,3 +37,26 @@ test('padroniza os painéis técnicos com cabeçalho fixo e área rolável no de
   expect(screen.queryByText('Combustível de setembro')).toBeNull()
   expect(screen.getByText('Despesas do Extrato vinculadas a este veículo no mês selecionado.')).toBeTruthy()
 })
+
+test('lista despesas do veículo no seletor próprio com data, valor e preço por litro monetário', async () => {
+  vi.stubGlobal('fetch', vi.fn((url) => {
+    if (String(url).includes('consumo-combustivel')) return Promise.resolve(resposta({ dados_suficientes: false, motivo_insuficiencia: 'Sem dados', ultimo_abastecimento: null, km_por_litro_medio: null, custo_medio_por_km: null, custo_medio_diario: null, preco_medio_por_litro: null, distancia_desde_ultimo_abastecimento_km: null, variacao_ultimo_consumo_percentual: null }))
+    return Promise.resolve(resposta([]))
+  }))
+  const veiculo = { id: 'veiculo-vinculo', modelo: 'Veículo de vínculo', km_atual: 10000, tipo: 'proprio' }
+  const { container } = render(<Garagem getHeaders={() => ({})} setTelaAtiva={vi.fn()} transacoes={[{ id: 'despesa-1', descricao: 'Combustível', tipo: 'despesa', veiculo_id: veiculo.id, dataCompra: '2026-09-10', valorParcela: 25 }]}
+    setTransacoes={vi.fn()} cartoes={[]} ModalComponent={() => null} modalConfig={null} modalClose={vi.fn()}
+    garagem={{ veiculosGaragem: [veiculo], setVeiculosGaragem: vi.fn() }} dataVis={{ mes: 9, ano: 2026 }} />)
+
+  fireEvent.click(screen.getByText('Veículo de vínculo').closest('[role="button"]'))
+  await screen.findByText('Registrar abastecimento')
+  fireEvent.click(screen.getByRole('button', { name: /Registrar abastecimento/ }))
+  fireEvent.change(container.querySelector('select[name="modo"]'), { target: { value: 'vincular' } })
+  fireEvent.click(screen.getByRole('button', { name: /Selecione uma despesa deste veículo/ }))
+  expect(screen.getByText(/10\/09\/2026.*25,00/)).toBeTruthy()
+  fireEvent.click(screen.getByText('Combustível'))
+  expect(screen.getByRole('button', { name: /Combustível.*10\/09\/2026/ })).toBeTruthy()
+  const precoLitro = container.querySelector('input[name="precoLitro"]')
+  fireEvent.change(precoLitro, { target: { value: '537' } })
+  expect(precoLitro.value).toBe('5,37')
+})
