@@ -34,6 +34,20 @@ const formatarCampoMonetario = (valor) => {
     return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+const numeroQuilometragem = (valor) => {
+    const normalizado = String(valor ?? '').replace(/\./g, '').replace(',', '.');
+    return Number(normalizado);
+};
+
+const formatarQuilometragemCampo = (valor) => {
+    const digitado = String(valor ?? '').replace(/[^\d,.]/g, '');
+    if (!digitado) return '';
+    const [inteiroBruto, ...fracao] = digitado.split(',');
+    const inteiro = (inteiroBruto.replace(/\./g, '').replace(/^0+(?=\d)/, '') || '0')
+        .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return digitado.includes(',') ? `${inteiro},${fracao.join('').slice(0, 3)}` : inteiro;
+};
+
 /**
  * @component ModalInterno
  * @description Shell de modal reutilizado pelos formulários internos da Garagem (veículo, item, manutenção).
@@ -86,7 +100,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
     const [modalItem, setModalItem] = useState(null);
     const [modalManutencao, setModalManutencao] = useState(null);
     const [modalAbastecimento, setModalAbastecimento] = useState(false);
-    const [rascunhoAbastecimento, setRascunhoAbastecimento] = useState({ litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' });
+    const [rascunhoAbastecimento, setRascunhoAbastecimento] = useState({ odometro: '', litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' });
     const [seletorLancamentoAberto, setSeletorLancamentoAberto] = useState(false);
     const [modalConfirm, setModalConfirm] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -278,7 +292,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
         setIsSubmitting(true);
         const body = {
             id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-            data: fd.get('data'), odometro: Number(fd.get('odometro')), litros, precoLitro,
+            data: fd.get('data'), odometro: numeroQuilometragem(fd.get('odometro')), litros, precoLitro,
             // Ao vincular, o Extrato é a fonte do valor: o formulário só deriva os litros.
             valorTotal: rascunhoAbastecimento.modo === 'vincular' ? valorLancamentoVinculado : Math.round(litros * precoLitro * 100) / 100,
             tanqueCheio: fd.get('tanqueCheio') === 'on', observacao: fd.get('observacao'), transacaoId,
@@ -543,7 +557,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                     }} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                             <div><label className={labelCls}>Data</label><input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required className={inputCls} /></div>
-                            <div><label className={labelCls}>Quilometragem (km)</label><input name="odometro" type="number" min="0" step="1" defaultValue={kmAtual} required className={inputCls} /></div>
+                            <div><label className={labelCls}>Quilometragem (km)</label><input name="odometro" type="text" inputMode="decimal" required value={rascunhoAbastecimento.odometro} onChange={e => setRascunhoAbastecimento(prev => ({ ...prev, odometro: formatarQuilometragemCampo(e.target.value) }))} placeholder="0" className={inputCls} /></div>
                             <div><label className={labelCls}>{rascunhoAbastecimento.modo === 'vincular' && rascunhoAbastecimento.campoBase === 'precoLitro' ? 'Litros (calculado)' : 'Litros'}</label><input name="litros" type="number" min="0.01" step="0.001" required={rascunhoAbastecimento.modo === 'criar'} value={litrosRascunho} onChange={e => setRascunhoAbastecimento(prev => ({ ...prev, litros: e.target.value, campoBase: 'litros' }))} className={inputCls} /></div>
                             <div><label className={labelCls}>{rascunhoAbastecimento.modo === 'vincular' && rascunhoAbastecimento.campoBase === 'litros' ? 'Preço por litro (calculado)' : 'Preço por litro (R$)'}</label><input name="precoLitro" type="text" inputMode="numeric" required={rascunhoAbastecimento.modo === 'criar'} value={precoLitroRascunho} onChange={e => setRascunhoAbastecimento(prev => ({ ...prev, precoLitro: formatarCampoMonetario(e.target.value), campoBase: 'precoLitro' }))} placeholder="0,00" className={inputCls} /></div>
                         </div>
@@ -734,7 +748,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
 
                 {veiculoSelecionado.tipo !== 'convidado' && (
                     <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4"><div><h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Bike className="w-4 h-4" /> Abastecimentos</h2><p className="text-[10px] text-slate-500 mt-1">Histórico técnico vinculado ao Extrato.</p></div><button type="button" onClick={() => { setRascunhoAbastecimento({ litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' }); setSeletorLancamentoAberto(false); setModalAbastecimento(true); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors flex justify-center items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Registrar abastecimento</button></div>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4"><div><h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Bike className="w-4 h-4" /> Abastecimentos</h2><p className="text-[10px] text-slate-500 mt-1">Histórico técnico vinculado ao Extrato.</p></div><button type="button" onClick={() => { setRascunhoAbastecimento({ odometro: formatarQuilometragemCampo(kmAtual), litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' }); setSeletorLancamentoAberto(false); setModalAbastecimento(true); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors flex justify-center items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Registrar abastecimento</button></div>
                         {abastecimentos.length === 0 ? <p className="text-sm text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 text-center">Nenhum abastecimento técnico registrado.</p> : <div className="space-y-2 max-h-[330px] overflow-y-auto custom-scrollbar">{[...abastecimentos].sort((a,b) => new Date(b.data_abastecimento) - new Date(a.data_abastecimento)).map(a => <div key={a.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700"><div className="flex justify-between gap-3"><strong className="text-sm text-slate-800 dark:text-slate-100">{formatarData(a.data_abastecimento)} · {Number(a.odometro).toLocaleString('pt-BR')} km</strong><div className="flex items-center gap-2"><span className="font-black text-rose-600">{formatarMoeda(a.valor_total)}</span><button type="button" onClick={() => solicitarExclusaoAbastecimento(a)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Excluir abastecimento"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button></div></div><p className="text-[11px] text-slate-500 mt-1">{Number(a.litros).toLocaleString('pt-BR')} L · {formatarMoeda(a.preco_litro)}/L · {a.tanque_cheio ? (a.km_por_litro ? `${a.km_por_litro} km/L` : 'tanque cheio') : 'abastecimento parcial'}</p>{a.observacao && <p className="text-[11px] text-slate-500 italic mt-1">{a.observacao}</p>}</div>)}</div>}
                     </div>
                 )}
