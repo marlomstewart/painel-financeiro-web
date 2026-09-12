@@ -25,6 +25,8 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
+  controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. A confirmação mostra quantidade, total e fatura canônica de destino; antecipar não quita
   nem modifica os dados financeiros da compra.
@@ -92,12 +94,15 @@ sessões independentes.
 - `src/App.jsx`, `src/hooks/useAuth.jsx`, `src/utils/urlEstado.js`, `vercel.json`,
   `src/hooks/useDashboard.jsx`
 - `src/hooks/useTransacoes.jsx`, `src/hooks/useOfflineSync.jsx`
-- `src/utils/offlineQueue.js`, `src/utils/cartaoUtils.js`
+- `src/utils/offlineQueue.js`, `src/utils/cartaoUtils.js`, `src/utils/pwaUpdate.js`
 - `src/components/Dashboard.jsx`, `src/components/Configuracoes.jsx`, `src/components/Lancamentos.jsx`
 - `src/hooks/*.test.jsx`, `.github/workflows/ci.yml`, `docs/FUNCIONALIDADES.md`
 
 ## Validações recentes
 
+- Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
+  recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
+  de chunk principal acima de 500 kB.
 - Antecipação de crédito validada localmente em 08/09: `npm test` aprovou 32 testes e `npm run build`
   concluiu; o fluxo usa somente `utils/cartaoUtils.js` para reconhecer crédito e recarrega o Extrato
   depois da confirmação. Permanece o aviso conhecido de chunk principal acima de 500 kB.
@@ -168,9 +173,6 @@ sessões independentes.
   30 dias, 3 meses ou todo o histórico, sem alterar registros. O indicador passou a identificar o
   custo por dia útil e os dias úteis observados em Aracaju/SE. Teste focado e build concluíram com
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
-- Checkpoint documental em 12/09: `npm test` aprovou 40 testes e `npm run build` concluiu com
-  apenas o aviso conhecido de chunk principal acima de 500 kB.
-
 ## Próximos passos recomendados
 
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após

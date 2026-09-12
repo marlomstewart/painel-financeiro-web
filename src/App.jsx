@@ -5,24 +5,32 @@ import { Login } from './components/Login';
 import { TrocaSenha } from './components/TrocaSenha';
 import { Sidebar } from './components/Sidebar';
 import { Tutorial } from './components/Tutorial';
+import { recarregarPorChunkDesatualizado } from './utils/pwaUpdate';
 
 // Telas roteadas por `telaAtiva` — carregadas sob demanda (code splitting), já que num único
 // acesso o usuário normalmente só visita 2-3 dessas telas. Login/TrocaSenha/Modal/Sidebar/Tutorial
 // ficam eager acima porque são necessários já na primeira renderização (ou sempre montados).
-const Admin = lazy(() => import('./components/Admin').then(m => ({ default: m.Admin })));
-const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
-const Lancamentos = lazy(() => import('./components/Lancamentos').then(m => ({ default: m.Lancamentos })));
-const Garagem = lazy(() => import('./components/Garagem').then(m => ({ default: m.Garagem })));
-const Cartoes = lazy(() => import('./components/Cartoes').then(m => ({ default: m.Cartoes })));
-const MetasCategorias = lazy(() => import('./components/MetasCategorias').then(m => ({ default: m.MetasCategorias })));
-const ContasFixas = lazy(() => import('./components/ContasFixas').then(m => ({ default: m.ContasFixas })));
-const RendasFixas = lazy(() => import('./components/RendasFixas').then(m => ({ default: m.RendasFixas })));
-const Configuracoes = lazy(() => import('./components/Configuracoes').then(m => ({ default: m.Configuracoes })));
-const Dividas = lazy(() => import('./components/Dividas').then(m => ({ default: m.Dividas })));
-const Investimentos = lazy(() => import('./components/Investimentos').then(m => ({ default: m.Investimentos })));
-const CalculadoraCompra = lazy(() => import('./components/CalculadoraCompra').then(m => ({ default: m.CalculadoraCompra })));
-const Cobrancas = lazy(() => import('./components/Cobrancas').then(m => ({ default: m.Cobrancas })));
-const Ajuda = lazy(() => import('./components/Ajuda').then(m => ({ default: m.Ajuda })));
+const telaLazy = (carregar, exportacao) => lazy(() => carregar()
+  .then(modulo => ({ default: modulo[exportacao] }))
+  .catch(erro => {
+    if (recarregarPorChunkDesatualizado(erro)) return new Promise(() => {});
+    throw erro;
+  }));
+
+const Admin = telaLazy(() => import('./components/Admin'), 'Admin');
+const Dashboard = telaLazy(() => import('./components/Dashboard'), 'Dashboard');
+const Lancamentos = telaLazy(() => import('./components/Lancamentos'), 'Lancamentos');
+const Garagem = telaLazy(() => import('./components/Garagem'), 'Garagem');
+const Cartoes = telaLazy(() => import('./components/Cartoes'), 'Cartoes');
+const MetasCategorias = telaLazy(() => import('./components/MetasCategorias'), 'MetasCategorias');
+const ContasFixas = telaLazy(() => import('./components/ContasFixas'), 'ContasFixas');
+const RendasFixas = telaLazy(() => import('./components/RendasFixas'), 'RendasFixas');
+const Configuracoes = telaLazy(() => import('./components/Configuracoes'), 'Configuracoes');
+const Dividas = telaLazy(() => import('./components/Dividas'), 'Dividas');
+const Investimentos = telaLazy(() => import('./components/Investimentos'), 'Investimentos');
+const CalculadoraCompra = telaLazy(() => import('./components/CalculadoraCompra'), 'CalculadoraCompra');
+const Cobrancas = telaLazy(() => import('./components/Cobrancas'), 'Cobrancas');
+const Ajuda = telaLazy(() => import('./components/Ajuda'), 'Ajuda');
 
 import { useAuth } from './hooks/useAuth';
 import { useGaragem } from './hooks/useGaragem';

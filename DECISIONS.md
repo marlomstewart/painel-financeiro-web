@@ -89,3 +89,16 @@
 - **Motivo:** manter a competência da fatura separada do caixa e impedir que antecipação gere renda,
   pagamento ou alteração de valor.
 - **Consequência:** status e `data_pagamento` continuam exclusivos do fluxo de quitar fatura.
+
+## D-009 — Falha de chunk da PWA tenta uma única recarga controlada
+
+- **Data:** 12/09/2026
+- **Status:** aceita
+- **Contexto:** após um deploy, uma aba/PWA com HTML antigo pode tentar carregar um chunk com hash
+  que já foi removido e acabar no ErrorBoundary.
+- **Decisão:** reconhecer somente assinaturas conhecidas de falha de importação dinâmica, recarregar
+  uma vez por rota/sessão e interceptar também o evento `vite:preloadError`.
+- **Motivo:** recuperar a versão atual automaticamente sem criar loop de recargas ou ocultar erros
+  de renderização não relacionados a deploy.
+- **Consequência:** após uma segunda falha de chunk na mesma sessão, o ErrorBoundary continua
+  disponível ao usuário; demais erros não acionam recarga automática.
