@@ -66,8 +66,10 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
-e smoke test em produção.
+- Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
+  e smoke test em produção.
+- Painel de consumo de combustível por veículo próprio concluído localmente; aguarda deploy conjunto
+  e validação visual em produção.
 
 ## Pendências e riscos
 
@@ -134,6 +136,11 @@ e smoke test em produção.
 - Exclusão independente preparada em 11/09: a Garagem mostra confirmação ao apagar a ficha
   técnica vinculada e o Extrato avisa ao apagar a despesa vinculada. Nenhuma confirmação oferece
   exclusão em cascata; a API validou os dois sentidos em homologação com 42 testes aprovados.
+- Painel de consumo concluído em 11/09: a Garagem consome o resumo técnico canônico da API para
+  exibir último abastecimento, médias de km/L, custo/km e preço/litro, distância desde o último
+  tanque cheio e comparação com a média anterior. Veículos convidados não recebem o card; parciais
+  não entram nas médias. `npm test` aprovou 36 testes e `npm run build` concluiu com o aviso
+  conhecido de chunk acima de 500 kB.
 
 ## Próximos passos recomendados
 
@@ -146,4 +153,6 @@ e smoke test em produção.
    nova despesa.
 4. Após o deploy conjunto, validar os avisos de exclusão e confirmar que cada módulo preserva o
    registro do outro.
-5. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+5. Após o deploy conjunto, validar o card de consumo com dois tanques cheios e um parcial,
+   confirmando médias, distância e estado de dados insuficientes.
+6. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

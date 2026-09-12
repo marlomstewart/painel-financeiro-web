@@ -61,6 +61,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
     const [itens, setItens] = useState([]);
     const [manutencoes, setManutencoes] = useState([]);
     const [abastecimentos, setAbastecimentos] = useState([]);
+    const [consumoCombustivel, setConsumoCombustivel] = useState(null);
 
     // Estados de Controle de Modais
     const [modalVeiculo, setModalVeiculo] = useState(null);
@@ -100,14 +101,18 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
     const carregarDashboard = async (veiculo) => {
         setVeiculoSelecionado(veiculo);
         try {
-            const [resI, resM, resA] = await Promise.all([
+            const requisicoes = [
                 fetch(`${API}/garagem/veiculos/${veiculo.id}/itens`, { headers: getHeaders() }),
                 fetch(`${API}/garagem/veiculos/${veiculo.id}/manutencoes`, { headers: getHeaders() }),
                 fetch(`${API}/garagem/veiculos/${veiculo.id}/abastecimentos`, { headers: getHeaders() })
-            ]);
+            ];
+            if (veiculo.tipo !== 'convidado') requisicoes.push(fetch(`${API}/garagem/veiculos/${veiculo.id}/consumo-combustivel`, { headers: getHeaders() }));
+            const [resI, resM, resA, resC] = await Promise.all(requisicoes);
             if (resI.ok) setItens(await resI.json());
             if (resM.ok) setManutencoes(await resM.json());
             if (resA.ok) setAbastecimentos(await resA.json());
+            if (resC?.ok) setConsumoCombustivel(await resC.json());
+            else setConsumoCombustivel(null);
         } catch (err) { console.error(err); }
     };
 
@@ -231,6 +236,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                 const res = await fetch(`${API}/garagem/abastecimentos/${abastecimento.id}`, { method: 'DELETE', headers: getHeaders() });
                 if (!res.ok) throw new Error('Não foi possível excluir o abastecimento.');
                 setAbastecimentos(prev => prev.filter(item => item.id !== abastecimento.id));
+                const consumo = await fetch(`${API}/garagem/veiculos/${veiculoSelecionado.id}/consumo-combustivel`, { headers: getHeaders() });
+                if (consumo.ok) setConsumoCombustivel(await consumo.json());
             }
         });
     };
@@ -265,6 +272,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
             }
             const extrato = await fetch(`${API}/transacoes`, { headers: getHeaders() });
             if (extrato.ok) setTransacoes?.(await extrato.json());
+            const consumo = await fetch(`${API}/garagem/veiculos/${veiculoSelecionado.id}/consumo-combustivel`, { headers: getHeaders() });
+            if (consumo.ok) setConsumoCombustivel(await consumo.json());
             setModalAbastecimento(false);
         } catch (err) { window.alert(err.message); }
         finally { setIsSubmitting(false); }
@@ -674,6 +683,23 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                                 ))}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {veiculoSelecionado.tipo !== 'convidado' && (
+                    <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+                        <div className="mb-4"><h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Bike className="w-4 h-4" /> Consumo de combustível</h2><p className="text-[10px] text-slate-500 mt-1">Calculado apenas entre abastecimentos de tanque cheio.</p></div>
+                        {!consumoCombustivel ? <p className="text-sm text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-5 text-center">Carregando dados técnicos de consumo...</p> : <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-3"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Último abastecimento</span><strong className="block text-sm text-slate-800 dark:text-slate-100 mt-1">{consumoCombustivel.ultimo_abastecimento ? `${formatarData(consumoCombustivel.ultimo_abastecimento.data_abastecimento)} · ${formatarMoeda(consumoCombustivel.ultimo_abastecimento.valor_total)}` : 'Nenhum registro'}</strong></div>
+                                <div className="rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-3"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Km/L médio</span><strong className="block text-sm text-slate-800 dark:text-slate-100 mt-1">{consumoCombustivel.km_por_litro_medio === null ? 'Dados insuficientes' : `${Number(consumoCombustivel.km_por_litro_medio).toLocaleString('pt-BR')} km/L`}</strong></div>
+                                <div className="rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-3"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Custo médio por km</span><strong className="block text-sm text-slate-800 dark:text-slate-100 mt-1">{consumoCombustivel.custo_medio_por_km === null ? 'Dados insuficientes' : formatarMoeda(consumoCombustivel.custo_medio_por_km)}</strong></div>
+                                <div className="rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-3"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Preço médio por litro</span><strong className="block text-sm text-slate-800 dark:text-slate-100 mt-1">{consumoCombustivel.preco_medio_por_litro === null ? 'Dados insuficientes' : `${formatarMoeda(consumoCombustivel.preco_medio_por_litro)}/L`}</strong></div>
+                                <div className="rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-3"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Desde o último tanque cheio</span><strong className="block text-sm text-slate-800 dark:text-slate-100 mt-1">{consumoCombustivel.distancia_desde_ultimo_abastecimento_km === null ? 'Dados insuficientes' : `${Number(consumoCombustivel.distancia_desde_ultimo_abastecimento_km).toLocaleString('pt-BR')} km`}</strong></div>
+                                <div className="rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-3"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Último consumo x média anterior</span><strong className="block text-sm text-slate-800 dark:text-slate-100 mt-1">{consumoCombustivel.variacao_ultimo_consumo_percentual === null ? 'Ainda sem média anterior' : `${consumoCombustivel.variacao_ultimo_consumo_percentual > 0 ? '+' : ''}${Number(consumoCombustivel.variacao_ultimo_consumo_percentual).toLocaleString('pt-BR')}%`}</strong></div>
+                            </div>
+                            {!consumoCombustivel.dados_suficientes && <p className="text-xs text-slate-500 mt-3">{consumoCombustivel.motivo_insuficiencia}</p>}
+                        </>}
                     </div>
                 )}
 
