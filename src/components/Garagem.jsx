@@ -5,6 +5,7 @@ import {
     AlertTriangle, Stethoscope, ClipboardList, Wallet, CreditCard,
     Calendar, ArrowLeft, Lightbulb
 } from 'lucide-react';
+import { calcularDesgasteItem } from '../utils/desgasteVeiculo';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -561,8 +562,8 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
 
                 {/* BLOCO: ODÔMETRO DE DESGASTE PREDITIVO (Apenas Veículos Próprios) */}
                 {veiculoSelecionado.tipo !== 'convidado' && (
-                    <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                    <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col lg:h-[560px]">
+                        <div className="shrink-0 min-h-[84px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
                             <div>
                                 <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Settings className="w-4 h-4" strokeWidth={2} /> Rastreador de Peças</h2>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase font-bold">Baseado no odômetro atual ({kmAtual.toLocaleString()}km)</p>
@@ -581,19 +582,13 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                                 <button type="button" onClick={() => setModalItem('novo')} className="mt-5 text-white bg-blue-600 hover:bg-blue-700 font-bold text-sm py-2.5 px-6 rounded-lg cursor-pointer transition-colors shadow-sm active:scale-95 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Iniciar Rastreamento</button>
                             </div>
                         ) : (
-                            <div className="space-y-4 flex-1">
-                                {itens.sort((a, b) => {
-                                    const pctA = Math.min(((kmAtual - Number(a.km_ultima_troca)) / Number(a.intervalo_km)) * 100, 100);
-                                    const pctB = Math.min(((kmAtual - Number(b.km_ultima_troca)) / Number(b.intervalo_km)) * 100, 100);
-                                    return pctB - pctA; // Ordena do mais desgastado pro menos
-                                }).map(item => {
-                                    const kmDesdeUltima = Math.max(kmAtual - Number(item.km_ultima_troca), 0);
-                                    const intervalo = Number(item.intervalo_km);
-                                    const pct = Math.min((kmDesdeUltima / intervalo) * 100, 100);
-                                    const kmFaltando = Math.max(intervalo - kmDesdeUltima, 0);
+                            <div className="space-y-4 flex-1 min-h-[240px] lg:min-h-0 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
+                                {itens.sort((a, b) => calcularDesgasteItem(b, kmAtual).percentualReal - calcularDesgasteItem(a, kmAtual).percentualReal).map(item => {
+                                    const desgaste = calcularDesgasteItem(item, kmAtual);
+                                    const { intervalo, percentualExibido: pct, kmRestantes, kmAcimaDaTroca, vencido } = desgaste;
 
                                     // Sistema Semafórico de Cores Preditivas
-                                    const isCritico = pct >= 90;
+                                    const isCritico = vencido || pct >= 90;
                                     const isAlerta = pct >= 70 && !isCritico;
                                     const corBarra = isCritico ? 'bg-rose-500 dark:bg-rose-600 shadow-[0_0_10px_rgba(225,29,72,0.6)]' : isAlerta ? 'bg-amber-400 dark:bg-amber-500' : 'bg-emerald-500 dark:bg-emerald-600';
                                     const corTexto = isCritico ? 'text-rose-600 dark:text-rose-400' : isAlerta ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
@@ -610,7 +605,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                                                 </div>
                                                 <div className="flex items-center gap-4 shrink-0">
                                                     <span className={`text-base md:text-lg font-black tracking-tighter ${corTexto}`}>
-                                                        {modoBarras === 'pct' ? `${pct.toFixed(0)}%` : `${kmFaltando.toLocaleString('pt-BR')} km`}
+                                                        {modoBarras === 'pct' ? `${pct.toFixed(0)}%` : vencido ? `${kmAcimaDaTroca.toLocaleString('pt-BR')} km acima da troca prevista` : `${kmRestantes.toLocaleString('pt-BR')} km`}
                                                     </span>
                                                     <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                                                         <button type="button" onClick={() => setModalItem(item)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Editar Intervalo/KM"><Pencil className="w-3.5 h-3.5" strokeWidth={2} /></button>
@@ -631,14 +626,14 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                             </div>
                         )}
 
-                        <button type="button" onClick={() => setModalItem('novo')} className="mt-5 w-full border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400 font-bold py-3.5 md:py-3 rounded-xl text-sm transition-all cursor-pointer shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Monitorar Nova Peça</button>
+                        <button type="button" onClick={() => setModalItem('novo')} className="shrink-0 mt-5 w-full border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400 font-bold py-3.5 md:py-3 rounded-xl text-sm transition-all cursor-pointer shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Monitorar Nova Peça</button>
                     </div>
                 )}
 
                 {/* BLOCO: LINHA DO TEMPO (TIMELINE) DE MANUTENÇÕES MANUAIS */}
                 {veiculoSelecionado.tipo !== 'convidado' && (
-                    <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col lg:h-[560px]">
+                        <div className="shrink-0 min-h-[84px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Stethoscope className="w-4 h-4" strokeWidth={2} /> Histórico Clínico</h2>
                             <button type="button" onClick={() => setModalManutencao('novo')} className="w-full sm:w-auto bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white text-xs font-bold px-5 py-3 md:py-2.5 rounded-lg transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-95">
                                 <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Registrar Serviço
@@ -652,7 +647,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">Registre limpezas de bico, diagnósticos elétricos, troca de pneu ou reparos mecânicos aqui para criar um histórico valioso.</p>
                             </div>
                         ) : (
-                            <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 md:ml-4 space-y-6 pb-4 mt-2 max-h-[500px] overflow-y-auto custom-scrollbar">
+                            <div className="relative flex-1 min-h-[240px] lg:min-h-0 border-l-2 border-slate-200 dark:border-slate-700 ml-3 md:ml-4 space-y-6 pb-4 mt-2 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
                                 {manutencoes.map((m) => (
                                     <div key={m.id} className="relative pl-6 md:pl-8 group">
                                         {/* Ponto da Linha do Tempo */}
@@ -711,9 +706,11 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                 )}
 
                 {/* BLOCO: LANÇAMENTOS FINANCEIROS ATRELADOS (Para Próprios e Convidados) */}
-                <div className={`bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors ${veiculoSelecionado.tipo === 'convidado' ? 'lg:col-span-2' : 'lg:col-span-2 xl:col-span-2'}`}>
-                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-1 flex items-center gap-2"><Wallet className="w-4 h-4" strokeWidth={2} /> Custos Associados (Extrato)</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Transações extraídas automaticamente do Livro-Razão atreladas a esta placa.</p>
+                <div className={`bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex flex-col lg:h-[560px] ${veiculoSelecionado.tipo === 'convidado' ? 'lg:col-span-2' : 'lg:col-span-2 xl:col-span-2'}`}>
+                    <div className="shrink-0 min-h-[84px]">
+                        <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-1 flex items-center gap-2"><Wallet className="w-4 h-4" strokeWidth={2} /> Custos Associados (Extrato)</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Transações extraídas automaticamente do Livro-Razão atreladas a esta placa.</p>
+                    </div>
 
                     {lancamentosVeiculo.length === 0 ? (
                         <div className="text-center py-10 px-4 text-slate-400 dark:text-slate-500 text-sm border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl font-semibold bg-slate-50 dark:bg-slate-900/30">
@@ -722,7 +719,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-normal">Ao registrar uma despesa no painel principal, selecione a categoria Gasolina/Manutenção e vincule a quilometragem.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex-1 min-h-[240px] lg:min-h-0 overflow-y-auto custom-scrollbar pr-1 md:pr-2 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
                             {lancamentosVeiculo.map(t => (
                                 <div key={t.id} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800">
                                     <div className="min-w-0 flex-1 pr-4">

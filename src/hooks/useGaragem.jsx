@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { usePlanejamentoCombustivel } from './usePlanejamentoCombustivel';
+import { calcularDesgasteItem } from '../utils/desgasteVeiculo';
 
 /**
  * Hook Customizado: useGaragem
@@ -26,18 +27,16 @@ export function useGaragem({ API, getHeaders, modal, temGaragem, token, dataVis,
             if (!res.ok) return;
             const itens = await res.json();
             const alertas = itens.map(item => {
-                const kmDesdeUltima = kmAtual - Number(item.km_ultima_troca);
-                const pct = (kmDesdeUltima / Number(item.intervalo_km)) * 100;
-                const kmFaltando = Math.max(Number(item.intervalo_km) - kmDesdeUltima, 0);
-                return { nome: item.nome, pct, kmFaltando };
+                const desgaste = calcularDesgasteItem(item, kmAtual);
+                return { nome: item.nome, pct: desgaste.percentualReal, ...desgaste };
             }).filter(a => a.pct >= 60);
 
             if (alertas.length === 0) return;
             alertas.sort((a, b) => b.pct - a.pct);
             const linhas = alertas.map(a => {
-                if (a.pct >= 100) return `🔴 ${a.nome}: JÁ PASSOU do intervalo! (${Math.round(a.pct)}%)`;
-                if (a.pct >= 70) return `🟠 ${a.nome}: faltam ${a.kmFaltando.toLocaleString('pt-BR')} km (${Math.round(a.pct)}% usado)`;
-                return `🟡 ${a.nome}: chegando perto, ${a.kmFaltando.toLocaleString('pt-BR')} km restantes (${Math.round(a.pct)}% usado)`;
+                if (a.vencido) return `🔴 ${a.nome}: ${a.kmAcimaDaTroca.toLocaleString('pt-BR')} km acima da troca prevista (100% usado).`;
+                if (a.pct >= 70) return `🟠 ${a.nome}: faltam ${a.kmRestantes.toLocaleString('pt-BR')} km (${Math.round(a.pct)}% usado)`;
+                return `🟡 ${a.nome}: chegando perto, ${a.kmRestantes.toLocaleString('pt-BR')} km restantes (${Math.round(a.pct)}% usado)`;
             }).join('\n');
             await modal.alert(linhas, '⚙️ Alerta de Manutenção');
         } catch (err) { console.error('Erro ao verificar desgaste:', err); }

@@ -70,6 +70,8 @@ sessões independentes.
   e smoke test em produção.
 - Painel de consumo de combustível por veículo próprio concluído localmente; aguarda deploy conjunto
   e validação visual em produção.
+- Correção de peças vencidas e padronização dos painéis internos da Garagem concluída localmente;
+  aguarda deploy e validação visual responsiva.
 
 ## Pendências e riscos
 
@@ -141,6 +143,11 @@ sessões independentes.
   tanque cheio e comparação com a média anterior. Veículos convidados não recebem o card; parciais
   não entram nas médias. `npm test` aprovou 36 testes e `npm run build` concluiu com o aviso
   conhecido de chunk acima de 500 kB.
+- Garagem revisada em 11/09: peças vencidas mantêm barra em 100%, exibem quilômetros acima da
+  troca prevista e usam o mesmo cálculo dos alertas. Rastreador, Histórico Clínico e Custos
+  Associados agora preservam cabeçalho fora da área rolável e altura alinhada no desktop, sem
+  comprimir a leitura no mobile. `npm test` aprovou 39 testes e `npm run build` concluiu com o
+  aviso conhecido de chunk acima de 500 kB.
 
 ## Próximos passos recomendados
 
@@ -155,4 +162,6 @@ sessões independentes.
    registro do outro.
 5. Após o deploy conjunto, validar o card de consumo com dois tanques cheios e um parcial,
    confirmando médias, distância e estado de dados insuficientes.
-6. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+6. Após o deploy web, validar peças vencidas em % e km, além da rolagem dos três painéis em
+   desktop e mobile.
+7. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
