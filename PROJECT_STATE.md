@@ -66,8 +66,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Ajuste local do formulário de abastecimento aguarda commit e deploy conjunto: usa “Quilometragem
-(km)” e calcula litros/preço no vínculo sem permitir divergência com o valor financeiro.
+Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
+e smoke test em produção.
 
 ## Pendências e riscos
 
@@ -131,6 +131,9 @@ Ajuste local do formulário de abastecimento aguarda commit e deploy conjunto: u
 - Ajuste de cálculo do vínculo em 11/09: `npm test` aprovou 36 testes Vitest e `npm run build`
   concluiu com o aviso conhecido de chunk principal acima de 500 kB. A API aprovou 40 testes de
   integração em homologação, incluindo a rejeição de valor técnico divergente do Extrato.
+- Exclusão independente preparada em 11/09: a Garagem mostra confirmação ao apagar a ficha
+  técnica vinculada e o Extrato avisa ao apagar a despesa vinculada. Nenhuma confirmação oferece
+  exclusão em cascata; a API validou os dois sentidos em homologação com 42 testes aprovados.
 
 ## Próximos passos recomendados
 
@@ -141,4 +144,6 @@ Ajuste local do formulário de abastecimento aguarda commit e deploy conjunto: u
 3. Após o deploy conjunto, validar visualmente o vínculo existente preenchendo somente litros e,
    em nova tentativa, somente preço por litro; ambos devem calcular o outro campo sem criar uma
    nova despesa.
-4. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+4. Após o deploy conjunto, validar os avisos de exclusão e confirmar que cada módulo preserva o
+   registro do outro.
+5. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

@@ -220,6 +220,21 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
         });
     };
 
+    const solicitarExclusaoAbastecimento = (abastecimento) => {
+        const descricaoExtrato = abastecimento.transacao_descricao || 'lançamento financeiro vinculado';
+        setModalConfirm({
+            titulo: 'Excluir abastecimento',
+            mensagem: abastecimento.transacao_id
+                ? `Este abastecimento está vinculado ao lançamento “${descricaoExtrato}” no Extrato. Apenas a ficha técnica da Garagem será excluída; o lançamento financeiro permanecerá.`
+                : 'Apenas a ficha técnica deste abastecimento será excluída.',
+            acao: async () => {
+                const res = await fetch(`${API}/garagem/abastecimentos/${abastecimento.id}`, { method: 'DELETE', headers: getHeaders() });
+                if (!res.ok) throw new Error('Não foi possível excluir o abastecimento.');
+                setAbastecimentos(prev => prev.filter(item => item.id !== abastecimento.id));
+            }
+        });
+    };
+
     const salvarAbastecimento = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
@@ -665,7 +680,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                 {veiculoSelecionado.tipo !== 'convidado' && (
                     <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4"><div><h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Bike className="w-4 h-4" /> Abastecimentos</h2><p className="text-[10px] text-slate-500 mt-1">Histórico técnico vinculado ao Extrato.</p></div><button type="button" onClick={() => { setRascunhoAbastecimento({ litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' }); setModalAbastecimento(true); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors flex justify-center items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Registrar abastecimento</button></div>
-                        {abastecimentos.length === 0 ? <p className="text-sm text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 text-center">Nenhum abastecimento técnico registrado.</p> : <div className="space-y-2 max-h-[330px] overflow-y-auto custom-scrollbar">{[...abastecimentos].sort((a,b) => new Date(b.data_abastecimento) - new Date(a.data_abastecimento)).map(a => <div key={a.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700"><div className="flex justify-between gap-3"><strong className="text-sm text-slate-800 dark:text-slate-100">{formatarData(a.data_abastecimento)} · {Number(a.odometro).toLocaleString('pt-BR')} km</strong><span className="font-black text-rose-600">{formatarMoeda(a.valor_total)}</span></div><p className="text-[11px] text-slate-500 mt-1">{Number(a.litros).toLocaleString('pt-BR')} L · {formatarMoeda(a.preco_litro)}/L · {a.tanque_cheio ? (a.km_por_litro ? `${a.km_por_litro} km/L` : 'tanque cheio') : 'abastecimento parcial'}</p>{a.observacao && <p className="text-[11px] text-slate-500 italic mt-1">{a.observacao}</p>}</div>)}</div>}
+                        {abastecimentos.length === 0 ? <p className="text-sm text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 text-center">Nenhum abastecimento técnico registrado.</p> : <div className="space-y-2 max-h-[330px] overflow-y-auto custom-scrollbar">{[...abastecimentos].sort((a,b) => new Date(b.data_abastecimento) - new Date(a.data_abastecimento)).map(a => <div key={a.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700"><div className="flex justify-between gap-3"><strong className="text-sm text-slate-800 dark:text-slate-100">{formatarData(a.data_abastecimento)} · {Number(a.odometro).toLocaleString('pt-BR')} km</strong><div className="flex items-center gap-2"><span className="font-black text-rose-600">{formatarMoeda(a.valor_total)}</span><button type="button" onClick={() => solicitarExclusaoAbastecimento(a)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Excluir abastecimento"><Trash2 className="w-3.5 h-3.5" strokeWidth={2} /></button></div></div><p className="text-[11px] text-slate-500 mt-1">{Number(a.litros).toLocaleString('pt-BR')} L · {formatarMoeda(a.preco_litro)}/L · {a.tanque_cheio ? (a.km_por_litro ? `${a.km_por_litro} km/L` : 'tanque cheio') : 'abastecimento parcial'}</p>{a.observacao && <p className="text-[11px] text-slate-500 italic mt-1">{a.observacao}</p>}</div>)}</div>}
                     </div>
                 )}
 

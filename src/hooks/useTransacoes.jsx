@@ -395,7 +395,16 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             else if (acao === 'futuras') idsParaDeletar = relacionadas.slice(idxNoArray).map(item => item.id);
             else if (acao === 'anteriores') idsParaDeletar = relacionadas.slice(0, idxNoArray + 1).map(item => item.id);
         } else {
-            const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?`, '🗑️ Excluir');
+            const avisoVinculo = t.abastecimentoVinculado
+                ? ' Existe um abastecimento técnico vinculado na Garagem. Ele permanecerá registrado, mas deixará de estar associado a este lançamento.'
+                : '';
+            const ok = await modal.confirm(`Excluir definitivamente o lançamento "${t.descricao}"?${avisoVinculo}`, '🗑️ Excluir');
+            if (!ok) return;
+        }
+
+        const haAbastecimentoVinculado = transacoes.some(item => idsParaDeletar.includes(item.id) && item.abastecimentoVinculado);
+        if (isParcelado && relacionadas.length > 1 && haAbastecimentoVinculado) {
+            const ok = await modal.confirm('Há abastecimento(s) técnico(s) vinculado(s) na Garagem. As fichas técnicas permanecerão, mas deixarão de estar associadas aos lançamentos excluídos. Continuar?', '🗑️ Excluir lançamentos vinculados');
             if (!ok) return;
         }
 
@@ -420,7 +429,11 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
-        const ok = await modal.confirm(`Deseja realmente ${acoesNomes[acao]} os ${idsSelecionados.length} itens selecionados?`, '⚠️ Ação em Lote');
+        const haAbastecimentoVinculado = acao === 'excluir' && transacoes.some(t => idsSelecionados.includes(t.id) && t.abastecimentoVinculado);
+        const avisoVinculo = haAbastecimentoVinculado
+            ? ' Há abastecimento(s) técnico(s) vinculado(s) na Garagem. Eles permanecerão registrados, mas deixarão de estar associados aos lançamentos excluídos.'
+            : '';
+        const ok = await modal.confirm(`Deseja realmente ${acoesNomes[acao]} os ${idsSelecionados.length} itens selecionados?${avisoVinculo}`, '⚠️ Ação em Lote');
         if (!ok) return;
         try {
             const res = await fetch(`${API}/transacoes/massa/acao`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ids: idsSelecionados, acao }) });
