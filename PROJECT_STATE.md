@@ -33,9 +33,10 @@ sessões independentes.
 - O calendário fixo da gasolina foi substituído por planejamento configurável na Garagem: categoria,
   veículo opcional, dias habituais e valor padrão. Cada abastecimento pode ser antecipado no mês,
   ajustado ou cancelado; o Dashboard reserva somente previsões ainda não atendidas por lançamentos.
-- O detalhe de veículo próprio permite registrar abastecimento técnico com litros, preço, total
-  calculado, tanque cheio e observação. O usuário escolhe criar a despesa no Extrato ou vincular
-  uma existente; o histórico mostra a ficha técnica sem criar nova previsão.
+- O detalhe de veículo próprio permite registrar abastecimento técnico com quilometragem, litros,
+  preço, total calculado, tanque cheio e observação. Ao vincular uma despesa existente, informar
+  litros ou preço por litro calcula o outro campo a partir do valor do Extrato; o histórico mostra
+  a ficha técnica sem criar nova previsão.
 - O Raio-X de cada meta estratégica agora abre também sem progresso (0%), preserva total,
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
@@ -65,8 +66,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-Correção de categoria simples concluída localmente; aguarda deploy da Web e retomada do smoke test
-de abastecimentos com a conta de validação já habilitada para Garagem.
+Ajuste local do formulário de abastecimento aguarda commit e deploy conjunto: usa “Quilometragem
+(km)” e calcula litros/preço no vínculo sem permitir divergência com o valor financeiro.
 
 ## Pendências e riscos
 
@@ -119,13 +120,17 @@ de abastecimentos com a conta de validação já habilitada para Garagem.
 - Roteamento por caminhos validado em 11/09: testes da URL cobrem Dashboard, Novo Lançamento,
   links legados, competência fora da URL e retorno pós-login; `npm test` aprovou 35 testes e
   `npm run build` concluiu com o aviso conhecido de chunk principal acima de 500 kB.
-- Checkpoint final de abastecimentos em 11/09: `npm test` aprovou 35 testes e `npm run build`
-  concluiu. A conta de validação acessou o Dashboard em produção sem erro, mas não exibiu Garagem
-  por não ter essa permissão; não houve alteração de dados ou permissões durante o smoke test.
+- Smoke test de abastecimentos em produção em 11/09: uma categoria de teste, um abastecimento e
+  uma despesa PIX de R$ 25,00 foram criados uma única vez e vinculados; o odômetro avançou de
+  10.000 para 10.010 km e o Extrato confirmou o lançamento. A categoria aparece no formulário
+  após recarregar a Garagem.
 - Correção de categorias em 11/09: a meta inicial agora é `0,00`, coerente com o campo opcional,
   e não bloqueia o envio nativo do formulário. O teste de componente cobre o cadastro simples;
   testes focados e build concluíram com sucesso. A API não precisou mudar e sua regressão completa
   em homologação aprovou 39 testes.
+- Ajuste de cálculo do vínculo em 11/09: `npm test` aprovou 36 testes Vitest e `npm run build`
+  concluiu com o aviso conhecido de chunk principal acima de 500 kB. A API aprovou 40 testes de
+  integração em homologação, incluindo a rejeição de valor técnico divergente do Extrato.
 
 ## Próximos passos recomendados
 
@@ -133,6 +138,7 @@ de abastecimentos com a conta de validação já habilitada para Garagem.
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
    destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
-3. Após o deploy da Web, usar a conta de validação com Garagem habilitada para criar a categoria
-   de teste e concluir o smoke test de abastecimento, incluindo o vínculo no Extrato.
+3. Após o deploy conjunto, validar visualmente o vínculo existente preenchendo somente litros e,
+   em nova tentativa, somente preço por litro; ambos devem calcular o outro campo sem criar uma
+   nova despesa.
 4. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

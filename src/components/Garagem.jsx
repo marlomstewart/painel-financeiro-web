@@ -67,7 +67,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
     const [modalItem, setModalItem] = useState(null);
     const [modalManutencao, setModalManutencao] = useState(null);
     const [modalAbastecimento, setModalAbastecimento] = useState(false);
-    const [rascunhoAbastecimento, setRascunhoAbastecimento] = useState({ litros: '', precoLitro: '', modo: 'criar' });
+    const [rascunhoAbastecimento, setRascunhoAbastecimento] = useState({ litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' });
     const [modalConfirm, setModalConfirm] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -222,15 +222,20 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
 
     const salvarAbastecimento = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true);
         const fd = new FormData(e.target);
         const litros = Number(fd.get('litros'));
         const precoLitro = Number(fd.get('precoLitro'));
         const transacaoId = fd.get('modo') === 'vincular' ? fd.get('transacaoId') : null;
+        if (transacaoId && (!litros || !precoLitro)) {
+            window.alert('Informe os litros ou o preço por litro para completar a ficha técnica.');
+            return;
+        }
+        setIsSubmitting(true);
         const body = {
             id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
             data: fd.get('data'), odometro: Number(fd.get('odometro')), litros, precoLitro,
-            valorTotal: Math.round(litros * precoLitro * 100) / 100,
+            // Ao vincular, o Extrato é a fonte do valor: o formulário só deriva os litros.
+            valorTotal: rascunhoAbastecimento.modo === 'vincular' ? valorLancamentoVinculado : Math.round(litros * precoLitro * 100) / 100,
             tanqueCheio: fd.get('tanqueCheio') === 'on', observacao: fd.get('observacao'), transacaoId,
             categoriaId: fd.get('categoriaId') || null, formaPagamento: fd.get('formaPagamento'), status: fd.get('status')
         };
@@ -255,7 +260,24 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
         : [];
     const lancamentosParaVinculo = lancamentosVeiculo.filter(t => t.tipo === 'despesa' && !abastecimentos.some(a => a.transacao_id === t.id));
     const categoriaPlanejada = garagem?.planoMes?.config?.categoriaId || '';
-    const totalRascunho = Number(rascunhoAbastecimento.litros || 0) * Number(rascunhoAbastecimento.precoLitro || 0);
+    const valorLancamentoVinculado = rascunhoAbastecimento.modo === 'vincular'
+        ? Number(lancamentosParaVinculo.find(t => t.id === rascunhoAbastecimento.transacaoId)?.valorParcela || 0)
+        : 0;
+    const litrosCalculados = valorLancamentoVinculado > 0 && Number(rascunhoAbastecimento.precoLitro) > 0
+        ? Math.round((valorLancamentoVinculado / Number(rascunhoAbastecimento.precoLitro)) * 1000) / 1000
+        : '';
+    const precoLitroCalculado = valorLancamentoVinculado > 0 && Number(rascunhoAbastecimento.litros) > 0
+        ? Math.round((valorLancamentoVinculado / Number(rascunhoAbastecimento.litros)) * 1000) / 1000
+        : '';
+    const litrosRascunho = rascunhoAbastecimento.modo === 'vincular' && rascunhoAbastecimento.campoBase === 'precoLitro'
+        ? litrosCalculados
+        : rascunhoAbastecimento.litros;
+    const precoLitroRascunho = rascunhoAbastecimento.modo === 'vincular' && rascunhoAbastecimento.campoBase === 'litros'
+        ? precoLitroCalculado
+        : rascunhoAbastecimento.precoLitro;
+    const totalRascunho = rascunhoAbastecimento.modo === 'vincular'
+        ? valorLancamentoVinculado
+        : Number(rascunhoAbastecimento.litros || 0) * Number(rascunhoAbastecimento.precoLitro || 0);
 
     // ==========================================
     // COMPONENTES AUXILIARES (UI OTIMIZADA)
@@ -459,19 +481,19 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
                 <ModalInterno titulo="Registrar abastecimento" onFechar={() => !isSubmitting && setModalAbastecimento(false)}>
                     <form onSubmit={salvarAbastecimento} onInput={(e) => {
                         const { name, value } = e.target;
-                        if (['litros', 'precoLitro', 'modo'].includes(name)) setRascunhoAbastecimento(prev => ({ ...prev, [name]: value }));
+                        if (['litros', 'precoLitro', 'modo', 'transacaoId'].includes(name)) setRascunhoAbastecimento(prev => ({ ...prev, [name]: value }));
                     }} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                             <div><label className={labelCls}>Data</label><input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required className={inputCls} /></div>
-                            <div><label className={labelCls}>Odômetro</label><input name="odometro" type="number" min="0" step="1" defaultValue={kmAtual} required className={inputCls} /></div>
-                            <div><label className={labelCls}>Litros</label><input name="litros" type="number" min="0.01" step="0.001" required className={inputCls} /></div>
-                            <div><label className={labelCls}>Preço por litro</label><input name="precoLitro" type="number" min="0.01" step="0.001" required className={inputCls} /></div>
+                            <div><label className={labelCls}>Quilometragem (km)</label><input name="odometro" type="number" min="0" step="1" defaultValue={kmAtual} required className={inputCls} /></div>
+                            <div><label className={labelCls}>{rascunhoAbastecimento.modo === 'vincular' && rascunhoAbastecimento.campoBase === 'precoLitro' ? 'Litros (calculado)' : 'Litros'}</label><input name="litros" type="number" min="0.01" step="0.001" required={rascunhoAbastecimento.modo === 'criar'} value={litrosRascunho} onChange={e => setRascunhoAbastecimento(prev => ({ ...prev, litros: e.target.value, campoBase: 'litros' }))} className={inputCls} /></div>
+                            <div><label className={labelCls}>{rascunhoAbastecimento.modo === 'vincular' && rascunhoAbastecimento.campoBase === 'litros' ? 'Preço por litro (calculado)' : 'Preço por litro'}</label><input name="precoLitro" type="number" min="0.01" step="0.001" required={rascunhoAbastecimento.modo === 'criar'} value={precoLitroRascunho} onChange={e => setRascunhoAbastecimento(prev => ({ ...prev, precoLitro: e.target.value, campoBase: 'precoLitro' }))} className={inputCls} /></div>
                         </div>
-                        <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 flex justify-between items-center"><span className="text-xs font-bold text-blue-800 dark:text-blue-300">Total calculado</span><strong className="text-lg text-blue-700 dark:text-blue-300">{formatarMoeda(totalRascunho)}</strong></div>
+                        <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 flex justify-between items-center"><span className="text-xs font-bold text-blue-800 dark:text-blue-300">{rascunhoAbastecimento.modo === 'vincular' ? 'Valor do lançamento vinculado' : 'Total calculado'}</span><strong className="text-lg text-blue-700 dark:text-blue-300">{formatarMoeda(totalRascunho)}</strong></div>
                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300"><input name="tanqueCheio" type="checkbox" className="accent-blue-600" /> Tanque cheio <span className="text-[10px] font-normal text-slate-500">(parcial não entra no km/L)</span></label>
                         <div><label className={labelCls}>Como registrar no Extrato</label><select name="modo" defaultValue="criar" className={inputCls}><option value="criar">Criar novo lançamento</option><option value="vincular">Vincular lançamento já criado</option></select></div>
                         {rascunhoAbastecimento.modo === 'vincular' ? (
-                            <div><label className={labelCls}>Lançamento existente</label><select name="transacaoId" required className={inputCls}><option value="">Selecione uma despesa deste veículo</option>{lancamentosParaVinculo.map(t => <option key={t.id} value={t.id}>{t.descricao} — {formatarMoeda(t.valorParcela)}</option>)}</select><p className="text-[10px] text-slate-500 mt-1">A escolha explícita evita classificar combustível apenas pelo texto.</p></div>
+                            <div><label className={labelCls}>Lançamento existente</label><select name="transacaoId" required value={rascunhoAbastecimento.transacaoId} onChange={e => setRascunhoAbastecimento(prev => ({ ...prev, transacaoId: e.target.value }))} className={inputCls}><option value="">Selecione uma despesa deste veículo</option>{lancamentosParaVinculo.map(t => <option key={t.id} value={t.id}>{t.descricao} — {formatarMoeda(t.valorParcela)}</option>)}</select><p className="text-[10px] text-slate-500 mt-1">Informe os litros ou o preço por litro: o outro campo é calculado pelo valor do lançamento. A escolha explícita evita classificar combustível apenas pelo texto.</p></div>
                         ) : <>
                             <div><label className={labelCls}>Categoria de combustível</label><select name="categoriaId" defaultValue={categoriaPlanejada} className={inputCls}><option value="">Usar categoria do planejamento</option>{(garagem?.planoMes?.categorias || []).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
                             <div className="grid grid-cols-2 gap-3"><div><label className={labelCls}>Forma de pagamento</label><select name="formaPagamento" defaultValue="pix" className={inputCls}><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="debito">Débito</option>{cartoes.map(c => <option key={c.id} value={`credito_${c.id}`}>Crédito — {c.nome}</option>)}</select></div><div><label className={labelCls}>Status</label><select name="status" defaultValue="pago" className={inputCls}><option value="pago">Pago</option><option value="pendente">Pendente</option></select></div></div>
@@ -642,7 +664,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
 
                 {veiculoSelecionado.tipo !== 'convidado' && (
                     <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4"><div><h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Bike className="w-4 h-4" /> Abastecimentos</h2><p className="text-[10px] text-slate-500 mt-1">Histórico técnico vinculado ao Extrato.</p></div><button type="button" onClick={() => { setRascunhoAbastecimento({ litros: '', precoLitro: '', modo: 'criar' }); setModalAbastecimento(true); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors flex justify-center items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Registrar abastecimento</button></div>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4"><div><h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2"><Bike className="w-4 h-4" /> Abastecimentos</h2><p className="text-[10px] text-slate-500 mt-1">Histórico técnico vinculado ao Extrato.</p></div><button type="button" onClick={() => { setRascunhoAbastecimento({ litros: '', precoLitro: '', modo: 'criar', transacaoId: '', campoBase: '' }); setModalAbastecimento(true); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors flex justify-center items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Registrar abastecimento</button></div>
                         {abastecimentos.length === 0 ? <p className="text-sm text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 text-center">Nenhum abastecimento técnico registrado.</p> : <div className="space-y-2 max-h-[330px] overflow-y-auto custom-scrollbar">{[...abastecimentos].sort((a,b) => new Date(b.data_abastecimento) - new Date(a.data_abastecimento)).map(a => <div key={a.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700"><div className="flex justify-between gap-3"><strong className="text-sm text-slate-800 dark:text-slate-100">{formatarData(a.data_abastecimento)} · {Number(a.odometro).toLocaleString('pt-BR')} km</strong><span className="font-black text-rose-600">{formatarMoeda(a.valor_total)}</span></div><p className="text-[11px] text-slate-500 mt-1">{Number(a.litros).toLocaleString('pt-BR')} L · {formatarMoeda(a.preco_litro)}/L · {a.tanque_cheio ? (a.km_por_litro ? `${a.km_por_litro} km/L` : 'tanque cheio') : 'abastecimento parcial'}</p>{a.observacao && <p className="text-[11px] text-slate-500 italic mt-1">{a.observacao}</p>}</div>)}</div>}
                     </div>
                 )}
