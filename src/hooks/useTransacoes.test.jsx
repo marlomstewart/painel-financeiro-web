@@ -37,7 +37,7 @@ function propsBase() {
   return {
     API: 'https://api.test',
     getHeaders: () => ({ Authorization: 'Bearer token' }),
-    modal: { options: vi.fn(), confirm: vi.fn() },
+    modal: { prompt: vi.fn(), options: vi.fn(), confirm: vi.fn() },
     token: 'token',
     temGaragem: false,
     transacoes: [],
@@ -94,4 +94,35 @@ test('guarda todas as parcelas como um único lote quando o backend está offlin
   assert.equal(salvarLotePendente.mock.calls[0][0].length, 2)
   assert.equal(setTransacoes.mock.calls.length, 1)
   assert.equal(props.showToast.mock.calls.at(-1)[0], 'Sem conexão — lançamento guardado no aparelho e será enviado quando a internet voltar.')
+})
+
+test('envia a data escolhida na prévia e na confirmação da antecipação', async () => {
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        dataAntecipacao: '2026-10-02',
+        quantidadeDisponivel: 2,
+        destino: { mes: 10, ano: 2026, faturasQuitadasIgnoradas: 0 },
+        parcelas: [{ valorParcela: 20 }, { valorParcela: 30 }],
+      }),
+    })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Parcelas antecipadas com sucesso.' }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => [] })
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  props.modal.prompt.mockResolvedValue('2026-10-02')
+  props.modal.options.mockResolvedValue(2)
+  props.modal.confirm.mockResolvedValue(true)
+  const { result } = renderHook(() => useTransacoes(props))
+
+  await act(async () => {
+    await result.current.anteciparParcelasCredito({ id: 'parcela-1' })
+  })
+
+  assert.equal(fetchMock.mock.calls[0][0], 'https://api.test/transacoes/parcela-1/antecipacao/previa?dataAntecipacao=2026-10-02')
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[1][1].body), { quantidade: 2, dataAntecipacao: '2026-10-02' })
+  assert.match(props.modal.confirm.mock.calls[0][0], /02\/10\/2026/)
+  assert.match(props.modal.confirm.mock.calls[0][0], /R\$\s?50,00/)
+  assert.match(props.modal.confirm.mock.calls[0][0], /10\/2026/)
 })

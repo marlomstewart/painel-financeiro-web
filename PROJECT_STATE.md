@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 12/09/2026
+**Atualizado em:** 13/09/2026
 
 ## Objetivo atual
 
@@ -11,10 +11,10 @@ sessões independentes.
 
 - Correção do detalhamento do Fluxo de Caixa Projetado publicada em `main` (`588102b`) e
   confirmada em produção.
-- Checkpoint da antecipação de parcelas concluído em 08/09; a entrega aguarda apenas deploy e
-  validação autenticada.
 - Checkpoint documental concluído em 12/09; README e catálogo funcional foram alinhados à
   navegação por caminhos, planejamento, abastecimentos técnicos e consumo de combustível.
+- A antecipação de parcelas aceita a data em que ela ocorreu e calcula a fatura de destino a partir
+  dela, em calendário de Fortaleza.
 - Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
   pode ser deduzida somente do Git.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
@@ -28,8 +28,9 @@ sessões independentes.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
-  crédito. A confirmação mostra quantidade, total e fatura canônica de destino; antecipar não quita
-  nem modifica os dados financeiros da compra.
+  crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
+  quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
+  financeiros da compra.
 - Metas & Categorias, A Receber e Planejamento de combustível receberam ajustes responsivos:
   nomes de categorias de Garagem ocupam até duas linhas, a cobrança mostra somente pessoas com
   pendência na competência visível, descrições e valores longos se adaptam ao celular, e o mês de
@@ -78,14 +79,16 @@ sessões independentes.
   aguarda deploy e validação visual responsiva.
 - Custos Associados da Garagem agora filtram despesas por competência e têm navegação mensal local;
   aguardam deploy e validação visual.
+- Antecipação de parcelas com data informada concluída localmente; aguarda deploy conjunto e
+  validação autenticada.
 
 ## Pendências e riscos
 
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
-- `npm run lint` falha por débitos preexistentes em `App.jsx`, `Configuracoes.jsx`, `useAuth.jsx`,
-  `useDashboard.jsx` e configuração de globals dos testes. Tratar em objetivo próprio, sem misturar
-  com feature financeira.
+- `npm run lint` falha por 74 erros preexistentes, concentrados em regras React/React Hooks, imports
+  legados e configuração de globals dos testes. A triagem está pendente e deve seguir em objetivo
+  próprio, sem misturar com feature financeira.
 - Há arquivos de alta complexidade registrados no backlog da API: `Investimentos.jsx`, `Modal.jsx`,
   `Lancamentos.jsx` e `useDashboard.jsx`.
 
@@ -103,9 +106,10 @@ sessões independentes.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.
-- Antecipação de crédito validada localmente em 08/09: `npm test` aprovou 32 testes e `npm run build`
-  concluiu; o fluxo usa somente `utils/cartaoUtils.js` para reconhecer crédito e recarrega o Extrato
-  depois da confirmação. Permanece o aviso conhecido de chunk principal acima de 500 kB.
+- Antecipação com data informada validada em 13/09: teste do hook confirma o calendário, a prévia e
+  a confirmação com a mesma data; `npm test -- --run src/hooks/useTransacoes.test.jsx` aprovou 3
+  testes e `npm run build` concluiu. A API validou os limites antes/no/depois do melhor dia e a
+  fatura quitada. Permanece o aviso conhecido de chunk principal acima de 500 kB.
 - Responsividade validada por testes de componente: categorias com tag Garagem preservam nome e
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
   troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run
@@ -122,8 +126,6 @@ sessões independentes.
 - Raio-X de metas validado em 04/09: abre sem lançamentos e lista os lançamentos filtrados por
   categoria/competência quando existirem; `npm test` aprovou 16 testes e `npm run build` foi
   concluído com apenas o aviso conhecido de chunk principal acima de 500 kB.
-- Lint direcionado em `useDashboard` e seus testes continua com débitos preexistentes (incluindo
-  configuração que não reconhece `test`); a comparação com `HEAD` não identificou erro novo.
 - Regressões de terceiros e planejamento em 07/09: `A Receber` reduz uma parcela de dívida já
   recebida no Extrato; dívida de terceiro não reduz o Fluxo de Caixa Projetado; os três estados da
   mensagem de combustível (em dia, acima do planejado e concluído) foram validados em teste.
@@ -178,7 +180,7 @@ sessões independentes.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
-   destino antes/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
+   data antes/no/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
 3. Após o deploy conjunto, validar visualmente o vínculo existente preenchendo somente litros e,
    em nova tentativa, somente preço por litro; ambos devem calcular o outro campo sem criar uma
    nova despesa.

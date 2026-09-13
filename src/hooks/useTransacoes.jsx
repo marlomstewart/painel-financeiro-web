@@ -3,6 +3,14 @@ import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { salvarLotePendente } from '../utils/offlineQueue';
 import { montarConsultaTransacoes } from '../utils/janelaTransacoes';
 
+const dataHojeEmFortaleza = () => {
+    const partes = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Fortaleza', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const valor = (tipo) => partes.find(parte => parte.type === tipo)?.value;
+    return `${valor('year')}-${valor('month')}-${valor('day')}`;
+};
+
 /**
  * @file src/hooks/useTransacoes.jsx
  * @description Hook customizado para gerir o CRUD de transações financeiras.
@@ -493,7 +501,15 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
     const anteciparParcelasCredito = async (t) => {
         try {
-            const previaRes = await fetch(`${API}/transacoes/${t.id}/antecipacao/previa`, { headers: getHeaders() });
+            const dataAntecipacao = await modal.prompt(
+                'Informe a data em que a antecipação ocorreu. Ela será usada somente para definir a fatura de destino.',
+                dataHojeEmFortaleza(),
+                'Data da antecipação',
+                { inputType: 'date', confirmLabel: 'Ver prévia' }
+            );
+            if (!dataAntecipacao) return;
+
+            const previaRes = await fetch(`${API}/transacoes/${t.id}/antecipacao/previa?dataAntecipacao=${encodeURIComponent(dataAntecipacao)}`, { headers: getHeaders() });
             const previa = await previaRes.json();
             if (!previaRes.ok) return showToast(previa.message || 'Não foi possível consultar as parcelas para antecipação.', 'error');
 
@@ -514,14 +530,14 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
             const total = previa.parcelas.slice(0, quantidade).reduce((soma, item) => soma + Number(item.valorParcela || 0), 0);
             const confirmar = await modal.confirm(
-                `Antecipar ${quantidade} parcela${quantidade > 1 ? 's' : ''} (${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) para a fatura ${String(previa.destino.mes).padStart(2, '0')}/${previa.destino.ano}? Elas continuarão pendentes e serão quitadas apenas ao pagar a fatura.`,
+                `Data da antecipação: ${dataAntecipacao.split('-').reverse().join('/')}\nAntecipar ${quantidade} parcela${quantidade > 1 ? 's' : ''} (${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) para a fatura ${String(previa.destino.mes).padStart(2, '0')}/${previa.destino.ano}? Elas continuarão pendentes e serão quitadas apenas ao pagar a fatura.`,
                 'Confirmar antecipação',
                 { confirmLabel: 'Antecipar parcelas' }
             );
             if (!confirmar) return;
 
             const res = await fetch(`${API}/transacoes/${t.id}/antecipar-parcelas`, {
-                method: 'POST', headers: getHeaders(), body: JSON.stringify({ quantidade })
+                method: 'POST', headers: getHeaders(), body: JSON.stringify({ quantidade, dataAntecipacao })
             });
             const data = await res.json();
             if (!res.ok) return showToast(data.message || 'Não foi possível antecipar as parcelas.', 'error');
