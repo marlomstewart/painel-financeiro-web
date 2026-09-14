@@ -107,8 +107,10 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         // 🔥 DIVIDE O VALOR DO TERCEIRO PELO NÚMERO DE PARCELAS
         const thirdPartyValueCalculado = thirdPartyTotal ? Math.round((thirdPartyTotal / numParcelas) * 100) / 100 : null;
 
+        const idBase = Date.now().toString();
         const objBase = {
-            id: Date.now().toString(),
+            id: idBase,
+            grupo_id: numParcelas > 1 ? `compra_${idBase}` : null,
             descricao: formData.get('descricao'),
             categoria,
             dataCompra: dataCompraStr,

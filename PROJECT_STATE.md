@@ -30,7 +30,8 @@ sessões independentes.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
   quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
-  financeiros da compra.
+  financeiros da compra. Parcelamentos novos recebem `grupo_id` no cadastro; séries antigas completas
+  no formato `(1/total)` também exibem a ação e são vinculadas pela API somente ao confirmar.
 - Metas & Categorias, A Receber e Planejamento de combustível receberam ajustes responsivos:
   nomes de categorias de Garagem ocupam até duas linhas, a cobrança mostra somente pessoas com
   pendência na competência visível, descrições e valores longos se adaptam ao celular, e o mês de
@@ -114,6 +115,9 @@ sessões independentes.
   a confirmação com a mesma data; `npm test -- --run src/hooks/useTransacoes.test.jsx` aprovou 3
   testes e `npm run build` concluiu. A API validou os limites antes/no/depois do melhor dia e a
   fatura quitada. Permanece o aviso conhecido de chunk principal acima de 500 kB.
+- Compatibilidade de parcelamentos antigos validada em 13/09: o Extrato identifica séries completas
+  sem grupo pelo padrão `(n/total)`, e a API aprovou em homologação a antecipação de uma compra
+  legada com três parcelas, preservando status e caixa.
 - Responsividade validada por testes de componente: categorias com tag Garagem preservam nome e
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
   troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run

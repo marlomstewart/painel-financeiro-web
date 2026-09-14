@@ -150,11 +150,33 @@ export function Lancamentos({
 
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    const assinaturaParcelaLegada = (descricao) => {
+        const resultado = String(descricao || '').match(/^(.*)\s+\((\d+)\/(\d+)\)$/);
+        if (!resultado) return null;
+        return { base: resultado[1].trim(), numero: Number(resultado[2]), total: Number(resultado[3]) };
+    };
+
     const podeAnteciparParcelas = (t) => {
         const grupo = String(t.grupo_id || '');
-        if (!ehPagamentoCredito(t.formaPagamento) || !grupo || t.tipo !== 'despesa' || t.categoria === 'Dívidas e Empréstimos' || t.categoria === 'Contas Fixas' || /^(divida_|fixa_|renda_)/.test(grupo)) return false;
-        return transacoes.some(item => item.grupo_id === t.grupo_id && item.status === 'pendente'
+        if (!ehPagamentoCredito(t.formaPagamento) || t.tipo !== 'despesa' || t.categoria === 'Dívidas e Empréstimos' || t.categoria === 'Contas Fixas' || /^(divida_|fixa_|renda_)/.test(grupo)) return false;
+        if (grupo) return transacoes.some(item => item.grupo_id === t.grupo_id && item.status === 'pendente'
             && (item.anoReferencia > t.anoReferencia || (item.anoReferencia === t.anoReferencia && item.mesReferencia > t.mesReferencia)));
+
+        const assinatura = assinaturaParcelaLegada(t.descricao);
+        if (!assinatura || assinatura.numero < 1 || assinatura.numero > assinatura.total) return false;
+        const serie = transacoes.filter((item) => {
+            const itemAssinatura = !item.grupo_id && assinaturaParcelaLegada(item.descricao);
+            return itemAssinatura?.base === assinatura.base
+                && itemAssinatura.total === assinatura.total
+                && item.formaPagamento === t.formaPagamento
+                && String(item.dataCompra || '').slice(0, 10) === String(t.dataCompra || '').slice(0, 10)
+                && item.tipo === 'despesa'
+                && item.categoria === t.categoria;
+        });
+        const numeros = new Set(serie.map(item => assinaturaParcelaLegada(item.descricao)?.numero));
+        return serie.length === assinatura.total && numeros.size === assinatura.total
+            && serie.some(item => item.status === 'pendente'
+                && (item.anoReferencia > t.anoReferencia || (item.anoReferencia === t.anoReferencia && item.mesReferencia > t.mesReferencia)));
     };
 
     /**
