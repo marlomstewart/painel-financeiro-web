@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Tag, Plus, Pencil, Trash2, TrendingDown, TrendingUp, Wallet, Bike, XCircle, Lightbulb } from 'lucide-react';
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { RefreshCw, Cloud, CloudOff } from 'lucide-react'; // 🔥 Importação dos ícones adicionada
 import { Modal } from './components/Modal';
 import { Login } from './components/Login';

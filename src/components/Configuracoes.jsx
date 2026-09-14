@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Settings, User, Send, CheckCircle2, Bot, Rocket, ArrowLeft, Palette,
     Sun, Moon, Monitor, Lock, Wrench, Download, Hourglass, Zap, AlertTriangle, Landmark

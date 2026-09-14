@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export function useSetup({ API, getHeaders, modal, transacoes, setTransacoes, showToast }) {
+export function useSetup({ API, getHeaders, showToast }) {
     const [cartoes, setCartoes] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [metasRenda, setMetasRenda] = useState([]);

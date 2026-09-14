@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
 import { Calculator, TrendingUp, TrendingDown } from 'lucide-react';
 

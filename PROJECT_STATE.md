@@ -86,9 +86,8 @@ sessões independentes.
 
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
-- `npm run lint` falha por 74 erros preexistentes, concentrados em regras React/React Hooks, imports
-  legados e configuração de globals dos testes. A triagem está pendente e deve seguir em objetivo
-  próprio, sem misturar com feature financeira.
+- `npm run lint` não possui erros. Restam 16 avisos de hooks sobre carregamentos iniciados em efeitos
+  e dependências que exigem refatoração gradual com cancelamento/testes de ciclo de vida.
 - Há arquivos de alta complexidade registrados no backlog da API: `Investimentos.jsx`, `Modal.jsx`,
   `Lancamentos.jsx` e `useDashboard.jsx`.
 
@@ -103,6 +102,10 @@ sessões independentes.
 
 ## Validações recentes
 
+- Manutenção de lint em 13/09: imports e variáveis legadas foram removidos, testes Vitest receberam
+  globals explícitos, Fast Refresh foi limitado a componentes e o progresso de dívidas foi extraído
+  para utilitário. `npm run lint` concluiu sem erros (16 avisos conhecidos), `npm test` aprovou 44
+  testes e `npm run build` concluiu; permanece apenas o aviso de chunk principal acima de 500 kB.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.

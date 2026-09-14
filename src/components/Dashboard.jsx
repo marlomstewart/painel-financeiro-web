@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertasDashboard } from './AlertasDashboard';
 import {
     LayoutDashboard, ChevronLeft, ChevronRight, AlertTriangle, AlertOctagon,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { obterProgressoDivida } from './Dividas'
+import { obterProgressoDivida } from '../utils/progressoDivida'
 
 test('progresso de dívida de terceiro usa recebimento e parcelas do tipo despesa', () => {
   const divida = { id: 'd1', qtd_parcelas: 3, parcelas_pagas_iniciais: 0, para_terceiros: true }

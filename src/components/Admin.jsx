@@ -1,5 +1,4 @@
-/* eslint-disable react/prop-types */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Users, Lightbulb, RefreshCw, FolderOpen, Star, ShieldAlert, ShieldCheck,
   Bike, Paperclip, ArrowUpCircle, ArrowDownCircle, Ban, KeyRound, Trash2, Loader2

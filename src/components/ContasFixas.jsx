@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Repeat, Pencil, Trash2, TrendingDown } from 'lucide-react';
 import { nomeCartao } from '../utils/cartaoUtils';
 

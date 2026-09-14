@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
     Sparkles, ClipboardList, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
     Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info
@@ -29,11 +29,10 @@ export function Lancamentos({
     mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados,
     mudarOrdenacao, ordenacao, dadosTabela,
     alternarStatusTransacao, editarValor, deletarTransacao, executarAcaoEmMassa, anteciparParcelasCredito,
-    modal, showToast, nomeUsuario, temGaragem = false, temComprovante = false, anexarComprovante, verComprovante,
+    modal, showToast, temGaragem = false, temComprovante = false, anexarComprovante, verComprovante,
     dataVis = { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
     mesAnterior = () => { },
     mesProximo = () => { },
-    garagem = null,
     transacoes = []
 }) {
     // ==========================================

@@ -1,4 +1,3 @@
-import React from 'react';
 import { LayoutDashboard, Target, History } from 'lucide-react';
 
 /**

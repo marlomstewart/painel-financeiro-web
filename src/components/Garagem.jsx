@@ -1,5 +1,4 @@
-/* eslint-disable react/prop-types */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     X, Bike, Car, Users, Plus, Pencil, Trash2, Settings, Wrench,
     AlertTriangle, Stethoscope, ClipboardList, Wallet, CreditCard,
@@ -8,6 +7,7 @@ import {
 import { calcularDesgasteItem } from '../utils/desgasteVeiculo';
 
 const API = import.meta.env.VITE_API_URL;
+const gerarIdAbastecimento = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
 
 /**
  * @function formatarMoeda
@@ -292,7 +292,7 @@ export function Garagem({ getHeaders, setTelaAtiva, transacoes, setTransacoes, c
         }
         setIsSubmitting(true);
         const body = {
-            id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+            id: gerarIdAbastecimento(),
             data: fd.get('data'), odometro: numeroQuilometragem(fd.get('odometro')), litros, precoLitro,
             // Ao vincular, o Extrato é a fonte do valor: o formulário só deriva os litros.
             valorTotal: rascunhoAbastecimento.modo === 'vincular' ? valorLancamentoVinculado : Math.round(litros * precoLitro * 100) / 100,

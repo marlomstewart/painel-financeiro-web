@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
-    X, Sparkles, LayoutDashboard, Wallet, Repeat, HandCoins, Handshake,
+    X, Sparkles, LayoutDashboard, Wallet, Repeat, Handshake,
     CreditCard, PiggyBank, Target, TrendingUp, Bike, Users, ChevronLeft, ChevronRight, CheckCircle2
 } from 'lucide-react';
 

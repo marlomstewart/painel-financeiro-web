@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-    HelpCircle, ChevronDown, LayoutDashboard, Wallet, Repeat, HandCoins, Handshake,
+    HelpCircle, ChevronDown, LayoutDashboard, Wallet, Repeat, Handshake,
     CreditCard, PiggyBank, Target, TrendingUp, Bike, Users, PlayCircle
 } from 'lucide-react';
 

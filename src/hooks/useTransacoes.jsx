@@ -198,7 +198,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
     // UI otimista: alterna o status na tela imediatamente e só chama a API em paralelo — se a
     // API recusar (ex: transação de outro usuário, erro de rede), desfaz o toggle e avisa por toast.
-    const alternarStatusTransacao = async (id, statusAtual, valor, dataCompra) => {
+    const alternarStatusTransacao = async (id, statusAtual) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
         const dataPagamentoAnterior = transacoes.find(t => t.id === id)?.data_pagamento ?? null;
         const dataPagamentoOtimista = novoStatus === 'pago' ? new Date().toISOString() : null;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { obterDesdeISO } from '../utils/janelaTransacoes';
 import { calcularFluxoProjetado } from '../utils/fluxoProjetado';
@@ -260,7 +260,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     let totGastoReal = 0, totGastoPago = 0, totGastoPendente = 0;
     let totInvestido = 0, totInvestidoPago = 0, totInvestidoPendente = 0;
     let gCat = {}; categorias.forEach(c => gCat[c.nome] = 0);
-    let gastoSemCategoria = 0, gastoContasFixas = 0;
 
     transacoesMes.forEach(t => {
         // --- 1. MATEMÁTICA DO BANCO (Lê o valor total da nota) ---
@@ -302,27 +301,21 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 if (t.status === 'pago') totInvestidoPago += meuValor;
                 else totInvestidoPendente += meuValor;
                 
-                if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
-                else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
-                else gCat[t.categoria] += meuValor;
+                if (t.categoria !== 'Contas Fixas' && t.categoria !== 'Sem Categoria' && gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
             }
             else if (t.tipo === 'reembolso') {
                 totGastoReal -= meuValor;
                 if (t.status === 'pago') totGastoPago -= meuValor;
                 else totGastoPendente -= meuValor; // Reembolso pendente abate do gasto pendente
                 
-                if (t.categoria === 'Contas Fixas') gastoContasFixas -= meuValor;
-                else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria -= meuValor;
-                else gCat[t.categoria] -= meuValor;
+                if (t.categoria !== 'Contas Fixas' && t.categoria !== 'Sem Categoria' && gCat[t.categoria] !== undefined) gCat[t.categoria] -= meuValor;
             }
             else if (t.tipo === 'despesa') {
                 totGastoReal += meuValor;
                 if (t.status === 'pago') totGastoPago += meuValor;
                 else totGastoPendente += meuValor;
                 
-                if (t.categoria === 'Contas Fixas') gastoContasFixas += meuValor;
-                else if (t.categoria === 'Sem Categoria' || gCat[t.categoria] === undefined) gastoSemCategoria += meuValor;
-                else gCat[t.categoria] += meuValor;
+                if (t.categoria !== 'Contas Fixas' && t.categoria !== 'Sem Categoria' && gCat[t.categoria] !== undefined) gCat[t.categoria] += meuValor;
             }
         }
     });

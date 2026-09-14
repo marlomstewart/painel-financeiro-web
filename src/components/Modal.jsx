@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PlanejamentoCombustivel } from './PlanejamentoCombustivel';
 import {
   X, Users, Lightbulb, Undo2, CheckCircle2, RotateCcw, Pencil,
@@ -501,7 +501,10 @@ export function Modal({ config, onClose }) {
   // pra página atrás (o usuário de teclado "sumia" atrás do overlay) e Esc não fazia nada.
   // Fica antes do early return abaixo porque hook não pode ser condicional.
   const fecharRef = useRef(null);
-  fecharRef.current = config ? (config.onCancel || onClose) : null;
+
+  useEffect(() => {
+    fecharRef.current = config ? (config.onCancel || onClose) : null;
+  }, [config, onClose]);
 
   useEffect(() => {
     if (!config) return;

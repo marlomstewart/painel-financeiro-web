@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     X, ChevronDown, LayoutDashboard, Wallet, Plus, ClipboardList,
     TrendingDown, Repeat, HandCoins, Handshake, CreditCard, PiggyBank,
