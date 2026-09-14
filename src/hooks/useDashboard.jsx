@@ -438,14 +438,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         try {
             const promessas = pendenciasPassadas.flatMap((t, index) => {
                 const reqUpdate = fetch(`${API}/transacoes/${t.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'transferido', valorParcela: t.valorParcela }) });
-                const reqCreate = fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ id: (Date.now() + index).toString(), descricao: `[Pendência ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`, categoria: t.categoria, valorParcela: t.valorParcela, dataCompra: new Date(anoReal, mesReal - 1, dataHoje.getDate()).toISOString(), tipo: t.tipo, formaPagamento: t.formaPagamento, status: 'pendente', mesReferencia: mesReal, anoReferencia: anoReal, kmMoto: t.kmMoto || null, grupo_id: null }) });
+                const reqCreate = fetch(`${API}/transacoes`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ id: (Date.now() + index).toString(), descricao: `[Pendência ${nomesMeses[t.mesReferencia - 1]}] ${t.descricao}`, categoria: t.categoria, valorParcela: t.valorParcela, dataCompra: new Date(anoReal, mesReal - 1, new Date().getDate()).toISOString(), tipo: t.tipo, formaPagamento: t.formaPagamento, status: 'pendente', mesReferencia: mesReal, anoReferencia: anoReal, kmMoto: t.kmMoto || null, grupo_id: null }) });
                 return [reqUpdate, reqCreate];
             });
             await Promise.all(promessas);
             const resT = await fetch(`${API}/transacoes?desde=${obterDesdeISO()}`, { headers: getHeaders() });
             if (resT.ok) { setTransacoes(await resT.json()); setDataVis({ mes: mesReal, ano: anoReal }); showToast('Pendências importadas!', 'success'); }
         } catch (err) { showToast('Erro de conexão.', 'error'); }
-    }, [API, getHeaders, showToast, pendenciasPassadas, setTransacoes, setDataVis, anoReal, mesReal, dataHoje]);
+    }, [API, getHeaders, showToast, pendenciasPassadas, setTransacoes, setDataVis, anoReal, mesReal]);
 
     const abrirModalPendencias = useCallback(() => {
         modal.alert(<div className="space-y-3"><p className="text-sm"><b>{pendenciasPassadas.length}</b> pendência(s) antiga(s). Deseja importar para {nomesMeses[mesReal - 1]}?</p><div className="max-h-60 overflow-y-auto space-y-2 pr-2">{pendenciasPassadas.map(t => (<div key={t.id} className="border border-rose-200 bg-rose-50 p-3 rounded-lg flex justify-between"><div className="truncate"><p className="text-xs font-bold text-rose-800">{t.descricao}</p></div><span className="font-bold text-rose-700 text-sm">{formatarMoeda(t.valorParcela)}</span></div>))}</div><button type="button" onClick={() => { modal.close(); processarRolagemPendencias(); }} className="w-full mt-4 bg-rose-600 text-white font-bold py-3 rounded-lg shadow cursor-pointer">Importar</button></div>, '⚠️ Pendências');
@@ -465,6 +465,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         let analiseIA = "Análise preditiva disponível apenas para o mês atual.";
 
         const usaPlanoCombustivel = planoCombustivel?.categoriaNome === nCat;
+        const hoje = new Date();
         if (usaPlanoCombustivel) {
             const previsaoFimMesCat = planoCombustivel.resumo.previstoCentavos / 100;
             const planejado = planoCombustivel.resumo.planejadoCentavos / 100;
@@ -477,9 +478,9 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             } else {
                 analiseIA = `✅ Planejamento em dia: você deve gastar cerca de ${formatarMoeda(previsaoFimMesCat)} com combustível neste mês. Já foram ${formatarMoeda(registrado)}; faltam aproximadamente ${formatarMoeda(restante)} nos próximos abastecimentos.`;
             }
-        } else if (dataVis.mes === dataHoje.getMonth() + 1 && dataVis.ano === dataHoje.getFullYear()) {
+        } else if (dataVis.mes === hoje.getMonth() + 1 && dataVis.ano === hoje.getFullYear()) {
             const diasNoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
-            const diaHoje = dataHoje.getDate();
+            const diaHoje = hoje.getDate();
             const previsaoFimMesCat = (vGasto / diaHoje) * diasNoMes;
 
             if (tCat === 'despesa' || tCat === 'Gasto' || tCat === 'gasto') {
@@ -556,7 +557,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoes, dataVis, dataHoje, modal, temGaragem, garagem, planoCombustivel]);
+    }, [transacoes, dataVis, modal, temGaragem, garagem, planoCombustivel]);
 
     // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
     const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {

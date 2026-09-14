@@ -18,7 +18,7 @@ const getValorTerceiro = (t) => {
  * @description Hook Customizado para Gestão de Faturas de Cartão de Crédito.
  * Suporta abates de estornos (reembolsos) e o novo modelo de Split (divisão fracionada com terceiros).
  */
-export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal, showToast }) {
+export function useCartoesFaturas({ setTransacoes, transacoesMes, cartoes, dataVis, API, getHeaders, modal, showToast }) {
 
     const pagarFaturaCartao = useCallback(async (cartaoId) => {
         const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
@@ -38,7 +38,7 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         } catch (err) {
             showToast(err.message || 'Erro ao processar pagamento da fatura.', 'error');
         }
-    }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
+    }, [cartoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
 
     const reverterFaturaCartao = useCallback(async (cartaoId) => {
         const cartao = cartoes.find(c => String(c.id) === String(cartaoId));
@@ -58,7 +58,7 @@ export function useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, ca
         } catch (err) {
             showToast(err.message || 'Erro na reversão.', 'error');
         }
-    }, [cartoes, transacoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
+    }, [cartoes, dataVis, API, getHeaders, modal, setTransacoes, showToast]);
 
     const verFaturasPorCartao = useCallback(() => {
         const porCartao = {};
