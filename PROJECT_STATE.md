@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 13/09/2026
+**Atualizado em:** 22/09/2026
 
 ## Objetivo atual
 
@@ -25,6 +25,11 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- Novo Lançamento permite adicionar vários participantes a uma compra compartilhada, informando
+  nome, telefone opcional e valor devido no total da compra. A tela mostra total atribuído e parte
+  do titular; Extrato, detalhes e A Receber exibem os valores por parcela e o recebimento de cada
+  pessoa. A fila offline preserva os totais canônicos enviados à API e monta somente uma prévia
+  local do rateio enquanto aguarda sincronização.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
@@ -72,6 +77,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
+- Múltiplos participantes concluídos localmente; aguardam a validação integrada contra o banco de
+  homologação e, depois, deploy conjunto Web/API e smoke test autenticado.
 - Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
   e smoke test em produção.
 - Painel de consumo de combustível por veículo próprio concluído localmente; aguarda deploy conjunto
@@ -103,6 +110,9 @@ sessões independentes.
 
 ## Validações recentes
 
+- Múltiplos participantes em 22/09: `npm test` aprovou 46 testes, incluindo 8 cenários direcionados
+  de `useTransacoes` e `Cobrancas`; `npm run lint` terminou sem erros (mantendo os 12 avisos
+  conhecidos) e `npm run build` concluiu com o aviso já conhecido do chunk principal acima de 500 kB.
 - Manutenção de lint em 13/09: imports e variáveis legadas foram removidos, testes Vitest receberam
   globals explícitos, Fast Refresh foi limitado a componentes e o progresso de dívidas foi extraído
   para utilitário. Dependências supérfluas de fatura e de data dinâmica do Dashboard também foram

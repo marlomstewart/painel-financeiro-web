@@ -15,6 +15,7 @@ const IconeOrdenacao = ({ ordenacao, coluna }) => {
         ? <ChevronUp className="w-3 h-3 inline-block ml-0.5" strokeWidth={3} />
         : <ChevronDown className="w-3 h-3 inline-block ml-0.5" strokeWidth={3} />;
 };
+const novoParticipante = () => ({ id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, nome: '', telefone: '', valorCentavos: '0' });
 
 /**
  * @file src/components/Lancamentos.jsx
@@ -60,9 +61,7 @@ export function Lancamentos({
 
     // Estados para Controle de Terceiros (Divisão de despesas)
     const [isThirdParty, setIsThirdParty] = useState(false);
-    const [thirdPartyName, setThirdPartyName] = useState('');
-    const [thirdPartyValueStr, setThirdPartyValueStr] = useState('0');
-    const [thirdPartyPhone, setThirdPartyPhone] = useState('');
+    const [participantes, setParticipantes] = useState(() => [novoParticipante()]);
 
     // Estados de Seleção em Lote (Extrato)
     const [transacoesSelecionadas, setTransacoesSelecionadas] = useState([]);
@@ -84,19 +83,14 @@ export function Lancamentos({
         setValorStr(val);
     };
 
-    /**
-     * @function handleThirdValueChange
-     * @description Limpa e atualiza o input de valor do terceiro, aceitando apenas números.
-     */
-    const handleThirdValueChange = (e) => {
-        let val = e.target.value.replace(/\D/g, '');
-        if (val === '') val = '0';
-        setThirdPartyValueStr(val);
-    };
+    /** Atualiza um campo de participante e mantém valores monetários em centavos. */
+    const atualizarParticipante = (id, campo, valor) => setParticipantes(atuais => atuais.map(p => p.id === id
+        ? { ...p, [campo]: campo === 'valorCentavos' ? (valor.replace(/\D/g, '') || '0') : valor }
+        : p));
 
     // Valores formatados para exibição no formulário (Real time currency formating)
     const displayValor = (parseInt(valorStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const displayThirdValue = (parseInt(thirdPartyValueStr, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const totalParticipantes = participantes.reduce((soma, p) => soma + (parseInt(p.valorCentavos, 10) || 0), 0) / 100;
 
     /**
      * @function handleSubmit
@@ -108,11 +102,13 @@ export function Lancamentos({
         setIsSubmitting(true);
 
         const numericValue = parseInt(valorStr, 10) / 100;
-        let numericThirdValue = parseInt(thirdPartyValueStr, 10) / 100;
-
-        // Regra de Negócio: Terceiro não pode dever mais que o valor total da compra
-        if (isThirdParty && numericThirdValue > numericValue) {
-            showToast('O valor do terceiro não pode ser maior que o valor total da compra.', 'error');
+        if (isThirdParty && totalParticipantes > numericValue) {
+            showToast('A soma dos participantes não pode ser maior que o valor total da compra.', 'error');
+            setIsSubmitting(false);
+            return;
+        }
+        if (isThirdParty && participantes.some(p => !p.nome.trim() || Number(p.valorCentavos) <= 0)) {
+            showToast('Informe nome e valor total positivo para cada participante.', 'error');
             setIsSubmitting(false);
             return;
         }
@@ -125,7 +121,7 @@ export function Lancamentos({
                 setDataCompra(new Date().toISOString().split('T')[0]);
                 setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
                 setFormaPagamento('pix'); setParcelas(1);
-                setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0'); setThirdPartyPhone('');
+                setIsThirdParty(false); setParticipantes([novoParticipante()]);
             }
         } finally {
             setIsSubmitting(false);
@@ -149,6 +145,9 @@ export function Lancamentos({
     };
 
     const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const participantesVisiveis = (t) => t.participantes?.length
+        ? t.participantes
+        : (t.isThirdParty && t.thirdPartyName ? [{ id: 'legado', nome: t.thirdPartyName, recebido: t.terceiro_recebido }] : []);
 
     const assinaturaParcelaLegada = (descricao) => {
         const resultado = String(descricao || '').match(/^(.*)\s+\((\d+)\/(\d+)\)$/);
@@ -248,7 +247,7 @@ export function Lancamentos({
                             setDataCompra(new Date().toISOString().split('T')[0]);
                             setTipo('despesa'); setStatus('pendente'); setCategoria('Sem Categoria');
                             setFormaPagamento('pix'); setParcelas(1);
-                            setIsThirdParty(false); setThirdPartyName(''); setThirdPartyValueStr('0'); setThirdPartyPhone('');
+                            setIsThirdParty(false); setParticipantes([novoParticipante()]);
                         }} className="w-full md:w-auto text-sm font-bold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-3 md:py-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
                             Limpar Dados
                         </button>
@@ -326,38 +325,22 @@ export function Lancamentos({
 
                                 {isThirdParty && (
                                     <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-3">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">Pessoa / Terceiro</label>
-                                                <input
-                                                    name="thirdPartyName" type="text" required
-                                                    value={thirdPartyName} onChange={(e) => setThirdPartyName(e.target.value)}
-                                                    className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                                                    placeholder="Ex: Maria, João..."
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">Valor TOTAL da Pessoa (R$)</label>
-                                                <input
-                                                    name="thirdPartyValue" type="text"
-                                                    value={displayThirdValue} onChange={handleThirdValueChange}
-                                                    className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3.5 md:p-3 text-sm font-bold text-amber-700 dark:text-amber-500 outline-none focus:border-amber-500"
-                                                />
-                                            </div>
+                                        <input type="hidden" name="participantes" value={JSON.stringify(participantes.map(p => ({ id: p.id, nome: p.nome, telefone: p.telefone, valorTotal: (Number(p.valorCentavos) || 0) / 100 })))} />
+                                        <div className="space-y-3">
+                                            {participantes.map((participante, indice) => (
+                                                <div key={participante.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+                                                    <div><label className="block text-xs font-bold text-amber-700 mb-1">Nome</label><input type="text" required value={participante.nome} onChange={e => atualizarParticipante(participante.id, 'nome', e.target.value)} className={inputCls} /></div>
+                                                    <div><label className="block text-xs font-bold text-amber-700 mb-1">WhatsApp (opcional)</label><input type="tel" value={participante.telefone} onChange={e => atualizarParticipante(participante.id, 'telefone', e.target.value)} className={inputCls} /></div>
+                                                    <div><label className="block text-xs font-bold text-amber-700 mb-1">Valor total (R$)</label><input type="text" value={((Number(participante.valorCentavos) || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} onChange={e => atualizarParticipante(participante.id, 'valorCentavos', e.target.value)} className={inputCls} /></div>
+                                                    <button type="button" aria-label={`Remover participante ${indice + 1}`} disabled={participantes.length === 1} onClick={() => setParticipantes(atuais => atuais.filter(p => p.id !== participante.id))} className="px-3 py-3 rounded-lg border border-rose-200 text-rose-600 disabled:opacity-40">×</button>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div className="mt-4">
-                                            <label className="block text-xs font-bold text-amber-700 dark:text-amber-500 mb-1.5 uppercase tracking-wider">WhatsApp da Pessoa (opcional)</label>
-                                            <input
-                                                name="thirdPartyPhone" type="tel"
-                                                value={thirdPartyPhone} onChange={(e) => setThirdPartyPhone(e.target.value)}
-                                                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                                                placeholder="Ex: 11987654321 (com DDD)"
-                                            />
-                                            <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-1.5">Salvando o número, a cobrança em "A Receber" abre o WhatsApp direto pra essa pessoa.</p>
-                                        </div>
+                                        <button type="button" onClick={() => setParticipantes(atuais => [...atuais, novoParticipante()])} className="mt-3 text-sm font-bold text-amber-700">+ Adicionar participante</button>
+                                        <div className="mt-3 flex justify-between text-xs font-bold text-amber-700"><span>Atribuído: {formatarMoeda(totalParticipantes)}</span><span>Parte do titular: {formatarMoeda(Math.max(0, (parseInt(valorStr, 10) || 0) / 100 - totalParticipantes))}</span></div>
                                         <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-3 font-medium leading-tight flex items-start gap-1.5">
                                             <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} />
-                                            Se a compra for parcelada, informe a dívida TOTAL da pessoa. O sistema fará a divisão por parcelas automaticamente. Deixe R$ 0,00 se a compra for 100% dela.
+                                            Informe o valor TOTAL de cada pessoa. A API distribuirá os centavos entre as parcelas.
                                         </p>
                                     </div>
                                 )}
@@ -403,12 +386,7 @@ export function Lancamentos({
                                     <div className="flex-1 min-w-0 pr-2">
                                         <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate flex items-center gap-1.5">
                                             <span className="truncate">{t.descricao}</span>
-                                            {t.isThirdParty && (
-                                                <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
-                                                    <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
-                                                </span>
-                                            )}
-                                            {t.isThirdParty && t.terceiro_recebido && <span className="inline-flex shrink-0 text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">Recebido do terceiro</span>}
+                                            {participantesVisiveis(t).map(p => <span key={p.id} className={`inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${p.recebido ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}><Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {p.nome}{p.recebido ? ' · recebido' : ''}</span>)}
                                         </p>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5 truncate">{new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} • {t.categoria}</p>
                                     </div>
@@ -574,12 +552,7 @@ export function Lancamentos({
                                     <div className="flex justify-between items-start gap-3 mb-2">
                                         <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight truncate flex items-center gap-1.5">
                                             <span className="truncate">{t.descricao}</span>
-                                            {t.isThirdParty && (
-                                                <span className="inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
-                                                    <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
-                                                </span>
-                                            )}
-                                            {t.isThirdParty && t.terceiro_recebido && <span className="inline-flex shrink-0 text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">Recebido do terceiro</span>}
+                                            {participantesVisiveis(t).map(p => <span key={p.id} className={`inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${p.recebido ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}><Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {p.nome}{p.recebido ? ' · recebido' : ''}</span>)}
                                             {t.observacao && <MessageSquare className="w-3 h-3 text-blue-500 shrink-0" strokeWidth={2} aria-label="Possui observação" />}
                                             {t._pendingSync && (
                                                 <span className={`inline-flex items-center gap-1 shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${t._syncError ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`} title={t._syncError || 'Guardado localmente, ainda não enviado ao servidor'}>
@@ -628,12 +601,7 @@ export function Lancamentos({
                                         <td className="p-3 min-w-[140px]">
                                             <span onClick={() => abrirDetalhes(t)} className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-start gap-1 transition-colors break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>
                                                 {t.descricao}
-                                                {t.isThirdParty && (
-                                                    <span className="inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 no-underline shrink-0">
-                                                        <Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {t.thirdPartyName}
-                                                    </span>
-                                                )}
-                                                {t.isThirdParty && t.terceiro_recebido && <span className="inline-flex ml-1 text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 no-underline shrink-0">Recebido do terceiro</span>}
+                                                {participantesVisiveis(t).map(p => <span key={p.id} className={`inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border no-underline shrink-0 ${p.recebido ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}><Users className="w-2.5 h-2.5" strokeWidth={2.5} /> {p.nome}{p.recebido ? ' · recebido' : ''}</span>)}
                                                 {t.observacao && <Info aria-label="Possui observação" className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors inline-block shrink-0 mt-0.5 cursor-help" strokeWidth={2} />}
                                                 {t._pendingSync && (
                                                     <span className={`inline-flex items-center gap-1 ml-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border no-underline shrink-0 ${t._syncError ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`} title={t._syncError || 'Guardado localmente, ainda não enviado ao servidor'}>

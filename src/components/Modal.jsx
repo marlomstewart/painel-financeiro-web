@@ -11,6 +11,8 @@ import {
  */
 function FormularioEdicao({ config, onConfirm, onCancel }) {
   const { transacao, categorias = [], cartoes = [], infoParcelamento, acaoEdicao } = config;
+  const participantesNormalizados = Array.isArray(transacao.participantes) ? transacao.participantes : [];
+  const compraComParticipantesNormalizados = participantesNormalizados.length > 0;
 
   const initValorStr = Math.round((transacao.valorParcela || 0) * 100).toString();
   const [valorStr, setValorStr] = useState(initValorStr);
@@ -56,7 +58,7 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
     const numericValue = parseInt(valorStr, 10) / 100;
 
     let numericThirdValue = null;
-    if (isThirdParty) {
+    if (isThirdParty && !compraComParticipantesNormalizados) {
       numericThirdValue = parseInt(thirdPartyValueStr, 10) / 100;
       if (numericThirdValue === 0) numericThirdValue = null;
     }
@@ -71,13 +73,16 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
       return;
     }
 
-    onConfirm({
+    const payload = {
       descricao, valorParcela: numericValue, dataCompra, tipo, status,
-      categoria, formaPagamento, observacao,
+      categoria, formaPagamento, observacao
+    };
+    if (!compraComParticipantesNormalizados) Object.assign(payload, {
       isThirdParty, thirdPartyName: isThirdParty ? thirdPartyName : null,
       thirdPartyValue: numericThirdValue,
       thirdPartyPhone: isThirdParty ? (thirdPartyPhone || null) : null
     });
+    onConfirm(payload);
   };
 
   // UI Constantes (Mobile-First)
@@ -167,12 +172,26 @@ function FormularioEdicao({ config, onConfirm, onCancel }) {
       </div>
 
       <div className="pt-2">
-        <label className="flex items-center gap-3 cursor-pointer mb-3 py-1">
+        {compraComParticipantesNormalizados && (
+          <div className="bg-amber-50 dark:bg-amber-900/10 p-5 rounded-xl border border-amber-200 dark:border-amber-800/50 mb-3">
+            <p className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-3">Participantes desta parcela</p>
+            <div className="space-y-2">
+              {participantesNormalizados.map(participante => (
+                <div key={participante.id} className="flex justify-between gap-3 text-sm font-bold text-amber-800 dark:text-amber-300">
+                  <span>{participante.nome}{participante.recebido ? ' · recebido' : ''}</span>
+                  <span>{formatarMoedaLocal(participante.valorParcela)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-3">O rateio é preservado nesta edição; o valor da parcela não pode ficar abaixo do total atribuído às pessoas.</p>
+          </div>
+        )}
+        <label className={`${compraComParticipantesNormalizados ? 'hidden' : 'flex'} items-center gap-3 cursor-pointer mb-3 py-1`}>
           <input type="checkbox" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-5 h-5 accent-blue-600 cursor-pointer" />
           <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra de Terceiro</span>
         </label>
 
-        {isThirdParty && (
+        {isThirdParty && !compraComParticipantesNormalizados && (
           <div className="bg-amber-50 dark:bg-amber-900/10 p-5 rounded-xl border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-1 mt-3 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -736,16 +755,15 @@ export function Modal({ config, onClose }) {
                 <p className={`text-4xl font-black tracking-tight relative z-10 ${config.transacao.tipo === 'renda' ? 'text-emerald-500' : config.transacao.tipo === 'investimento' ? 'text-blue-500' : config.transacao.tipo === 'despesa' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {Number(config.transacao.valorParcela).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
-                {config.transacao.isThirdParty && (
+                {(config.transacao.isThirdParty || config.transacao.participantes?.length > 0) && (
                   <div className="flex flex-wrap justify-center gap-2 mt-4 relative z-10">
-                    <span className="inline-flex items-center bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm">
-                      <Users className="w-3 h-3 shrink-0 mr-1.5" strokeWidth={2.5} />
-                      Terceiro: {config.transacao.thirdPartyName}
-                      <br className="sm:hidden" />
-                      <span className="hidden sm:inline">&nbsp;—&nbsp;</span>
-                      Responsável por {config.transacao.thirdPartyValue ? Number(config.transacao.thirdPartyValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '100%'}
-                    </span>
-                    {config.transacao.terceiro_recebido && <span className="inline-flex items-center bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800/50 shadow-sm">Recebido do terceiro</span>}
+                    {(config.transacao.participantes?.length ? config.transacao.participantes : [{ nome: config.transacao.thirdPartyName, valorParcela: config.transacao.thirdPartyValue, recebido: config.transacao.terceiro_recebido }]).map((participante, indice) => (
+                      <span key={participante.id || indice} className="inline-flex items-center bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800/50 shadow-sm">
+                        <Users className="w-3 h-3 shrink-0 mr-1.5" strokeWidth={2.5} />
+                        {participante.nome}: {Number(participante.valorParcela || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        {participante.recebido ? ' · recebido' : ''}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>

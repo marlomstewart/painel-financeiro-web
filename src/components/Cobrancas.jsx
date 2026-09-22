@@ -41,16 +41,16 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
         // 1. PROCESSAR TRANSAÇÕES (Cartão/PIX)
         transacoes.forEach(t => {
-            if (!t.isThirdParty || !t.thirdPartyName) return;
+            const participantes = Array.isArray(t.participantes) && t.participantes.length > 0
+                ? t.participantes
+                : (t.isThirdParty && t.thirdPartyName ? [{ id: null, nome: t.thirdPartyName, telefone: t.thirdPartyPhone, valorParcela: Number(t.thirdPartyValue) > 0 ? Number(t.thirdPartyValue) : Number(t.valorParcela || 0), recebido: Boolean(t.terceiro_recebido) }] : []);
+            if (participantes.length === 0) return;
             // Parcelas de dívida geradas automaticamente (gerarLancamentosDoMesParaUsuario) também
             // vêm marcadas como isThirdParty, pra entrar aqui — mas elas já são cobertas
             // integralmente pela varredura de "dividas" logo abaixo (passo 2). Sem esse filtro, a
             // mesma parcela é contada duas vezes: uma aqui, outra na varredura de dívidas.
             if (t.categoria === 'Dívidas e Empréstimos') return;
 
-            const p = registrarNoMapa(t.thirdPartyName);
-            registrarTelefone(p, t.thirdPartyPhone);
-            const valorCobrado = Number(t.thirdPartyValue) > 0 ? Number(t.thirdPartyValue) : Number(t.valorParcela || t.valor || 0);
             const isMesAtual = t.mesReferencia === mesAtual && t.anoReferencia === anoAtual;
 
             let dataVencimento = new Date(t.dataCompra);
@@ -64,21 +64,24 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 }
             }
 
-            const itemFormatado = { ...t, valorCobradoCalculado: valorCobrado, dataVencimento, nomeForma, isTransacaoSimples: true };
-
-            p.todasTransacoes.push(itemFormatado);
-
-            // A pessoa já devolveu a parte dela? Isso é independente de você ter pago a
-            // fatura/conta em si (t.status) — ver terceiro_recebido.
-            if (!t.terceiro_recebido) {
-                p.totalPendenteGeral += valorCobrado;
-                if (isMesAtual) {
-                    p.totalMesAtual += valorCobrado;
-                    p.itensMesAtual.push(itemFormatado);
+            participantes.forEach(participante => {
+                const p = registrarNoMapa(participante.nome);
+                registrarTelefone(p, participante.telefone);
+                const valorCobrado = Number(participante.valorParcela || 0);
+                const itemFormatado = { ...t, participanteId: participante.id, thirdPartyName: participante.nome,
+                    thirdPartyPhone: participante.telefone, terceiro_recebido: Boolean(participante.recebido),
+                    valorCobradoCalculado: valorCobrado, dataVencimento, nomeForma, isTransacaoSimples: true };
+                p.todasTransacoes.push(itemFormatado);
+                if (!participante.recebido) {
+                    p.totalPendenteGeral += valorCobrado;
+                    if (isMesAtual) {
+                        p.totalMesAtual += valorCobrado;
+                        p.itensMesAtual.push(itemFormatado);
+                    }
+                } else {
+                    p.totalPagoGeral += valorCobrado;
                 }
-            } else {
-                p.totalPagoGeral += valorCobrado;
-            }
+            });
         });
 
         // 2. PROCESSAR DÍVIDAS (Empréstimos/Consórcios para Terceiros)
@@ -284,7 +287,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
             // Parcela de empréstimo e compra normal de terceiro agora usam o mesmo controle
             // (terceiro_recebido na transação real) — ver correção de 2026-08-20 acima, que parou
             // de usar o contador solto da dívida pra isso.
-            await marcarRecebidoTerceiro(item.id, item.terceiro_recebido);
+            await marcarRecebidoTerceiro(item.id, item.terceiro_recebido, item.participanteId);
         }
     };
 

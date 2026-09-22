@@ -104,3 +104,18 @@
   de renderização não relacionados a deploy.
 - **Consequência:** após uma segunda falha de chunk na mesma sessão, o ErrorBoundary continua
   disponível ao usuário; demais erros não acionam recarga automática.
+
+## D-010 — Valores de participantes são totais da compra e a API faz o rateio
+
+- **Data:** 22/09/2026
+- **Status:** aceita
+- **Contexto:** ratear várias pessoas em cada tela ou em cada dispositivo poderia gerar centavos
+  diferentes e misturar recebimento de terceiro com pagamento da fatura.
+- **Decisão:** a Web coleta um valor total por participante e envia a mesma lista com o lote inteiro.
+  A resposta da API traz os participantes já normalizados por parcela; a Web apenas exibe e altera o
+  recebimento individual. Enquanto offline, uma prévia local é mostrada, mas o lote pendente mantém
+  os totais para validação e distribuição canônicas na sincronização.
+- **Motivo:** manter o servidor como autoridade financeira sem degradar o uso offline.
+- **Consequência:** receber uma pessoa nunca altera `status`/`data_pagamento` ou outra pessoa; a
+  edição comum preserva o rateio normalizado. Compras antigas continuam usando o terceiro único
+  legado até serem substituídas por dados explicitamente normalizados.

@@ -28,8 +28,10 @@ function formularioDeLancamento() {
   campo(form, 'status', 'pendente')
   const terceiro = campo(form, 'isThirdParty', 'on', 'checkbox')
   terceiro.checked = true
-  campo(form, 'thirdPartyName', 'Pessoa teste')
-  campo(form, 'thirdPartyValue', '20,00')
+  campo(form, 'participantes', JSON.stringify([
+    { id: 'ana', nome: 'Ana', telefone: '85999990001', valorTotal: 30 },
+    { id: 'bia', nome: 'Bia', telefone: '', valorTotal: 20 },
+  ]))
   return form
 }
 
@@ -49,7 +51,7 @@ function propsBase() {
   }
 }
 
-test('cria todas as parcelas em uma única chamada e divide o terceiro', async () => {
+test('cria todas as parcelas em uma única chamada e envia os totais dos participantes para a API', async () => {
   const fetchMock = vi.fn()
     .mockResolvedValueOnce({ ok: true, json: async () => ({ quantidade: 2 }) })
     .mockResolvedValueOnce({ ok: true, json: async () => [] })
@@ -68,9 +70,33 @@ test('cria todas as parcelas em uma única chamada e divide o terceiro', async (
   assert.equal(requestBody.transacoes.length, 2)
   assert.equal(requestBody.transacoes[0].mesReferencia, 9)
   assert.equal(requestBody.transacoes[1].mesReferencia, 10)
-  assert.equal(requestBody.transacoes[0].thirdPartyValue, 10)
-  assert.equal(requestBody.transacoes[1].thirdPartyValue, 10)
+  assert.deepEqual(requestBody.transacoes.map(item => item.valorParcela), [50, 50])
+  assert.deepEqual(requestBody.transacoes[0].participantes, [
+    { id: 'ana', nome: 'Ana', telefone: '85999990001', valorTotal: 30 },
+    { id: 'bia', nome: 'Bia', telefone: '', valorTotal: 20 },
+  ])
+  assert.deepEqual(requestBody.transacoes[1].participantes, requestBody.transacoes[0].participantes)
+  assert.equal(requestBody.transacoes[0].thirdPartyValue, undefined)
   assert.equal(requestBody.transacoes[0].formaPagamento, 'credito_card-1')
+})
+
+test('marca somente o participante informado como recebido', async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ recebido: true }) })
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  const setTransacoes = vi.fn()
+  props.setTransacoes = setTransacoes
+  const { result } = renderHook(() => useTransacoes(props))
+
+  await act(async () => {
+    await result.current.marcarRecebidoTerceiro('tx-1', false, 'ana')
+  })
+
+  assert.equal(fetchMock.mock.calls[0][0], 'https://api.test/transacoes/tx-1/participantes/ana/recebido')
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true })
+  const atualizar = setTransacoes.mock.calls[0][0]
+  const atualizadas = atualizar([{ id: 'tx-1', participantes: [{ id: 'ana', recebido: false }, { id: 'bia', recebido: false }] }])
+  assert.deepEqual(atualizadas[0].participantes, [{ id: 'ana', recebido: true }, { id: 'bia', recebido: false }])
 })
 
 test('guarda todas as parcelas como um único lote quando o backend está offline', async () => {
@@ -93,6 +119,10 @@ test('guarda todas as parcelas como um único lote quando o backend está offlin
   assert.equal(salvarLotePendente.mock.calls.length, 1)
   assert.equal(salvarLotePendente.mock.calls[0][0].length, 2)
   assert.equal(setTransacoes.mock.calls.length, 1)
+  const atualizar = setTransacoes.mock.calls[0][0]
+  const otimistas = atualizar([])
+  assert.deepEqual(otimistas[0].participantes.map(item => [item.id, item.valorParcela]), [['ana', 15], ['bia', 10]])
+  assert.deepEqual(otimistas[1].participantes.map(item => [item.id, item.valorParcela]), [['ana', 15], ['bia', 10]])
   assert.equal(props.showToast.mock.calls.at(-1)[0], 'Sem conexão — lançamento guardado no aparelho e será enviado quando a internet voltar.')
 })
 

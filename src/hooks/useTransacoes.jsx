@@ -41,19 +41,8 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         const numParcelas = parseInt(formData.get('parcelas'), 10) || 1;
 
         const isThirdParty = formData.get('isThirdParty') === 'on' || formData.get('isThirdParty') === 'true';
-        const thirdPartyName = isThirdParty ? formData.get('thirdPartyName') : null;
-        const thirdPartyPhone = isThirdParty ? (formData.get('thirdPartyPhone') || null) : null;
-
-        // 🔥 CAPTURA E FORMATA O VALOR TOTAL DO TERCEIRO
-        let thirdPartyTotalRaw = formData.get('thirdPartyValue');
-        let thirdPartyTotal = null;
-        if (isThirdParty && thirdPartyTotalRaw) {
-            if (typeof thirdPartyTotalRaw === 'string') {
-                thirdPartyTotal = parseFloat(thirdPartyTotalRaw.replace(/[R$\s.]/g, '').replace(',', '.'));
-            } else {
-                thirdPartyTotal = parseFloat(thirdPartyTotalRaw);
-            }
-        }
+        const participantes = isThirdParty ? JSON.parse(formData.get('participantes') || '[]') : [];
+        const principal = participantes[0] || null;
 
         let km_moto = formData.get('kmMoto') ? parseFloat(formData.get('kmMoto')) : null;
         let veiculo_id = null;
@@ -102,10 +91,8 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             }
         }
 
-        const valorParcelaCalculado = Math.round((parseFloat(valorBruto) / numParcelas) * 100) / 100;
-
-        // 🔥 DIVIDE O VALOR DO TERCEIRO PELO NÚMERO DE PARCELAS
-        const thirdPartyValueCalculado = thirdPartyTotal ? Math.round((thirdPartyTotal / numParcelas) * 100) / 100 : null;
+        const totalCentavos = Math.round(parseFloat(valorBruto) * 100);
+        const parcelaBaseCentavos = Math.round(totalCentavos / numParcelas);
 
         const idBase = Date.now().toString();
         const objBase = {
@@ -122,8 +109,9 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             veiculo_emprestado,
             km_moto,
             isThirdParty,
-            thirdPartyName,
-            thirdPartyPhone
+            thirdPartyName: principal?.nome || null,
+            thirdPartyPhone: principal?.telefone || null,
+            participantes
         };
 
         let sucesso = false;
@@ -143,8 +131,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             const parcelaObj = {
                 ...objBase,
                 id: `${objBase.id}_${i}`,
-                valorParcela: valorParcelaCalculado,
-                thirdPartyValue: thirdPartyValueCalculado, // 🔥 Injeta a fração do terceiro na parcela
+                valorParcela: (i === numParcelas - 1 ? totalCentavos - parcelaBaseCentavos * (numParcelas - 1) : parcelaBaseCentavos) / 100,
                 mesReferencia: mesRef,
                 anoReferencia: anoRef,
                 descricao: numParcelas > 1 ? `${objBase.descricao} (${i + 1}/${numParcelas})` : objBase.descricao
@@ -168,7 +155,21 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             // ON CONFLICT e transação SQL, então um timeout depois do COMMIT é seguro no retry.
             teveOffline = true;
             await salvarLotePendente(parcelas);
-            itensParaFilaOffline.push(...parcelas.map(parcelaObj => ({ ...parcelaObj, _pendingSync: true })));
+            itensParaFilaOffline.push(...parcelas.map((parcelaObj, indiceParcela) => ({
+                ...parcelaObj,
+                participantes: participantes.map(participante => {
+                    const totalParticipanteCentavos = Math.round(Number(participante.valorTotal) * 100);
+                    const baseParticipanteCentavos = Math.round(totalParticipanteCentavos / numParcelas);
+                    return {
+                        id: participante.id, nome: participante.nome, telefone: participante.telefone || null,
+                        valorParcela: (indiceParcela === numParcelas - 1
+                            ? totalParticipanteCentavos - baseParticipanteCentavos * (numParcelas - 1)
+                            : baseParticipanteCentavos) / 100,
+                        recebido: false
+                    };
+                }),
+                _pendingSync: true
+            })));
         }
 
         if (sucesso) {
@@ -229,15 +230,18 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     // devolveu a parte dele" são coisas diferentes — antes, Cobranças reaproveitava o campo de
     // status da fatura pra marcar "recebido", então pagar a fatura no cartão também marcava a
     // parte do terceiro como recebida sem ele ter devolvido nada de verdade.
-    const marcarRecebidoTerceiro = async (id, recebidoAtual) => {
+    const marcarRecebidoTerceiro = async (id, recebidoAtual, participanteId = null) => {
         const novoValor = !recebidoAtual;
         try {
-            const res = await fetch(`${API}/transacoes/${id}/terceiro-recebido`, {
+            const rota = participanteId ? `${API}/transacoes/${id}/participantes/${encodeURIComponent(participanteId)}/recebido` : `${API}/transacoes/${id}/terceiro-recebido`;
+            const res = await fetch(rota, {
                 method: 'PUT', headers: getHeaders(), body: JSON.stringify({ recebido: novoValor })
             });
             const data = await res.json();
             if (res.ok) {
-                setTransacoes(prev => prev.map(t => t.id === id ? { ...t, terceiro_recebido: novoValor } : t));
+                setTransacoes(prev => prev.map(t => t.id !== id ? t : participanteId
+                    ? { ...t, participantes: t.participantes.map(p => p.id === participanteId ? { ...p, recebido: novoValor } : p) }
+                    : { ...t, terceiro_recebido: novoValor }));
             } else {
                 showToast(data.message || 'Falha ao atualizar recebimento.', 'error');
             }
@@ -294,7 +298,9 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
                 atual: currentIndex,
                 total: relacionadas.length,
                 valorTotal: relacionadas.reduce((acc, curr) => acc + Number(curr.valorParcela), 0),
-                valorTerceiroTotal: relacionadas.reduce((acc, curr) => acc + (Number(curr.thirdPartyValue) || 0), 0)
+                valorTerceiroTotal: relacionadas.reduce((acc, curr) => acc + (curr.participantes?.length
+                    ? curr.participantes.reduce((soma, participante) => soma + Number(participante.valorParcela || 0), 0)
+                    : (Number(curr.thirdPartyValue) || 0)), 0)
             };
 
             acao = await modal.options(

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { Cobrancas } from './Cobrancas'
 
@@ -40,4 +40,26 @@ test('recebimento no Extrato reduz o total geral de uma dívida de terceiro', ()
 
   expect(screen.getByText('Total Restante (Geral)').parentElement.textContent).toContain('200,00')
   expect(screen.getByRole('heading', { name: 'Bia' })).toBeTruthy()
+})
+
+test('exibe e recebe participantes da mesma parcela de forma independente', async () => {
+  const marcarRecebidoTerceiro = vi.fn()
+  const modal = { confirm: vi.fn().mockResolvedValue(true) }
+  render(<Cobrancas {...baseProps} modal={modal} marcarRecebidoTerceiro={marcarRecebidoTerceiro} transacoes={[
+    {
+      id: 'compartilhada-1', isThirdParty: true, descricao: 'Compra compartilhada (1/3)',
+      mesReferencia: 9, anoReferencia: 2026, dataCompra: '2026-09-10', formaPagamento: 'pix',
+      participantes: [
+        { id: 'ana', nome: 'Ana', valorParcela: 30, recebido: false },
+        { id: 'bia', nome: 'Bia', valorParcela: 20, recebido: false },
+      ],
+    },
+  ]} />)
+
+  expect(screen.getByRole('heading', { name: 'Ana' })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Bia' })).toBeTruthy()
+  expect(screen.getAllByText(/50,00/).length).toBeGreaterThan(0)
+  fireEvent.click(screen.getAllByRole('button', { name: /Marcar como Recebido/ })[0])
+  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compartilhada-1', false, 'ana'))
+  expect(marcarRecebidoTerceiro).toHaveBeenCalledTimes(1)
 })
