@@ -17,6 +17,8 @@ sessões independentes.
   dela, em calendário de Fortaleza.
 - Produção é Vercel; a API produtiva é Render/Supabase. A confirmação do deploy mais recente não
   pode ser deduzida somente do Git.
+- Múltiplos participantes publicados em produção no commit `fabe894`; o bundle e a API foram
+  validados tecnicamente, restando apenas o smoke test funcional autenticado no produto.
 - Aplicação é React/Vite PWA sem Redux/Context global; hooks são instanciados no `App.jsx` e
   distribuídos por props.
 - Navegação autenticada usa caminhos canônicos legíveis (`/dashboard`, `/novo-lancamento`,
@@ -77,8 +79,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-- Múltiplos participantes concluídos e validados de ponta a ponta em homologação; aguardam deploy
-  conjunto Web/API e smoke test autenticado.
+- Múltiplos participantes publicados e validados tecnicamente em produção; aguardam somente smoke
+  test funcional autenticado.
 - Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
   e smoke test em produção.
 - Painel de consumo de combustível por veículo próprio concluído localmente; aguarda deploy conjunto
@@ -115,6 +117,9 @@ sessões independentes.
   conhecidos) e `npm run build` concluiu com o aviso já conhecido do chunk principal acima de 500 kB.
   Na API, `npm test` aprovou 55 testes contra o Supabase de homologação restaurado, incluindo o
   contrato integrado de distribuição, recebimento, caixa, antecipação, legado e isolamento.
+- Publicação em 22/09: `origin/main` aponta para `fabe894`, a CI concluiu com sucesso e o bundle
+  servido por `fincontrole.online` contém os controles de múltiplos participantes. A API publicada
+  está pronta e conectada ao Supabase.
 - Manutenção de lint em 13/09: imports e variáveis legadas foram removidos, testes Vitest receberam
   globals explícitos, Fast Refresh foi limitado a componentes e o progresso de dívidas foi extraído
   para utilitário. Dependências supérfluas de fatura e de data dinâmica do Dashboard também foram
