@@ -320,27 +320,30 @@ export function Lancamentos({
                             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                                 <label className="flex items-center gap-3 cursor-pointer mb-3 py-1">
                                     <input type="checkbox" name="isThirdParty" checked={isThirdParty} onChange={(e) => setIsThirdParty(e.target.checked)} className="w-5 h-5 accent-blue-600 cursor-pointer" />
-                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Compra Compartilhada / Terceiro</span>
+                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">Compra compartilhada (ou para outra pessoa)</span>
                                 </label>
 
                                 {isThirdParty && (
-                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50 animate-fade-in-down mb-3">
+                                    <div className="bg-slate-50 dark:bg-slate-800/90 p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm animate-fade-in-down mb-3">
                                         <input type="hidden" name="participantes" value={JSON.stringify(participantes.map(p => ({ id: p.id, nome: p.nome, telefone: p.telefone, valorTotal: (Number(p.valorCentavos) || 0) / 100 })))} />
                                         <div className="space-y-3">
                                             {participantes.map((participante, indice) => (
                                                 <div key={participante.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
-                                                    <div><label className="block text-xs font-bold text-amber-700 mb-1">Nome</label><input type="text" required value={participante.nome} onChange={e => atualizarParticipante(participante.id, 'nome', e.target.value)} className={inputCls} /></div>
-                                                    <div><label className="block text-xs font-bold text-amber-700 mb-1">WhatsApp (opcional)</label><input type="tel" value={participante.telefone} onChange={e => atualizarParticipante(participante.id, 'telefone', e.target.value)} className={inputCls} /></div>
-                                                    <div><label className="block text-xs font-bold text-amber-700 mb-1">Valor total (R$)</label><input type="text" value={((Number(participante.valorCentavos) || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} onChange={e => atualizarParticipante(participante.id, 'valorCentavos', e.target.value)} className={inputCls} /></div>
-                                                    <button type="button" aria-label={`Remover participante ${indice + 1}`} disabled={participantes.length === 1} onClick={() => setParticipantes(atuais => atuais.filter(p => p.id !== participante.id))} className="px-3 py-3 rounded-lg border border-rose-200 text-rose-600 disabled:opacity-40">×</button>
+                                                    <div><label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Nome da pessoa</label><input type="text" required value={participante.nome} onChange={e => atualizarParticipante(participante.id, 'nome', e.target.value)} className={`${inputCls} dark:border-slate-500`} /></div>
+                                                    <div><label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">WhatsApp (opcional)</label><input type="tel" value={participante.telefone} onChange={e => atualizarParticipante(participante.id, 'telefone', e.target.value)} className={`${inputCls} dark:border-slate-500`} /></div>
+                                                    <div><label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Quanto ela vai pagar (total)</label><input type="text" value={((Number(participante.valorCentavos) || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} onChange={e => atualizarParticipante(participante.id, 'valorCentavos', e.target.value)} className={`${inputCls} dark:border-slate-500`} /></div>
+                                                    <button type="button" aria-label={`Remover participante ${indice + 1}`} disabled={participantes.length === 1} onClick={() => setParticipantes(atuais => atuais.filter(p => p.id !== participante.id))} className="px-3 py-3 rounded-lg border border-rose-300 text-rose-700 dark:border-rose-500/70 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors">×</button>
                                                 </div>
                                             ))}
                                         </div>
-                                        <button type="button" onClick={() => setParticipantes(atuais => [...atuais, novoParticipante()])} className="mt-3 text-sm font-bold text-amber-700">+ Adicionar participante</button>
-                                        <div className="mt-3 flex justify-between text-xs font-bold text-amber-700"><span>Atribuído: {formatarMoeda(totalParticipantes)}</span><span>Parte do titular: {formatarMoeda(Math.max(0, (parseInt(valorStr, 10) || 0) / 100 - totalParticipantes))}</span></div>
-                                        <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-3 font-medium leading-tight flex items-start gap-1.5">
+                                        <button type="button" onClick={() => setParticipantes(atuais => [...atuais, novoParticipante()])} className="mt-4 inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700">+ Adicionar pessoa</button>
+                                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 px-3 py-2"><span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Total dividido</span><strong className="text-sm text-slate-800 dark:text-slate-100">{formatarMoeda(totalParticipantes)}</strong></div>
+                                            <div className="rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 px-3 py-2"><span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sua parte</span><strong className="text-sm text-slate-800 dark:text-slate-100">{formatarMoeda(Math.max(0, (parseInt(valorStr, 10) || 0) / 100 - totalParticipantes))}</strong></div>
+                                        </div>
+                                        <p className="mt-3 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium leading-relaxed text-blue-900 dark:border-blue-500/50 dark:bg-blue-950/40 dark:text-blue-100">
                                             <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} />
-                                            Informe o valor TOTAL de cada pessoa. A API distribuirá os centavos entre as parcelas.
+                                            Informe o valor total de cada pessoa. O FinControle divide automaticamente os centavos entre as parcelas.
                                         </p>
                                     </div>
                                 )}

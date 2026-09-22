@@ -30,8 +30,9 @@ sessões independentes.
 - Novo Lançamento permite adicionar vários participantes a uma compra compartilhada, informando
   nome, telefone opcional e valor devido no total da compra. A tela mostra total atribuído e parte
   do titular; Extrato, detalhes e A Receber exibem os valores por parcela e o recebimento de cada
-  pessoa. A fila offline preserva os totais canônicos enviados à API e monta somente uma prévia
-  local do rateio enquanto aguarda sincronização.
+  pessoa. O cartão de participantes usa alto contraste e linguagem financeira simples, explicando
+  que o FinControle faz o ajuste de centavos automaticamente. A fila offline preserva os totais
+  canônicos enviados à API e monta somente uma prévia local do rateio enquanto aguarda sincronização.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
