@@ -77,8 +77,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
-- Múltiplos participantes concluídos localmente; aguardam a validação integrada contra o banco de
-  homologação e, depois, deploy conjunto Web/API e smoke test autenticado.
+- Múltiplos participantes concluídos e validados de ponta a ponta em homologação; aguardam deploy
+  conjunto Web/API e smoke test autenticado.
 - Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
   e smoke test em produção.
 - Painel de consumo de combustível por veículo próprio concluído localmente; aguarda deploy conjunto
@@ -113,6 +113,8 @@ sessões independentes.
 - Múltiplos participantes em 22/09: `npm test` aprovou 46 testes, incluindo 8 cenários direcionados
   de `useTransacoes` e `Cobrancas`; `npm run lint` terminou sem erros (mantendo os 12 avisos
   conhecidos) e `npm run build` concluiu com o aviso já conhecido do chunk principal acima de 500 kB.
+  Na API, `npm test` aprovou 55 testes contra o Supabase de homologação restaurado, incluindo o
+  contrato integrado de distribuição, recebimento, caixa, antecipação, legado e isolamento.
 - Manutenção de lint em 13/09: imports e variáveis legadas foram removidos, testes Vitest receberam
   globals explícitos, Fast Refresh foi limitado a componentes e o progresso de dívidas foi extraído
   para utilitário. Dependências supérfluas de fatura e de data dinâmica do Dashboard também foram
