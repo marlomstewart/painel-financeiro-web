@@ -480,15 +480,17 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
         categoriasDinamicas.forEach(categoria => {
             const progressoDaCompetencia = gastosPorCategoria[categoria.nome] || 0;
-            const usaProgressoMesAtual = progressoDaCompetencia === 0 && (progressoCategoriasMesAtual[categoria.nome] || 0) !== 0;
-            const progressoConsiderado = usaProgressoMesAtual
-                ? progressoCategoriasMesAtual[categoria.nome]
-                : progressoDaCompetencia;
-            const valor = Math.max(0, Number(categoria.meta) - progressoConsiderado);
-            const origem = usaProgressoMesAtual
-                ? `Meta da categoria · referência ${nomesMeses[mesReal - 1]}/${anoReal}`
-                : 'Meta da categoria';
-            if (valor > 0) adicionar('reservaMetas', { id: `meta_${categoria.id}`, descricao: categoria.nome, origem, valor });
+            // Um lançamento já existente na competência entra em gastos/faturas e não pode ser
+            // repetido aqui. Para uma meta ainda zerada, a prévia estima o gasto pelo progresso
+            // efetivamente realizado no mês atual — nunca pelo valor que faltaria até o teto.
+            if (progressoDaCompetencia !== 0) return;
+            const progressoMesAtual = progressoCategoriasMesAtual[categoria.nome] || 0;
+            if (progressoMesAtual > 0) adicionar('reservaMetas', {
+                id: `meta_${categoria.id}`,
+                descricao: categoria.nome,
+                origem: `Progresso realizado em ${nomesMeses[mesReal - 1]}/${anoReal}`,
+                valor: progressoMesAtual
+            });
         });
 
         return {
@@ -858,7 +860,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             }));
             conteudo = (
                 <div className="space-y-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Prévia independente, sem saldo inicial nem pagamentos já realizados.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{configuracaoPrevia.chave === 'metas' ? 'Estimativa baseada no progresso já realizado no mês atual, sem usar o valor restante até a meta.' : 'Prévia independente, sem saldo inicial nem pagamentos já realizados.'}</p>
                     <CardAcordeao titulo={configuracaoPrevia.titulo} valorStr={formatarMoeda(Math.abs(valor))} textColor={configuracaoPrevia.cor} bgColor={configuracaoPrevia.bg} borderColor={configuracaoPrevia.borda} itens={itens} />
                 </div>
             );

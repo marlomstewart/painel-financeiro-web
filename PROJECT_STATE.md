@@ -39,11 +39,12 @@ sessões independentes.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - Ao consultar uma competência futura, o Dashboard apresenta uma prévia independente: rendas
-  previstas menos gastos, faturas abertas e reserva restante das metas. Ela não incorpora Saldo
-  Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados. Faturas mostram o total por
-  cartão e os valores de terceiros, enquanto o resultado usa somente a parte pessoal do titular.
-  Metas sem progresso na competência futura usam somente como referência o progresso real do mês
-  atual; ao virar mês atual, voltam a mostrar exclusivamente os lançamentos da própria competência.
+  previstas menos gastos, faturas abertas e a estimativa de metas baseada no progresso já realizado.
+  Ela não incorpora Saldo Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados.
+  Faturas mostram o total por cartão e os valores de terceiros, enquanto o resultado usa somente a
+  parte pessoal do titular. Metas sem progresso na competência futura usam somente como referência
+  o progresso real do mês atual, nunca o valor restante até o teto; ao virar mês atual, voltam a
+  mostrar exclusivamente os lançamentos da própria competência.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
   quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
@@ -152,9 +153,13 @@ sessões independentes.
   permanecem visíveis no detalhamento, mas o card e o Resultado previsto consideram apenas a parte
   pessoal. O teste do hook cobre uma compra compartilhada com dois participantes e conta fixa no
   mesmo cartão.
-- Referência de metas na prévia em 22/09: quando não há progresso na competência futura, a reserva
-  e o Painel Estratégico usam o avanço real do mês atual; progresso já existente na competência
-  futura prevalece. A referência não é gravada nem continua quando a competência se torna atual.
+- Referência de metas na prévia em 22/09: quando não há progresso na competência futura, o painel
+  e a estimativa usam o avanço real do mês atual. Lançamento já existente no mês futuro aparece
+  somente em Gastos/Faturas. A referência não é gravada nem continua quando a competência se torna
+  atual.
+- Correção da estimativa de metas em 22/09: a prévia usa o gasto/progresso realizado como valor
+  estimado, e não a diferença até a meta. Lançamentos existentes no mês futuro continuam somente
+  em Gastos/Faturas, evitando duplicidade.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.

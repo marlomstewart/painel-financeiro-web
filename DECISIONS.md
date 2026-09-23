@@ -149,7 +149,9 @@
   saldo anterior, saldo acumulado e pagamentos já realizados não compõem o resultado. Para metas,
   progresso já lançado na competência futura prevalece; quando estiver zerado, a prévia usa apenas
   como referência o progresso real do mês atual, sem criar dados nem carregá-los quando a
-  competência se tornar atual.
+  competência se tornar atual. Essa estimativa usa o valor realizado, nunca o saldo restante até a
+  meta; valores já lançados no mês futuro permanecem somente em Gastos/Faturas para não duplicar o
+  resultado.
 - **Motivo:** separar a decisão orçamentária futura do caixa conciliado e impedir duplicidade entre
   compra no cartão e fatura.
 - **Consequência:** a prévia não é um fluxo de caixa nem altera lançamentos; seus detalhes devem

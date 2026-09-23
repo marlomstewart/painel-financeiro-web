@@ -166,8 +166,8 @@ test('prévia futura usa somente compromissos e rendas da competência, sem sald
     rendas: 1500,
     gastos: 550,
     faturas: 500,
-    reservaMetas: 80,
-    resultado: 370,
+    reservaMetas: 0,
+    resultado: 450,
     detalhes: {
       rendas: [
         { id: 'renda-manual', descricao: 'Freela de outubro', origem: 'Lançamento', valor: 1000 },
@@ -182,7 +182,7 @@ test('prévia futura usa somente compromissos e rendas da competência, sem sald
         { id: 'cartao', descricao: 'Compra no cartão', origem: 'Lançamento no cartão', valor: 100, valorFatura: 200, cartao: 'Nubank', terceiros: [{ nome: 'Ana', valor: 80 }, { nome: 'Bia', valor: 20 }] },
         { id: 'fixa_internet_10_2026', descricao: 'Internet', origem: 'Conta fixa', valor: 400, valorFatura: 400, cartao: 'Nubank', terceiros: [] }
       ],
-      metas: [{ id: 'meta_viagem', descricao: 'Viagem', origem: 'Meta da categoria', valor: 80 }]
+      metas: []
     },
     faturasPorCartao: [{
       id: 'card', nome: 'Nubank', total: 600, pessoal: 500,
@@ -215,6 +215,7 @@ test('mês atual mantém os indicadores atuais e não cria prévia futura', () =
 test('prévia futura usa o progresso do mês atual sem carregá-lo quando a competência vira atual', () => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-22T12:00:00'))
+  const modal = { alert: vi.fn() }
   const lista = [
     { id: 'gasolina-setembro', descricao: 'Abastecimento', tipo: 'despesa', categoria: 'Gasolina', valorParcela: 167, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
     { id: 'sonho-setembro', descricao: 'Reserva do sonho', tipo: 'investimento', categoria: 'Sonho', valorParcela: 600, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
@@ -228,7 +229,7 @@ test('prévia futura usa o progresso do mês atual sem carregá-lo quando a comp
     { id: 'fixa-moto', nome: 'Manutenção Fixa da Moto', meta: 80, tipo: 'despesa' },
     { id: 'moto', nome: 'Manutenção da moto', meta: 100, tipo: 'despesa' }
   ]
-  const { result, rerender } = renderHook(({ dataVis }) => useDashboard({ ...criarProps(dataVis, lista), categorias }), {
+  const { result, rerender } = renderHook(({ dataVis }) => useDashboard({ ...criarProps(dataVis, lista), categorias, modal }), {
     initialProps: { dataVis: { mes: 10, ano: 2026 } }
   })
 
@@ -236,7 +237,18 @@ test('prévia futura usa o progresso do mês atual sem carregá-lo quando a comp
   assert.equal(result.current.gCat.Sonho, 600)
   assert.equal(result.current.gCat['Manutenção Fixa da Moto'], 65)
   assert.equal(result.current.gCat['Manutenção da moto'], 334)
-  assert.equal(result.current.previaCompetenciaFutura.reservaMetas, 217)
+  assert.equal(result.current.previaCompetenciaFutura.reservaMetas, 832)
+  assert.deepEqual(result.current.previaCompetenciaFutura.detalhes.metas.map(item => [item.descricao, item.valor]), [
+    ['Gasolina', 167],
+    ['Sonho', 600],
+    ['Manutenção Fixa da Moto', 65]
+  ])
+  result.current.abrirResumoCard('previa_metas')
+  render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText(/Estimativa baseada no progresso já realizado/))
+  fireEvent.click(screen.getByTitle('Clique para ver os lançamentos'))
+  assert.ok(screen.getByText('Progresso realizado em Setembro/2026: Gasolina'))
+  assert.ok(screen.getByText('Progresso realizado em Setembro/2026: Manutenção Fixa da Moto'))
 
   vi.setSystemTime(new Date('2026-10-01T12:00:00'))
   rerender({ dataVis: { mes: 10, ano: 2026 } })
