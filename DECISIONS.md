@@ -146,7 +146,10 @@
   incluídas exclusivamente em faturas, usando a mesma resolução de competência, melhor dia e
   fechamento já adotada para cartões. O detalhamento mantém o total da fatura e as partes de
   terceiros por cartão, mas o resultado usa somente a fração pessoal do titular. Saldo Líquido,
-  saldo anterior, saldo acumulado e pagamentos já realizados não compõem o resultado.
+  saldo anterior, saldo acumulado e pagamentos já realizados não compõem o resultado. Para metas,
+  progresso já lançado na competência futura prevalece; quando estiver zerado, a prévia usa apenas
+  como referência o progresso real do mês atual, sem criar dados nem carregá-los quando a
+  competência se tornar atual.
 - **Motivo:** separar a decisão orçamentária futura do caixa conciliado e impedir duplicidade entre
   compra no cartão e fatura.
 - **Consequência:** a prévia não é um fluxo de caixa nem altera lançamentos; seus detalhes devem

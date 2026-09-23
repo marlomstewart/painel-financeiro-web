@@ -212,6 +212,42 @@ test('mês atual mantém os indicadores atuais e não cria prévia futura', () =
   assert.equal(result.current.previaCompetenciaFutura, null)
 })
 
+test('prévia futura usa o progresso do mês atual sem carregá-lo quando a competência vira atual', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-09-22T12:00:00'))
+  const lista = [
+    { id: 'gasolina-setembro', descricao: 'Abastecimento', tipo: 'despesa', categoria: 'Gasolina', valorParcela: 167, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
+    { id: 'sonho-setembro', descricao: 'Reserva do sonho', tipo: 'investimento', categoria: 'Sonho', valorParcela: 600, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
+    { id: 'fixa-moto-setembro', descricao: 'Manutenção fixa', tipo: 'despesa', categoria: 'Manutenção Fixa da Moto', valorParcela: 65, status: 'pendente', mesReferencia: 9, anoReferencia: 2026 },
+    { id: 'moto-outubro', descricao: 'Reparo da moto', tipo: 'despesa', categoria: 'Manutenção da moto', valorParcela: 334, status: 'pendente', mesReferencia: 10, anoReferencia: 2026 }
+  ]
+  const categorias = [
+    { id: 'corte', nome: 'Corte de Cabelo', meta: 70, tipo: 'despesa' },
+    { id: 'gasolina', nome: 'Gasolina', meta: 299, tipo: 'despesa' },
+    { id: 'sonho', nome: 'Sonho', meta: 600, tipo: 'investimento' },
+    { id: 'fixa-moto', nome: 'Manutenção Fixa da Moto', meta: 80, tipo: 'despesa' },
+    { id: 'moto', nome: 'Manutenção da moto', meta: 100, tipo: 'despesa' }
+  ]
+  const { result, rerender } = renderHook(({ dataVis }) => useDashboard({ ...criarProps(dataVis, lista), categorias }), {
+    initialProps: { dataVis: { mes: 10, ano: 2026 } }
+  })
+
+  assert.equal(result.current.gCat.Gasolina, 167)
+  assert.equal(result.current.gCat.Sonho, 600)
+  assert.equal(result.current.gCat['Manutenção Fixa da Moto'], 65)
+  assert.equal(result.current.gCat['Manutenção da moto'], 334)
+  assert.equal(result.current.previaCompetenciaFutura.reservaMetas, 217)
+
+  vi.setSystemTime(new Date('2026-10-01T12:00:00'))
+  rerender({ dataVis: { mes: 10, ano: 2026 } })
+  assert.equal(result.current.isMesFuturo, false)
+  assert.equal(result.current.gCat.Gasolina, 0)
+  assert.equal(result.current.gCat.Sonho, 0)
+  assert.equal(result.current.gCat['Manutenção Fixa da Moto'], 0)
+  assert.equal(result.current.gCat['Manutenção da moto'], 334)
+  vi.useRealTimers()
+})
+
 test('abre o Raio-X de uma categoria estratégica sem progresso', () => {
   const modal = { alert: vi.fn() }
   const { result } = renderHook(() => useDashboard({

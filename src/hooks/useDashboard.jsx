@@ -342,10 +342,30 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     const competenciaPlano = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}`;
     const planoCombustivel = temGaragem && garagem?.planoMes?.competencia === competenciaPlano ? garagem.planoMes : null;
+    const progressoCategoriasMesAtual = useMemo(() => {
+        const progresso = {};
+        transacoes.forEach(t => {
+            if (isDividaTerceiro(t) || t.mesReferencia !== mesReal || t.anoReferencia !== anoReal) return;
+            if (!['despesa', 'investimento', 'reembolso'].includes(t.tipo)) return;
+            if (t.categoria === 'Contas Fixas' || t.categoria === 'Sem Categoria') return;
+            const valor = t.tipo === 'reembolso' ? -getMeuValor(t) : getMeuValor(t);
+            progresso[t.categoria] = (progresso[t.categoria] || 0) + valor;
+        });
+        return progresso;
+    }, [transacoes, mesReal, anoReal]);
     const categoriasDinamicas = useMemo(() => {
         return categorias.map(c => c.id === planoCombustivel?.config.categoriaId
             ? { ...c, meta: planoCombustivel.resumo.planejadoCentavos / 100, planejamentoCombustivel: true } : c);
     }, [categorias, planoCombustivel]);
+    const gCatParaExibicao = isMesFuturo
+        ? categoriasDinamicas.reduce((progresso, categoria) => {
+            const gastoDaCompetencia = gCat[categoria.nome] || 0;
+            progresso[categoria.nome] = gastoDaCompetencia !== 0
+                ? gastoDaCompetencia
+                : (progressoCategoriasMesAtual[categoria.nome] || 0);
+            return progresso;
+        }, { ...gCat })
+        : gCat;
 
     let metaNaoComprometida = 0;
     categoriasDinamicas.forEach(c => {
@@ -459,10 +479,16 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         });
 
         categoriasDinamicas.forEach(categoria => {
-            const valor = categoria.planejamentoCombustivel
-                ? planoCombustivel?.resumo.restanteCentavos / 100
-                : Math.max(0, Number(categoria.meta) - (gastosPorCategoria[categoria.nome] || 0));
-            if (valor > 0) adicionar('reservaMetas', { id: `meta_${categoria.id}`, descricao: categoria.nome, origem: 'Meta da categoria', valor });
+            const progressoDaCompetencia = gastosPorCategoria[categoria.nome] || 0;
+            const usaProgressoMesAtual = progressoDaCompetencia === 0 && (progressoCategoriasMesAtual[categoria.nome] || 0) !== 0;
+            const progressoConsiderado = usaProgressoMesAtual
+                ? progressoCategoriasMesAtual[categoria.nome]
+                : progressoDaCompetencia;
+            const valor = Math.max(0, Number(categoria.meta) - progressoConsiderado);
+            const origem = usaProgressoMesAtual
+                ? `Meta da categoria · referência ${nomesMeses[mesReal - 1]}/${anoReal}`
+                : 'Meta da categoria';
+            if (valor > 0) adicionar('reservaMetas', { id: `meta_${categoria.id}`, descricao: categoria.nome, origem, valor });
         });
 
         return {
@@ -476,7 +502,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     .map(([nome, valor]) => ({ nome, valor }))
             }))
         };
-    }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas, planoCombustivel]);
+    }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas, progressoCategoriasMesAtual, mesReal, anoReal]);
 
     const transacoesDoCaixaNoMes = marcoAplicaNoMes
         ? transacoes.filter(t => {
@@ -649,6 +675,11 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">em {qtd} {qtd === 1 ? 'transação' : 'transações'}</p>
                     </div>
                 </div>
+                {isMesFuturo && qtd === 0 && vGasto > 0 && (
+                    <div className="bg-violet-50 dark:bg-violet-900/20 p-3 rounded-lg border border-violet-200 dark:border-violet-800/50 text-sm text-violet-800 dark:text-violet-200">
+                        Esta prévia usa o progresso de {nomesMeses[mesReal - 1]}/{anoReal} como referência. Ao chegar nesta competência, somente os lançamentos dela serão exibidos.
+                    </div>
+                )}
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
                     <p className="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p>
                     <p className="text-sm text-blue-900 dark:text-blue-200 font-medium">{analiseIA}</p>
@@ -698,7 +729,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoes, dataVis, modal, temGaragem, garagem, planoCombustivel]);
+    }, [transacoes, dataVis, modal, temGaragem, garagem, planoCombustivel, isMesFuturo, mesReal, anoReal]);
 
     // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
     const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {
@@ -969,7 +1000,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado, isMesFuturo, previaCompetenciaFutura,
-        categoriasDinamicas, gCat, pendenciasPassadas,
+        categoriasDinamicas, gCat: gCatParaExibicao, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard, abrirDetalheMesProjetado
     };
 }

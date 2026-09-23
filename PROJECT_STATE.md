@@ -42,6 +42,8 @@ sessões independentes.
   previstas menos gastos, faturas abertas e reserva restante das metas. Ela não incorpora Saldo
   Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados. Faturas mostram o total por
   cartão e os valores de terceiros, enquanto o resultado usa somente a parte pessoal do titular.
+  Metas sem progresso na competência futura usam somente como referência o progresso real do mês
+  atual; ao virar mês atual, voltam a mostrar exclusivamente os lançamentos da própria competência.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
   quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
@@ -100,7 +102,8 @@ sessões independentes.
 - Antecipação de parcelas com data informada concluída localmente; aguarda deploy conjunto e
   validação autenticada.
 - Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
-  com contas e compras de cartão em competências distintas, inclusive compras compartilhadas.
+  com contas e compras de cartão em competências distintas, compras compartilhadas e metas que
+  tenham ou não progresso no mês atual.
 
 ## Pendências e riscos
 
@@ -149,6 +152,9 @@ sessões independentes.
   permanecem visíveis no detalhamento, mas o card e o Resultado previsto consideram apenas a parte
   pessoal. O teste do hook cobre uma compra compartilhada com dois participantes e conta fixa no
   mesmo cartão.
+- Referência de metas na prévia em 22/09: quando não há progresso na competência futura, a reserva
+  e o Painel Estratégico usam o avanço real do mês atual; progresso já existente na competência
+  futura prevalece. A referência não é gravada nem continua quando a competência se torna atual.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.

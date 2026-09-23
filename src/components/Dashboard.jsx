@@ -170,7 +170,7 @@ export function Dashboard({
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Progresso Estratégico</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Acompanhamento das categorias com Teto de Gastos ou Alvo Mensal definidos.</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{isMesFuturo ? 'Na prévia, metas sem movimento usam o progresso do mês atual como referência.' : 'Acompanhamento das categorias com Teto de Gastos ou Alvo Mensal definidos.'}</p>
                         </div>
                     </div>
                 </div>
