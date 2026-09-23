@@ -546,7 +546,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     }), [dataVis.mes, dataVis.ano, previstoFimMes, rendasFixas, contasFixas, dividas, cartoes, transacoes]);
 
     const abrirDetalheMesProjetado = useCallback((mesProjetado) => {
-        const { mes, ano, renda, contas, dividasParcelas, net, saldoAcumulado, detalhes } = mesProjetado;
+        const { mes, ano, renda, contas, dividasParcelas, net, saldoAcumulado, saldoAnterior = saldoAcumulado - net, terceirosExcluidos = 0, detalhes } = mesProjetado;
 
         const linhaItem = (nome, valor, cor) => (
             <div key={nome} className="flex justify-between items-center text-sm py-1">
@@ -558,20 +558,31 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const conteudo = (
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <p className="text-[10px] uppercase text-slate-600 dark:text-slate-300 font-bold mb-1">Saldo anterior</p>
+                        <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatarMoeda(saldoAnterior)}</p>
+                    </div>
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
                         <p className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold mb-1">Renda prevista</p>
                         <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(renda)}</p>
                     </div>
                     <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
-                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Contas + Dívidas</p>
-                        <p className="text-lg font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(contas + dividasParcelas)}</p>
+                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Despesas pessoais previstas</p>
+                        <p className="text-lg font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(contas)}</p>
+                    </div>
+                    <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
+                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Dívidas próprias</p>
+                        <p className="text-lg font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(dividasParcelas)}</p>
                     </div>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
-                    <p className="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase mb-1">Saldo acumulado projetado</p>
+                    <p className="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase mb-1">Saldo final previsto</p>
                     <p className={`text-xl font-black ${saldoAcumulado >= 0 ? 'text-blue-900 dark:text-blue-200' : 'text-rose-700 dark:text-rose-400'}`}>{formatarMoeda(saldoAcumulado)}</p>
                     <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">Resultado do mês: {net >= 0 ? '+' : ''}{formatarMoeda(net)}</p>
                 </div>
+                {Number(terceirosExcluidos) > 0 && (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">Valores de terceiros excluídos da previsão: {formatarMoeda(terceirosExcluidos)}</p>
+                )}
                 {detalhes.rendas.length > 0 && (
                     <div>
                         <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">Rendas fixas</p>

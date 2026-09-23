@@ -232,33 +232,49 @@ export function Dashboard({
                         </div>
                     </div>
 
+                    <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-900/50 dark:bg-blue-950/20">
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">O que este cálculo considera?</h4>
+                        <ul className="mt-2 grid grid-cols-1 gap-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+                            <li>Inclui recorrências e lançamentos futuros conhecidos.</li>
+                            <li>Não inclui gastos ainda não lançados.</li>
+                            <li>Exclui gastos 100% de terceiros.</li>
+                            <li>Em compras divididas, considera somente a sua parte.</li>
+                        </ul>
+                    </div>
+
                     {(() => {
                         const maiorAbs = Math.max(1, ...fluxoProjetado.map(m => Math.abs(m.saldoAcumulado)));
                         return (
-                            <div className="grid grid-cols-6 gap-2 md:gap-4 items-end h-40 md:h-48">
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
                                 {fluxoProjetado.map(m => {
                                     const alturaPct = Math.max(4, (Math.abs(m.saldoAcumulado) / maiorAbs) * 100);
                                     const positivo = m.saldoAcumulado >= 0;
+                                    const nomeMes = nomesMeses[m.mes - 1];
                                     return (
                                         <button
                                             key={`${m.mes}-${m.ano}`}
                                             type="button"
                                             onClick={() => abrirDetalheMesProjetado(m)}
-                                            className="flex flex-col items-center justify-end h-full cursor-pointer group"
-                                            title={formatarMoeda(m.saldoAcumulado)}
+                                            className="flex min-h-48 flex-col items-center justify-end rounded-xl border border-slate-200 bg-slate-50 p-2 text-center shadow-sm transition-colors hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-blue-700"
+                                            aria-label={`Saldo previsto ao fim de ${nomeMes} de ${m.ano}: ${formatarMoeda(m.saldoAcumulado)}. Toque para ver o detalhamento.`}
+                                            title={`Saldo previsto ao fim de ${nomeMes} de ${m.ano}`}
                                         >
+                                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Saldo previsto ao fim de {nomeMes}</span>
                                             <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 truncate w-full text-center">
-                                                {formatarMoeda(m.saldoAcumulado).replace('R$', '').trim()}
+                                                {formatarMoeda(m.saldoAcumulado)}
                                             </span>
                                             <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
                                                 <div
-                                                    className={`w-full max-w-10 rounded-t-md transition-all group-hover:opacity-80 ${positivo ? 'bg-blue-500' : 'bg-rose-500'}`}
+                                                    className={`w-full max-w-10 rounded-t-md transition-all ${positivo ? 'bg-blue-500' : 'bg-rose-500'}`}
                                                     style={{ height: `${alturaPct}%` }}
                                                 ></div>
                                             </div>
                                             <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-wider">
-                                                {nomesMeses[m.mes - 1].slice(0, 3)}
+                                                {m.ano}
                                             </span>
+                                            {Number(m.terceirosExcluidos) > 0 && (
+                                                <span className="mt-2 text-[10px] leading-tight text-amber-700 dark:text-amber-300">Valores de terceiros excluídos da previsão: {formatarMoeda(m.terceirosExcluidos)}</span>
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -267,7 +283,7 @@ export function Dashboard({
                     })()}
 
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-4 text-center">
-                        Toque numa barra pra ver o detalhamento. Não considera gastos avulsos ainda não lançados.
+                        Toque em um card para ver a memória de cálculo do saldo previsto.
                     </p>
                 </div>
             )}

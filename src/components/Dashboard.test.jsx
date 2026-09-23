@@ -12,6 +12,8 @@ test('abre o detalhamento ao selecionar um mês do fluxo de caixa projetado', ()
     renda: 1000,
     contas: 500,
     dividasParcelas: 0,
+    saldoAnterior: 236.57,
+    terceirosExcluidos: 150,
     net: 500,
     detalhes: { rendas: [], contas: [], dividas: [] },
   }
@@ -41,7 +43,10 @@ test('abre o detalhamento ao selecionar um mês do fluxo de caixa projetado', ()
     />,
   )
 
-  fireEvent.click(screen.getByRole('button', { name: /436,57 OUT/i }))
+  assert.ok(screen.getByText('O que este cálculo considera?'))
+  assert.ok(screen.getByText(/Valores de terceiros excluídos da previsão: R\$\s?150,00/))
+  assert.ok(screen.getByText(/R\$\s?436,57/))
+  fireEvent.click(screen.getByRole('button', { name: /Saldo previsto ao fim de Outubro.*436,57/i }))
 
   assert.deepEqual(abrirDetalheMesProjetado.mock.calls, [[mesProjetado]])
 })

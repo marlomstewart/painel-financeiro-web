@@ -32,6 +32,7 @@ export function resolverMesEfetivo(mesNominal, anoNominal, diaVencimento, formaP
 }
 
 const chaveMes = (mes, ano) => `${ano}-${mes}`;
+const ehDividaTerceiro = (divida) => divida.para_terceiros == 1 || divida.para_terceiros === true || divida.isThirdParty;
 
 /**
  * @param {number} mesAtual, anoAtual - competência corrente (a partir daqui os meses são projetados)
@@ -56,7 +57,7 @@ export function calcularFluxoProjetado({
     const buckets = {};
     const garantirBucket = (mes, ano) => {
         const chave = chaveMes(mes, ano);
-        if (!buckets[chave]) buckets[chave] = { mes, ano, renda: 0, contas: 0, dividasParcelas: 0, detalhes: { rendas: [], contas: [], dividas: [] } };
+        if (!buckets[chave]) buckets[chave] = { mes, ano, renda: 0, contas: 0, dividasParcelas: 0, terceirosExcluidos: 0, detalhes: { rendas: [], contas: [], dividas: [] } };
         return buckets[chave];
     };
     competencias.forEach(({ mes, ano }) => garantirBucket(mes, ano));
@@ -90,7 +91,6 @@ export function calcularFluxoProjetado({
         // Dívida assumida para outra pessoa é acompanhada em A Receber e não é um
         // compromisso do orçamento/caixa pessoal. O Dashboard atual já a exclui;
         // manter esta projeção alinhada evita reduzir o saldo futuro indevidamente.
-        if (d.para_terceiros == 1 || d.para_terceiros === true || d.isThirdParty) return;
         const pagasIniciais = Number(d.parcelas_pagas_iniciais) || 0;
         const jaLancadas = transacoes.filter(t => t.grupo_id === `divida_${d.id}`).length;
         restantesPorDivida[d.id] = Math.max(0, Number(d.qtd_parcelas) - (pagasIniciais + jaLancadas));
@@ -98,7 +98,7 @@ export function calcularFluxoProjetado({
 
     competencias.forEach(({ mes, ano }) => {
         dividas.forEach(d => {
-            if (d.para_terceiros == 1 || d.para_terceiros === true || d.isThirdParty) return;
+            const terceiro = ehDividaTerceiro(d);
             const temAncora = d.mes_primeira_parcela && d.ano_primeira_parcela;
             const numeroParcela = temAncora
                 ? ((ano - Number(d.ano_primeira_parcela)) * 12) + (mes - Number(d.mes_primeira_parcela)) + 1
@@ -114,8 +114,12 @@ export function calcularFluxoProjetado({
             if (jaLancadaNestaCompetencia) return;
             const bucket = garantirBucket(mesEf, anoEf);
             const valor = Number(d.valor_parcela) || 0;
-            bucket.dividasParcelas += valor;
-            bucket.detalhes.dividas.push({ nome: d.descricao, valor });
+            if (terceiro) {
+                bucket.terceirosExcluidos += valor;
+            } else {
+                bucket.dividasParcelas += valor;
+                bucket.detalhes.dividas.push({ nome: d.descricao, valor });
+            }
             if (!temAncora) restantesPorDivida[d.id] -= 1;
         });
     });
@@ -124,7 +128,8 @@ export function calcularFluxoProjetado({
     return competencias.map(({ mes, ano }) => {
         const bucket = garantirBucket(mes, ano);
         const net = bucket.renda - bucket.contas - bucket.dividasParcelas;
+        const saldoAnterior = saldoAcumulado;
         saldoAcumulado += net;
-        return { mes, ano, renda: bucket.renda, contas: bucket.contas, dividasParcelas: bucket.dividasParcelas, net, saldoAcumulado, detalhes: bucket.detalhes };
+        return { mes, ano, renda: bucket.renda, contas: bucket.contas, dividasParcelas: bucket.dividasParcelas, despesasPessoais: bucket.contas + bucket.dividasParcelas, terceirosExcluidos: bucket.terceirosExcluidos, net, saldoAnterior, saldoAcumulado, detalhes: bucket.detalhes };
     });
 }

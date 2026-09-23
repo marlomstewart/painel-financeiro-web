@@ -35,4 +35,6 @@ test('dívida feita para terceiro não reduz o caixa futuro pessoal', () => {
   })
 
   assert.deepEqual(fluxo.map(mes => mes.dividasParcelas), [0, 0])
+  assert.deepEqual(fluxo.map(mes => mes.terceirosExcluidos), [150, 150])
+  assert.deepEqual(fluxo.map(mes => mes.saldoAcumulado), [0, 0])
 })

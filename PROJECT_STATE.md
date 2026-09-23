@@ -9,8 +9,6 @@ sessões independentes.
 
 ## Estado geral
 
-- Correção do detalhamento do Fluxo de Caixa Projetado publicada em `main` (`588102b`) e
-  confirmada em produção.
 - Checkpoint documental concluído em 12/09; README e catálogo funcional foram alinhados à
   navegação por caminhos, planejamento, abastecimentos técnicos e consumo de combustível.
 - A antecipação de parcelas aceita a data em que ela ocorreu e calcula a fatura de destino a partir
@@ -107,6 +105,9 @@ sessões independentes.
 - Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
   com contas e compras de cartão em competências distintas, compras compartilhadas e metas que
   tenham ou não progresso no mês atual.
+- Apresentação do Fluxo de Caixa Projetado passou a exibir cartões acessíveis com moeda, memória
+  de cálculo e valores de terceiros excluídos sem afetar o saldo; aguarda deploy e smoke test
+  autenticado em desktop e celular.
 
 ## Pendências e riscos
 
@@ -129,6 +130,10 @@ sessões independentes.
 
 ## Validações recentes
 
+- Fluxo de Caixa Projetado em 23/09: cards responsivos agora exibem moeda, saldo previsto ao fim
+  de cada mês, explicação do cálculo e memória detalhada ao toque. O cálculo continua excluindo
+  dívidas de terceiros do saldo e agora expõe o valor excluído como informação. Testes do Dashboard,
+  hook e utilitário passaram; `npm test` aprovou 55 testes, lint ficou sem erros e o build concluiu.
 - Competência de Dívidas em 23/09: substituído o controle nativo de mês por seletores acessíveis
   de mês/ano, com empilhamento no celular. O teste de componente confirma o payload
   `mes_primeira_parcela`/`ano_primeira_parcela`; `npm test` aprovou 55 testes, `npm run lint`
