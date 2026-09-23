@@ -1,10 +1,10 @@
-import { extrairCartaoId } from './cartaoUtils';
+import { ehPagamentoCredito, extrairCartaoId, resolverCartao } from './cartaoUtils';
 
 /**
  * @file src/utils/fluxoProjetado.js
  * @description Projeta o saldo dos próximos meses a partir do que já é conhecido/recorrente
- * (rendas fixas, contas fixas, parcelas de dívidas restantes) — NÃO prevê gastos avulsos que o
- * usuário ainda vai lançar no dia a dia (Uber, mercado etc.), só o que já está "garantido".
+ * (rendas fixas, contas fixas, parcelas de dívidas restantes e faturas de cartão já lançadas) —
+ * NÃO prevê gastos avulsos que o usuário ainda vai lançar no dia a dia.
  *
  * Replica a MESMA regra de rolagem de fatura do motor de geração de lançamentos
  * (gerarLancamentosDoMesParaUsuario, painel-financeiro-api/controllers/setupController.js):
@@ -34,6 +34,24 @@ export function resolverMesEfetivo(mesNominal, anoNominal, diaVencimento, formaP
 const chaveMes = (mes, ano) => `${ano}-${mes}`;
 const ehDividaTerceiro = (divida) => divida.para_terceiros == 1 || divida.para_terceiros === true || divida.isThirdParty;
 
+const obterParticipantes = (transacao) => Array.isArray(transacao.participantes) && transacao.participantes.length > 0
+    ? transacao.participantes
+    : (transacao.isThirdParty ? [{
+        nome: transacao.thirdPartyName || 'Terceiro',
+        valorParcela: transacao.thirdPartyValue !== null && transacao.thirdPartyValue !== undefined
+            ? transacao.thirdPartyValue
+            : transacao.valorParcela
+    }] : []);
+
+const obterValorTerceiros = (transacao) => {
+    const valorParcela = Number(transacao.valorParcela) || 0;
+    const totalParticipantes = obterParticipantes(transacao)
+        .reduce((total, participante) => total + (Number(participante.valorParcela) || 0), 0);
+    return Math.max(0, Math.min(valorParcela, totalParticipantes));
+};
+
+const obterValorPessoal = (transacao) => Math.max(0, (Number(transacao.valorParcela) || 0) - obterValorTerceiros(transacao));
+
 /**
  * @param {number} mesAtual, anoAtual - competência corrente (a partir daqui os meses são projetados)
  * @param {number} horizonteMeses - quantos meses à frente projetar
@@ -57,10 +75,11 @@ export function calcularFluxoProjetado({
     const buckets = {};
     const garantirBucket = (mes, ano) => {
         const chave = chaveMes(mes, ano);
-        if (!buckets[chave]) buckets[chave] = { mes, ano, renda: 0, contas: 0, dividasParcelas: 0, terceirosExcluidos: 0, detalhes: { rendas: [], contas: [], dividas: [] } };
+        if (!buckets[chave]) buckets[chave] = { mes, ano, renda: 0, contas: 0, dividasParcelas: 0, faturasCartao: 0, terceirosExcluidos: 0, detalhes: { rendas: [], contas: [], dividas: [], faturas: [] } };
         return buckets[chave];
     };
     competencias.forEach(({ mes, ano }) => garantirBucket(mes, ano));
+    const gruposDividasTerceiros = new Set(dividas.filter(ehDividaTerceiro).map(divida => `divida_${divida.id}`));
 
     // Rendas fixas: nunca rolam (não são pagas via cartão), então caem direto na própria competência.
     competencias.forEach(({ mes, ano }) => {
@@ -76,6 +95,10 @@ export function calcularFluxoProjetado({
     competencias.forEach(({ mes, ano }) => {
         contasFixas.forEach(c => {
             const { mes: mesEf, ano: anoEf } = resolverMesEfetivo(mes, ano, c.vencimento, c.forma_pagamento, cartoes);
+            // Quando o motor já gerou a conta fixa, ela será consolidada pela fatura ou pelo
+            // lançamento existente. Assim, não repetimos o mesmo compromisso no fluxo.
+            const idLancamento = `fixa_${c.id}_${mesEf}_${anoEf}`;
+            if (ehPagamentoCredito(c.forma_pagamento) && transacoes.some(t => String(t.id) === idLancamento)) return;
             const bucket = garantirBucket(mesEf, anoEf);
             const valor = Number(c.valorPadrao) || 0;
             bucket.contas += valor;
@@ -124,12 +147,53 @@ export function calcularFluxoProjetado({
         });
     });
 
+    // Compras e estornos já lançados no cartão são compromissos conhecidos da competência da
+    // fatura. O saldo considera apenas a fração pessoal; a parte de terceiros fica visível sem
+    // afetar a previsão. Contas e dívidas já materializadas também passam por aqui, evitando
+    // qualquer duplicidade com suas recorrências acima.
+    transacoes.forEach(t => {
+        if (!ehPagamentoCredito(t.formaPagamento) || !['despesa', 'reembolso'].includes(t.tipo)) return;
+        if (t.status === 'pago' || t.status === 'transferido') return;
+        const competencia = { mes: Number(t.mesReferencia), ano: Number(t.anoReferencia) };
+        if (!competencias.some(({ mes, ano }) => mes === competencia.mes && ano === competencia.ano)) return;
+
+        const sinal = t.tipo === 'reembolso' ? -1 : 1;
+        const valorFatura = sinal * (Number(t.valorParcela) || 0);
+        const dividaTerceiro = gruposDividasTerceiros.has(t.grupo_id);
+        const valorTerceiros = dividaTerceiro ? valorFatura : sinal * obterValorTerceiros(t);
+        const valorPessoal = dividaTerceiro ? 0 : sinal * obterValorPessoal(t);
+        const bucket = garantirBucket(competencia.mes, competencia.ano);
+        const cartao = resolverCartao(t.formaPagamento, cartoes);
+        const cartaoId = cartao ? String(cartao.id) : t.formaPagamento;
+        const nomeCartao = cartao?.nome || 'Cartão não identificado';
+        let fatura = bucket.detalhes.faturas.find(item => item.id === cartaoId);
+
+        if (!fatura) {
+            fatura = { id: cartaoId, nome: nomeCartao, total: 0, pessoal: 0, terceiros: 0, itens: [] };
+            bucket.detalhes.faturas.push(fatura);
+        }
+
+        const item = {
+            id: t.id,
+            nome: t.descricao || 'Lançamento no cartão',
+            valor: valorPessoal,
+            valorFatura,
+            terceiros: valorTerceiros
+        };
+        fatura.total += valorFatura;
+        fatura.pessoal += valorPessoal;
+        fatura.terceiros += valorTerceiros;
+        fatura.itens.push(item);
+        bucket.faturasCartao += valorPessoal;
+        bucket.terceirosExcluidos += valorTerceiros;
+    });
+
     let saldoAcumulado = saldoInicial;
     return competencias.map(({ mes, ano }) => {
         const bucket = garantirBucket(mes, ano);
-        const net = bucket.renda - bucket.contas - bucket.dividasParcelas;
+        const net = bucket.renda - bucket.contas - bucket.dividasParcelas - bucket.faturasCartao;
         const saldoAnterior = saldoAcumulado;
         saldoAcumulado += net;
-        return { mes, ano, renda: bucket.renda, contas: bucket.contas, dividasParcelas: bucket.dividasParcelas, despesasPessoais: bucket.contas + bucket.dividasParcelas, terceirosExcluidos: bucket.terceirosExcluidos, net, saldoAnterior, saldoAcumulado, detalhes: bucket.detalhes };
+        return { mes, ano, renda: bucket.renda, contas: bucket.contas, dividasParcelas: bucket.dividasParcelas, faturasCartao: bucket.faturasCartao, despesasPessoais: bucket.contas + bucket.dividasParcelas + bucket.faturasCartao, terceirosExcluidos: bucket.terceirosExcluidos, net, saldoAnterior, saldoAcumulado, detalhes: bucket.detalhes };
     });
 }

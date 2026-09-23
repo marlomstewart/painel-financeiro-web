@@ -156,3 +156,21 @@
   compra no cartão e fatura.
 - **Consequência:** a prévia não é um fluxo de caixa nem altera lançamentos; seus detalhes devem
   identificar rendas, contas, parcelas, lançamentos, faturas e a reserva de metas considerada.
+
+## D-013 — Fluxo de Caixa Projetado inclui faturas conhecidas pela competência
+
+- **Data:** 23/09/2026
+- **Status:** aceita
+- **Contexto:** a projeção acumulada de saldo precisa refletir a fatura do cartão já conhecida em
+  cada mês, sem tratar como disponível uma despesa pessoal que ainda será cobrada nem incorporar
+  valores de terceiros.
+- **Decisão:** lançamentos pendentes de despesa e reembolso pagos no crédito entram no Fluxo de
+  Caixa pela sua `mesReferencia`/`anoReferencia`; o saldo deduz exclusivamente a fração pessoal.
+  O detalhamento exibe o total da fatura, a parte pessoal, os gastos pessoais que a formam e os
+  valores de terceiros excluídos. Lançamentos de conta fixa e dívida já materializados no cartão
+  substituem a recorrência prevista, de modo que cada compromisso apareça uma única vez.
+- **Motivo:** alinhar o saldo previsto ao vencimento da fatura e preservar a separação entre o
+  dinheiro pessoal e a parcela de terceiros.
+- **Consequência:** compras não lançadas continuam fora da projeção; investimentos seguem fora da
+  fatura projetada; alterações em competência ou participantes atualizam o mês e a fração usados
+  no próximo cálculo.

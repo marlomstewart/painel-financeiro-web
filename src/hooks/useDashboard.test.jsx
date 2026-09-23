@@ -212,6 +212,37 @@ test('mês atual mantém os indicadores atuais e não cria prévia futura', () =
   assert.equal(result.current.previaCompetenciaFutura, null)
 })
 
+test('detalhamento do fluxo mostra a fatura e apenas os gastos pessoais do cartão', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-09-22T12:00:00'))
+  const modal = { alert: vi.fn() }
+  const lista = [
+    { id: 'mercado', descricao: 'Mercado', tipo: 'despesa', valorParcela: 200, status: 'pendente', formaPagamento: 'credito_nubank', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'restaurante', descricao: 'Restaurante', tipo: 'despesa', valorParcela: 100, status: 'pendente', formaPagamento: 'credito_nubank', mesReferencia: 10, anoReferencia: 2026, participantes: [{ nome: 'Ana', valorParcela: 70 }] }
+  ]
+  const { result } = renderHook(() => useDashboard({
+    ...criarProps({ mes: 9, ano: 2026 }, lista),
+    modal,
+    cartoes: [{ id: 'nubank', nome: 'Nubank' }]
+  }))
+
+  const outubro = result.current.fluxoProjetado[0]
+  assert.equal(outubro.faturasCartao, 230)
+  assert.equal(outubro.terceirosExcluidos, 70)
+  result.current.abrirDetalheMesProjetado(outubro)
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+
+  assert.ok(screen.getByText('Faturas pessoais de cartão'))
+  assert.ok(screen.getByText('Faturas de cartão'))
+  assert.ok(screen.getByText('Sua parte considerada'))
+  assert.ok(screen.getByText('Terceiros excluídos'))
+  assert.ok(screen.getByText('Gastos pessoais no cartão'))
+  assert.ok(screen.getByText('Mercado'))
+  assert.ok(screen.getByText('Restaurante'))
+  unmount()
+  vi.useRealTimers()
+})
+
 test('prévia futura usa o progresso do mês atual sem carregá-lo quando a competência vira atual', () => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-22T12:00:00'))

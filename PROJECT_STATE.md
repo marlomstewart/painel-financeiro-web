@@ -105,9 +105,10 @@ sessões independentes.
 - Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
   com contas e compras de cartão em competências distintas, compras compartilhadas e metas que
   tenham ou não progresso no mês atual.
-- Apresentação do Fluxo de Caixa Projetado usa cartões acessíveis, compactos e com moeda; a memória
-  de cálculo e os valores de terceiros excluídos ficam no detalhamento, sem afetar o saldo; aguarda deploy e smoke test
-  autenticado em desktop e celular.
+- Fluxo de Caixa Projetado usa cartões acessíveis, compactos e com moeda; o detalhamento agora
+  inclui faturas de cartão já lançadas por competência, o total da fatura, somente a fração
+  pessoal e os gastos que a compõem. Valores de terceiros continuam visíveis, mas não afetam o
+  saldo; aguarda deploy e smoke test autenticado em desktop e celular.
 
 ## Pendências e riscos
 
@@ -130,6 +131,12 @@ sessões independentes.
 
 ## Validações recentes
 
+- Fluxo de Caixa Projetado em 23/09: faturas de cartão já lançadas passaram a reduzir o saldo na
+  competência correspondente apenas pela fração pessoal. O detalhamento apresenta total da fatura,
+  valor pessoal considerado, terceiros excluídos e gastos pessoais. A cobertura unitária e do hook
+  inclui compra dividida, lançamento pago, conta fixa já materializada e dívida de terceiro no
+  cartão; `npm test` aprovou 59 testes, lint terminou sem erros (12 avisos preexistentes) e o build
+  concluiu com o aviso conhecido do chunk principal acima de 500 kB.
 - Fluxo de Caixa Projetado em 23/09: cards responsivos agora exibem moeda, saldo previsto ao fim
   de cada mês, explicação do cálculo e memória detalhada ao toque. O cálculo continua excluindo
   dívidas de terceiros do saldo e agora expõe o valor excluído como informação. Testes do Dashboard,

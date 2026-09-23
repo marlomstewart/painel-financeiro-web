@@ -538,15 +538,17 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
 
     // Fluxo de caixa projetado: usa o previsto de fim do mês atual como ponto de partida do
-    // acumulado dos próximos 6 meses, com base só no que é recorrente/conhecido (rendas fixas,
-    // contas fixas, parcelas de dívida restantes) — não prevê gastos avulsos ainda não lançados.
+    // acumulado dos próximos 6 meses, com base no que é recorrente/conhecido e nas faturas já
+    // lançadas — não prevê gastos avulsos ainda não lançados.
     const fluxoProjetado = useMemo(() => calcularFluxoProjetado({
         mesAtual: dataVis.mes, anoAtual: dataVis.ano, horizonteMeses: 6, saldoInicial: previstoFimMes,
         rendasFixas, contasFixas, dividas, cartoes, transacoes
     }), [dataVis.mes, dataVis.ano, previstoFimMes, rendasFixas, contasFixas, dividas, cartoes, transacoes]);
 
     const abrirDetalheMesProjetado = useCallback((mesProjetado) => {
-        const { mes, ano, renda, contas, dividasParcelas, net, saldoAcumulado, saldoAnterior = saldoAcumulado - net, terceirosExcluidos = 0, detalhes } = mesProjetado;
+        const { mes, ano, renda, contas, dividasParcelas, faturasCartao = 0, net, saldoAcumulado, saldoAnterior = saldoAcumulado - net, terceirosExcluidos = 0, detalhes: detalhesOriginais = {} } = mesProjetado;
+        const detalhes = { rendas: [], contas: [], dividas: [], faturas: [], ...detalhesOriginais };
+
 
         const linhaItem = (nome, valor, cor) => (
             <div key={nome} className="flex justify-between items-center text-sm py-1">
@@ -567,12 +569,16 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{formatarMoeda(renda)}</p>
                     </div>
                     <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
-                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Despesas pessoais previstas</p>
+                        <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Contas fixas previstas</p>
                         <p className="text-lg font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(contas)}</p>
                     </div>
                     <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-100 dark:border-rose-800/50">
                         <p className="text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold mb-1">Dívidas próprias</p>
                         <p className="text-lg font-bold text-rose-700 dark:text-rose-300">{formatarMoeda(dividasParcelas)}</p>
+                    </div>
+                    <div className="col-span-2 bg-violet-50 dark:bg-violet-900/20 p-3 rounded-lg border border-violet-100 dark:border-violet-800/50">
+                        <p className="text-[10px] uppercase text-violet-700 dark:text-violet-300 font-bold mb-1">Faturas pessoais de cartão</p>
+                        <p className="text-lg font-bold text-violet-800 dark:text-violet-200">{formatarMoeda(faturasCartao)}</p>
                     </div>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
@@ -601,8 +607,39 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         {detalhes.dividas.map((d, i) => linhaItem(`${d.nome} (#${i + 1})`, d.valor, 'text-rose-600 dark:text-rose-400'))}
                     </div>
                 )}
+                {detalhes.faturas.length > 0 && (
+                    <div>
+                        <p className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">Faturas de cartão</p>
+                        <div className="space-y-2">
+                            {detalhes.faturas.map(fatura => (
+                                <div key={fatura.id} className="rounded-lg border border-violet-100 bg-violet-50/50 p-3 dark:border-violet-900/50 dark:bg-violet-900/10">
+                                    <div className="flex items-center justify-between gap-3 text-sm">
+                                        <strong className="text-slate-700 dark:text-slate-200">{fatura.nome}</strong>
+                                        <span className="text-slate-600 dark:text-slate-300">Fatura: {formatarMoeda(fatura.total)}</span>
+                                    </div>
+                                    <div className="mt-2 flex justify-between gap-3 text-xs">
+                                        <span className="text-violet-700 dark:text-violet-300">Sua parte considerada</span>
+                                        <strong className="text-violet-700 dark:text-violet-300">{formatarMoeda(fatura.pessoal)}</strong>
+                                    </div>
+                                    {Number(fatura.terceiros) !== 0 && (
+                                        <div className="mt-1 flex justify-between gap-3 text-xs text-amber-700 dark:text-amber-300">
+                                            <span>Terceiros excluídos</span>
+                                            <strong>{formatarMoeda(fatura.terceiros)}</strong>
+                                        </div>
+                                    )}
+                                    {fatura.itens.some(item => Number(item.valor) !== 0) && (
+                                    <div className="mt-2 border-t border-violet-100 pt-2 dark:border-violet-900/50">
+                                        <p className="mb-1 text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Gastos pessoais no cartão</p>
+                                        {fatura.itens.filter(item => Number(item.valor) !== 0).map(item => linhaItem(item.nome, item.valor, 'text-rose-600 dark:text-rose-400'))}
+                                    </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
-                    Projeção baseada só no que já é recorrente/conhecido — não prevê gastos avulsos que você ainda vai lançar no dia a dia.
+                    Projeção baseada no que já é recorrente/conhecido e nas faturas de cartão já lançadas — não prevê gastos avulsos que você ainda vai lançar no dia a dia.
                 </p>
             </div>
         );
