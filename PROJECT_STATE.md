@@ -33,6 +33,9 @@ sessões independentes.
   pessoa. O cartão de participantes usa alto contraste e linguagem financeira simples, explicando
   que o FinControle faz o ajuste de centavos automaticamente. A fila offline preserva os totais
   canônicos enviados à API e monta somente uma prévia local do rateio enquanto aguarda sincronização.
+- O Extrato exporta em CSV exatamente as linhas visíveis após competência, busca, status e filtros
+  avançados. O arquivo é compatível com Excel brasileiro e informa data de compra, valor da parcela,
+  cartão/forma de pagamento, competência, status, grupo e identificação de parcela.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
@@ -107,7 +110,8 @@ sessões independentes.
 - `src/App.jsx`, `src/hooks/useAuth.jsx`, `src/utils/urlEstado.js`, `vercel.json`,
   `src/hooks/useDashboard.jsx`
 - `src/hooks/useTransacoes.jsx`, `src/hooks/useOfflineSync.jsx`
-- `src/utils/offlineQueue.js`, `src/utils/cartaoUtils.js`, `src/utils/pwaUpdate.js`
+- `src/utils/offlineQueue.js`, `src/utils/cartaoUtils.js`, `src/utils/pwaUpdate.js`,
+  `src/utils/exportarExtratoCsv.js`
 - `src/components/Dashboard.jsx`, `src/components/Configuracoes.jsx`, `src/components/Lancamentos.jsx`
 - `src/hooks/*.test.jsx`, `.github/workflows/ci.yml`, `docs/FUNCIONALIDADES.md`
 
@@ -126,6 +130,10 @@ sessões independentes.
   para utilitário. Dependências supérfluas de fatura e de data dinâmica do Dashboard também foram
   removidas. `npm run lint` concluiu sem erros (12 avisos conhecidos), `npm test` aprovou 44
   testes e `npm run build` concluiu; permanece apenas o aviso de chunk principal acima de 500 kB.
+- Exportação CSV do Extrato validada em 22/09: 50 testes cobrem formatação para Excel, competência
+  de fatura distinta da data de compra e o botão que usa apenas a tabela visível; lint concluiu sem
+  erros (12 avisos conhecidos) e build de produção concluiu com o aviso de chunk principal acima de
+  500 kB.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.
@@ -224,4 +232,6 @@ sessões independentes.
    vírgula decimal, confirmando o valor no histórico e no Extrato vinculado.
 10. Após o deploy conjunto, validar os filtros de histórico e o custo por dia útil, incluindo um
     intervalo que atravesse fim de semana ou feriado de Aracaju/SE.
-11. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+11. Após o deploy web, conferir a exportação de uma fatura cuja compra tenha data em mês anterior,
+    garantindo que a competência e os filtros ativos do Extrato coincidam com o CSV.
+12. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

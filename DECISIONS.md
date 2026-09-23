@@ -119,3 +119,17 @@
 - **Consequência:** receber uma pessoa nunca altera `status`/`data_pagamento` ou outra pessoa; a
   edição comum preserva o rateio normalizado. Compras antigas continuam usando o terceiro único
   legado até serem substituídas por dados explicitamente normalizados.
+
+## D-011 — CSV do Extrato reproduz a tabela filtrada pela competência
+
+- **Data:** 22/09/2026
+- **Status:** aceita
+- **Contexto:** a comparação de uma fatura precisa incluir parcelas pela competência, inclusive
+  compras realizadas em meses anteriores, e não pode divergir dos filtros exibidos no Extrato.
+- **Decisão:** exportar somente `dadosTabela`, já filtrada por competência, busca, status e filtros
+  avançados; `dataCompra` é uma coluna informativa, enquanto `mesReferencia`/`anoReferencia`
+  definem a competência da fatura.
+- **Motivo:** manter a conciliação reproduzível e impedir que uma exportação da coleção global
+  omita ou inclua parcelas indevidas.
+- **Consequência:** filtros de data ativos continuam se aplicando à data de compra por escolha
+  explícita do usuário, sem redefinir a competência da fatura.

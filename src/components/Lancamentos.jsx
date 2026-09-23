@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import {
     Sparkles, ClipboardList, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
-    Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info
+    Users, MessageSquare, Lightbulb, ChevronUp, ChevronDown, Loader2, Info, Download
 } from 'lucide-react';
 import { ehPagamentoCredito, nomeCartao } from '../utils/cartaoUtils';
+import { baixarCsvExtrato, montarCsvExtrato } from '../utils/exportarExtratoCsv';
 
 /**
  * @function IconeOrdenacao
@@ -215,6 +216,13 @@ export function Lancamentos({
     };
 
     const limparFiltros = () => setFiltrosAvancados({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
+
+    const exportarCsv = () => {
+        if (dadosTabela.length === 0) return;
+        const competencia = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}`;
+        baixarCsvExtrato(montarCsvExtrato(dadosTabela, cartoes), `extrato-fatura-${competencia}.csv`);
+        showToast(`${dadosTabela.length} lançamento${dadosTabela.length === 1 ? '' : 's'} exportado${dadosTabela.length === 1 ? '' : 's'} em CSV.`, 'success');
+    };
 
     const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 md:p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors shadow-sm";
     const labelCls = "block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 md:mb-1 uppercase tracking-wider";
@@ -441,19 +449,30 @@ export function Lancamentos({
                         </p>
                     </div>
                 </div>
-                <div className="w-full md:w-auto shrink-0 flex items-center justify-between md:justify-end bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <button type="button" onClick={mesAnterior} aria-label="Mês anterior" className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
-                        <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
+                <div className="w-full md:w-auto shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={exportarCsv}
+                        disabled={dadosTabela.length === 0}
+                        title="Exporta somente os lançamentos visíveis, conforme os filtros ativos"
+                        className="px-4 py-3 md:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white text-sm font-bold transition-colors cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                    >
+                        <Download className="w-4 h-4" strokeWidth={2.5} /> Exportar CSV
                     </button>
-                    <div className="flex flex-col items-center px-4">
-                        <span className="font-bold uppercase text-sm text-slate-700 dark:text-slate-200 tracking-wider">
-                            {meses[dataVis.mes - 1]}
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
+                    <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" onClick={mesAnterior} aria-label="Mês anterior" className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
+                            <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
+                        </button>
+                        <div className="flex flex-col items-center px-4">
+                            <span className="font-bold uppercase text-sm text-slate-700 dark:text-slate-200 tracking-wider">
+                                {meses[dataVis.mes - 1]}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest">{dataVis.ano}</span>
+                        </div>
+                        <button type="button" onClick={mesProximo} aria-label="Próximo mês" className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
+                            <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
+                        </button>
                     </div>
-                    <button type="button" onClick={mesProximo} aria-label="Próximo mês" className="p-3 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer touch-manipulation">
-                        <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
-                    </button>
                 </div>
             </div>
 
