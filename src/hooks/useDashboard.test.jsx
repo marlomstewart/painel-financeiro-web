@@ -146,28 +146,28 @@ test('prévia futura usa somente compromissos e rendas da competência, sem sald
     { id: 'renda-manual', descricao: 'Freela de outubro', tipo: 'renda', categoria: 'Renda', valorParcela: 1000, status: 'pendente', mesReferencia: 10, anoReferencia: 2026 },
     { id: 'fixa_luz_10_2026', descricao: 'Luz', tipo: 'despesa', categoria: 'Contas Fixas', valorParcela: 300, status: 'pendente', formaPagamento: 'pix', mesReferencia: 10, anoReferencia: 2026 },
     { id: 'mercado', descricao: 'Mercado', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 100, status: 'pendente', formaPagamento: 'pix', mesReferencia: 10, anoReferencia: 2026 },
-    { id: 'cartao', descricao: 'Compra no cartão', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 200, status: 'pendente', formaPagamento: 'credito_card', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'cartao', descricao: 'Compra no cartão', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 200, status: 'pendente', formaPagamento: 'credito_card', mesReferencia: 10, anoReferencia: 2026, isThirdParty: true, participantes: [{ id: 'ana', nome: 'Ana', valorParcela: 80 }, { id: 'bia', nome: 'Bia', valorParcela: 20 }] },
     { id: 'pago-antes', descricao: 'Já pago', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 900, status: 'pago', formaPagamento: 'pix', mesReferencia: 10, anoReferencia: 2026 }
   ]
   const { result } = renderHook(() => useDashboard({
     ...criarProps({ mes: 10, ano: 2026 }, lista), modal,
-    cartoes: [{ id: 'card', melhorDia: 20 }],
+    cartoes: [{ id: 'card', nome: 'Nubank', melhorDia: 20 }],
     rendasFixas: [{ id: 'salario', nome: 'Salário fixo', valorPadrao: 500 }],
     contasFixas: [
       { id: 'luz', nome: 'Luz', valorPadrao: 300, vencimento: 10, forma_pagamento: 'pix' },
       { id: 'internet', nome: 'Internet', valorPadrao: 400, vencimento: 25, forma_pagamento: 'credito_card' }
     ],
     dividas: [{ id: 'emprestimo', descricao: 'Empréstimo', valor_parcela: 150, qtd_parcelas: 3, parcelas_pagas_iniciais: 0, mes_primeira_parcela: 10, ano_primeira_parcela: 2026, dia_vencimento: 10, forma_pagamento: 'pix' }],
-    categorias: [{ id: 'alimentacao', nome: 'Alimentação', meta: 1200, tipo: 'despesa' }, { id: 'viagem', nome: 'Viagem', meta: 80, tipo: 'despesa' }]
+    categorias: [{ id: 'alimentacao', nome: 'Alimentação', meta: 1100, tipo: 'despesa' }, { id: 'viagem', nome: 'Viagem', meta: 80, tipo: 'despesa' }]
   }))
 
   assert.equal(result.current.isMesFuturo, true)
   assert.deepEqual(result.current.previaCompetenciaFutura, {
     rendas: 1500,
     gastos: 550,
-    faturas: 600,
+    faturas: 500,
     reservaMetas: 80,
-    resultado: 270,
+    resultado: 370,
     detalhes: {
       rendas: [
         { id: 'renda-manual', descricao: 'Freela de outubro', origem: 'Lançamento', valor: 1000 },
@@ -179,15 +179,27 @@ test('prévia futura usa somente compromissos e rendas da competência, sem sald
         { id: 'divlanc_emprestimo_10_2026', descricao: 'Empréstimo', origem: 'Parcela de dívida', valor: 150 }
       ],
       faturas: [
-        { id: 'cartao', descricao: 'Compra no cartão', origem: 'Lançamento no cartão', valor: 200 },
-        { id: 'fixa_internet_10_2026', descricao: 'Internet', origem: 'Conta fixa', valor: 400 }
+        { id: 'cartao', descricao: 'Compra no cartão', origem: 'Lançamento no cartão', valor: 100, valorFatura: 200, cartao: 'Nubank', terceiros: [{ nome: 'Ana', valor: 80 }, { nome: 'Bia', valor: 20 }] },
+        { id: 'fixa_internet_10_2026', descricao: 'Internet', origem: 'Conta fixa', valor: 400, valorFatura: 400, cartao: 'Nubank', terceiros: [] }
       ],
       metas: [{ id: 'meta_viagem', descricao: 'Viagem', origem: 'Meta da categoria', valor: 80 }]
-    }
+    },
+    faturasPorCartao: [{
+      id: 'card', nome: 'Nubank', total: 600, pessoal: 500,
+      terceiros: [{ nome: 'Ana', valor: 80 }, { nome: 'Bia', valor: 20 }],
+      itens: [
+        { id: 'cartao', descricao: 'Compra no cartão', origem: 'Lançamento no cartão', valor: 100, valorFatura: 200, cartao: 'Nubank', terceiros: [{ nome: 'Ana', valor: 80 }, { nome: 'Bia', valor: 20 }] },
+        { id: 'fixa_internet_10_2026', descricao: 'Internet', origem: 'Conta fixa', valor: 400, valorFatura: 400, cartao: 'Nubank', terceiros: [] }
+      ]
+    }]
   })
 
   result.current.abrirResumoCard('previa_faturas')
   render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText('Total da fatura'))
+  assert.ok(screen.getByText('Seu gasto pessoal'))
+  assert.ok(screen.getByText('Ana'))
+  assert.ok(screen.getByText('Bia'))
   fireEvent.click(screen.getByTitle('Clique para ver os lançamentos'))
   assert.ok(screen.getByText('Lançamento no cartão: Compra no cartão'))
   assert.ok(screen.getByText('Conta fixa: Internet'))

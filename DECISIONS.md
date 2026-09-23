@@ -144,8 +144,9 @@
   previstos, faturas abertas e reserva ainda necessária das metas. Rendas e despesas já lançadas
   entram pela competência; recorrências não geradas entram como previsão. Compras no crédito são
   incluídas exclusivamente em faturas, usando a mesma resolução de competência, melhor dia e
-  fechamento já adotada para cartões. Saldo Líquido, saldo anterior, saldo acumulado e pagamentos
-  já realizados não compõem o resultado.
+  fechamento já adotada para cartões. O detalhamento mantém o total da fatura e as partes de
+  terceiros por cartão, mas o resultado usa somente a fração pessoal do titular. Saldo Líquido,
+  saldo anterior, saldo acumulado e pagamentos já realizados não compõem o resultado.
 - **Motivo:** separar a decisão orçamentária futura do caixa conciliado e impedir duplicidade entre
   compra no cartão e fatura.
 - **Consequência:** a prévia não é um fluxo de caixa nem altera lançamentos; seus detalhes devem

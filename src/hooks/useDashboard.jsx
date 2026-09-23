@@ -6,11 +6,25 @@ import { calcularFluxoProjetado, resolverMesEfetivo } from '../utils/fluxoProjet
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
+const obterParticipantes = (t) => Array.isArray(t.participantes) && t.participantes.length > 0
+    ? t.participantes
+    : (t.isThirdParty ? [{
+        nome: t.thirdPartyName || 'Terceiro',
+        valorParcela: t.thirdPartyValue !== null && t.thirdPartyValue !== undefined ? t.thirdPartyValue : t.valorParcela
+    }] : []);
+
+const getValorTerceiros = (t) => {
+    const valorParcela = Number(t.valorParcela) || 0;
+    const participantes = obterParticipantes(t);
+    if (participantes.length > 0) {
+        return participantes.reduce((total, participante) => total + (Number(participante.valorParcela) || 0), 0);
+    }
+    return t.isThirdParty ? valorParcela : 0;
+};
+
 const getMeuValor = (t) => {
-    const vp = Number(t.valorParcela);
-    if (!t.isThirdParty) return vp;
-    const vt = t.thirdPartyValue !== null && t.thirdPartyValue !== undefined ? Number(t.thirdPartyValue) : vp;
-    return Math.max(0, vp - vt);
+    const valorParcela = Number(t.valorParcela) || 0;
+    return Math.max(0, valorParcela - getValorTerceiros(t));
 };
 
 // Caixa real: enquanto o terceiro não devolveu, o dinheiro inteiro saiu da conta. Depois da
@@ -355,9 +369,25 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const competenciaAnteriorDaPrevia = competenciaAnterior(dataVis.mes, dataVis.ano);
         const jaExiste = (id) => transacoesMes.some(t => String(t.id) === id);
         const gastosPorCategoria = {};
+        const faturasPorCartao = {};
+        const adicionarFatura = ({ formaPagamento, valorFatura, valorPessoal, terceiros = [], ...item }) => {
+            const cartao = resolverCartao(formaPagamento, cartoes);
+            const chave = cartao ? String(cartao.id) : formaPagamento;
+            const nome = cartao?.nome || 'Cartão não identificado';
+            if (!faturasPorCartao[chave]) faturasPorCartao[chave] = { id: chave, nome, total: 0, pessoal: 0, terceiros: {}, itens: [] };
+            const fatura = faturasPorCartao[chave];
+            fatura.total += valorFatura;
+            fatura.pessoal += valorPessoal;
+            terceiros.forEach(terceiro => {
+                fatura.terceiros[terceiro.nome] = (fatura.terceiros[terceiro.nome] || 0) + terceiro.valor;
+            });
+            const detalhe = { ...item, valor: valorPessoal, valorFatura, cartao: nome, terceiros };
+            fatura.itens.push(detalhe);
+            adicionar('faturas', detalhe);
+        };
         const adicionarCompromisso = ({ formaPagamento, tipo, ...item }) => {
             if (ehPagamentoCredito(formaPagamento) && tipo !== 'investimento') {
-                adicionar('faturas', item);
+                adicionarFatura({ ...item, formaPagamento, valorFatura: item.valor, valorPessoal: item.valor });
             } else {
                 adicionar('gastos', item);
             }
@@ -377,7 +407,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             const valor = t.tipo === 'reembolso' ? -meuValor : meuValor;
             const valorFatura = t.tipo === 'reembolso' ? -Number(t.valorParcela) : Number(t.valorParcela);
             if (ehPagamentoCredito(t.formaPagamento) && t.tipo !== 'investimento') {
-                adicionar('faturas', { id: t.id, descricao: t.descricao, origem: 'Lançamento no cartão', valor: valorFatura });
+                const sinal = t.tipo === 'reembolso' ? -1 : 1;
+                const terceiros = obterParticipantes(t).map(participante => ({
+                    nome: participante.nome || 'Terceiro', valor: sinal * (Number(participante.valorParcela) || 0)
+                }));
+                adicionarFatura({
+                    id: t.id, descricao: t.descricao, origem: 'Lançamento no cartão', formaPagamento: t.formaPagamento,
+                    valorFatura, valorPessoal: valor, terceiros
+                });
             } else {
                 adicionar('gastos', { id: t.id, descricao: t.descricao, origem: 'Lançamento', valor });
             }
@@ -431,7 +468,13 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         return {
             ...totais,
             resultado: totais.rendas - totais.gastos - totais.faturas - totais.reservaMetas,
-            detalhes
+            detalhes,
+            faturasPorCartao: Object.values(faturasPorCartao).map(fatura => ({
+                ...fatura,
+                terceiros: Object.entries(fatura.terceiros)
+                    .filter(([, valor]) => valor !== 0)
+                    .map(([nome, valor]) => ({ nome, valor }))
+            }))
         };
     }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas, planoCombustivel]);
 
@@ -726,9 +769,50 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         const configuracaoPrevia = {
             previa_rendas: { chave: 'rendas', titulo: 'Rendas previstas', cor: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-900/20', borda: 'border-emerald-200 dark:border-emerald-800/50' },
             previa_gastos: { chave: 'gastos', titulo: 'Gastos previstos', cor: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-900/20', borda: 'border-rose-200 dark:border-rose-800/50' },
-            previa_faturas: { chave: 'faturas', titulo: 'Faturas abertas', cor: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 dark:bg-purple-900/20', borda: 'border-purple-200 dark:border-purple-800/50' },
             previa_metas: { chave: 'metas', titulo: 'Reserva de metas', cor: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-50 dark:bg-orange-900/20', borda: 'border-orange-200 dark:border-orange-800/50' }
         }[tipo];
+
+        if (tipo === 'previa_faturas' && previaCompetenciaFutura) {
+            conteudo = (
+                <div className="space-y-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">A prévia mostra o total de cada fatura, mas usa somente a sua parte pessoal no Resultado previsto.</p>
+                    <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 p-3 rounded-lg">
+                        <span className="text-sm font-bold text-purple-800 dark:text-purple-200">Sua parte nas faturas abertas</span>
+                        <strong className="text-purple-700 dark:text-purple-300">{formatarMoeda(previaCompetenciaFutura.faturas)}</strong>
+                    </div>
+                    {previaCompetenciaFutura.faturasPorCartao.map(fatura => (
+                        <div key={fatura.id} className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
+                            <h4 className="font-black text-slate-800 dark:text-slate-100">💳 {fatura.nome}</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5">
+                                    <p className="text-[10px] uppercase font-bold text-slate-500">Total da fatura</p>
+                                    <strong className="text-slate-800 dark:text-slate-100">{formatarMoeda(fatura.total)}</strong>
+                                </div>
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-2.5">
+                                    <p className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400">Seu gasto pessoal</p>
+                                    <strong className="text-emerald-700 dark:text-emerald-300">{formatarMoeda(fatura.pessoal)}</strong>
+                                </div>
+                            </div>
+                            {fatura.terceiros.length > 0 && <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-2.5 space-y-1.5">
+                                <p className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400">Gastos de terceiros</p>
+                                {fatura.terceiros.map(terceiro => <div key={terceiro.nome} className="flex justify-between gap-3 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                                    <span>{terceiro.nome}</span><span>{formatarMoeda(terceiro.valor)}</span>
+                                </div>)}
+                            </div>}
+                            <CardAcordeao titulo="Lançamentos da fatura" valorStr={formatarMoeda(fatura.total)} textColor="text-purple-700 dark:text-purple-300" bgColor="bg-purple-50 dark:bg-purple-900/20" borderColor="border-purple-200 dark:border-purple-800/50" itens={fatura.itens.map(item => ({
+                                id: item.id,
+                                descricao: `${item.origem}: ${item.descricao}`,
+                                data: `Competência ${String(dataVis.mes).padStart(2, '0')}/${dataVis.ano}`,
+                                valorStr: formatarMoeda(Math.abs(item.valorFatura)),
+                                isDestaque: item.valorFatura < 0
+                            }))} />
+                        </div>
+                    ))}
+                </div>
+            );
+            modal.alert(conteudo, 'Faturas abertas');
+            return;
+        }
 
         if (configuracaoPrevia && previaCompetenciaFutura) {
             const valor = configuracaoPrevia.chave === 'metas'

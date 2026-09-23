@@ -40,7 +40,8 @@ sessões independentes.
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - Ao consultar uma competência futura, o Dashboard apresenta uma prévia independente: rendas
   previstas menos gastos, faturas abertas e reserva restante das metas. Ela não incorpora Saldo
-  Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados.
+  Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados. Faturas mostram o total por
+  cartão e os valores de terceiros, enquanto o resultado usa somente a parte pessoal do titular.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
   quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
@@ -99,7 +100,7 @@ sessões independentes.
 - Antecipação de parcelas com data informada concluída localmente; aguarda deploy conjunto e
   validação autenticada.
 - Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
-  com contas e compras de cartão em competências distintas.
+  com contas e compras de cartão em competências distintas, inclusive compras compartilhadas.
 
 ## Pendências e riscos
 
@@ -144,6 +145,10 @@ sessões independentes.
   residual de metas e a ausência de Saldo Líquido/fluxo acumulado. `npm test` aprovou 53 testes,
   `npm run lint` terminou sem erros (12 avisos conhecidos) e `npm run build` concluiu com o aviso
   conhecido de chunk principal acima de 500 kB.
+- Ajuste de faturas da prévia em 22/09: o total por cartão e a parcela atribuída a cada terceiro
+  permanecem visíveis no detalhamento, mas o card e o Resultado previsto consideram apenas a parte
+  pessoal. O teste do hook cobre uma compra compartilhada com dois participantes e conta fixa no
+  mesmo cartão.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.

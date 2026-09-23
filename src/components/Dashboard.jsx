@@ -114,6 +114,7 @@ export function Dashboard({
                         <div onClick={() => abrirResumoCard('previa_faturas', cartoes)} className="bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md hover:-translate-y-0.5 transition-all group active:scale-[0.98]">
                             <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-purple-500 transition-colors tracking-wider">Faturas abertas</p>
                             <h3 className="text-xl font-extrabold text-purple-600 dark:text-purple-400 tracking-tight">{formatarMoeda(previaCompetenciaFutura.faturas)}</h3>
+                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1">Sua parte pessoal</p>
                         </div>
                         <div onClick={() => abrirResumoCard('previa_metas', cartoes)} className="bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md hover:-translate-y-0.5 transition-all group active:scale-[0.98]">
                             <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-orange-500 transition-colors tracking-wider">Reserva de metas</p>
