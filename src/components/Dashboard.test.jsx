@@ -44,7 +44,7 @@ test('abre o detalhamento ao selecionar um mês do fluxo de caixa projetado', ()
   )
 
   assert.ok(screen.getByText('O que este cálculo considera?'))
-  assert.ok(screen.getByText(/Valores de terceiros excluídos da previsão: R\$\s?150,00/))
+  assert.equal(screen.queryByText(/Valores de terceiros excluídos da previsão/), null)
   assert.ok(screen.getByText(/R\$\s?436,57/))
   fireEvent.click(screen.getByRole('button', { name: /Saldo previsto ao fim de Outubro.*436,57/i }))
 

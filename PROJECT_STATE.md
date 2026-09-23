@@ -105,8 +105,8 @@ sessões independentes.
 - Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
   com contas e compras de cartão em competências distintas, compras compartilhadas e metas que
   tenham ou não progresso no mês atual.
-- Apresentação do Fluxo de Caixa Projetado passou a exibir cartões acessíveis com moeda, memória
-  de cálculo e valores de terceiros excluídos sem afetar o saldo; aguarda deploy e smoke test
+- Apresentação do Fluxo de Caixa Projetado usa cartões acessíveis, compactos e com moeda; a memória
+  de cálculo e os valores de terceiros excluídos ficam no detalhamento, sem afetar o saldo; aguarda deploy e smoke test
   autenticado em desktop e celular.
 
 ## Pendências e riscos

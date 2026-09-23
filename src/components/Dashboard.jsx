@@ -255,26 +255,18 @@ export function Dashboard({
                                             key={`${m.mes}-${m.ano}`}
                                             type="button"
                                             onClick={() => abrirDetalheMesProjetado(m)}
-                                            className="flex min-h-48 flex-col items-center justify-end rounded-xl border border-slate-200 bg-slate-50 p-2 text-center shadow-sm transition-colors hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-blue-700"
+                                            className="flex min-h-44 flex-col rounded-xl border border-slate-200 bg-slate-50 p-3 text-left shadow-sm transition-colors hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-blue-700"
                                             aria-label={`Saldo previsto ao fim de ${nomeMes} de ${m.ano}: ${formatarMoeda(m.saldoAcumulado)}. Toque para ver o detalhamento.`}
                                             title={`Saldo previsto ao fim de ${nomeMes} de ${m.ano}`}
                                         >
-                                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Saldo previsto ao fim de {nomeMes}</span>
-                                            <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 truncate w-full text-center">
-                                                {formatarMoeda(m.saldoAcumulado)}
-                                            </span>
-                                            <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
-                                                <div
-                                                    className={`w-full max-w-10 rounded-t-md transition-all ${positivo ? 'bg-blue-500' : 'bg-rose-500'}`}
-                                                    style={{ height: `${alturaPct}%` }}
-                                                ></div>
+                                            <div>
+                                                <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Saldo previsto ao fim de</span>
+                                                <span className="block text-sm font-bold text-slate-700 dark:text-slate-200">{nomeMes} {m.ano}</span>
+                                                <strong className={`mt-1 block text-lg ${positivo ? 'text-blue-700 dark:text-blue-300' : 'text-rose-700 dark:text-rose-300'}`}>{formatarMoeda(m.saldoAcumulado)}</strong>
                                             </div>
-                                            <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-wider">
-                                                {m.ano}
-                                            </span>
-                                            {Number(m.terceirosExcluidos) > 0 && (
-                                                <span className="mt-2 text-[10px] leading-tight text-amber-700 dark:text-amber-300">Valores de terceiros excluídos da previsão: {formatarMoeda(m.terceirosExcluidos)}</span>
-                                            )}
+                                            <div className="mt-auto flex h-12 w-full items-end rounded-md bg-slate-200/70 px-2 dark:bg-slate-800" aria-hidden="true">
+                                                <div className={`w-full rounded-sm transition-all ${positivo ? 'bg-blue-500' : 'bg-rose-500'}`} style={{ height: `${alturaPct}%` }}></div>
+                                            </div>
                                         </button>
                                     );
                                 })}
