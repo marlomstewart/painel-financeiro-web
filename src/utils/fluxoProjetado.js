@@ -16,7 +16,7 @@ import { extrairCartaoId } from './cartaoUtils';
  * Calcula em qual (mês, ano) um item pago no cartão realmente vai ser cobrado, dado o mês
  * "nominal" em que ele venceria. Itens fora do cartão (pix, débito) nunca rolam.
  */
-function resolverMesEfetivo(mesNominal, anoNominal, diaVencimento, formaPagamento, cartoes) {
+export function resolverMesEfetivo(mesNominal, anoNominal, diaVencimento, formaPagamento, cartoes) {
     const cartaoId = extrairCartaoId(formaPagamento);
     if (!cartaoId) return { mes: mesNominal, ano: anoNominal };
 

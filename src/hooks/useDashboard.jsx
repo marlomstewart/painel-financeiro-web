@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { obterDesdeISO } from '../utils/janelaTransacoes';
-import { calcularFluxoProjetado } from '../utils/fluxoProjetado';
+import { calcularFluxoProjetado, resolverMesEfetivo } from '../utils/fluxoProjetado';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -29,6 +29,8 @@ const dataISO = (valor) => {
 const fimDaCompetenciaISO = (mes, ano) => `${ano}-${String(mes).padStart(2, '0')}-${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`;
 const inicioDaCompetenciaISO = (mes, ano) => `${ano}-${String(mes).padStart(2, '0')}-01`;
 const arredondarCentavos = (valor) => Math.round((valor + Number.EPSILON) * 100) / 100;
+const competenciaAnterior = (mes, ano) => mes === 1 ? { mes: 12, ano: ano - 1 } : { mes: mes - 1, ano };
+const mesmaCompetencia = (a, b) => a.mes === b.mes && a.ano === b.ano;
 
 // 🔥 FUNÇÃO BLINDADA: Detecta se é um empréstimo oriundo do módulo de dívidas
 const isDividaTerceiro = (t) => {
@@ -165,6 +167,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const [mostrarFiltrosAvancados, setMostrarFiltrosAvancados] = useState(false);
     const [filtrosAvancados, setFiltrosAvancados] = useState({ dataInicio: '', dataFim: '', valorMin: '', valorMax: '', formaPagamento: '', categoria: '' });
     const [somarSaldoAnterior, setSomarSaldoAnterior] = useState(true);
+    const dataHoje = new Date();
+    const mesReal = dataHoje.getMonth() + 1;
+    const anoReal = dataHoje.getFullYear();
+    const isMesFuturo = dataVis.ano > anoReal || (dataVis.ano === anoReal && dataVis.mes > mesReal);
 
     const mesAnterior = useCallback(() => setDataVis(prev => prev.mes === 1 ? { mes: 12, ano: prev.ano - 1 } : { ...prev, mes: prev.mes - 1 }), [setDataVis]);
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
@@ -333,6 +339,102 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             : Math.max(0, c.meta - (gCat[c.nome] || 0));
     });
 
+    // A prévia futura não parte do caixa existente: ela mede somente se as entradas previstas da
+    // competência cobrem os compromissos que já são conhecidos. Lançamentos já liquidados não são
+    // tratados como previsão, mas ainda reduzem a reserva de suas categorias para não duplicá-la.
+    const previaCompetenciaFutura = useMemo(() => {
+        if (!isMesFuturo) return null;
+
+        const detalhes = { rendas: [], gastos: [], faturas: [], metas: [] };
+        const totais = { rendas: 0, gastos: 0, faturas: 0, reservaMetas: 0 };
+        const adicionar = (chave, item) => {
+            totais[chave] += item.valor;
+            detalhes[chave === 'reservaMetas' ? 'metas' : chave].push(item);
+        };
+        const competencia = { mes: dataVis.mes, ano: dataVis.ano };
+        const competenciaAnteriorDaPrevia = competenciaAnterior(dataVis.mes, dataVis.ano);
+        const jaExiste = (id) => transacoesMes.some(t => String(t.id) === id);
+        const gastosPorCategoria = {};
+        const adicionarCompromisso = ({ formaPagamento, tipo, ...item }) => {
+            if (ehPagamentoCredito(formaPagamento) && tipo !== 'investimento') {
+                adicionar('faturas', item);
+            } else {
+                adicionar('gastos', item);
+            }
+        };
+
+        transacoesMes.forEach(t => {
+            if (!isDividaTerceiro(t) && ['despesa', 'investimento', 'reembolso'].includes(t.tipo) && t.categoria !== 'Contas Fixas' && t.categoria !== 'Sem Categoria') {
+                gastosPorCategoria[t.categoria] = (gastosPorCategoria[t.categoria] || 0) + (t.tipo === 'reembolso' ? -getMeuValor(t) : getMeuValor(t));
+            }
+            if (isDividaTerceiro(t) || t.status === 'pago') return;
+            const meuValor = getMeuValor(t);
+            if (ehRenda(t)) {
+                adicionar('rendas', { id: t.id, descricao: t.descricao, origem: 'Lançamento', valor: meuValor });
+                return;
+            }
+            if (!['despesa', 'investimento', 'reembolso'].includes(t.tipo)) return;
+            const valor = t.tipo === 'reembolso' ? -meuValor : meuValor;
+            const valorFatura = t.tipo === 'reembolso' ? -Number(t.valorParcela) : Number(t.valorParcela);
+            if (ehPagamentoCredito(t.formaPagamento) && t.tipo !== 'investimento') {
+                adicionar('faturas', { id: t.id, descricao: t.descricao, origem: 'Lançamento no cartão', valor: valorFatura });
+            } else {
+                adicionar('gastos', { id: t.id, descricao: t.descricao, origem: 'Lançamento', valor });
+            }
+        });
+
+        rendasFixas.forEach(renda => {
+            const id = `renda_${renda.id}_${competencia.mes}_${competencia.ano}`;
+            if (!jaExiste(id)) adicionar('rendas', {
+                id, descricao: renda.nome, origem: 'Renda fixa', valor: Number(renda.valorPadrao) || 0
+            });
+        });
+
+        contasFixas.forEach(conta => {
+            [competencia, competenciaAnteriorDaPrevia].forEach(competenciaNominal => {
+                const efetiva = resolverMesEfetivo(competenciaNominal.mes, competenciaNominal.ano, conta.vencimento, conta.forma_pagamento, cartoes);
+                if (!mesmaCompetencia(efetiva, competencia)) return;
+                const id = `fixa_${conta.id}_${competencia.mes}_${competencia.ano}`;
+                if (jaExiste(id)) return;
+                adicionarCompromisso({ id, descricao: conta.nome, origem: 'Conta fixa', formaPagamento: conta.forma_pagamento, tipo: 'despesa', valor: Number(conta.valorPadrao) || 0 });
+            });
+        });
+
+        dividas.forEach(divida => {
+            if (divida.para_terceiros == 1 || divida.para_terceiros === true || divida.isThirdParty) return;
+            [competencia, competenciaAnteriorDaPrevia].forEach(competenciaNominal => {
+                const efetiva = resolverMesEfetivo(competenciaNominal.mes, competenciaNominal.ano, divida.dia_vencimento, divida.forma_pagamento, cartoes);
+                if (!mesmaCompetencia(efetiva, competencia)) return;
+                const numeroParcela = divida.mes_primeira_parcela && divida.ano_primeira_parcela
+                    ? ((competencia.ano - Number(divida.ano_primeira_parcela)) * 12) + (competencia.mes - Number(divida.mes_primeira_parcela)) + 1
+                    : null;
+                if (numeroParcela !== null && (numeroParcela < 1 || numeroParcela > Number(divida.qtd_parcelas))) return;
+                if (numeroParcela === null) {
+                    const jaGeradas = transacoes.filter(t => t.grupo_id === `divida_${divida.id}`).length;
+                    const restantes = Number(divida.qtd_parcelas) - ((Number(divida.parcelas_pagas_iniciais) || 0) + jaGeradas);
+                    if (restantes <= 0) return;
+                }
+                const id = `divlanc_${divida.id}_${competencia.mes}_${competencia.ano}`;
+                const jaLancada = jaExiste(id) || transacoesMes.some(t => t.grupo_id === `divida_${divida.id}`);
+                if (jaLancada) return;
+                adicionarCompromisso({ id, descricao: divida.descricao, origem: 'Parcela de dívida', formaPagamento: divida.forma_pagamento, tipo: 'despesa', valor: Number(divida.valor_parcela) || 0 });
+            });
+        });
+
+        categoriasDinamicas.forEach(categoria => {
+            const valor = categoria.planejamentoCombustivel
+                ? planoCombustivel?.resumo.restanteCentavos / 100
+                : Math.max(0, Number(categoria.meta) - (gastosPorCategoria[categoria.nome] || 0));
+            if (valor > 0) adicionar('reservaMetas', { id: `meta_${categoria.id}`, descricao: categoria.nome, origem: 'Meta da categoria', valor });
+        });
+
+        return {
+            ...totais,
+            resultado: totais.rendas - totais.gastos - totais.faturas - totais.reservaMetas,
+            detalhes
+        };
+    }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas, planoCombustivel]);
+
     const transacoesDoCaixaNoMes = marcoAplicaNoMes
         ? transacoes.filter(t => {
             const data = dataDeCaixa(t);
@@ -425,10 +527,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
         modal.alert(conteudo, `Projeção: ${nomesMeses[mes - 1]}/${ano}`);
     }, [modal]);
-
-    const dataHoje = new Date();
-    const mesReal = dataHoje.getMonth() + 1;
-    const anoReal = dataHoje.getFullYear();
 
     const pendenciasPassadas = useMemo(() => {
         return transacoes.filter(t => t.status === 'pendente' && (t.anoReferencia < anoReal || (t.anoReferencia === anoReal && t.mesReferencia < mesReal)));
@@ -625,6 +723,58 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
         const ultimoDiaDoMes = new Date(dataVis.ano, dataVis.mes, 0).getDate();
 
+        const configuracaoPrevia = {
+            previa_rendas: { chave: 'rendas', titulo: 'Rendas previstas', cor: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-900/20', borda: 'border-emerald-200 dark:border-emerald-800/50' },
+            previa_gastos: { chave: 'gastos', titulo: 'Gastos previstos', cor: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-900/20', borda: 'border-rose-200 dark:border-rose-800/50' },
+            previa_faturas: { chave: 'faturas', titulo: 'Faturas abertas', cor: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 dark:bg-purple-900/20', borda: 'border-purple-200 dark:border-purple-800/50' },
+            previa_metas: { chave: 'metas', titulo: 'Reserva de metas', cor: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-50 dark:bg-orange-900/20', borda: 'border-orange-200 dark:border-orange-800/50' }
+        }[tipo];
+
+        if (configuracaoPrevia && previaCompetenciaFutura) {
+            const valor = configuracaoPrevia.chave === 'metas'
+                ? previaCompetenciaFutura.reservaMetas
+                : previaCompetenciaFutura[configuracaoPrevia.chave];
+            const itens = previaCompetenciaFutura.detalhes[configuracaoPrevia.chave].map(item => ({
+                id: item.id,
+                descricao: `${item.origem}: ${item.descricao}`,
+                data: `Competência ${String(dataVis.mes).padStart(2, '0')}/${dataVis.ano}`,
+                valorStr: formatarMoeda(Math.abs(item.valor)),
+                isDestaque: item.valor < 0
+            }));
+            conteudo = (
+                <div className="space-y-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Prévia independente, sem saldo inicial nem pagamentos já realizados.</p>
+                    <CardAcordeao titulo={configuracaoPrevia.titulo} valorStr={formatarMoeda(Math.abs(valor))} textColor={configuracaoPrevia.cor} bgColor={configuracaoPrevia.bg} borderColor={configuracaoPrevia.borda} itens={itens} />
+                </div>
+            );
+            modal.alert(conteudo, configuracaoPrevia.titulo);
+            return;
+        }
+
+        if (tipo === 'previa_resultado' && previaCompetenciaFutura) {
+            const linhas = [
+                { descricao: 'Rendas previstas', valor: previaCompetenciaFutura.rendas, positivo: true },
+                { descricao: 'Gastos previstos', valor: -previaCompetenciaFutura.gastos },
+                { descricao: 'Faturas abertas', valor: -previaCompetenciaFutura.faturas },
+                { descricao: 'Reserva de metas', valor: -previaCompetenciaFutura.reservaMetas }
+            ];
+            conteudo = (
+                <div className="space-y-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Esta prévia responde se as rendas conhecidas cobrem os compromissos da competência. Não considera saldo inicial.</p>
+                    {linhas.map(linha => <div key={linha.descricao} className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 py-2">
+                        <span className="text-slate-600 dark:text-slate-300 text-sm">{linha.descricao}</span>
+                        <strong className={linha.valor >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>{linha.valor >= 0 ? '+' : '-'} {formatarMoeda(Math.abs(linha.valor))}</strong>
+                    </div>)}
+                    <div className="flex justify-between items-center bg-slate-800 dark:bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <span className="text-slate-100 font-bold text-sm">Resultado previsto</span>
+                        <strong className={`text-lg ${previaCompetenciaFutura.resultado >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatarMoeda(previaCompetenciaFutura.resultado)}</strong>
+                    </div>
+                </div>
+            );
+            modal.alert(conteudo, 'Resultado previsto');
+            return;
+        }
+
         if (tipo === 'rendas') {
             titulo = 'Detalhamento de Rendas';
             conteudo = (
@@ -727,14 +877,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesDoCaixaNoMes, marcoFoiInformadoNoMes, marcoSaldoConciliado]);
+    }, [modal, dataVis, previaCompetenciaFutura, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesDoCaixaNoMes, marcoFoiInformadoNoMes, marcoSaldoConciliado]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
         mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
-        saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado,
+        saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado, isMesFuturo, previaCompetenciaFutura,
         categoriasDinamicas, gCat, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard, abrirDetalheMesProjetado
     };

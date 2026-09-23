@@ -262,6 +262,7 @@ function App() {
       abrirDetalhesCategoria={dashboardManager.abrirDetalhesCategoria} pendenciasPassadas={dashboardManager.pendenciasPassadas} abrirModalPendencias={dashboardManager.abrirModalPendencias}
       abrirResumoCard={dashboardManager.abrirResumoCard} verFaturasPorCartao={cartoesFaturas.verFaturasPorCartao}
       fluxoProjetado={dashboardManager.fluxoProjetado} abrirDetalheMesProjetado={dashboardManager.abrirDetalheMesProjetado}
+      isMesFuturo={dashboardManager.isMesFuturo} previaCompetenciaFutura={dashboardManager.previaCompetenciaFutura}
     />;
   };
 

@@ -45,3 +45,28 @@ test('abre o detalhamento ao selecionar um mês do fluxo de caixa projetado', ()
 
   assert.deepEqual(abrirDetalheMesProjetado.mock.calls, [[mesProjetado]])
 })
+
+test('mostra somente os cards da prévia quando a competência é futura', () => {
+  const abrirResumoCard = vi.fn()
+  render(
+    <Dashboard
+      dataVis={{ mes: 10, ano: 2026 }} mesAnterior={vi.fn()} mesProximo={vi.fn()}
+      totRendaPaga={0} totGastoReal={0} totInvestido={0} totFaturaCreditoAberto={0}
+      saldoAtual={9999} previstoFimMes={9999} somarSaldoAnterior setSomarSaldoAnterior={vi.fn()}
+      categorias={[]} gCat={{}} abrirDetalhesCategoria={vi.fn()} pendenciasPassadas={[]}
+      abrirModalPendencias={vi.fn()} abrirResumoCard={abrirResumoCard} verFaturasPorCartao={vi.fn()}
+      isMesFuturo
+      previaCompetenciaFutura={{ rendas: 1500, gastos: 550, faturas: 600, reservaMetas: 80, resultado: 270, detalhes: {} }}
+    />
+  )
+
+  assert.ok(screen.getByText('Rendas previstas'))
+  assert.ok(screen.getByText('Gastos previstos'))
+  assert.ok(screen.getByText('Faturas abertas'))
+  assert.ok(screen.getByText('Reserva de metas'))
+  assert.ok(screen.getByText('Resultado previsto'))
+  assert.equal(screen.queryByText('Saldo Líquido'), null)
+  assert.equal(screen.queryByText('Fluxo de Caixa Projetado'), null)
+  fireEvent.click(screen.getByText('Resultado previsto'))
+  assert.deepEqual(abrirResumoCard.mock.calls, [['previa_resultado', []]])
+})

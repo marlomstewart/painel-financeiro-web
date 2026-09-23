@@ -133,3 +133,20 @@
   omita ou inclua parcelas indevidas.
 - **Consequência:** filtros de data ativos continuam se aplicando à data de compra por escolha
   explícita do usuário, sem redefinir a competência da fatura.
+
+## D-012 — Prévia futura do Dashboard é orçamentária e independente do caixa
+
+- **Data:** 22/09/2026
+- **Status:** aceita
+- **Contexto:** uma competência futura precisa responder se as rendas conhecidas cobrem os
+  compromissos dela, sem transformar o Dashboard em uma projeção de saldo bancário.
+- **Decisão:** para mês posterior ao atual, calcular somente rendas previstas menos gastos
+  previstos, faturas abertas e reserva ainda necessária das metas. Rendas e despesas já lançadas
+  entram pela competência; recorrências não geradas entram como previsão. Compras no crédito são
+  incluídas exclusivamente em faturas, usando a mesma resolução de competência, melhor dia e
+  fechamento já adotada para cartões. Saldo Líquido, saldo anterior, saldo acumulado e pagamentos
+  já realizados não compõem o resultado.
+- **Motivo:** separar a decisão orçamentária futura do caixa conciliado e impedir duplicidade entre
+  compra no cartão e fatura.
+- **Consequência:** a prévia não é um fluxo de caixa nem altera lançamentos; seus detalhes devem
+  identificar rendas, contas, parcelas, lançamentos, faturas e a reserva de metas considerada.

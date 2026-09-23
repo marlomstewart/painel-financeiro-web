@@ -1,4 +1,4 @@
-import { render, renderHook, screen } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen } from '@testing-library/react'
 import assert from 'node:assert/strict'
 import { vi, test } from 'vitest'
 import { useDashboard } from './useDashboard'
@@ -135,6 +135,69 @@ test('saldo conciliado inicia setembro pelo fechamento real de agosto e usa a da
 
   assert.equal(result.current.saldoMesAnterior, 43.90)
   assert.equal(result.current.saldoAtual, -77.73)
+})
+
+test('prévia futura usa somente compromissos e rendas da competência, sem saldo acumulado', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-09-22T12:00:00'))
+  const modal = { alert: vi.fn() }
+  const lista = [
+    { id: 'saldo-antigo', descricao: 'Saldo de setembro', tipo: 'renda', categoria: 'Renda', valorParcela: 9999, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
+    { id: 'renda-manual', descricao: 'Freela de outubro', tipo: 'renda', categoria: 'Renda', valorParcela: 1000, status: 'pendente', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'fixa_luz_10_2026', descricao: 'Luz', tipo: 'despesa', categoria: 'Contas Fixas', valorParcela: 300, status: 'pendente', formaPagamento: 'pix', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'mercado', descricao: 'Mercado', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 100, status: 'pendente', formaPagamento: 'pix', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'cartao', descricao: 'Compra no cartão', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 200, status: 'pendente', formaPagamento: 'credito_card', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'pago-antes', descricao: 'Já pago', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 900, status: 'pago', formaPagamento: 'pix', mesReferencia: 10, anoReferencia: 2026 }
+  ]
+  const { result } = renderHook(() => useDashboard({
+    ...criarProps({ mes: 10, ano: 2026 }, lista), modal,
+    cartoes: [{ id: 'card', melhorDia: 20 }],
+    rendasFixas: [{ id: 'salario', nome: 'Salário fixo', valorPadrao: 500 }],
+    contasFixas: [
+      { id: 'luz', nome: 'Luz', valorPadrao: 300, vencimento: 10, forma_pagamento: 'pix' },
+      { id: 'internet', nome: 'Internet', valorPadrao: 400, vencimento: 25, forma_pagamento: 'credito_card' }
+    ],
+    dividas: [{ id: 'emprestimo', descricao: 'Empréstimo', valor_parcela: 150, qtd_parcelas: 3, parcelas_pagas_iniciais: 0, mes_primeira_parcela: 10, ano_primeira_parcela: 2026, dia_vencimento: 10, forma_pagamento: 'pix' }],
+    categorias: [{ id: 'alimentacao', nome: 'Alimentação', meta: 1200, tipo: 'despesa' }, { id: 'viagem', nome: 'Viagem', meta: 80, tipo: 'despesa' }]
+  }))
+
+  assert.equal(result.current.isMesFuturo, true)
+  assert.deepEqual(result.current.previaCompetenciaFutura, {
+    rendas: 1500,
+    gastos: 550,
+    faturas: 600,
+    reservaMetas: 80,
+    resultado: 270,
+    detalhes: {
+      rendas: [
+        { id: 'renda-manual', descricao: 'Freela de outubro', origem: 'Lançamento', valor: 1000 },
+        { id: 'renda_salario_10_2026', descricao: 'Salário fixo', origem: 'Renda fixa', valor: 500 }
+      ],
+      gastos: [
+        { id: 'fixa_luz_10_2026', descricao: 'Luz', origem: 'Lançamento', valor: 300 },
+        { id: 'mercado', descricao: 'Mercado', origem: 'Lançamento', valor: 100 },
+        { id: 'divlanc_emprestimo_10_2026', descricao: 'Empréstimo', origem: 'Parcela de dívida', valor: 150 }
+      ],
+      faturas: [
+        { id: 'cartao', descricao: 'Compra no cartão', origem: 'Lançamento no cartão', valor: 200 },
+        { id: 'fixa_internet_10_2026', descricao: 'Internet', origem: 'Conta fixa', valor: 400 }
+      ],
+      metas: [{ id: 'meta_viagem', descricao: 'Viagem', origem: 'Meta da categoria', valor: 80 }]
+    }
+  })
+
+  result.current.abrirResumoCard('previa_faturas')
+  render(modal.alert.mock.calls[0][0])
+  fireEvent.click(screen.getByTitle('Clique para ver os lançamentos'))
+  assert.ok(screen.getByText('Lançamento no cartão: Compra no cartão'))
+  assert.ok(screen.getByText('Conta fixa: Internet'))
+  vi.useRealTimers()
+})
+
+test('mês atual mantém os indicadores atuais e não cria prévia futura', () => {
+  const { result } = renderHook(() => useDashboard(criarProps({ mes: 9, ano: 2026 }, [])))
+  assert.equal(result.current.isMesFuturo, false)
+  assert.equal(result.current.previaCompetenciaFutura, null)
 })
 
 test('abre o Raio-X de uma categoria estratégica sem progresso', () => {

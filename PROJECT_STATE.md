@@ -38,6 +38,9 @@ sessões independentes.
   cartão/forma de pagamento, competência, status, grupo e identificação de parcela.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
+- Ao consultar uma competência futura, o Dashboard apresenta uma prévia independente: rendas
+  previstas menos gastos, faturas abertas e reserva restante das metas. Ela não incorpora Saldo
+  Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados.
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
   quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
@@ -95,6 +98,8 @@ sessões independentes.
   aguardam deploy e validação visual.
 - Antecipação de parcelas com data informada concluída localmente; aguarda deploy conjunto e
   validação autenticada.
+- Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
+  com contas e compras de cartão em competências distintas.
 
 ## Pendências e riscos
 
@@ -134,6 +139,11 @@ sessões independentes.
   de fatura distinta da data de compra e o botão que usa apenas a tabela visível; lint concluiu sem
   erros (12 avisos conhecidos) e build de produção concluiu com o aviso de chunk principal acima de
   500 kB.
+- Prévia de competência futura validada em 22/09: testes do Dashboard e do hook cobrem rendas
+  fixas e lançadas, contas e dívidas recorrentes, compras de cartão separadas das faturas, reserva
+  residual de metas e a ausência de Saldo Líquido/fluxo acumulado. `npm test` aprovou 53 testes,
+  `npm run lint` terminou sem erros (12 avisos conhecidos) e `npm run build` concluiu com o aviso
+  conhecido de chunk principal acima de 500 kB.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.
@@ -234,4 +244,7 @@ sessões independentes.
     intervalo que atravesse fim de semana ou feriado de Aracaju/SE.
 11. Após o deploy web, conferir a exportação de uma fatura cuja compra tenha data em mês anterior,
     garantindo que a competência e os filtros ativos do Extrato coincidam com o CSV.
-12. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+12. Após o deploy web, abrir uma competência futura no Dashboard e conferir rendas, contas, dívida,
+    compra de cartão antes/depois do melhor dia e reserva de metas, confirmando que a prévia não
+    mostra saldo inicial nem duplica valores na fatura.
+13. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
