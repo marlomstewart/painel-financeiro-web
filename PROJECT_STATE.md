@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 22/09/2026
+**Atualizado em:** 23/09/2026
 
 ## Objetivo atual
 
@@ -96,6 +96,8 @@ sessões independentes.
   e smoke test em produção.
 - Painel de consumo de combustível por veículo próprio concluído localmente; aguarda deploy conjunto
   e validação visual em produção.
+- Competência da primeira parcela de Dívidas passou a usar seletores explícitos de mês e ano,
+  preservando os campos numéricos do contrato da API; aguarda deploy e validação visual em produção.
 - Correção de peças vencidas e padronização dos painéis internos da Garagem concluída localmente;
   aguarda deploy e validação visual responsiva.
 - Custos Associados da Garagem agora filtram despesas por competência e têm navegação mensal local;
@@ -127,6 +129,10 @@ sessões independentes.
 
 ## Validações recentes
 
+- Competência de Dívidas em 23/09: substituído o controle nativo de mês por seletores acessíveis
+  de mês/ano, com empilhamento no celular. O teste de componente confirma o payload
+  `mes_primeira_parcela`/`ano_primeira_parcela`; `npm test` aprovou 55 testes, `npm run lint`
+  terminou sem erros e `npm run build` concluiu com o aviso conhecido do chunk principal acima de 500 kB.
 - Múltiplos participantes em 22/09: `npm test` aprovou 46 testes, incluindo 8 cenários direcionados
   de `useTransacoes` e `Cobrancas`; `npm run lint` terminou sem erros (mantendo os 12 avisos
   conhecidos) e `npm run build` concluiu com o aviso já conhecido do chunk principal acima de 500 kB.

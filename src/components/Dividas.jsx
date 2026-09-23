@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { TrendingDown, Pencil, Trash2, CheckCircle2, Hourglass, Users } from 'lucide-react';
 import { nomeCartao } from '../utils/cartaoUtils';
 import { obterProgressoDivida } from '../utils/progressoDivida';
+const MESES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 /**
  * @file src/components/Dividas.jsx
@@ -15,7 +19,8 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
     const [valorParcela, setValorParcela] = useState('');
     const [qtdParcelas, setQtdParcelas] = useState('');
     const [parcelasPagasIniciais, setParcelasPagasIniciais] = useState('0');
-    const [competenciaPrimeiraParcela, setCompetenciaPrimeiraParcela] = useState('');
+    const [mesPrimeiraParcela, setMesPrimeiraParcela] = useState('');
+    const [anoPrimeiraParcela, setAnoPrimeiraParcela] = useState('');
     const [diaVencimento, setDiaVencimento] = useState('');
     const [formaPagamento, setFormaPagamento] = useState('pix');
     const [paraTerceiros, setParaTerceiros] = useState(false);
@@ -23,6 +28,13 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
     const [telefoneTerceiro, setTelefoneTerceiro] = useState('');
 
     const isCredito = formaPagamento.startsWith('credito_');
+    const anoAtual = new Date().getFullYear();
+    const anosCompetencia = Array.from({ length: 41 }, (_, index) => anoAtual - 20 + index);
+    if (anoPrimeiraParcela && !anosCompetencia.includes(Number(anoPrimeiraParcela))) {
+        anosCompetencia.push(Number(anoPrimeiraParcela));
+        anosCompetencia.sort((a, b) => a - b);
+    }
+
 
     const formatCurrencyInput = (value) => {
         let v = value.replace(/\D/g, '');
@@ -40,10 +52,7 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
 
     const parseCurrency = (val) => Number(String(val).replace(/\./g, '').replace(',', '.'));
 
-    const partesCompetencia = () => {
-        const [ano, mes] = competenciaPrimeiraParcela.split('-').map(Number);
-        return { mes_primeira_parcela: mes, ano_primeira_parcela: ano };
-    };
+    const partesCompetencia = () => ({ mes_primeira_parcela: Number(mesPrimeiraParcela), ano_primeira_parcela: Number(anoPrimeiraParcela) });
 
     const calcularParcelas = () => {
         const total = parseCurrency(valorTotal);
@@ -61,7 +70,8 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         setValorParcela(Number(divida.valor_parcela).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         setQtdParcelas(String(divida.qtd_parcelas));
         setParcelasPagasIniciais(String(divida.parcelas_pagas_iniciais || 0));
-        setCompetenciaPrimeiraParcela(divida.mes_primeira_parcela && divida.ano_primeira_parcela ? `${divida.ano_primeira_parcela}-${String(divida.mes_primeira_parcela).padStart(2, '0')}` : '');
+        setMesPrimeiraParcela(divida.mes_primeira_parcela ? String(divida.mes_primeira_parcela) : '');
+        setAnoPrimeiraParcela(divida.ano_primeira_parcela ? String(divida.ano_primeira_parcela) : '');
         setDiaVencimento(String(divida.dia_vencimento));
         setFormaPagamento(divida.forma_pagamento || 'pix');
         setParaTerceiros(divida.para_terceiros === 1);
@@ -77,7 +87,8 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
         setValorParcela('');
         setQtdParcelas('');
         setParcelasPagasIniciais('0');
-        setCompetenciaPrimeiraParcela('');
+        setMesPrimeiraParcela('');
+        setAnoPrimeiraParcela('');
         setDiaVencimento('');
         setFormaPagamento('pix');
         setParaTerceiros(false);
@@ -196,11 +207,26 @@ export function Dividas({ dividas, transacoes, cartoes = [], addDivida, editarSe
                                 <label className={labelCls}>Quantas já foram pagas?</label>
                                 <input type="number" min="0" value={parcelasPagasIniciais} onChange={e => setParcelasPagasIniciais(e.target.value)} className={inputCls} placeholder="Ex: 0" />
                             </div>
-                            <div>
-                                <label className={labelCls}>Competência da 1ª parcela</label>
-                                <input type="month" value={competenciaPrimeiraParcela} onChange={e => setCompetenciaPrimeiraParcela(e.target.value)} required className={inputCls} />
+                            <fieldset className="min-w-0">
+                                <legend className={labelCls}>Competência da 1ª parcela</legend>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label htmlFor="mes-primeira-parcela" className="sr-only">Mês da primeira parcela</label>
+                                        <select id="mes-primeira-parcela" value={mesPrimeiraParcela} onChange={e => setMesPrimeiraParcela(e.target.value)} required className={inputCls}>
+                                            <option value="" disabled>Selecione o mês</option>
+                                            {MESES.map((mes, indice) => <option key={mes} value={indice + 1}>{mes}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="ano-primeira-parcela" className="sr-only">Ano da primeira parcela</label>
+                                        <select id="ano-primeira-parcela" value={anoPrimeiraParcela} onChange={e => setAnoPrimeiraParcela(e.target.value)} required className={inputCls}>
+                                            <option value="" disabled>Selecione o ano</option>
+                                            {anosCompetencia.map(ano => <option key={ano} value={ano}>{ano}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 leading-tight">Mês em que a parcela 1 aparece no Extrato. Esta âncora mantém a numeração correta mesmo ao gerar meses antecipadamente.</p>
-                            </div>
+                            </fieldset>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
