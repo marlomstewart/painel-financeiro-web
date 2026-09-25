@@ -622,6 +622,7 @@ export function Modal({ config, onClose }) {
             <div className="space-y-5">
               <div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{message}</div>
 
+              {config.inputLabel && <label htmlFor="modal-prompt-input" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">{config.inputLabel}</label>}
               {inputType === 'currency' ? (
                 <input
                   type="text" inputMode="numeric"
@@ -636,6 +637,7 @@ export function Modal({ config, onClose }) {
                 />
               ) : (
                 <input
+                  id={config.inputLabel ? 'modal-prompt-input' : undefined}
                   type={inputType || 'text'}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}

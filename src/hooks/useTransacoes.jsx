@@ -199,31 +199,42 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
         return 'sucesso';
     };
 
-    // UI otimista: alterna o status na tela imediatamente e só chama a API em paralelo — se a
-    // API recusar (ex: transação de outro usuário, erro de rede), desfaz o toggle e avisa por toast.
+    // UI otimista após a escolha da data; se a API recusar, restaura o estado anterior.
     const alternarStatusTransacao = async (id, statusAtual) => {
         const novoStatus = statusAtual === 'pago' ? 'pendente' : 'pago';
+        const dataPagamento = novoStatus === 'pago'
+            ? await modal.prompt('Confirme a data em que este pagamento foi feito.', dataHojeEmFortaleza(), 'Marcar como pago', {
+                inputType: 'date', inputLabel: 'Data em que você pagou', confirmLabel: 'Marcar como pago'
+            })
+            : null;
+        if (novoStatus === 'pago' && dataPagamento === null) return false;
+        if (novoStatus === 'pago' && !dataPagamento) {
+            showToast('Informe a data do pagamento.', 'error');
+            return false;
+        }
         const dataPagamentoAnterior = transacoes.find(t => t.id === id)?.data_pagamento ?? null;
-        const dataPagamentoOtimista = novoStatus === 'pago' ? new Date().toISOString() : null;
+        const dataPagamentoOtimista = novoStatus === 'pago' ? dataPagamento : null;
 
         setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus, data_pagamento: dataPagamentoOtimista } : t));
 
         try {
             const res = await fetch(`${API}/transacoes/${id}/status`, {
-                method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus })
+                method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus, ...(novoStatus === 'pago' ? { dataPagamento } : {}) })
             });
             const data = await res.json();
             if (res.ok) {
                 setTransacoes(prev => prev.map(t => t.id === id ? { ...t, data_pagamento: data.data_pagamento } : t));
+                return true;
             } else {
                 setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: statusAtual, data_pagamento: dataPagamentoAnterior } : t));
-                showToast(`Falha ao alterar status: ${data.error}`, 'error');
+                showToast(`Falha ao alterar status: ${data.message || data.error || 'tente novamente.'}`, 'error');
             }
         } catch (err) {
             console.error("Erro ao mudar status:", err);
             setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: statusAtual, data_pagamento: dataPagamentoAnterior } : t));
             showToast('Erro de conexão ao alterar status.', 'error');
         }
+        return false;
     };
 
     // Independente de alternarStatusTransacao: "paguei a fatura/conta" e "o terceiro já me
@@ -444,17 +455,34 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     };
 
     const executarAcaoEmMassa = async (idsSelecionados, acao) => {
+        const dataPagamento = acao === 'pago'
+            ? await modal.prompt(`Escolha a data do pagamento dos ${idsSelecionados.length} itens selecionados.`, dataHojeEmFortaleza(), 'Marcar como pago', {
+                inputType: 'date', inputLabel: 'Data em que você pagou', confirmLabel: 'Continuar'
+            })
+            : null;
+        if (acao === 'pago' && dataPagamento === null) return false;
+        if (acao === 'pago' && !dataPagamento) {
+            showToast('Informe a data do pagamento.', 'error');
+            return false;
+        }
         const acoesNomes = { 'pago': 'Pagar', 'pendente': 'Marcar como Pendente', 'excluir': 'Excluir' };
         const haAbastecimentoVinculado = acao === 'excluir' && transacoes.some(t => idsSelecionados.includes(t.id) && t.abastecimentoVinculado);
         const avisoVinculo = haAbastecimentoVinculado
             ? ' Há abastecimento(s) técnico(s) vinculado(s) na Garagem. Eles permanecerão registrados, mas deixarão de estar associados aos lançamentos excluídos.'
             : '';
-        const ok = await modal.confirm(`Deseja realmente ${acoesNomes[acao]} os ${idsSelecionados.length} itens selecionados?${avisoVinculo}`, '⚠️ Ação em Lote');
-        if (!ok) return;
+        const dataLegivel = dataPagamento ? dataPagamento.split('-').reverse().join('/') : null;
+        const ok = await modal.confirm(`Deseja realmente ${acoesNomes[acao]} os ${idsSelecionados.length} itens selecionados?${dataLegivel ? `\nData do pagamento: ${dataLegivel}.` : ''}${avisoVinculo}`, '⚠️ Ação em Lote');
+        if (!ok) return false;
         try {
-            const res = await fetch(`${API}/transacoes/massa/acao`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ids: idsSelecionados, acao }) });
-            if (res.ok) await carregarTransacoes();
+            const res = await fetch(`${API}/transacoes/massa/acao`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ids: idsSelecionados, acao, ...(acao === 'pago' ? { dataPagamento } : {}) }) });
+            if (res.ok) {
+                await carregarTransacoes();
+                return true;
+            }
+            const data = await res.json();
+            showToast(data.message || data.error || 'Falha na ação em lote.', 'error');
         } catch (err) { showToast('Erro na ação.', 'error'); }
+        return false;
     };
 
     const TIPOS_COMPROVANTE_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];

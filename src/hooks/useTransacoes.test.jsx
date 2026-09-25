@@ -99,6 +99,58 @@ test('marca somente o participante informado como recebido', async () => {
   assert.deepEqual(atualizadas[0].participantes, [{ id: 'ana', recebido: true }, { id: 'bia', recebido: false }])
 })
 
+test('Marcar Pago usa a data escolhida e preserva os recebimentos de terceiros na tela', async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data_pagamento: '2026-09-03' }) })
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  props.transacoes = [{ id: 'tx-1', status: 'pendente', data_pagamento: null, terceiro_recebido: true, participantes: [{ id: 'joao', recebido: true }] }]
+  props.modal.prompt.mockResolvedValue('2026-09-03')
+  const { result } = renderHook(() => useTransacoes(props))
+
+  await act(async () => {
+    await result.current.alternarStatusTransacao('tx-1', 'pendente')
+  })
+
+  assert.equal(props.modal.prompt.mock.calls[0][3].inputType, 'date')
+  assert.equal(props.modal.prompt.mock.calls[0][3].inputLabel, 'Data em que você pagou')
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { status: 'pago', dataPagamento: '2026-09-03' })
+  const atualizada = props.setTransacoes.mock.calls[0][0](props.transacoes)[0]
+  assert.equal(atualizada.status, 'pago')
+  assert.equal(atualizada.data_pagamento, '2026-09-03')
+  assert.equal(atualizada.terceiro_recebido, true)
+  assert.deepEqual(atualizada.participantes, [{ id: 'joao', recebido: true }])
+})
+
+test('cancelar a data não marca pago nem chama a API', async () => {
+  const fetchMock = vi.fn()
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  props.modal.prompt.mockResolvedValue(null)
+  const { result } = renderHook(() => useTransacoes(props))
+  let retorno
+  await act(async () => { retorno = await result.current.alternarStatusTransacao('tx-1', 'pendente') })
+  assert.equal(retorno, false)
+  assert.equal(fetchMock.mock.calls.length, 0)
+  assert.equal(props.setTransacoes.mock.calls.length, 0)
+})
+
+test('Marcar Pago em lote confirma e envia a mesma data para os itens selecionados', async () => {
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+    .mockResolvedValueOnce({ ok: true, json: async () => [] })
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  props.modal.prompt.mockResolvedValue('2026-09-05')
+  props.modal.confirm.mockResolvedValue(true)
+  const { result } = renderHook(() => useTransacoes(props))
+  let retorno
+  await act(async () => { retorno = await result.current.executarAcaoEmMassa(['tx-1', 'tx-2'], 'pago') })
+  assert.equal(retorno, true)
+  assert.equal(props.modal.prompt.mock.calls[0][3].inputType, 'date')
+  assert.match(props.modal.confirm.mock.calls[0][0], /05\/09\/2026/)
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { ids: ['tx-1', 'tx-2'], acao: 'pago', dataPagamento: '2026-09-05' })
+})
+
 test('guarda todas as parcelas como um único lote quando o backend está offline', async () => {
   const { salvarLotePendente } = await import('../utils/offlineQueue')
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))

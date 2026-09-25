@@ -1,6 +1,6 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 23/09/2026
+**Atualizado em:** 25/09/2026
 
 ## Objetivo atual
 
@@ -25,6 +25,11 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- O Extrato pede a “Data em que você pagou” antes de marcar um item como pago; o pagamento em
+  lote pede a mesma data e a repete na confirmação. O campo começa no dia atual de Fortaleza.
+  Cancelar não altera o lançamento, e a seleção do lote só é limpa após sucesso. A data segue
+  para a API sem alterar a competência ou o recebimento de terceiros. A publicação e o teste
+  autenticado no produto devem ser confirmados separadamente.
 - Novo Lançamento permite adicionar vários participantes a uma compra compartilhada, informando
   nome, telefone opcional e valor devido no total da compra. A tela mostra total atribuído e parte
   do titular; Extrato, detalhes e A Receber exibem os valores por parcela e o recebimento de cada
@@ -88,6 +93,8 @@ sessões independentes.
 
 ## Trabalho em andamento
 
+- Confirmar após o deploy conjunto, em um lançamento de teste, a data escolhida no pagamento
+  individual e em lote, a saída do Radar e a permanência do recebimento do terceiro.
 - Múltiplos participantes publicados e validados tecnicamente em produção; aguardam somente smoke
   test funcional autenticado.
 - Exclusão independente de abastecimento e lançamento vinculados concluída; aguarda deploy conjunto
@@ -131,6 +138,9 @@ sessões independentes.
 
 ## Validações recentes
 
+- Em 25/09, `npm test` aprovou 62 testes, incluindo escolha e cancelamento da data no
+  pagamento individual e envio da data no lote. `npm run build` passou; `npm run lint` teve
+  zero erros e 12 avisos preexistentes em arquivos fora desta mudança.
 - Fluxo de Caixa Projetado em 23/09: faturas de cartão já lançadas passaram a reduzir o saldo na
   competência correspondente apenas pela fração pessoal. O detalhamento apresenta total da fatura,
   valor pessoal considerado, terceiros excluídos e gastos pessoais. A cobertura unitária e do hook
