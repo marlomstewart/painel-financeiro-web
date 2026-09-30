@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { salvarLotePendente } from '../utils/offlineQueue';
+import { usuarioIdDoToken } from '../utils/identidadeSessao';
 import { montarConsultaTransacoes } from '../utils/janelaTransacoes';
 
 const dataHojeEmFortaleza = () => {
@@ -17,17 +18,27 @@ const dataHojeEmFortaleza = () => {
  * Refatorado para suportar valores fracionados de Terceiros (Split).
  */
 export function useTransacoes({ API, getHeaders, modal, token, temGaragem, transacoes, setTransacoes, categorias, cartoes, garagem, showToast, saldoConciliado }) {
+    const sessaoRef = useRef(token);
+    useEffect(() => { sessaoRef.current = token; }, [token]);
 
     const carregarTransacoes = useCallback(async () => {
         if (!token) return;
         try {
             const res = await fetch(`${API}/transacoes?${montarConsultaTransacoes(saldoConciliado)}`, { headers: getHeaders() });
-            if (res.ok) setTransacoes(await res.json());
+            if (res.ok) {
+                const dados = await res.json();
+                if (sessaoRef.current === token) setTransacoes(dados);
+            }
         } catch (err) { console.error("Erro ao recarregar transações:", err); }
     }, [API, getHeaders, token, setTransacoes, saldoConciliado]);
 
     const addTransacao = async (e) => {
         e.preventDefault();
+        const usuarioId = usuarioIdDoToken(token);
+        if (!usuarioId) {
+            showToast('Não foi possível identificar sua conta. Entre novamente antes de registrar.', 'error');
+            return 'erro';
+        }
         const formData = new FormData(e.target);
 
         let valorBruto = formData.get('valor');
@@ -142,7 +153,9 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
         try {
             const res = await fetch(`${API}/transacoes/lote`, {
-                method: 'POST', headers: getHeaders(), body: JSON.stringify({ transacoes: parcelas })
+                method: 'POST',
+                headers: { ...getHeaders(), Authorization: `Bearer ${token}`, 'X-Fincontrole-Owner-Id': usuarioId },
+                body: JSON.stringify({ transacoes: parcelas })
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
@@ -154,7 +167,12 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             // Falha de rede: guarda todo o conjunto em uma única escrita IndexedDB. O endpoint usa
             // ON CONFLICT e transação SQL, então um timeout depois do COMMIT é seguro no retry.
             teveOffline = true;
-            await salvarLotePendente(parcelas);
+            try {
+                await salvarLotePendente(parcelas, usuarioId);
+            } catch {
+                showToast('Não foi possível guardar o lançamento neste aparelho. Tente novamente.', 'error');
+                return 'erro';
+            }
             itensParaFilaOffline.push(...parcelas.map((parcelaObj, indiceParcela) => ({
                 ...parcelaObj,
                 participantes: participantes.map(participante => {
@@ -172,7 +190,7 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             })));
         }
 
-        if (sucesso) {
+        if (sucesso && sessaoRef.current === token) {
             await carregarTransacoes();
             if (veiculo_id && garagem && garagem.carregarDadosGaragem) {
                 await garagem.carregarDadosGaragem();
@@ -181,9 +199,11 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
 
         // Reaplica os itens que ficaram só na fila offline por cima do que veio do servidor,
         // pra um refetch de parcelas parcialmente sincronizadas não apagar os pendentes da tela.
-        if (itensParaFilaOffline.length > 0) {
-            setTransacoes(prev => [...prev, ...itensParaFilaOffline]);
+        if (itensParaFilaOffline.length > 0 && sessaoRef.current === token) {
+            setTransacoes(prev => sessaoRef.current === token ? [...prev, ...itensParaFilaOffline] : prev);
         }
+
+        if (sessaoRef.current !== token) return teveOffline ? 'offline' : 'sucesso';
 
         if (!sucesso && !teveOffline) {
             showToast('Erro ao registrar lançamento.', 'error');

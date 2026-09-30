@@ -44,7 +44,7 @@ const MenuExpansivel = ({ Icone, titulo, telaAtiva, isOpen, onToggle, children }
     );
 };
 
-export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen, pendentesSync = 0, falhasSync = 0, sincronizarAgora, isSyncing = false }) {
+export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLogout, nomeUsuario, isMobileMenuOpen, setIsMobileMenuOpen, pendentesSync = 0, falhasSync = 0, semDonoSync = 0, sincronizarAgora, isSyncing = false }) {
 
     const [openMenus, setOpenMenus] = useState({
         lancamentos: ['novo_lancamento', 'extrato'].includes(telaAtiva),
@@ -89,16 +89,16 @@ export function Sidebar({ telaAtiva, setTelaAtiva, isAdmin, temGaragem, fazerLog
                                     type="button"
                                     onClick={sincronizarAgora}
                                     className="group flex items-center justify-center transition-all focus:outline-none shrink-0"
-                                    title={isSyncing ? "Sincronizando com a nuvem..." : falhasSync > 0 ? `${falhasSync} lote(s) precisa(m) de correção. Clique para tentar novamente.` : pendentesSync > 0 ? `${pendentesSync} item(ns) aguardando rede. Clique para forçar.` : "Tudo salvo na nuvem"}
+                                    title={semDonoSync > 0 ? `${semDonoSync} lançamento(s) antigo(s) sem identificação de conta estão guardados neste aparelho e bloqueados para envio. Procure suporte antes de refazer.` : isSyncing ? "Sincronizando com a nuvem..." : falhasSync > 0 ? `${falhasSync} lote(s) precisa(m) de correção. Clique para tentar novamente.` : pendentesSync > 0 ? `${pendentesSync} item(ns) aguardando rede. Clique para forçar.` : "Tudo salvo na nuvem"}
                                 >
                                     {isSyncing ? (
                                         <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" strokeWidth={2.5} />
-                                    ) : pendentesSync > 0 ? (
+                                    ) : pendentesSync > 0 || semDonoSync > 0 ? (
                                         <div className="relative">
                                             <CloudOff className="w-4 h-4 text-amber-500 group-hover:text-amber-400 transition-colors" strokeWidth={2.5} />
                                             <span className="absolute -top-1 -right-1.5 flex h-3 w-3">
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-slate-900 text-[8px] font-black text-white items-center justify-center">{pendentesSync}</span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-slate-900 text-[8px] font-black text-white items-center justify-center">{pendentesSync + semDonoSync}</span>
                                             </span>
                                         </div>
                                     ) : (

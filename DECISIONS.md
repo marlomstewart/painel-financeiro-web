@@ -174,3 +174,18 @@
 - **Consequência:** compras não lançadas continuam fora da projeção; investimentos seguem fora da
   fatura projetada; alterações em competência ou participantes atualizam o mês e a fração usados
   no próximo cálculo.
+
+## D-014 — Fila offline pertence a uma conta; legado sem dono fica em quarentena
+
+- **Data:** 29/09/2026
+- **Status:** aceita
+- **Contexto:** o IndexedDB é compartilhado pelo perfil do navegador, e a fila anterior não
+  registrava quem criou cada lançamento; ao trocar A por B, o JWT de B podia enviar dados de A.
+- **Decisão:** toda entrada nova leva o ID estável da conta autenticada e só pode ser lida,
+  alterada ou enviada por ela. O ID local também inclui a conta. A sincronização captura o token
+  do início e interrompe atualizações quando a sessão muda. Entradas anteriores sem proprietário
+  não são atribuídas por inferência, apagadas ou reenviadas: ficam preservadas em quarentena, com
+  aviso genérico e recuperação somente após verificação manual da conta de origem.
+- **Motivo:** impedir mistura de dados financeiros entre contas sem perder dados locais antigos.
+- **Consequência:** um lançamento antigo pendente pode exigir suporte antes de aparecer na conta;
+  a API exige identidade declarada no envio, então PWAs antigas precisam atualizar.

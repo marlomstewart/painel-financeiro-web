@@ -98,6 +98,14 @@ function App() {
   const cartoesFaturas = useCartoesFaturas({ transacoes, setTransacoes, transacoesMes, cartoes: setup.cartoes, dataVis, API, getHeaders: auth.getHeaders, modal, showToast });
   const transacoesManager = useTransacoes({ API, getHeaders: auth.getHeaders, modal, token: auth.token, temGaragem: auth.temGaragem, transacoes, setTransacoes, categorias: setup.categorias, cartoes: setup.cartoes, garagem, showToast, saldoConciliado: auth.saldoConciliado });
   const offlineSync = useOfflineSync({ API, getHeaders: auth.getHeaders, token: auth.token, setTransacoes, showToast });
+  const sincronizarFila = () => {
+    if (offlineSync.semDono > 0) showToast('Há lançamentos antigos sem conta identificada guardados neste aparelho. Eles não serão enviados. Procure suporte antes de refazer.', 'error');
+    offlineSync.sincronizarAgora({ forcarFalhas: true });
+  };
+  const fazerLogout = () => {
+    setTransacoes([]);
+    auth.fazerLogout();
+  };
   const dashboardManager = useDashboard({ transacoes, setTransacoes, transacoesMes, categorias: setup.categorias, dataVis, setDataVis, modal, API, getHeaders: auth.getHeaders, temGaragem: auth.temGaragem, garagem, cartoes: setup.cartoes, showToast, rendasFixas: setup.rendasFixas, contasFixas: setup.contasFixas, dividas: setup.dividas, saldoConciliado: auth.saldoConciliado, saldoCaixaCanonico });
 
   useEffect(() => {
@@ -175,18 +183,23 @@ function App() {
 
   useEffect(() => {
     if (!auth.token) return;
+    let sessaoAtiva = true;
     const headers = auth.getHeaders();
     const carregar = async () => {
       try {
         const [resT, resC, resCat, resR, resF, resRF, resDiv] = await Promise.all([
           fetch(`${API}/transacoes?${montarConsultaTransacoes(auth.saldoConciliado)}`, { headers }), fetch(`${API}/cartoes`, { headers }), fetch(`${API}/categorias`, { headers }), fetch(`${API}/metas-renda`, { headers }), fetch(`${API}/contas-fixas`, { headers }), fetch(`${API}/rendas-fixas`, { headers }), fetch(`${API}/dividas`, { headers })
         ]);
-        if (!resT.ok) { auth.fazerLogout(); return; }
-        setTransacoes(await resT.json()); setup.setCartoes(await resC.json()); setup.setCategorias(await resCat.json()); setup.setMetasRenda(await resR.json()); setup.setContasFixas(await resF.json()); setup.setRendasFixas(await resRF.json()); setup.setDividas(await resDiv.json());
+        if (!sessaoAtiva) return;
+        if (!resT.ok) { fazerLogout(); return; }
+        const [dadosT, dadosC, dadosCat, dadosR, dadosF, dadosRF, dadosDiv] = await Promise.all([resT.json(), resC.json(), resCat.json(), resR.json(), resF.json(), resRF.json(), resDiv.json()]);
+        if (!sessaoAtiva) return;
+        setTransacoes(dadosT); setup.setCartoes(dadosC); setup.setCategorias(dadosCat); setup.setMetasRenda(dadosR); setup.setContasFixas(dadosF); setup.setRendasFixas(dadosRF); setup.setDividas(dadosDiv);
         setCarregouAPI(true); await garagem.carregarDadosGaragem();
       } catch (err) { console.error("Erro ao sincronizar:", err); }
     };
     carregar();
+    return () => { sessaoAtiva = false; };
   }, [auth.token, auth.saldoConciliado]);
 
   useEffect(() => {
@@ -208,7 +221,7 @@ function App() {
   }, [carregouAPI, auth.tutorialDispensado]);
 
   if (!auth.token && !auth.precisaTrocarSenha) return <><Login fazerLogin={auth.fazerLogin} usuarioLogin={auth.usuarioLogin} setUsuarioLogin={auth.setUsuarioLogin} senhaLogin={auth.senhaLogin} setSenhaLogin={auth.setSenhaLogin} erroLogin={auth.erroLogin} modalConfig={modal.config} modalClose={modal.close} ModalComponent={Modal} /><Toast toasts={toasts} /></>;
-  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={auth.fazerLogout} /><Toast toasts={toasts} /></>;
+  if (auth.precisaTrocarSenha) return <><TrocaSenha enviarNovaSenha={auth.enviarNovaSenha} novaSenha={auth.novaSenha} setNovaSenha={auth.setNovaSenha} confirmarSenha={auth.confirmarSenha} setConfirmarSenha={auth.setConfirmarSenha} erroTrocaSenha={auth.erroTrocaSenha} fazerLogout={fazerLogout} /><Toast toasts={toasts} /></>;
 
   if (auth.token && !carregouAPI) return <><Skeleton /><Toast toasts={toasts} /></>;
 
@@ -268,7 +281,7 @@ function App() {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b1120] overflow-hidden">
-      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={auth.fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} falhasSync={offlineSync.falhasPermanentes} sincronizarAgora={() => offlineSync.sincronizarAgora({ forcarFalhas: true })} isSyncing={offlineSync.isSyncing} />
+      <Sidebar telaAtiva={telaAtiva} setTelaAtiva={setTelaAtiva} isAdmin={auth.isAdmin} temGaragem={auth.temGaragem} fazerLogout={fazerLogout} nomeUsuario={auth.nomeUsuario} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} pendentesSync={offlineSync.pendentes.length} falhasSync={offlineSync.falhasPermanentes} semDonoSync={offlineSync.semDono} sincronizarAgora={sincronizarFila} isSyncing={offlineSync.isSyncing} />
 
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar flex flex-col">
         {/* BARRA SUPERIOR MOBILE */}
@@ -279,18 +292,18 @@ function App() {
             {/* 🔥 ÍCONE DE NUVEM NO MOBILE */}
             <button
               type="button"
-              onClick={() => offlineSync.sincronizarAgora({ forcarFalhas: true })}
+              onClick={sincronizarFila}
               className="group flex items-center justify-center transition-all focus:outline-none shrink-0 mt-0.5"
-              title={offlineSync.isSyncing ? "Sincronizando..." : offlineSync.falhasPermanentes > 0 ? "Há itens que precisam de correção. Clique para tentar novamente." : offlineSync.pendentes.length > 0 ? "Aguardando rede" : "Tudo salvo"}
+              title={offlineSync.semDono > 0 ? `${offlineSync.semDono} lançamento(s) antigo(s) sem identificação de conta estão guardados neste aparelho e bloqueados para envio. Procure suporte antes de refazer.` : offlineSync.isSyncing ? "Sincronizando..." : offlineSync.falhasPermanentes > 0 ? "Há itens que precisam de correção. Clique para tentar novamente." : offlineSync.pendentes.length > 0 ? "Aguardando rede" : "Tudo salvo"}
             >
               {offlineSync.isSyncing ? (
                 <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" strokeWidth={2.5} />
-              ) : offlineSync.pendentes.length > 0 ? (
+              ) : offlineSync.pendentes.length > 0 || offlineSync.semDono > 0 ? (
                 <div className="relative">
                   <CloudOff className="w-4 h-4 text-amber-500" strokeWidth={2.5} />
                   <span className="absolute -top-1 -right-1.5 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-slate-900 text-[8px] font-black text-white items-center justify-center">{offlineSync.pendentes.length}</span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-slate-900 text-[8px] font-black text-white items-center justify-center">{offlineSync.pendentes.length + offlineSync.semDono}</span>
                   </span>
                 </div>
               ) : (

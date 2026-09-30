@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { vi } from 'vitest'
 import { useTransacoes } from './useTransacoes'
 
+const tokenDeTeste = `x.${btoa(JSON.stringify({ id: 1 }))}.sig`
+
 vi.mock('../utils/offlineQueue', () => ({
   salvarLotePendente: vi.fn(),
 }))
@@ -40,7 +42,7 @@ function propsBase() {
     API: 'https://api.test',
     getHeaders: () => ({ Authorization: 'Bearer token' }),
     modal: { prompt: vi.fn(), options: vi.fn(), confirm: vi.fn() },
-    token: 'token',
+    token: tokenDeTeste,
     temGaragem: false,
     transacoes: [],
     setTransacoes: vi.fn(),
@@ -66,6 +68,7 @@ test('cria todas as parcelas em uma única chamada e envia os totais dos partici
   })
 
   assert.equal(fetchMock.mock.calls[0][0], 'https://api.test/transacoes/lote')
+  assert.equal(fetchMock.mock.calls[0][1].headers['X-Fincontrole-Owner-Id'], '1')
   const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body)
   assert.equal(requestBody.transacoes.length, 2)
   assert.equal(requestBody.transacoes[0].mesReferencia, 9)
@@ -170,6 +173,7 @@ test('guarda todas as parcelas como um único lote quando o backend está offlin
   assert.equal(retorno, 'offline')
   assert.equal(salvarLotePendente.mock.calls.length, 1)
   assert.equal(salvarLotePendente.mock.calls[0][0].length, 2)
+  assert.equal(salvarLotePendente.mock.calls[0][1], '1')
   assert.equal(setTransacoes.mock.calls.length, 1)
   const atualizar = setTransacoes.mock.calls[0][0]
   const otimistas = atualizar([])

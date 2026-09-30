@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { listarPendentes, removerPendente, atualizarPendente } from '../utils/offlineQueue';
+import { listarPendentes, contarPendentesSemDono, removerPendente, atualizarPendente } from '../utils/offlineQueue';
+import { usuarioIdDoToken } from '../utils/identidadeSessao';
 
 const INTERVALO_RETRY_MS = 60 * 1000;
 
@@ -15,28 +16,40 @@ const idsDoItem = (item) => Array.isArray(item.payload?.transacoes)
  */
 export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToast }) {
     const [pendentes, setPendentes] = useState([]);
+    const [semDono, setSemDono] = useState(0);
     const [isSyncing, setIsSyncing] = useState(false);
-    const sincronizandoRef = useRef(false);
+    const sincronizandoRef = useRef(null);
+    const sessaoRef = useRef(token);
+    useEffect(() => { sessaoRef.current = token; }, [token]);
+    const usuarioId = usuarioIdDoToken(token);
 
     const recarregarPendentes = useCallback(async () => {
+        if (!usuarioId) return;
         try {
-            setPendentes(await listarPendentes());
+            const [itens, antigos] = await Promise.all([listarPendentes(usuarioId), contarPendentesSemDono()]);
+            if (sessaoRef.current !== token) return;
+            setPendentes(itens);
+            setSemDono(antigos);
         } catch (err) { console.error('Erro ao ler fila offline:', err); }
-    }, []);
+    }, [token, usuarioId]);
 
     const sincronizarAgora = useCallback(async (opcoes = {}) => {
         const forcarFalhas = opcoes?.forcarFalhas === true;
-        if (!token || sincronizandoRef.current) return;
+        if (!token || !usuarioId || sessaoRef.current !== token || sincronizandoRef.current === token) return;
 
-        sincronizandoRef.current = true;
+        sincronizandoRef.current = token;
         setIsSyncing(true);
+        const sessaoAtual = () => sessaoRef.current === token;
 
         try {
-            const fila = await listarPendentes();
+            const fila = await listarPendentes(usuarioId);
+            if (!sessaoAtual()) return;
             let sincronizados = 0;
             let falhasPermanentesNovas = 0;
 
             for (const item of fila) {
+                if (!sessaoAtual()) break;
+                if (item.usuarioId !== usuarioId) continue;
                 if (item.estado === 'falha_permanente' && !forcarFalhas) continue;
 
                 const lote = Array.isArray(item.payload?.transacoes);
@@ -44,18 +57,20 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
                 try {
                     res = await fetch(`${API}/transacoes${lote ? '/lote' : ''}`, {
                         method: 'POST',
-                        headers: getHeaders(),
+                        headers: { ...getHeaders(), Authorization: `Bearer ${token}`, 'X-Fincontrole-Owner-Id': usuarioId },
                         body: JSON.stringify(item.payload)
                     });
                 } catch {
                     // Sem rede: preserva ordem e deixa a próxima rodada tentar novamente.
                     break;
                 }
+                if (!sessaoAtual()) break;
 
                 const ids = idsDoItem(item);
                 if (res.ok) {
-                    await removerPendente(item.id);
-                    setTransacoes(prev => prev.map(t => ids.includes(t.id)
+                    await removerPendente(item.id, usuarioId);
+                    if (!sessaoAtual()) break;
+                    setTransacoes(prev => !sessaoAtual() ? prev : prev.map(t => ids.includes(t.id)
                         ? { ...t, _pendingSync: false, _syncError: null }
                         : t
                     ));
@@ -64,22 +79,26 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
                 }
 
                 const dadosErro = await res.json().catch(() => ({}));
+                if (!sessaoAtual()) break;
                 const erro = dadosErro.message || dadosErro.error || `HTTP ${res.status}`;
                 const tentativas = (item.tentativas || 0) + 1;
 
                 if (ehFalhaPermanente(res.status)) {
-                    await atualizarPendente(item.id, { tentativas, estado: 'falha_permanente', erro });
-                    setTransacoes(prev => prev.map(t => ids.includes(t.id)
+                    await atualizarPendente(item.id, usuarioId, { tentativas, estado: 'falha_permanente', erro });
+                    if (!sessaoAtual()) break;
+                    setTransacoes(prev => !sessaoAtual() ? prev : prev.map(t => ids.includes(t.id)
                         ? { ...t, _pendingSync: true, _syncError: erro }
                         : t
                     ));
                     if (item.estado !== 'falha_permanente') falhasPermanentesNovas += 1;
                 } else {
-                    await atualizarPendente(item.id, { tentativas, estado: 'pendente', erro });
+                    await atualizarPendente(item.id, usuarioId, { tentativas, estado: 'pendente', erro });
                 }
             }
 
+            if (!sessaoAtual()) return;
             await recarregarPendentes();
+            if (!sessaoAtual()) return;
 
             if (sincronizados > 0 && showToast) {
                 showToast(
@@ -98,17 +117,21 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
                 );
             }
         } finally {
-            sincronizandoRef.current = false;
-            setIsSyncing(false);
+            if (sincronizandoRef.current === token) sincronizandoRef.current = null;
+            if (sessaoAtual()) setIsSyncing(false);
         }
-    }, [API, getHeaders, token, setTransacoes, showToast, recarregarPendentes]);
+    }, [API, getHeaders, token, usuarioId, setTransacoes, showToast, recarregarPendentes]);
 
     useEffect(() => {
-        if (token) {
+        if (usuarioId) {
             recarregarPendentes();
             sincronizarAgora();
+        } else {
+            setPendentes([]);
+            setSemDono(0);
+            setIsSyncing(false);
         }
-    }, [token, recarregarPendentes, sincronizarAgora]);
+    }, [usuarioId, recarregarPendentes, sincronizarAgora]);
 
     useEffect(() => {
         window.addEventListener('online', sincronizarAgora);
@@ -116,11 +139,12 @@ export function useOfflineSync({ API, getHeaders, token, setTransacoes, showToas
     }, [sincronizarAgora]);
 
     useEffect(() => {
-        if (!pendentes.some(item => item.estado !== 'falha_permanente')) return;
+        if (!pendentes.some(item => item.usuarioId === usuarioId && item.estado !== 'falha_permanente')) return;
         const intervalo = setInterval(sincronizarAgora, INTERVALO_RETRY_MS);
         return () => clearInterval(intervalo);
-    }, [pendentes, sincronizarAgora]);
+    }, [pendentes, usuarioId, sincronizarAgora]);
 
-    const falhasPermanentes = pendentes.filter(item => item.estado === 'falha_permanente').length;
-    return { pendentes, falhasPermanentes, sincronizarAgora, isSyncing };
+    const pendentesDaConta = pendentes.filter(item => item.usuarioId === usuarioId);
+    const falhasPermanentes = pendentesDaConta.filter(item => item.estado === 'falha_permanente').length;
+    return { pendentes: pendentesDaConta, falhasPermanentes, semDono, sincronizarAgora, isSyncing };
 }

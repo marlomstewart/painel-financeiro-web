@@ -1,11 +1,10 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 25/09/2026
+**Atualizado em:** 29/09/2026
 
 ## Objetivo atual
 
-Manter o frontend estável para evolução de longo prazo e registrar contexto suficiente para novas
-sessões independentes.
+Publicar Web antes da API e verificar o isolamento por conta da fila offline (AUD-001).
 
 ## Estado geral
 
@@ -25,6 +24,13 @@ sessões independentes.
 
 ## Entregas relevantes
 
+- A fila IndexedDB nova grava o ID da conta em cada lote, lista/sincroniza apenas itens do usuário
+  autenticado e valida a sessão novamente após operações assíncronas. IDs locais incluem a conta
+  para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
+  envio e indicadas de forma genérica no ícone da nuvem; clicar nele orienta procurar suporte.
+  O logout limpa os lançamentos em memória e uma resposta antiga não deve preencher a nova sessão.
+  A criação envia à API a identidade declarada junto ao JWT. A verificação funcional da PWA
+  publicada continua pendente.
 - O Extrato pede a “Data em que você pagou” antes de marcar um item como pago; o pagamento em
   lote pede a mesma data e a repete na confirmação. O campo começa no dia atual de Fortaleza.
   Cancelar não altera o lançamento, e a seleção do lote só é limpa após sucesso. A data segue
@@ -68,8 +74,6 @@ sessões independentes.
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
   do mais recente ao mais antigo, em área rolável.
-- Fila offline IndexedDB preserva atomicidade de lotes e interrompe retries automáticos em falha
-  permanente.
 - Dashboard preserva compras divididas no saldo histórico.
 - Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
   recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
@@ -93,6 +97,12 @@ sessões independentes.
 
 ## Trabalho em andamento
 
+- Confirmar o deploy Web antes da API que exige o novo cabeçalho em `POST /transacoes` e
+  `POST /transacoes/lote`; uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
+- Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
+  legada sem dono; não inserir dados reais para esse teste.
+- Definir procedimento assistido para recuperar filas antigas sem identificação após confirmar a
+  conta proprietária, sem atribuição automática nem exclusão silenciosa.
 - Confirmar após o deploy conjunto, em um lançamento de teste, a data escolhida no pagamento
   individual e em lote, a saída do Radar e a permanência do recebimento do terceiro.
 - Múltiplos participantes publicados e validados tecnicamente em produção; aguardam somente smoke
@@ -138,6 +148,10 @@ sessões independentes.
 
 ## Validações recentes
 
+- AUD-001 em 29/09: `npm test` aprovou 67 testes em 18 arquivos, incluindo A→B, troca de sessão
+  durante resposta pendente, quarentena de fila legada e isolamento de operações IndexedDB.
+  `npm run build` passou; `npm run lint` concluiu com zero erros e 12 avisos conhecidos. O chunk
+  principal ainda excede 500 kB.
 - Em 25/09, `npm test` aprovou 62 testes, incluindo escolha e cancelamento da data no
   pagamento individual e envio da data no lote. `npm run build` passou; `npm run lint` teve
   zero erros e 12 avisos preexistentes em arquivos fora desta mudança.
