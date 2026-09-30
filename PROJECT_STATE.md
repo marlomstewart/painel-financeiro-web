@@ -4,7 +4,7 @@
 
 ## Objetivo atual
 
-Publicar Web antes da API e verificar o isolamento por conta da fila offline (AUD-001).
+Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
 
 ## Estado geral
 
@@ -29,8 +29,9 @@ Publicar Web antes da API e verificar o isolamento por conta da fila offline (AU
   para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
   envio e indicadas de forma genérica no ícone da nuvem; clicar nele orienta procurar suporte.
   O logout limpa os lançamentos em memória e uma resposta antiga não deve preencher a nova sessão.
-  A criação envia à API a identidade declarada junto ao JWT. A verificação funcional da PWA
-  publicada continua pendente.
+  A criação envia à API a identidade declarada junto ao JWT. O commit `a29e9b1` está em
+  `origin/main`, e o bundle público contém o novo cabeçalho e o aviso de legado; o smoke
+  autenticado A→B continua pendente.
 - O Extrato pede a “Data em que você pagou” antes de marcar um item como pago; o pagamento em
   lote pede a mesma data e a repete na confirmação. O campo começa no dia atual de Fortaleza.
   Cancelar não altera o lançamento, e a seleção do lote só é limpa após sucesso. A data segue
@@ -97,8 +98,8 @@ Publicar Web antes da API e verificar o isolamento por conta da fila offline (AU
 
 ## Trabalho em andamento
 
-- Confirmar o deploy Web antes da API que exige o novo cabeçalho em `POST /transacoes` e
-  `POST /transacoes/lote`; uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
+- Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
+  pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
 - Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
   legada sem dono; não inserir dados reais para esse teste.
 - Definir procedimento assistido para recuperar filas antigas sem identificação após confirmar a
