@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
+import { AvisoTaxasBcb, ErroInvestimentos } from './AvisoTaxasBcb';
 import { Calculator, TrendingUp, TrendingDown } from 'lucide-react';
 
 /**
@@ -20,7 +21,7 @@ const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53,
  * o valor à vista rendendo (CDI) pelo prazo do parcelamento.
  */
 export function CalculadoraCompra({ API, getHeaders, modal }) {
-    const { dashboardData, loading } = useInvestimentos({ API, getHeaders, modal });
+    const { dashboardData, loading, error, fetchDashboard } = useInvestimentos({ API, getHeaders, modal });
 
     const [precoAVistaStr, setPrecoAVistaStr] = useState('50000'); // R$ 500,00
     const precoAVista = Number(precoAVistaStr) / 100;
@@ -32,7 +33,7 @@ export function CalculadoraCompra({ API, getHeaders, modal }) {
     const [caixinhaId, setCaixinhaId] = useState('base');
 
     const resultado = useMemo(() => {
-        if (!dashboardData || !dashboardData.taxas || precoAVista <= 0 || valorParcela <= 0 || numParcelas <= 0) return null;
+        if (!Number.isFinite(dashboardData?.taxas?.cdiAnual) || precoAVista <= 0 || valorParcela <= 0 || numParcelas <= 0) return null;
 
         const cdiAnual = dashboardData.taxas.cdiAnual;
         let percentualCdi = 100;
@@ -71,6 +72,7 @@ export function CalculadoraCompra({ API, getHeaders, modal }) {
         return { totalParcelado, diasCorridos, lucroLiquido, valorLiquidoFinal, diferenca, compensaParcelar };
     }, [dashboardData, precoAVista, valorParcela, numParcelas, caixinhaId]);
 
+    if (error) return <ErroInvestimentos mensagem={error} tentarNovamente={fetchDashboard} />;
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
@@ -81,6 +83,7 @@ export function CalculadoraCompra({ API, getHeaders, modal }) {
         );
     }
 
+    if (!Number.isFinite(dashboardData.taxas?.cdiAnual)) return <ErroInvestimentos mensagem="Simulação pausada: a taxa CDI está indisponível. Nenhum resultado foi estimado." tentarNovamente={fetchDashboard} />;
     const { caixinhas } = dashboardData;
 
     const inputCls = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 md:p-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors shadow-sm";
@@ -88,6 +91,7 @@ export function CalculadoraCompra({ API, getHeaders, modal }) {
 
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-5xl mx-auto pb-24 animate-fade-in">
+            <AvisoTaxasBcb taxas={[dashboardData.taxas]} />
 
             <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">

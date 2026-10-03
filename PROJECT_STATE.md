@@ -4,10 +4,15 @@
 
 ## Objetivo atual
 
-AUD-007 implementada e testada junto à API: datas de recebimento, caixa histórico e reconciliação conservadora
-do legado. Checkpoint final validado e publicado em 03/10 na branch de revisão
-`codex/aud-007-recebimentos-datados`, sem promoção para `main`, deploy ou teste em produção.
-Implementação Web `4c811e1`, API `c829165`; SHAs remotos conferidos nos dois repositórios.
+Integração BCB corrigida junto à API com checkpoint final validado em 03/10: taxas com origem/datas, aviso de última
+válida desatualizada, erro recuperável e simuladores pausados sem CDI, inclusive “À vista ou parcelado”.
+Branch `codex/bcb-resiliencia`, baseada no checkpoint AUD-007; publicação da branch de revisão
+em andamento, sem promoção para `main` ou deploy. Contrato/política canônicos: API D-026 e
+`docs/BCB_RESILIENCIA.md`.
+CI remota, smoke visual HML e rollout API/Web/PWA pendentes; produção não usada em testes.
+
+AUD-007 permanece publicada na branch `codex/aud-007-recebimentos-datados`, sem promoção/deploy:
+Web `4c811e1`, API `c829165`, checkpoints documentais `d840f6c`/`5d5105d`.
 Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Estado geral
@@ -33,6 +38,11 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Entregas relevantes
 
+- BCB: Investimentos e Calculadora mostram origem/referência/consulta e avisam taxa antiga;
+  erro não fica carregando indefinidamente nem preserva números antigos como atuais. Carteira
+  CDB vazia/prefixada permanece acessível; CDI null pausa simuladores, não vira zero. Hook de
+  leitura compartilhado aborta requisições substituídas/desmontadas e recusa refresh de contexto
+  antigo. Resposta 503 genérica de proxy não é atribuída automaticamente ao BCB.
 - A fila IndexedDB nova grava o ID da conta em cada lote, lista/sincroniza apenas itens do usuário
   autenticado e valida a sessão novamente após operações assíncronas. IDs locais incluem a conta
   para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
@@ -109,6 +119,9 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Trabalho em andamento
 
+- BCB com checkpoint final aprovado em `codex/bcb-resiliencia`; publicação em andamento.
+  Considerar dependência AUD-007 na revisão/promoção; preparar smoke visual HML e rollout
+  compatível da API/Web/PWA. Falha DNS e recuperação no ambiente hospedado não confirmadas.
 - AUD-007: publicada em branch de revisão (`4c811e1`) junto à API (`c829165`), sem promoção para
   `main`. CI atual só dispara por push em main/master/develop ou PR; abrir revisão/CI remota.
   Smoke visual HML e rollout coordenado seguem pendentes. Exigir
@@ -146,6 +159,9 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Pendências e riscos
 
+- BCB: cache da API se perde no restart; sem taxa válida, posições dependentes recebem 503.
+  Web antiga não identifica metadados nem aceita CDI null; atualização compatível necessária.
+  Rentabilidade continua estimativa simplificada, não cotação oficial/rendimento histórico.
 - AUD-007: pendente smoke visual integrado em HML, CI e deploy conjunto. Datas antigas desconhecidas
   não foram estimadas; um novo fechamento cobre somente os cortes posteriores. PWA antiga não
   envia data e pode tratar NULL como zero: atualizar durante janela controlada. A API antiga ignora
@@ -153,7 +169,7 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
-- `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
+- `npm run lint` não possui erros. Restam 11 avisos de hooks sobre carregamentos iniciados em efeitos
   e dependências que exigem refatoração gradual com cancelamento/testes de ciclo de vida.
 - Há arquivos de alta complexidade registrados no backlog da API: `Investimentos.jsx`, `Modal.jsx`,
   `Lancamentos.jsx` e `useDashboard.jsx`.
@@ -170,6 +186,17 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Validações recentes
 
+- Checkpoint final BCB em 03/10: `npm test` repetido, 91/91 em 23 arquivos;
+  16 regressões novas cobrem 503 tipado/genérico,
+  recuperação, descarte de dado anterior, taxa antiga, requisição atrasada, troca/desmontagem,
+  refresh antigo ignorado, CDI null sem veredito, carteira vazia e erro de Tesouro sem total falso.
+  Lint zero erros/11 avisos: dois efeitos anteriores foram centralizados em um hook com cancelamento,
+  preservando um aviso desse padrão; outros avisos fora do escopo. Build/PWA aprovado, aviso conhecido
+  do chunk >500 kB. Diff/whitespace/padrões de segredo revisados e catálogo atualizado;
+  API 185/185 e unitários 98/98.
+  BCB/Sentry simulados nos novos testes, SQL real só na suíte existente de `fincontrole-hml`.
+  Nenhuma nova decisão Web independente: política/contrato registrados na API D-026.
+  Smoke visual hospedado, CI remota e deploy não executados.
 - Checkpoint final AUD-007 em 03/10: 75/75 testes em 19 arquivos, cobrindo setembro/outubro, recebimento posterior ao
   marco, legado desconhecido, estado NULL, prompts cancelados, falha HTTP e ações de Cobranças.
   Lint: zero erros/12 avisos preexistentes. Build/PWA aprovado, com aviso conhecido do chunk >500 kB.
@@ -312,9 +339,13 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-1. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
+1. Abrir revisão/CI BCB após publicação; preparar smoke integrado HML de falha/cache/recuperação
+   antes do rollout API/Web/PWA. Branch baseada em AUD-007: não promovê-la como hotfix independente
+   sem revisar essa dependência. Seguir `painel-financeiro-api/docs/BCB_RESILIENCIA.md`.
+
+2. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
    compatíveis para smoke visual desktop/celular antes da promoção para `main` e rollout produtivo.
-2. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
+3. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
    datas antigas conhecidas ou estabelecer fechamento bancário, sem inferir histórico.
 
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após

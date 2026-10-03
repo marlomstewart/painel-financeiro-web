@@ -131,8 +131,8 @@ vinculá-lo a um investimento automaticamente.
   para Ações/FIIs; caixinha, % do CDI, aplicado e rendimento para Renda Fixa; título, tipo, taxa e
   vencimento para Tesouro Direto). É também de onde parte o botão **"Novo Lançamento"**.
 - **Renda Fixa**: aportes organizados por "caixinha" (cada uma representa uma instituição/fundo,
-  com seu próprio percentual do CDI). Rendimento calculado automaticamente em tempo real (usando o
-  CDI atual, buscado do Banco Central), descontando IOF (se resgatado em menos de 30 dias) e
+  com seu próprio percentual do CDI). Rendimento estimado pelo CDI aproximado via meta Selic
+  do Banco Central, com cache validado/datado, descontando IOF (se resgatado em menos de 30 dias) e
   Imposto de Renda regressivo (conforme o tempo de aplicação).
 - **Ações** e **FIIs**: registre suas compras e vendas (ticker, quantidade, preço); a cotação atual
   é buscada automaticamente, mostrando preço médio, valor de mercado e lucro/prejuízo. Suporta
@@ -148,12 +148,18 @@ vinculá-lo a um investimento automaticamente.
   FIIs, caixinha/valor pra Renda Fixa, tipo/taxa/vencimento pro Tesouro), com o valor total
   calculado na hora.
 
+Indicadores mostram origem, referência e data de consulta. Taxa antiga tem aviso explícito e não
+atualiza snapshot automático. Sem taxa útil, o erro encerra o carregamento e permite tentar
+novamente. Carteira vazia/prefixada continua acessível; CDI ausente pausa os simuladores, sem
+inventar juros. Esses cálculos não representam rendimento histórico garantido.
+
 ## Simulador "À Vista ou Parcelado"
 
 - Calculadora avulsa (menu lateral) que ajuda a decidir entre pagar à vista ou parcelar uma compra:
   você informa o preço à vista e as condições do parcelado (valor da parcela e quantidade), e o
   sistema compara com o rendimento que esse dinheiro teria se ficasse investido (usando a taxa de
-  CDI real da sua Renda Fixa) durante o prazo do parcelamento.
+  CDI aproximado disponível na API) durante o prazo do parcelamento. Taxa desatualizada é
+  identificada; sem CDI válido, não há veredito financeiro e é possível tentar novamente.
 - Mostra um veredito direto — "Compre à Vista" ou "Pode Parcelar" — com o valor da diferença, além
   do detalhamento (total parcelado vs. valor rendendo).
 
