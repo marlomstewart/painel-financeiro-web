@@ -5,8 +5,9 @@
 ## Objetivo atual
 
 AUD-007 implementada e testada junto à API: datas de recebimento, caixa histórico e reconciliação conservadora
-do legado. Checkpoint final validado em 03/10 para publicação na branch de revisão
+do legado. Checkpoint final validado e publicado em 03/10 na branch de revisão
 `codex/aud-007-recebimentos-datados`, sem promoção para `main`, deploy ou teste em produção.
+Implementação Web `4c811e1`, API `c829165`; SHAs remotos conferidos nos dois repositórios.
 Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Estado geral
@@ -108,8 +109,9 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Trabalho em andamento
 
-- AUD-007: checkpoint autorizado validado; publicação em branch de revisão junto à API, sem
-  promoção para `main`. Smoke visual HML e rollout coordenado seguem pendentes. Exigir
+- AUD-007: publicada em branch de revisão (`4c811e1`) junto à API (`c829165`), sem promoção para
+  `main`. CI atual só dispara por push em main/master/develop ou PR; abrir revisão/CI remota.
+  Smoke visual HML e rollout coordenado seguem pendentes. Exigir
   recarregamento da PWA e não misturar instâncias antigas escrevendo recebimentos.
 
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
@@ -310,7 +312,7 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-1. Confirmar publicação das branches AUD-007, preparar revisão/CI e ambiente HML com API/Web
+1. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
    compatíveis para smoke visual desktop/celular antes da promoção para `main` e rollout produtivo.
 2. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
    datas antigas conhecidas ou estabelecer fechamento bancário, sem inferir histórico.
