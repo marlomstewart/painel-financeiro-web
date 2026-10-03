@@ -6,9 +6,9 @@
 
 Integração BCB corrigida junto à API com checkpoint final validado em 03/10: taxas com origem/datas, aviso de última
 válida desatualizada, erro recuperável e simuladores pausados sem CDI, inclusive “À vista ou parcelado”.
-Branch `codex/bcb-resiliencia`, baseada no checkpoint AUD-007; publicação da branch de revisão
-em andamento, sem promoção para `main` ou deploy. Contrato/política canônicos: API D-026 e
-`docs/BCB_RESILIENCIA.md`.
+Implementação publicada em 03/10 na branch de revisão `codex/bcb-resiliencia`, baseada no checkpoint
+AUD-007: Web `716fe21`, API `5a67539`; SHAs remotos conferidos, sem promoção para `main` ou deploy.
+Contrato/política canônicos: API D-026 e `docs/BCB_RESILIENCIA.md`.
 CI remota, smoke visual HML e rollout API/Web/PWA pendentes; produção não usada em testes.
 
 AUD-007 permanece publicada na branch `codex/aud-007-recebimentos-datados`, sem promoção/deploy:
@@ -119,7 +119,9 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Trabalho em andamento
 
-- BCB com checkpoint final aprovado em `codex/bcb-resiliencia`; publicação em andamento.
+- BCB com checkpoint final aprovado e implementação publicada em `codex/bcb-resiliencia`
+  (Web `716fe21`, API `5a67539`), sem promoção/deploy. CI só dispara em main/master/develop
+  ou PR; publicação desta branch não comprova CI remota. Abrir revisão/CI como próximo passo.
   Considerar dependência AUD-007 na revisão/promoção; preparar smoke visual HML e rollout
   compatível da API/Web/PWA. Falha DNS e recuperação no ambiente hospedado não confirmadas.
 - AUD-007: publicada em branch de revisão (`4c811e1`) junto à API (`c829165`), sem promoção para
@@ -197,6 +199,8 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
   BCB/Sentry simulados nos novos testes, SQL real só na suíte existente de `fincontrole-hml`.
   Nenhuma nova decisão Web independente: política/contrato registrados na API D-026.
   Smoke visual hospedado, CI remota e deploy não executados.
+  Publicação da implementação conferida por `git ls-remote` nos dois repositórios;
+  `origin/main` permaneceu Web `19381a8` / API `1da24c6`. Nenhum PR ou deploy criado nesta etapa.
 - Checkpoint final AUD-007 em 03/10: 75/75 testes em 19 arquivos, cobrindo setembro/outubro, recebimento posterior ao
   marco, legado desconhecido, estado NULL, prompts cancelados, falha HTTP e ações de Cobranças.
   Lint: zero erros/12 avisos preexistentes. Build/PWA aprovado, com aviso conhecido do chunk >500 kB.
@@ -339,7 +343,7 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-1. Abrir revisão/CI BCB após publicação; preparar smoke integrado HML de falha/cache/recuperação
+1. Abrir revisão/CI das branches BCB publicadas; preparar smoke integrado HML de falha/cache/recuperação
    antes do rollout API/Web/PWA. Branch baseada em AUD-007: não promovê-la como hotfix independente
    sem revisar essa dependência. Seguir `painel-financeiro-api/docs/BCB_RESILIENCIA.md`.
 
