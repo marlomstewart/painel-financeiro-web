@@ -2,8 +2,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 import { obterDesdeISO } from '../utils/janelaTransacoes';
 import { calcularFluxoProjetado, resolverMesEfetivo } from '../utils/fluxoProjetado';
+import { movimentosCaixa, temRecebimentosSemData } from '../utils/movimentosCaixa';
 
-const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const formatarMoeda = (valor) => valor === null ? 'Não reconciliado' : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 const obterParticipantes = (t) => Array.isArray(t.participantes) && t.participantes.length > 0
@@ -27,13 +28,8 @@ const getMeuValor = (t) => {
     return Math.max(0, valorParcela - getValorTerceiros(t));
 };
 
-// Caixa real: enquanto o terceiro não devolveu, o dinheiro inteiro saiu da conta. Depois da
-// devolução, só a sua fração continua pesando no saldo. Esta regra precisa ser idêntica tanto
-// no mês visível quanto no saldo histórico carregado para o mês seguinte.
-const getValorParaConta = (t) => {
-    const valorIntegral = Number(t.valorParcela);
-    return (t.isThirdParty && t.terceiro_recebido) ? getMeuValor(t) : valorIntegral;
-};
+// A saída é integral; entradas de terceiros são movimentos separados e datados.
+const getValorParaConta = (t) => Number(t.valorParcela);
 
 const ehRenda = (t) => t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa';
 const dataISO = (valor) => {
@@ -190,31 +186,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const mesProximo = useCallback(() => setDataVis(prev => prev.mes === 12 ? { mes: 1, ano: prev.ano + 1 } : { ...prev, mes: prev.mes + 1 }), [setDataVis]);
 
     const calcularSaldoAcumuladoAte = useCallback((mes, ano) => {
-        const todasAteOMes = transacoes.filter(t => t.anoReferencia < ano || (t.anoReferencia === ano && t.mesReferencia <= mes));
-        let rendaPaga = 0, gastoPago = 0;
-        
-        todasAteOMes.forEach(t => {
-            if (isDividaTerceiro(t)) return; // IGNORA DÍVIDAS DE TERCEIROS NO SALDO HISTÓRICO
-            
-            const valorParaConta = getValorParaConta(t);
-            if (t.tipo === 'renda' || t.categoria === 'Renda' || t.categoria === 'Renda Fixa') {
-                if (t.status === 'pago') rendaPaga += valorParaConta;
-            }
-            else if (t.tipo === 'reembolso') {
-                if (t.status === 'pago') gastoPago -= valorParaConta;
-            }
-            else {
-                if (t.status === 'pago') gastoPago += valorParaConta;
-            }
-        });
-        return rendaPaga - gastoPago;
+        const resumo = resumirMovimentosDeCaixa(movimentosCaixa(transacoes, '', fimDaCompetenciaISO(mes, ano)));
+        return arredondarCentavos(resumo.rendas - resumo.gastos - resumo.investimentos);
     }, [transacoes]);
 
     const mesAntRef = useMemo(() => dataVis.mes === 1 ? { mes: 12, ano: dataVis.ano - 1 } : { mes: dataVis.mes - 1, ano: dataVis.ano }, [dataVis]);
     const marcoSaldoConciliado = useMemo(() => {
         const valor = Number(saldoConciliado?.valor);
         const data = dataISO(saldoConciliado?.data);
-        return Number.isFinite(valor) && data ? { valor, data } : null;
+        return Number.isFinite(valor) && data ? { valor, data, confirmadoEm: saldoConciliado.confirmadoEm } : null;
     }, [saldoConciliado]);
 
     const dataInicioMesVisivel = inicioDaCompetenciaISO(dataVis.mes, dataVis.ano);
@@ -222,18 +202,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const marcoAplicaNoMes = Boolean(marcoSaldoConciliado && dataFimMesVisivel >= marcoSaldoConciliado.data);
     const marcoFoiInformadoNoMes = Boolean(marcoSaldoConciliado && marcoSaldoConciliado.data >= dataInicioMesVisivel && marcoSaldoConciliado.data <= dataFimMesVisivel);
 
-    const dataDeCaixa = useCallback((t) => dataISO(t.data_pagamento) || dataISO(t.dataCompra), []);
     const calcularSaldoComMarcoAte = useCallback((mes, ano) => {
         if (!marcoSaldoConciliado) return null;
         const fim = fimDaCompetenciaISO(mes, ano);
         if (fim < marcoSaldoConciliado.data) return null;
-        const movimentos = transacoes.filter(t => {
-            const data = dataDeCaixa(t);
-            return t.status === 'pago' && data && data > marcoSaldoConciliado.data && data <= fim;
-        });
+        const movimentos = movimentosCaixa(transacoes, marcoSaldoConciliado.data, fim);
         const resumo = resumirMovimentosDeCaixa(movimentos);
         return arredondarCentavos(marcoSaldoConciliado.valor + resumo.rendas - resumo.gastos - resumo.investimentos);
-    }, [marcoSaldoConciliado, transacoes, dataDeCaixa]);
+    }, [marcoSaldoConciliado, transacoes]);
 
     const mudarOrdenacao = useCallback((coluna) => {
         setOrdenacao(prev => ({ coluna, direcao: prev.coluna === coluna ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc' }));
@@ -506,13 +482,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         };
     }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas, progressoCategoriasMesAtual, mesReal, anoReal]);
 
-    const transacoesDoCaixaNoMes = marcoAplicaNoMes
-        ? transacoes.filter(t => {
-            const data = dataDeCaixa(t);
-            return t.status === 'pago' && data && data > marcoSaldoConciliado.data && data >= dataInicioMesVisivel && data <= dataFimMesVisivel;
-        })
-        : transacoesMes;
-    const resumoCaixaNoMes = marcoAplicaNoMes ? resumirMovimentosDeCaixa(transacoesDoCaixaNoMes) : null;
+    const inicioCaixa = marcoAplicaNoMes && marcoSaldoConciliado.data >= dataInicioMesVisivel
+        ? marcoSaldoConciliado.data : fimDaCompetenciaISO(mesAntRef.mes, mesAntRef.ano);
+    const transacoesDoCaixaNoMes = movimentosCaixa(transacoes, inicioCaixa, dataFimMesVisivel);
+    const resumoCaixaNoMes = resumirMovimentosDeCaixa(transacoesDoCaixaNoMes);
 
     if (resumoCaixaNoMes) {
         rendaPagaConta = resumoCaixaNoMes.rendas;
@@ -531,16 +504,22 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
     const saldoMesAnterior = saldoMesAnteriorComMarco ?? saldoMesAnteriorLegado;
     const saldoMesAtual = rendaPagaConta - (gastoPagoConta + investidoPagoConta);
     const saldoAtualComMarco = marcoAplicaNoMes ? calcularSaldoComMarcoAte(dataVis.mes, dataVis.ano) : null;
-    const saldoAtual = marcoAplicaNoMes && saldoCaixaCanonico?.ate === dataFimMesVisivel && Number.isFinite(Number(saldoCaixaCanonico?.valor))
-        ? Number(saldoCaixaCanonico.valor)
-        : (saldoAtualComMarco ?? (saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0)));
+    const canonicoDoMes = saldoCaixaCanonico?.ate === dataFimMesVisivel;
+    const caixaNaoReconciliado = canonicoDoMes ? saldoCaixaCanonico.reconciliado === false
+        : temRecebimentosSemData(transacoes, marcoAplicaNoMes ? marcoSaldoConciliado : null)
+            || Boolean(marcoSaldoConciliado && !marcoAplicaNoMes);
+    const saldoAtual = caixaNaoReconciliado ? null
+        : canonicoDoMes && saldoCaixaCanonico.valor != null && Number.isFinite(Number(saldoCaixaCanonico.valor))
+            && (marcoAplicaNoMes || somarSaldoAnterior)
+            ? Number(saldoCaixaCanonico.valor)
+            : (saldoAtualComMarco ?? (saldoMesAtual + (somarSaldoAnterior ? saldoMesAnterior : 0)));
     const despesasFuturas = totGastoPendente + totInvestidoPendente + metaNaoComprometida;
-    const previstoFimMes = saldoAtual + totRendaPendente - despesasFuturas;
+    const previstoFimMes = caixaNaoReconciliado ? null : saldoAtual + totRendaPendente - despesasFuturas;
 
     // Fluxo de caixa projetado: usa o previsto de fim do mês atual como ponto de partida do
     // acumulado dos próximos 6 meses, com base no que é recorrente/conhecido e nas faturas já
     // lançadas — não prevê gastos avulsos ainda não lançados.
-    const fluxoProjetado = useMemo(() => calcularFluxoProjetado({
+    const fluxoProjetado = useMemo(() => previstoFimMes === null ? [] : calcularFluxoProjetado({
         mesAtual: dataVis.mes, anoAtual: dataVis.ano, horizonteMeses: 6, saldoInicial: previstoFimMes,
         rendasFixas, contasFixas, dividas, cartoes, transacoes
     }), [dataVis.mes, dataVis.ano, previstoFimMes, rendasFixas, contasFixas, dividas, cartoes, transacoes]);
@@ -783,6 +762,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
     const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {
+        if (caixaNaoReconciliado && ['saldo', 'saldo_liquido', 'previsao'].includes(tipo)) {
+            modal.alert('Caixa não reconciliado: informe as datas conhecidas dos recebimentos antigos em Cobranças ou confirme um novo saldo bancário em Configurações. Datas desconhecidas não foram estimadas.', 'Caixa não reconciliado');
+            return;
+        }
         let conteudo;
         let titulo;
 
@@ -797,7 +780,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                 
                 const itemFormatado = {
                     id: t.id,
-                    data: new Date(t.dataCompra).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
+                    data: new Date(useMeuValor ? t.dataCompra : (t.data_pagamento || t.dataCompra)).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
                     descricao: t.descricao,
                     valor: isReembolso ? -valorCalculado : valorCalculado,
                     valorStr: formatarMoeda(valorCalculado),
@@ -1042,14 +1025,14 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         }
 
         modal.alert(conteudo, titulo);
-    }, [modal, dataVis, previaCompetenciaFutura, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesDoCaixaNoMes, marcoFoiInformadoNoMes, marcoSaldoConciliado]);
+    }, [modal, dataVis, previaCompetenciaFutura, totRendaTotal, totRendaPaga, totRendaPendente, totGastoReal, totGastoPago, totGastoPendente, totInvestido, totInvestidoPago, totInvestidoPendente, saldoAtual, saldoMesAnterior, somarSaldoAnterior, previstoFimMes, metaNaoComprometida, rendaPagaConta, gastoPagoConta, investidoPagoConta, transacoesMes, transacoesDoCaixaNoMes, marcoFoiInformadoNoMes, marcoSaldoConciliado, caixaNaoReconciliado]);
 
     return {
         buscaTexto, setBuscaTexto, filtroStatus, setFiltroStatus, ordenacao, setOrdenacao,
         mostrarFiltrosAvancados, setMostrarFiltrosAvancados, filtrosAvancados, setFiltrosAvancados, somarSaldoAnterior, setSomarSaldoAnterior,
         mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
-        saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado, isMesFuturo, previaCompetenciaFutura,
+        saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado, isMesFuturo, previaCompetenciaFutura, caixaNaoReconciliado,
         categoriasDinamicas, gCat: gCatParaExibicao, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard, abrirDetalheMesProjetado
     };

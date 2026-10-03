@@ -1,12 +1,20 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 29/09/2026
+**Atualizado em:** 03/10/2026
 
 ## Objetivo atual
 
-Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
+AUD-007 implementada e testada junto à API: datas de recebimento, caixa histórico e reconciliação conservadora
+do legado. Checkpoint final validado em 03/10 para publicação na branch de revisão
+`codex/aud-007-recebimentos-datados`, sem promoção para `main`, deploy ou teste em produção.
+Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Estado geral
+
+- AUD-007 validada em checkpoint: Cobranças pede data efetiva, mostra recebidos quitados sem data histórica e
+  permite informar data conhecida/cancelar declaração incorreta. Dashboard usa API para cortes,
+  não converte NULL em zero e suspende projeção dependente de caixa não reconciliado. Nenhuma
+  data antiga foi presumida; prévia orçamentária permanece independente. API D-025 é canônica.
 
 - Checkpoint documental concluído em 12/09; README e catálogo funcional foram alinhados à
   navegação por caminhos, planejamento, abastecimentos técnicos e consumo de combustível.
@@ -75,16 +83,18 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
   do mais recente ao mais antigo, em área rolável.
-- Dashboard preserva compras divididas no saldo histórico.
+- Dashboard separa saída integral por pagamento e entradas datadas dos terceiros no saldo
+  histórico. Não reduz setembro por um recebimento feito em outubro (AUD-007).
 - Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
   recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
   conta/fatura.
 - Configurações permite saldo conciliado; depois do marco, o Saldo Líquido usa datas efetivas de
-  pagamento para representar caixa real entre meses.
+  pagamento e recebimento para representar caixa real entre meses. Novo marco confirmado pode
+  cobrir legado observado antes dele, mas não reconciliar retroativamente períodos anteriores.
 - A busca de transações agora preserva também movimentos pagos após o marco de caixa, mesmo se a
   data de compra estiver fora da janela padrão de 24 meses. O pagamento/reversão de fatura usa
   uma operação atômica da API, em vez de uma requisição por parcela.
-- O Dashboard consulta o saldo conciliado canônico da API para o mês visível; Configurações mostra
+- O Dashboard consulta o caixa canônico da API com ou sem marco para o mês visível; Configurações mostra
   uma prévia confirmável antes de substituir o marco.
 - Extrato evidencia quando uma parcela de terceiro foi recebida sem confundir esse fato com o
   pagamento da conta; Dívidas calcula parcelas geradas como `despesa` e usa
@@ -97,6 +107,10 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
   `?tela=` ainda abrem e são normalizados no próximo estado da aplicação.
 
 ## Trabalho em andamento
+
+- AUD-007: checkpoint autorizado validado; publicação em branch de revisão junto à API, sem
+  promoção para `main`. Smoke visual HML e rollout coordenado seguem pendentes. Exigir
+  recarregamento da PWA e não misturar instâncias antigas escrevendo recebimentos.
 
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
@@ -130,6 +144,11 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
 
 ## Pendências e riscos
 
+- AUD-007: pendente smoke visual integrado em HML, CI e deploy conjunto. Datas antigas desconhecidas
+  não foram estimadas; um novo fechamento cobre somente os cortes posteriores. PWA antiga não
+  envia data e pode tratar NULL como zero: atualizar durante janela controlada. A API antiga ignora
+  datas, portanto não manter versões mistas. Devolução real/recebimento parcial e AUD-009 separados.
+
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
 - `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
@@ -148,6 +167,15 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
 - `src/hooks/*.test.jsx`, `.github/workflows/ci.yml`, `docs/FUNCIONALIDADES.md`
 
 ## Validações recentes
+
+- Checkpoint final AUD-007 em 03/10: 75/75 testes em 19 arquivos, cobrindo setembro/outubro, recebimento posterior ao
+  marco, legado desconhecido, estado NULL, prompts cancelados, falha HTTP e ações de Cobranças.
+  Lint: zero erros/12 avisos preexistentes. Build/PWA aprovado, com aviso conhecido do chunk >500 kB.
+  Diff completo, arquivos novos, whitespace e padrões de credenciais revisados/aprovados.
+  README e catálogo funcional deixaram de descrever a compensação pela flag atual. D-015
+  revisada e D-005 alinhada à autoridade canônica, sem nova decisão de arquitetura no checkpoint.
+  API: suíte completa 160/160, unitários 73/73 e sintaxe de 27 arquivos aprovados.
+  API validada somente com dados sintéticos HML; nenhum smoke visual hospedado/produtivo executado.
 
 - AUD-001 em 29/09: `npm test` aprovou 67 testes em 18 arquivos, incluindo A→B, troca de sessão
   durante resposta pendente, quarentena de fila legada e isolamento de operações IndexedDB.
@@ -217,7 +245,9 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
   troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run
   build` foi concluído em 07/09, com apenas o aviso conhecido de chunk principal acima de 500 kB.
-- Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
+- Fluxo de terceiros: o lançamento integral no Extrato e o pagamento da fatura permanecem
+  independentes do recebimento. AUD-007 substitui a compensação pela flag atual: saída integral
+  no pagamento, entrada própria datada no recebimento, sem renda duplicada no Extrato.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
   `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
@@ -279,6 +309,11 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
   custo por dia útil e os dias úteis observados em Aracaju/SE. Teste focado e build concluíram com
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
+
+1. Confirmar publicação das branches AUD-007, preparar revisão/CI e ambiente HML com API/Web
+   compatíveis para smoke visual desktop/celular antes da promoção para `main` e rollout produtivo.
+2. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
+   datas antigas conhecidas ou estabelecer fechamento bancário, sem inferir histórico.
 
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.

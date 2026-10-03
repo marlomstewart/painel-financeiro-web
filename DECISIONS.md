@@ -46,8 +46,9 @@
 - **Data:** 03/09/2026
 - **Status:** aceita
 - **Contexto:** a Web precisava filtrar e somar dados históricos para apresentar caixa real.
-- **Decisão:** quando houver marco, o Dashboard consulta o saldo calculado pela API para o fim do
-  mês visível; o cálculo local permanece apenas como fallback de disponibilidade.
+- **Decisão:** o Dashboard consulta o saldo calculado pela API para o fim do mês visível, com ou
+  sem marco, conforme D-015. Cálculo local auxilia detalhes; indisponibilidade ou saldo não
+  reconciliado não podem apresentar um valor parcial como confirmado.
 - **Motivo:** concentrar a regra financeira que depende do banco e reduzir divergência entre
   dispositivos.
 - **Consequência:** alterações no cálculo de caixa devem evoluir primeiro na API e manter a Web
@@ -189,3 +190,17 @@
 - **Motivo:** impedir mistura de dados financeiros entre contas sem perder dados locais antigos.
 - **Consequência:** um lançamento antigo pendente pode exigir suporte antes de aparecer na conta;
   a API exige identidade declarada no envio, então PWAs antigas precisam atualizar.
+
+## D-015 — Caixa histórico usa recebimentos datados e sinaliza o legado incerto
+
+- **Data:** 02/10/2026
+- **Status:** aceita
+- **Decisão:** Cobranças pede a data real ao confirmar recebimento e mantém a fatura independente.
+  Recebidos antigos sem data ficam visíveis e podem receber data conhecida sem desmarcação.
+  Cancelar é corrigir declaração incorreta, não registrar devolução. Cálculo local/detalhes usam
+  movimentos próprios, com data e valor devolvidos pela API; orçamento continua por competência.
+- **Autoridade:** consultar caixa canônico mesmo sem marco. NULL/não reconciliado ou API indisponível
+  não vira zero nem saldo parcial como confirmado. Suspender projeção dependente desse saldo;
+  manter prévia orçamentária futura independente. Novo marco cobre legado somente dali em diante.
+- **Consequência:** implantação coordenada com D-025 da API e atualização da PWA. Sem marco,
+  resultado histórico parte de zero e não comprova saldo inicial bancário. Não estimar datas antigas.

@@ -10,7 +10,7 @@ import {
  * @param {number|string} valor
  * @returns {string} Valor formatado em Reais.
  */
-const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const formatarMoeda = (valor) => valor === null ? 'Não reconciliado' : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 /**
@@ -25,7 +25,7 @@ export function Dashboard({
     saldoAtual, previstoFimMes, somarSaldoAnterior, setSomarSaldoAnterior,
     categorias, gCat, abrirDetalhesCategoria, pendenciasPassadas, abrirModalPendencias, abrirResumoCard,
     verFaturasPorCartao, transacoesMes = [], transacoesGlobais = [], cartoes = [], dividas = [], garagem = null, temGaragem = false,
-    fluxoProjetado = [], abrirDetalheMesProjetado, isMesFuturo = false, previaCompetenciaFutura = null
+    fluxoProjetado = [], abrirDetalheMesProjetado, isMesFuturo = false, previaCompetenciaFutura = null, caixaNaoReconciliado = false
 }) {
 
     const ultimosCinco = [...transacoesMes]
@@ -54,6 +54,8 @@ export function Dashboard({
     const categoriasEstrategicas = categorias.filter(c => Number(c.meta) > 0 || c.planejamentoCombustivel);
 
     return (
+        <>
+        {caixaNaoReconciliado && <p role="alert" className="m-4 p-4 rounded-xl bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200">Caixa não reconciliado ou aguardando confirmação da API. Se persistir, confira a conexão, informe datas conhecidas dos recebimentos em Cobranças ou confirme um novo saldo bancário em Configurações. Períodos anteriores ao marco e recebimentos sem data não foram estimados.</p>}
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
             {/* CABEÇALHO PADRÃO (SÓLIDO E ROLÁVEL) */}
@@ -342,5 +344,6 @@ export function Dashboard({
                 )}
             </div>
         </div>
+        </>
     );
 }

@@ -203,16 +203,16 @@ function App() {
   }, [auth.token, auth.saldoConciliado]);
 
   useEffect(() => {
-    if (!auth.token || !auth.saldoConciliado?.data) { setSaldoCaixaCanonico(null); return; }
+    if (!auth.token) { setSaldoCaixaCanonico(null); return; }
     const ate = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}-${String(new Date(dataVis.ano, dataVis.mes, 0).getDate()).padStart(2, '0')}`;
     let ativo = true;
-    // Nunca reutilizar o resultado de outro mês: enquanto a API responde, o Dashboard usa o
-    // cálculo local com os mesmos movimentos que aparecem no detalhamento.
-    setSaldoCaixaCanonico(null);
+    // Nunca reutilizar outro mês nem certificar saldo parcial enquanto a API não confirmar.
+    setSaldoCaixaCanonico({ ate, valor: null, reconciliado: false, motivo: 'aguardando_api' });
     fetch(`${API}/transacoes/caixa?ate=${ate}`, { headers: auth.getHeaders() })
       .then(res => res.ok ? res.json() : null)
-      .then(data => { if (ativo) setSaldoCaixaCanonico(data?.caixa ? { ate, ...data.caixa } : null); })
-      .catch(() => { if (ativo) setSaldoCaixaCanonico(null); });
+      .then(data => { if (ativo) setSaldoCaixaCanonico(data?.caixa ? { ate, ...data.caixa }
+        : { ate, valor: null, reconciliado: false, motivo: 'api_indisponivel' }); })
+      .catch(() => { if (ativo) setSaldoCaixaCanonico({ ate, valor: null, reconciliado: false, motivo: 'api_indisponivel' }); });
     return () => { ativo = false; };
   }, [API, auth.token, auth.saldoConciliado, auth.getHeaders, dataVis, transacoes]);
 

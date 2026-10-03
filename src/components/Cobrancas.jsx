@@ -68,8 +68,9 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 const p = registrarNoMapa(participante.nome);
                 registrarTelefone(p, participante.telefone);
                 const valorCobrado = Number(participante.valorParcela || 0);
-                const itemFormatado = { ...t, participanteId: participante.id, thirdPartyName: participante.nome,
+                const itemFormatado = { ...t, participanteId: participante.legado ? null : participante.id, thirdPartyName: participante.nome,
                     thirdPartyPhone: participante.telefone, terceiro_recebido: Boolean(participante.recebido),
+                    recebimento: participante.recebimento || null,
                     valorCobradoCalculado: valorCobrado, dataVencimento, nomeForma, isTransacaoSimples: true };
                 p.todasTransacoes.push(itemFormatado);
                 if (!participante.recebido) {
@@ -293,6 +294,17 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
+            <section aria-label="Recebimentos registrados" className="space-y-2">
+                {cobrancasPorPessoa.flatMap(p => p.todasTransacoes).filter(t => t.terceiro_recebido).map(t => (
+                    <div key={`${t.id}_${t.participanteId || 'legado'}`} className="p-3 rounded-xl border border-slate-300 dark:border-slate-700 text-sm">
+                        <p>{t.thirdPartyName} — {t.descricao}: {t.recebimento?.data_recebimento
+                            ? `Recebido em ${String(t.recebimento.data_recebimento).slice(0, 10).split('-').reverse().join('/')}`
+                            : 'Recebido sem data histórica'}</p>
+                        <button className="underline mr-4" onClick={() => marcarRecebidoTerceiro(t.id, true, t.participanteId, true)} disabled={Boolean(t.recebimento?.data_recebimento)}>Informar data conhecida</button>
+                        <button className="underline" onClick={() => marcarRecebidoTerceiro(t.id, true, t.participanteId)}>Cancelar marcação incorreta</button>
+                    </div>
+                ))}
+            </section>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-colors">
                 <div className="flex items-center gap-3">
