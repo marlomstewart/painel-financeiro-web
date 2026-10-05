@@ -68,7 +68,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 const p = registrarNoMapa(participante.nome);
                 registrarTelefone(p, participante.telefone);
                 const valorCobrado = Number(participante.valorParcela || 0);
-                const itemFormatado = { ...t, participanteId: participante.id, thirdPartyName: participante.nome,
+                const itemFormatado = { ...t, participanteId: participante.legado ? null : participante.id, thirdPartyName: participante.nome,
                     thirdPartyPhone: participante.telefone, terceiro_recebido: Boolean(participante.recebido),
                     valorCobradoCalculado: valorCobrado, dataVencimento, nomeForma, isTransacaoSimples: true };
                 p.todasTransacoes.push(itemFormatado);
@@ -152,7 +152,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                         valorCobradoCalculado: valorCobrado,
                         dataVencimento: new Date(parcelaDoMes.dataCompra),
                         nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
-                        terceiro_recebido: parcelaDoMes.terceiro_recebido
+                        terceiro_recebido: parcelaDoMes.terceiro_recebido,
+                        _pendingSync: parcelaDoMes._pendingSync
                     });
                 }
             });
@@ -368,8 +369,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                                 </div>
                                                 <span className="text-sm font-black text-rose-600 dark:text-rose-400 shrink-0">{formatarMoeda(item.valorCobradoCalculado)}</span>
                                             </div>
-                                            <button onClick={() => handleMarcarPago(item)} className="w-full bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 py-2.5 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors active:scale-95 shadow-sm cursor-pointer flex items-center justify-center gap-1.5">
-                                                <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} /> Marcar como Recebido
+                                            <button onClick={() => handleMarcarPago(item)} disabled={Boolean(item._pendingSync)} className="w-full bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 py-2.5 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-95 shadow-sm cursor-pointer flex items-center justify-center gap-1.5">
+                                                <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} /> {item._pendingSync ? 'Aguardando sincronização' : 'Marcar como Recebido'}
                                             </button>
                                         </div>
                                     ))

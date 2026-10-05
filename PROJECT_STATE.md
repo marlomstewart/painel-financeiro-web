@@ -1,10 +1,16 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 29/09/2026
+**Atualizado em:** 05/10/2026
 
 ## Objetivo atual
 
-Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
+Hotfix de A Receber em `codex/fix-recebimentos-geral`: terceiro único legado usa a rota da
+transação, e a confirmação atualiza também o participante sintético na tela. Compras e
+parcelas de dívida ainda na fila offline não oferecem recebimento antes da persistência.
+Testes Web 71/71, build/PWA e lint aprovados (12 avisos preexistentes, zero erros).
+A API complementar aceita o alias `legado` de PWAs antigas. Deploy de produção e smoke
+autenticado pendentes. O relato de 404 em participante normalizado já persistido ainda
+exige a URL exata da requisição; este hotfix não comprova a resolução desse caso.
 
 ## Estado geral
 
@@ -130,6 +136,8 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
 
 ## Pendências e riscos
 
+- Validar o hotfix após CI e deploy conjunto, incluindo um terceiro legado e um normalizado.
+  Para o relato de Arthur, obter a URL e o payload da requisição com falha, sem credenciais.
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
 - `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
@@ -280,6 +288,9 @@ Verificar o rollout Web/API e o isolamento por conta da fila offline (AUD-001).
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
+- Revisar CI, promover Web e API juntas e fazer smoke autenticado em A Receber com
+  lançamento antigo, novo normalizado e prévia offline; investigar separadamente o 404
+  relatado para Arthur com a requisição real.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:

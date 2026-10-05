@@ -63,3 +63,42 @@ test('exibe e recebe participantes da mesma parcela de forma independente', asyn
   await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compartilhada-1', false, 'ana'))
   expect(marcarRecebidoTerceiro).toHaveBeenCalledTimes(1)
 })
+
+test('terceiro único legado usa a rota do lançamento, sem ID de participante', async () => {
+  const marcarRecebidoTerceiro = vi.fn()
+  const modal = { confirm: vi.fn().mockResolvedValue(true) }
+  render(<Cobrancas {...baseProps} modal={modal} marcarRecebidoTerceiro={marcarRecebidoTerceiro} transacoes={[{
+    id: 'compra-legada', isThirdParty: true, thirdPartyName: 'Mayara', thirdPartyValue: 25,
+    valorParcela: 50, descricao: 'Compra antiga', mesReferencia: 9, anoReferencia: 2026,
+    dataCompra: '2026-09-10', formaPagamento: 'pix',
+    participantes: [{ id: 'legado', nome: 'Mayara', valorParcela: 25, recebido: false, legado: true }],
+  }]} />)
+
+  fireEvent.click(screen.getByRole('button', { name: /Marcar como Recebido/ }))
+  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compra-legada', false, null))
+})
+
+test('não tenta receber participante de lançamento que ainda está na fila offline', () => {
+  const marcarRecebidoTerceiro = vi.fn()
+  render(<Cobrancas {...baseProps} marcarRecebidoTerceiro={marcarRecebidoTerceiro} transacoes={[{
+    id: 'compra-local', descricao: 'Compra offline', mesReferencia: 9, anoReferencia: 2026,
+    dataCompra: '2026-09-10', formaPagamento: 'pix', _pendingSync: true,
+    participantes: [{ id: 'arthur', nome: 'Arthur', valorParcela: 30, recebido: false }],
+  }]} />)
+
+  const acao = screen.getByRole('button', { name: /Aguardando sincronização/ })
+  expect(acao.disabled).toBe(true)
+  fireEvent.click(acao)
+  expect(marcarRecebidoTerceiro).not.toHaveBeenCalled()
+})
+
+test('não oferece recebimento para parcela de dívida ainda na fila offline', () => {
+  render(<Cobrancas {...baseProps}
+    dividas={[{ id: 'd1', descricao: 'Empréstimo', valor_parcela: 100, qtd_parcelas: 2, para_terceiros: 1, nome_terceiro: 'José' }]}
+    transacoes={[{ id: 'parcela-local', grupo_id: 'divida_d1', tipo: 'despesa', categoria: 'Dívidas e Empréstimos',
+      valorParcela: 100, thirdPartyValue: 100, terceiro_recebido: false, mesReferencia: 9, anoReferencia: 2026,
+      dataCompra: '2026-09-10', _pendingSync: true }]}
+  />)
+
+  expect(screen.getByRole('button', { name: /Aguardando sincronização/ }).disabled).toBe(true)
+})

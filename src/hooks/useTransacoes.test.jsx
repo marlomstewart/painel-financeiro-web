@@ -102,6 +102,27 @@ test('marca somente o participante informado como recebido', async () => {
   assert.deepEqual(atualizadas[0].participantes, [{ id: 'ana', recebido: true }, { id: 'bia', recebido: false }])
 })
 
+test('recebimento legado usa a rota da transação e atualiza a prévia imediatamente', async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ terceiro_recebido: true }) })
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  const { result } = renderHook(() => useTransacoes(props))
+
+  await act(async () => {
+    await result.current.marcarRecebidoTerceiro('tx-legada', false, null)
+  })
+
+  assert.equal(fetchMock.mock.calls[0][0], 'https://api.test/transacoes/tx-legada/terceiro-recebido')
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true })
+  const atualizadas = props.setTransacoes.mock.calls[0][0]([
+    { id: 'tx-legada', terceiro_recebido: false, participantes: [{ id: 'legado', legado: true, recebido: false }] },
+    { id: 'tx-normalizada', participantes: [{ id: 'ana', recebido: false }] },
+  ])
+  assert.equal(atualizadas[0].terceiro_recebido, true)
+  assert.equal(atualizadas[0].participantes[0].recebido, true)
+  assert.equal(atualizadas[1].participantes[0].recebido, false)
+})
+
 test('Marcar Pago usa a data escolhida e preserva os recebimentos de terceiros na tela', async () => {
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data_pagamento: '2026-09-03' }) })
   vi.stubGlobal('fetch', fetchMock)

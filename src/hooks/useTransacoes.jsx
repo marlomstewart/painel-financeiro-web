@@ -272,7 +272,8 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
             if (res.ok) {
                 setTransacoes(prev => prev.map(t => t.id !== id ? t : participanteId
                     ? { ...t, participantes: t.participantes.map(p => p.id === participanteId ? { ...p, recebido: novoValor } : p) }
-                    : { ...t, terceiro_recebido: novoValor }));
+                    : { ...t, terceiro_recebido: novoValor,
+                        participantes: t.participantes?.map(p => p.legado ? { ...p, recebido: novoValor } : p) }));
             } else {
                 showToast(data.message || 'Falha ao atualizar recebimento.', 'error');
             }
