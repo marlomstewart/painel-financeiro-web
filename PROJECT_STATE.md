@@ -4,13 +4,13 @@
 
 ## Objetivo atual
 
-Opção de desfazer recebimento em A Receber na branch `codex/desfazer-recebimento-terceiros`:
+Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
 não há pendências, com confirmação e retorno à lista pendente. Abrange terceiro único legado,
 participantes normalizados e parcelas de dívida; usa as rotas atuais da API com `recebido: false`.
 Testes Web 76/76, build/PWA e lint aprovados (12 avisos preexistentes, zero erros).
-Publicação desta opção e smoke autenticado pendentes. O hotfix anterior já está em produção;
-o usuário confirmou que marcar como recebido passou sem erro em 05/10.
+Smoke autenticado do desfazer pendente. O usuário confirmou que marcar como recebido
+passou sem erro em 05/10.
 
 ## Estado geral
 
@@ -136,7 +136,7 @@ o usuário confirmou que marcar como recebido passou sem erro em 05/10.
 
 ## Pendências e riscos
 
-- Publicar a opção de desfazer e confirmar no produto o retorno de uma compra legada, uma
+- Confirmar no produto o retorno de uma compra legada, uma
   normalizada e uma parcela de dívida às pendências, sem alterar `status` do lançamento.
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
@@ -288,7 +288,7 @@ o usuário confirmou que marcar como recebido passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Revisar CI, publicar a opção de desfazer e validar no produto os três tipos de recebimento.
+- Validar no produto o desfazer nos três tipos de recebimento.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
