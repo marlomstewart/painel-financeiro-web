@@ -4,15 +4,13 @@
 
 ## Objetivo atual
 
-Hotfix de A Receber em `codex/fix-recebimentos-geral`: terceiro único legado usa a rota da
-transação, e a confirmação atualiza também o participante sintético na tela. Compras e
-parcelas de dívida ainda na fila offline não oferecem recebimento antes da persistência.
-Testes Web 71/71, build/PWA e lint aprovados (12 avisos preexistentes, zero erros).
-A API complementar aceita o alias `legado` de PWAs antigas. Os hotfixes chegaram a
-`main` em 05/10: Web `fcdf2ae` ativa em `fincontrole.online` (Vercel READY) e API
-`4dc1848` ativa no Render com `/health` OK. O usuário relatou 404 para qualquer
-terceiro antes dessa promoção; o lançamento mostrado de Ninho é legado, mas há também
-itens normalizados pendentes. Smoke autenticado de ambos permanece pendente.
+Opção de desfazer recebimento em A Receber na branch `codex/desfazer-recebimento-terceiros`:
+itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
+não há pendências, com confirmação e retorno à lista pendente. Abrange terceiro único legado,
+participantes normalizados e parcelas de dívida; usa as rotas atuais da API com `recebido: false`.
+Testes Web 76/76, build/PWA e lint aprovados (12 avisos preexistentes, zero erros).
+Publicação desta opção e smoke autenticado pendentes. O hotfix anterior já está em produção;
+o usuário confirmou que marcar como recebido passou sem erro em 05/10.
 
 ## Estado geral
 
@@ -138,8 +136,8 @@ itens normalizados pendentes. Smoke autenticado de ambos permanece pendente.
 
 ## Pendências e riscos
 
-- Validar o hotfix já implantado em compras legadas e normalizadas de vários terceiros.
-  Se persistir algum 404, obter URL e payload da requisição, sem credenciais.
+- Publicar a opção de desfazer e confirmar no produto o retorno de uma compra legada, uma
+  normalizada e uma parcela de dívida às pendências, sem alterar `status` do lançamento.
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
 - `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
@@ -290,8 +288,7 @@ itens normalizados pendentes. Smoke autenticado de ambos permanece pendente.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Fazer smoke autenticado em A Receber com lançamento antigo, novo normalizado e prévia
-  offline; investigar qualquer 404 restante com a requisição real.
+- Revisar CI, publicar a opção de desfazer e validar no produto os três tipos de recebimento.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Handshake, Eye, CheckCircle2, MessageCircle, X, Landmark, CreditCard } from 'lucide-react';
+import { Handshake, Eye, CheckCircle2, MessageCircle, X, Landmark, CreditCard, Undo2 } from 'lucide-react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
 
 /**
@@ -28,6 +28,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                     totalPagoGeral: 0,
                     totalMesAtual: 0,
                     itensMesAtual: [],
+                    itensRecebidosMesAtual: [],
                     todasTransacoes: []
                 };
             }
@@ -80,6 +81,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                     }
                 } else {
                     p.totalPagoGeral += valorCobrado;
+                    if (isMesAtual) p.itensRecebidosMesAtual.push(itemFormatado);
                 }
             });
         });
@@ -141,11 +143,10 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 // (mesmo grupo_id usado lá) e ainda não foi marcada como recebida NELA — exatamente
                 // o mesmo controle (`terceiro_recebido` por transação) que as compras normais usam.
                 const parcelaDoMes = transacoes.find(t => t.grupo_id === `divida_${d.id}` && t.mesReferencia === mesAtual && t.anoReferencia === anoAtual);
-                if (parcelaDoMes && !parcelaDoMes.terceiro_recebido) {
+                if (parcelaDoMes) {
                     const valorCobrado = Number(parcelaDoMes.thirdPartyValue) > 0 ? Number(parcelaDoMes.thirdPartyValue) : Number(parcelaDoMes.valorParcela || 0);
                     const numeroDaParcela = String(parcelaDoMes.descricao || '').match(/\((\d+\/\d+)\)$/)?.[1] || `${parcelasPagas + 1}/${qtdTotalParcelas}`;
-                    p.totalMesAtual += valorCobrado;
-                    p.itensMesAtual.push({
+                    const itemParcela = {
                         id: parcelaDoMes.id,
                         isEmprestimo: true,
                         descricao: `Parcela: ${d.descricao} (${numeroDaParcela})`,
@@ -154,7 +155,13 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                         nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
                         terceiro_recebido: parcelaDoMes.terceiro_recebido,
                         _pendingSync: parcelaDoMes._pendingSync
-                    });
+                    };
+                    if (parcelaDoMes.terceiro_recebido) {
+                        p.itensRecebidosMesAtual.push(itemParcela);
+                    } else {
+                        p.totalMesAtual += valorCobrado;
+                        p.itensMesAtual.push(itemParcela);
+                    }
                 }
             });
         }
@@ -167,6 +174,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     const totalGeralMes = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalMesAtual, 0);
     const totalGeralRestante = cobrancasPorPessoa.reduce((acc, p) => acc + p.totalPendenteGeral, 0);
     const cobrancasDoMes = cobrancasPorPessoa.filter(pessoa => pessoa.itensMesAtual.length > 0 && pessoa.totalMesAtual > 0);
+    const recebidosDoMes = cobrancasPorPessoa.flatMap(pessoa =>
+        pessoa.itensRecebidosMesAtual.map(item => ({ ...item, nomePessoa: pessoa.nomeExibicao })));
 
     // Mantém só dígitos e prefixa 55 (Brasil) se a pessoa não tiver informado o código do país.
     // Decide pela quantidade de dígitos (DDD+número = 10 ou 11) em vez do prefixo, já que o
@@ -292,6 +301,15 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         }
     };
 
+    const handleDesfazerRecebimento = async (item) => {
+        const confirmado = await modal.confirm(
+            `Desfazer o recebimento de ${formatarMoeda(item.valorCobradoCalculado)} referente a "${item.descricao}"? A cobrança voltará às pendências.`,
+            'Desfazer Recebimento',
+            { confirmLabel: 'Sim, Desfazer', confirmColor: 'bg-amber-600 hover:bg-amber-700' }
+        );
+        if (confirmado) await marcarRecebidoTerceiro(item.id, true, item.participanteId);
+    };
+
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
 
@@ -329,7 +347,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center shadow-sm">
                     <Handshake className="w-12 h-12 mx-auto mb-4 text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
                     <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Nenhuma cobrança pendente neste mês</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Altere a competência para consultar cobranças pendentes de outro período.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{recebidosDoMes.length > 0 ? 'Veja os recebimentos abaixo para desfazer algum registro.' : 'Altere a competência para consultar cobranças pendentes de outro período.'}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -390,6 +408,32 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                         </div>
                     ))}
                 </div>
+            )}
+
+            {recebidosDoMes.length > 0 && (
+                <section aria-labelledby="recebidos-title" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+                    <div>
+                        <h2 id="recebidos-title" className="text-lg font-black text-slate-800 dark:text-slate-100">Recebidos nesta competência</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Marcou uma compra por engano? Desfaça o recebimento para ela voltar às pendências.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {recebidosDoMes.map(item => (
+                            <div key={`${item.id}:${item.participanteId || 'legado'}`} className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 space-y-3">
+                                <div className="flex justify-between items-start gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{item.nomePessoa}</p>
+                                        <p className="text-sm font-black text-slate-800 dark:text-slate-200 line-clamp-2" title={item.descricao}>{item.descricao}</p>
+                                        {item.isEmprestimo && <p className="text-xs text-slate-500">Empréstimo</p>}
+                                    </div>
+                                    <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 shrink-0">{formatarMoeda(item.valorCobradoCalculado)}</span>
+                                </div>
+                                <button type="button" onClick={() => handleDesfazerRecebimento(item)} disabled={Boolean(item._pendingSync)} aria-label={`Desfazer recebimento de ${item.descricao} para ${item.nomePessoa}`} className="w-full border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-lg py-2.5 text-xs font-bold hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <Undo2 className="w-3.5 h-3.5" strokeWidth={2} /> Desfazer recebimento
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             )}
 
             {/* 🔥 MODAL DE DETALHAMENTO */}
