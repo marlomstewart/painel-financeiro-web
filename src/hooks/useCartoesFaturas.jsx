@@ -3,15 +3,15 @@ import { ehPagamentoCredito, extrairCartaoId, resolverCartao } from '../utils/ca
 
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-/**
- * Função Auxiliar para extrair a fração exata que pertence ao terceiro na parcela.
- * Garante retrocompatibilidade: se não houver thirdPartyValue definido, assume 100%.
- */
-const getValorTerceiro = (t) => {
-    const vp = Number(t.valorParcela) || 0;
-    if (!t.isThirdParty) return 0;
-    return t.thirdPartyValue !== null && t.thirdPartyValue !== undefined ? Number(t.thirdPartyValue) : vp;
-};
+// A API já entrega o rateio por parcela. Recebimento não altera a participação na fatura.
+const obterParticipantes = (t) => Array.isArray(t.participantes) && t.participantes.length > 0
+    ? t.participantes
+    : (t.isThirdParty ? [{
+        nome: t.thirdPartyName || 'Terceiro',
+        valorParcela: t.thirdPartyValue !== null && t.thirdPartyValue !== undefined
+            ? t.thirdPartyValue : t.valorParcela
+    }] : []);
+const emCentavos = (valor) => Math.round((Number(valor) || 0) * 100);
 
 /**
  * @file src/hooks/useCartoesFaturas.jsx
@@ -76,52 +76,29 @@ export function useCartoesFaturas({ setTransacoes, transacoesMes, cartoes, dataV
                 if (!porCartao[nomeCartao]) porCartao[nomeCartao] = { total: 0, pago: 0, pendente: 0 };
                 if (!gastosTerceiros[nomeCartao]) gastosTerceiros[nomeCartao] = {};
 
-                const valorTotalParcela = Number(t.valorParcela) || 0;
-                // 🔥 NOVA LÓGICA: Calcula a fração exata do terceiro
-                const valorDoTerceiro = getValorTerceiro(t);
+                const sinal = t.tipo === 'reembolso' ? -1 : 1;
+                const valorTotalParcela = sinal * emCentavos(t.valorParcela);
+                porCartao[nomeCartao].total += valorTotalParcela;
+                porCartao[nomeCartao][t.status === 'pago' ? 'pago' : 'pendente'] += valorTotalParcela;
 
-                if (t.tipo === 'reembolso') {
-                    porCartao[nomeCartao].total -= valorTotalParcela;
-
-                    if (t.status === 'pago') {
-                        porCartao[nomeCartao].pago -= valorTotalParcela;
-                    } else {
-                        porCartao[nomeCartao].pendente -= valorTotalParcela;
-                    }
-
-                    if (t.isThirdParty && t.thirdPartyName) {
-                        const nomeT = String(t.thirdPartyName).trim();
-                        // Subtrai a fração do terceiro em caso de reembolso
-                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) - valorDoTerceiro;
-                    }
-                }
-                else {
-                    porCartao[nomeCartao].total += valorTotalParcela;
-
-                    if (t.status === 'pago') {
-                        porCartao[nomeCartao].pago += valorTotalParcela;
-                    } else {
-                        porCartao[nomeCartao].pendente += valorTotalParcela;
-                    }
-
-                    if (t.isThirdParty && t.thirdPartyName) {
-                        const nomeT = String(t.thirdPartyName).trim();
-                        // Soma a fração do terceiro na fatura
-                        gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorDoTerceiro;
-                    }
-                }
+                obterParticipantes(t).forEach(participante => {
+                    const nomeT = String(participante.nome || 'Terceiro').trim() || 'Terceiro';
+                    const valorDoTerceiro = sinal * emCentavos(participante.valorParcela);
+                    gastosTerceiros[nomeCartao][nomeT] = (gastosTerceiros[nomeCartao][nomeT] || 0) + valorDoTerceiro;
+                });
             }
         });
 
         const itens = Object.entries(porCartao).map(([nome, v]) => {
-            const arrTerceiros = Object.entries(gastosTerceiros[nome]).map(([nomeT, valorT]) => ({ nome: nomeT, valor: valorT }));
-            const totalTerceiros = arrTerceiros.reduce((acc, curr) => acc + curr.valor, 0);
+            const arrTerceiros = Object.entries(gastosTerceiros[nome]).map(([nomeT, valorT]) => ({ nome: nomeT, valor: valorT / 100 }));
+            const totalTerceiros = Object.values(gastosTerceiros[nome]).reduce((acc, valor) => acc + valor, 0);
 
             return {
                 nome,
-                ...v,
-                // 🔥 SEU GASTO PESSOAL: É a fatura total gerada pelo banco menos a soma das frações de dívida dos terceiros
-                gastoPessoal: v.total - totalTerceiros,
+                total: v.total / 100,
+                pago: v.pago / 100,
+                pendente: v.pendente / 100,
+                gastoPessoal: (v.total - totalTerceiros) / 100,
                 listaTerceiros: arrTerceiros
             };
         });

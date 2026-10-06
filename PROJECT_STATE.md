@@ -1,8 +1,14 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 05/10/2026
+**Atualizado em:** 06/10/2026
 
 ## Objetivo atual
+
+Entregar em produção o rateio corrigido do modal de faturas. A primeira correção (`c77a9da`)
+ficou em branch de revisão e não chegou ao domínio público: em 06/10, `fincontrole.online`
+servia o deploy de `91223fa`, sem a leitura de participantes ou a explicação nova.
+Hotfix isolado sobre esse `origin/main` na branch `codex/faturas-participantes-producao`,
+sem promover a base BCB/AUD-007. Pendentes confirmação do novo deploy e smoke autenticado.
 
 Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
@@ -30,6 +36,10 @@ passou sem erro em 05/10.
 
 ## Entregas relevantes
 
+- Modal de faturas soma todos os participantes normalizados por parcela, com valores em centavos
+  e abate de estornos; dados legados continuam compatíveis. Recebimento não muda a participação
+  na fatura. A explicação distingue gastos neste cartão de pendências de A Receber, que também
+  incluem empréstimos e PIX.
 - A fila IndexedDB nova grava o ID da conta em cada lote, lista/sincroniza apenas itens do usuário
   autenticado e valida a sessão novamente após operações assíncronas. IDs locais incluem a conta
   para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
@@ -104,6 +114,8 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
+- Rateio do modal validado na base produtiva; confirmar o deploy e a atualização da PWA.
+  Após recarregar, conferir uma compra dividida entre várias pessoas no modal de cartão.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
 - Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
@@ -157,6 +169,12 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Modal de faturas em 06/10: quatro regressões originais e uma comparação entre fatura e A Receber
+  com dados sintéticos dos prints. Cenário confirma João R$ 124,22 no cartão / R$ 1.165,72 com
+  empréstimo PIX e Ninho R$ 94,45 no cartão / R$ 655,30 com empréstimos. Não houve consultas
+  autenticadas nem alterações nos registros financeiros reais. D-010 já cobre o rateio canônico;
+  nenhuma nova decisão técnica. Suíte completa 81/81 em 19 arquivos; lint zero erros/12 avisos
+  preexistentes e build/PWA aprovado, com aviso conhecido do chunk >500 kB.
 - AUD-001 em 29/09: `npm test` aprovou 67 testes em 18 arquivos, incluindo A→B, troca de sessão
   durante resposta pendente, quarentena de fila legada e isolamento de operações IndexedDB.
   `npm run build` passou; `npm run lint` concluiu com zero erros e 12 avisos conhecidos. O chunk
@@ -288,6 +306,8 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
+- Confirmar o hotfix no bundle de produção, recarregar a PWA e conferir o rateio de participantes
+  no modal. A Receber pode ter total diferente porque considera empréstimos/PIX e recebimentos.
 - Validar no produto o desfazer nos três tipos de recebimento.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
