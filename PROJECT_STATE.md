@@ -4,11 +4,11 @@
 
 ## Objetivo atual
 
-Entregar em produção o rateio corrigido do modal de faturas. A primeira correção (`c77a9da`)
-ficou em branch de revisão e não chegou ao domínio público: em 06/10, `fincontrole.online`
-servia o deploy de `91223fa`, sem a leitura de participantes ou a explicação nova.
-Hotfix isolado sobre esse `origin/main` na branch `codex/faturas-participantes-producao`,
-sem promover a base BCB/AUD-007. Pendentes confirmação do novo deploy e smoke autenticado.
+Rateio corrigido do modal de faturas publicado em produção em 06/10 (`67e1fae`, Vercel READY,
+CI aprovada). O bundle servido por `fincontrole.online` contém a leitura de participantes e a
+explicação que distingue composição da fatura de pendências de A Receber. A primeira correção
+(`c77a9da`) havia ficado em branch de revisão; o hotfix foi isolado sobre a base produtiva
+`91223fa`, sem promover BCB/AUD-007. Falta somente a conferência autenticada após atualizar a PWA.
 
 Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
@@ -114,8 +114,8 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
-- Rateio do modal validado na base produtiva; confirmar o deploy e a atualização da PWA.
-  Após recarregar, conferir uma compra dividida entre várias pessoas no modal de cartão.
+- Rateio do modal publicado e validado tecnicamente no domínio público. Após atualizar a PWA,
+  conferir autenticado uma compra dividida entre várias pessoas no modal de cartão.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
 - Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
@@ -169,6 +169,11 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Publicação do rateio em 06/10: `67e1fae` está em `origin/main`; Vercel confirmou READY no
+  ambiente production (deploy `dpl_DQkigzLRNvBWPfQ5QoSBBDuqJLfP`) e GitHub Actions concluiu
+  testes/build com sucesso. `fincontrole.online` respondeu HTTP 200 e serviu
+  `/assets/index-C00g5l6_.js`, com participantes e a explicação de escopo. O smoke autenticado
+  do modal e a atualização da PWA no aparelho do usuário permanecem pendentes.
 - Modal de faturas em 06/10: quatro regressões originais e uma comparação entre fatura e A Receber
   com dados sintéticos dos prints. Cenário confirma João R$ 124,22 no cartão / R$ 1.165,72 com
   empréstimo PIX e Ninho R$ 94,45 no cartão / R$ 655,30 com empréstimos. Não houve consultas
@@ -306,8 +311,8 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Confirmar o hotfix no bundle de produção, recarregar a PWA e conferir o rateio de participantes
-  no modal. A Receber pode ter total diferente porque considera empréstimos/PIX e recebimentos.
+- Atualizar/reabrir a PWA e conferir autenticado o rateio de participantes no modal. A Receber
+  pode ter total diferente porque considera empréstimos/PIX e somente valores ainda não recebidos.
 - Validar no produto o desfazer nos três tipos de recebimento.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
