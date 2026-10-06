@@ -721,6 +721,10 @@ export function Modal({ config, onClose }) {
                         {item.listaTerceiros && item.listaTerceiros.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 space-y-2">
                             <span className="block font-black text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-500 mb-1">Gastos de Terceiros:</span>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                              Parte da fatura atribuída a cada pessoa, incluindo valores já recebidos.
+                              Este rateio não representa o que ainda falta receber. Consulte A Receber para ver as pendências.
+                            </p>
                             {item.listaTerceiros.map((terceiro, idx) => (
                               <div key={idx} className="flex justify-between items-center bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
                                 <span className="text-amber-700 dark:text-amber-400 font-bold truncate pr-2 inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} /> {terceiro.nome}</span>

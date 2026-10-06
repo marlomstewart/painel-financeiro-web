@@ -1,8 +1,16 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 03/10/2026
+**Atualizado em:** 06/10/2026
 
 ## Objetivo atual
+
+Checkpoint do rateio do modal de faturas concluído em 06/10: todos os participantes normalizados
+da API entram no cálculo; a UI explica que gastos de terceiros incluem valores já recebidos.
+Correção na branch de revisão `codex/faturas-participantes`, criada a partir de
+`codex/bcb-resiliencia` (`f182a17`): a base contém BCB e AUD-007 ainda não promovidos.
+Revisão/CI remota, smoke visual autenticado e promoção/deploy seguem pendentes.
+
+## Contexto da base de revisão
 
 Integração BCB corrigida junto à API com checkpoint final validado em 03/10: taxas com origem/datas, aviso de última
 válida desatualizada, erro recuperável e simuladores pausados sem CDI, inclusive “À vista ou parcelado”.
@@ -38,6 +46,10 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Entregas relevantes
 
+- Modal de faturas usa `participantes[].valorParcela` para totalizar cada pessoa e calcular a
+  fração pessoal, com soma em centavos e abate de estornos. Participantes normalizados prevalecem
+  sobre campos de terceiro único; compras legadas continuam compatíveis. Recebimento não remove
+  a participação na fatura: o texto orienta consultar A Receber para pendências de devolução.
 - BCB: Investimentos e Calculadora mostram origem/referência/consulta e avisam taxa antiga;
   erro não fica carregando indefinidamente nem preserva números antigos como atuais. Carteira
   CDB vazia/prefixada permanece acessível; CDI null pausa simuladores, não vira zero. Hook de
@@ -119,6 +131,9 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 
 ## Trabalho em andamento
 
+- Rateio do modal de faturas com checkpoint aprovado em `codex/faturas-participantes`; pendentes
+  revisão/CI remota e smoke visual autenticado. A base inclui BCB/AUD-007: considerar essas
+  dependências antes de promover/deployar, ou isolar a correção para um hotfix independente.
 - BCB com checkpoint final aprovado e implementação publicada em `codex/bcb-resiliencia`
   (Web `716fe21`, API `5a67539`), sem promoção/deploy. CI só dispara em main/master/develop
   ou PR; publicação desta branch não comprova CI remota. Abrir revisão/CI como próximo passo.
@@ -187,6 +202,13 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
 - `src/hooks/*.test.jsx`, `.github/workflows/ci.yml`, `docs/FUNCIONALIDADES.md`
 
 ## Validações recentes
+
+- Modal de faturas em 06/10: 95/95 testes em 24 arquivos, incluindo quatro regressões novas de
+  participantes múltiplos, prioridade sobre legado, recebimento independente, estorno e centavos,
+  e terceiro único parcial/integral. Teste integrado renderiza o modal e verifica a orientação
+  sobre A Receber. Lint zero erros/11 avisos preexistentes; build/PWA aprovado com aviso conhecido
+  do chunk >500 kB. Diff completo e whitespace revisados; sem smoke visual em produção ou deploy.
+  D-010/D-015 já cobrem a regra: nenhuma nova decisão técnica.
 
 - Checkpoint final BCB em 03/10: `npm test` repetido, 91/91 em 23 arquivos;
   16 regressões novas cobrem 503 tipado/genérico,
@@ -343,13 +365,18 @@ Rollout da fila offline (AUD-001) permanece pendente de confirmação separada.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-1. Abrir revisão/CI das branches BCB publicadas; preparar smoke integrado HML de falha/cache/recuperação
+1. Abrir revisão/CI da correção do modal de faturas e validar uma compra com dois participantes,
+   um recebido e outro pendente, além de estorno e terceiro único legado. Confirmar que o rateio
+   permanece após recebimento e que as pendências são consultadas em A Receber. Avaliar a base
+   BCB/AUD-007 antes de qualquer promoção para produção.
+
+2. Abrir revisão/CI das branches BCB publicadas; preparar smoke integrado HML de falha/cache/recuperação
    antes do rollout API/Web/PWA. Branch baseada em AUD-007: não promovê-la como hotfix independente
    sem revisar essa dependência. Seguir `painel-financeiro-api/docs/BCB_RESILIENCIA.md`.
 
-2. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
+3. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
    compatíveis para smoke visual desktop/celular antes da promoção para `main` e rollout produtivo.
-3. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
+4. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
    datas antigas conhecidas ou estabelecer fechamento bancário, sem inferir histórico.
 
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
