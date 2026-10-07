@@ -1,14 +1,13 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 06/10/2026
+**Atualizado em:** 07/10/2026
 
 ## Objetivo atual
 
-Rateio corrigido do modal de faturas publicado em produção em 06/10 (`67e1fae`, Vercel READY,
-CI aprovada). O bundle servido por `fincontrole.online` contém a leitura de participantes e a
-explicação que distingue composição da fatura de pendências de A Receber. A primeira correção
-(`c77a9da`) havia ficado em branch de revisão; o hotfix foi isolado sobre a base produtiva
-`91223fa`, sem promover BCB/AUD-007. Falta somente a conferência autenticada após atualizar a PWA.
+Ajustar somente a mensagem mensal de cobrança: manter os itens pendentes e acrescentar, antes
+do total do mês, os subtotais por data de vencimento em ordem cronológica. Implementado e
+validado localmente na branch `codex/cobrancas-resumo-vencimentos`; publicação e conferência
+da mensagem no produto permanecem pendentes. Sem mudanças na API ou nos recebimentos.
 
 Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
@@ -36,10 +35,15 @@ passou sem erro em 05/10.
 
 ## Entregas relevantes
 
+- Mensagem de cobrança, aberta no WhatsApp ou copiada, resume os valores pendentes da pessoa
+  por vencimento. Soma em centavos a fração de cada participante e agrupa também cartões
+  diferentes com a mesma data; mantém a lista detalhada, o total mensal e a chave PIX.
 - Modal de faturas soma todos os participantes normalizados por parcela, com valores em centavos
   e abate de estornos; dados legados continuam compatíveis. Recebimento não muda a participação
   na fatura. A explicação distingue gastos neste cartão de pendências de A Receber, que também
-  incluem empréstimos e PIX.
+  incluem empréstimos e PIX. Hotfix publicado em 06/10 (`67e1fae`, Vercel READY e CI aprovada),
+  isolado sobre `91223fa` sem promover BCB/AUD-007. O print de 07/10 confirma a UI atualizada e
+  João em R$ 124,22; não confirma todos os lançamentos individuais, inclusive os de Ninho.
 - A fila IndexedDB nova grava o ID da conta em cada lote, lista/sincroniza apenas itens do usuário
   autenticado e valida a sessão novamente após operações assíncronas. IDs locais incluem a conta
   para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
@@ -114,8 +118,9 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
-- Rateio do modal publicado e validado tecnicamente no domínio público. Após atualizar a PWA,
-  conferir autenticado uma compra dividida entre várias pessoas no modal de cartão.
+- Publicar o resumo por vencimento da mensagem de cobrança e conferir WhatsApp/cópia no produto.
+- Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
+  Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
 - Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
@@ -169,11 +174,18 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Mensagem de cobrança em 07/10: dois testes de componente cobrem WhatsApp/cópia, ordem das datas,
+  agrupamento de cartões com o mesmo vencimento, participante normalizado, dívida PIX e exclusão
+  de recebidos/outros meses. Cenário de João: R$ 124,22 em 10/10 + R$ 1.041,50 em 16/10 =
+  R$ 1.165,72 no mês. Suíte completa 83/83 em 19 arquivos; lint zero erros/12 avisos preexistentes,
+  diff revisado e build/PWA aprovado com o aviso conhecido do chunk >500 kB. Nenhum envio real
+  de mensagem ou alteração nos dados financeiros. Checkpoint repetiu testes, lint e build com
+  sucesso. Nenhuma nova decisão técnica durável; `DECISIONS.md` permanece inalterado.
 - Publicação do rateio em 06/10: `67e1fae` está em `origin/main`; Vercel confirmou READY no
   ambiente production (deploy `dpl_DQkigzLRNvBWPfQ5QoSBBDuqJLfP`) e GitHub Actions concluiu
   testes/build com sucesso. `fincontrole.online` respondeu HTTP 200 e serviu
-  `/assets/index-C00g5l6_.js`, com participantes e a explicação de escopo. O smoke autenticado
-  do modal e a atualização da PWA no aparelho do usuário permanecem pendentes.
+  `/assets/index-C00g5l6_.js`, com participantes e a explicação de escopo. O print de 07/10 confirma
+  que a UI chegou ao aparelho; a auditoria individual das compras de Ninho permanece pendente.
 - Modal de faturas em 06/10: quatro regressões originais e uma comparação entre fatura e A Receber
   com dados sintéticos dos prints. Cenário confirma João R$ 124,22 no cartão / R$ 1.165,72 com
   empréstimo PIX e Ninho R$ 94,45 no cartão / R$ 655,30 com empréstimos. Não houve consultas
@@ -311,8 +323,9 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Atualizar/reabrir a PWA e conferir autenticado o rateio de participantes no modal. A Receber
-  pode ter total diferente porque considera empréstimos/PIX e somente valores ainda não recebidos.
+- Após publicar, atualizar a PWA e conferir o resumo por vencimento na cobrança via WhatsApp/cópia.
+- Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
+  empréstimos/PIX e somente valores ainda não recebidos.
 - Validar no produto o desfazer nos três tipos de recebimento.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.

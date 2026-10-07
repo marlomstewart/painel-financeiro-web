@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { Cobrancas } from './Cobrancas'
 
@@ -6,6 +6,65 @@ const baseProps = {
   dividas: [], cartoes: [], dataVis: { mes: 9, ano: 2026 },
   marcarRecebidoTerceiro: vi.fn(), modal: { confirm: vi.fn() }, showToast: vi.fn(), chavePix: '',
 }
+
+test.each(['WhatsApp', 'cópia'])('mensagem de %s resume só as pendências da pessoa por vencimento, em ordem', async (canal) => {
+  const copiar = vi.fn().mockResolvedValue(undefined)
+  vi.stubGlobal('navigator', { clipboard: { writeText: copiar } })
+  const abrir = vi.spyOn(window, 'open').mockImplementation(() => null)
+  const telefone = canal === 'WhatsApp' ? '85999990000' : null
+  const compra = (campos) => ({
+    isThirdParty: true, thirdPartyName: 'João', thirdPartyPhone: telefone,
+    mesReferencia: 10, anoReferencia: 2026, dataCompra: '2026-09-01',
+    formaPagamento: 'credito_card_com_id', ...campos,
+  })
+  let unmount
+  try {
+    const tela = render(<Cobrancas {...baseProps} dataVis={{ mes: 10, ano: 2026 }} chavePix="chave-de-teste"
+      cartoes={[{ id: 'card_com_id', nome: 'Nubank', vencimento: 10 }, { id: 'outro', nome: 'Outro cartão', vencimento: 10 }]}
+      dividas={[{ id: 'emprestimo', descricao: 'Empréstimo de João', valor_parcela: 1041.50,
+        qtd_parcelas: 15, para_terceiros: true, nome_terceiro: 'João', forma_pagamento: 'pix' }]}
+      transacoes={[
+        // Entrada fora de ordem para garantir que o resumo começa no vencimento mais próximo.
+        { id: 'emprestimo', grupo_id: 'divida_emprestimo', tipo: 'despesa', categoria: 'Dívidas e Empréstimos',
+          descricao: 'Empréstimo (11/15)', valorParcela: 1041.50, terceiro_recebido: false,
+          mesReferencia: 10, anoReferencia: 2026, dataCompra: '2026-10-16', formaPagamento: 'pix' },
+        compra({ id: 'tenis', descricao: 'Tênis (7/7)', valorParcela: 33, thirdPartyValue: 33 }),
+        compra({ id: 'revisao', descricao: 'Revisão (3/3)', valorParcela: 62.62, thirdPartyValue: 62.62, formaPagamento: 'credito_outro' }),
+        compra({ id: 'medidor', descricao: 'Medidor (1/3)', valorParcela: 100, participantes: [
+          { id: 'joao', nome: 'João', valorParcela: 28.60, recebido: false },
+          { id: 'bia', nome: 'Bia', valorParcela: 50, recebido: false },
+        ] }),
+        compra({ id: 'recebida', descricao: 'Compra já recebida', valorParcela: 200, thirdPartyValue: 200, terceiro_recebido: true }),
+        compra({ id: 'futura', descricao: 'Compra de outro mês', valorParcela: 300, thirdPartyValue: 300, mesReferencia: 11 }),
+      ]} />)
+    unmount = tela.unmount
+    const card = screen.getByRole('heading', { name: 'João' }).closest('.rounded-3xl')
+    fireEvent.click(within(card).getByRole('button', { name: canal === 'WhatsApp' ? /Abrir WhatsApp/ : /Copiar Cobrança Mensal/ }))
+    await waitFor(() => expect(canal === 'WhatsApp' ? abrir : copiar).toHaveBeenCalledTimes(1))
+    const texto = (canal === 'WhatsApp'
+      ? new URL(abrir.mock.calls[0][0]).searchParams.get('text')
+      : copiar.mock.calls[0][0]).replace(/\u00a0/g, ' ')
+    const resumo = '*Total vence 10/10: R$ 124,22*\n🗓 *Total vence 16/10: R$ 1.041,50*\n\n💰 *Total do Mês: R$ 1.165,72*'
+    expect(texto).toContain(resumo)
+    expect(texto).toContain('Valor: R$ 28,60')
+    expect(texto).toContain('Vencimento: 10/10 (Nubank)')
+    expect(texto).toContain('Vencimento: 16/10 (pix)')
+    expect(texto).toContain('Chave PIX: chave-de-teste')
+    expect(texto).not.toContain('Compra já recebida')
+    expect(texto).not.toContain('Compra de outro mês')
+    expect(texto.match(/Total vence 10\/10/g)).toHaveLength(1)
+    if (canal === 'WhatsApp') {
+      expect(abrir.mock.calls[0][0]).toContain('https://wa.me/5585999990000?text=')
+      expect(copiar).not.toHaveBeenCalled()
+    } else {
+      expect(abrir).not.toHaveBeenCalled()
+    }
+  } finally {
+    unmount?.()
+    abrir.mockRestore()
+    vi.unstubAllGlobals()
+  }
+})
 
 test('mostra apenas pessoas com cobrança pendente na competência selecionada', () => {
   render(<Cobrancas {...baseProps} transacoes={[

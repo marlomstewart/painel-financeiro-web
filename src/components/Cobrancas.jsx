@@ -198,15 +198,22 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         let texto = `Oi ${pessoa.nomeExibicao}, tudo bem? ✌️\nAqui estão as cobranças referentes ao mês de *${mesCapitalizado}*:\n\n`;
 
         const itensOrdenados = [...pessoa.itensMesAtual].sort((a, b) => a.dataVencimento - b.dataVencimento);
+        const totaisPorVencimento = new Map();
 
         itensOrdenados.forEach(item => {
             const vencFormatado = item.dataVencimento.toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
             const valorFormatado = formatarMoeda(item.valorCobradoCalculado);
+            const valorCentavos = Math.round(Number(item.valorCobradoCalculado) * 100);
+            totaisPorVencimento.set(vencFormatado, (totaisPorVencimento.get(vencFormatado) || 0) + valorCentavos);
             texto += `🛍 *${item.descricao}*\n`;
             texto += `   💵 Valor: ${valorFormatado}\n`;
             texto += `   🗓 Vencimento: ${vencFormatado} (${item.nomeForma})\n\n`;
         });
 
+        totaisPorVencimento.forEach((totalCentavos, vencimento) => {
+            texto += `🗓 *Total vence ${vencimento}: ${formatarMoeda(totalCentavos / 100)}*\n`;
+        });
+        texto += '\n';
         texto += `💰 *Total do Mês: ${formatarMoeda(pessoa.totalMesAtual)}*\n\n`;
         texto += chavePix
             ? `Quando puder, me avisa! Chave PIX: ${chavePix} 🚀`
