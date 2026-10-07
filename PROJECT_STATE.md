@@ -4,11 +4,11 @@
 
 ## Objetivo atual
 
-Contornar a corrupção de emojis ao abrir a cobrança no WhatsApp do PC. Com texto fictício,
-`wa.me` recebeu Unicode correto, mas sua página intermediária gerou um link para o Web com
-`%EF%BF%BD` no lugar dos emojis. Ajuste local na branch `codex/whatsapp-emojis-desktop` abre
-o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. Falta publicar e
-conferir o compositor autenticado; o navegador de teste não iniciou. Valores e recebimentos intactos.
+Contorno dos emojis publicado em 07/10 (`932a9a0`, Vercel READY, CI aprovada): a cobrança abre
+o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. A reprodução
+sintética isolou a corrupção na página intermediária de `wa.me`, e o novo bundle/cache da PWA
+foi confirmado no domínio público. Falta conferir os emojis no compositor autenticado;
+o navegador de teste não iniciou. Valores e recebimentos intactos.
 
 Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
@@ -43,7 +43,8 @@ passou sem erro em 05/10.
 - A abertura da cobrança usa `utils/whatsappUtils.js`: desktop segue direto para o WhatsApp Web,
   sem a página intermediária; celular mantém o link `wa.me`. Texto é codificado uma única vez,
   preservando emojis, acentos, quebras de linha e formatação. O novo caminho do PC não aciona
-  automaticamente o aplicativo nativo. Ajuste ainda local, sem envio real de mensagens.
+  automaticamente o aplicativo nativo. Publicado em `origin/main` (`932a9a0`), com bundle/PWA
+  conferidos. Não houve envio real de mensagens.
 - Modal de faturas soma todos os participantes normalizados por parcela, com valores em centavos
   e abate de estornos; dados legados continuam compatíveis. Recebimento não muda a participação
   na fatura. A explicação distingue gastos neste cartão de pendências de A Receber, que também
@@ -124,9 +125,9 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
-- Publicar o contorno dos emojis e conferir autenticado a cobrança no WhatsApp Web do PC,
-  preservando também o celular e a cópia. O usuário confirmou subtotais corretos na mensagem,
-  mas relatou emojis corrompidos no app/Web do PC e normais no celular.
+- Contorno dos emojis publicado: atualizar a PWA e conferir autenticado a cobrança no WhatsApp
+  Web do PC, preservando também o celular e a cópia. Subtotais foram confirmados pelo usuário;
+  a exibição de emojis no compositor após o contorno continua sem confirmação.
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
@@ -182,6 +183,11 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Publicação dos emojis em 07/10: `932a9a0` em `origin/main`, CI aprovada e Vercel READY em
+  production (deploy `dpl_2ehLDGBNspZCL3oVLnwoX4fapkES`). `fincontrole.online` respondeu HTTP 200,
+  servindo `/assets/index-DA_OtGFr.js` e `/assets/Cobrancas-CCa9zlen.js`. O chunk contém o destino
+  direto do PC, `wa.me` do celular e emojis válidos, sem caractere de substituição. Service worker
+  inclui ambos os arquivos novos. Publicação técnica confirmada; smoke autenticado segue pendente.
 - Emojis em 07/10: reprodução HTTP sintética isolou a corrupção na página intermediária de
   `wa.me`; fonte e bundle produtivo não continham caracteres de substituição. Nove testes do
   utilitário cobrem Windows/macOS/Linux, Android/iPhone/iPad, client hints e agente desconhecido;
@@ -190,12 +196,12 @@ passou sem erro em 05/10.
   conhecido do chunk >500 kB. D-015 registra o roteamento por plataforma. A requisição HTTP ao
   Web direto retornou página de erro e o navegador de teste falhou ao iniciar; não houve smoke
   autenticado, envio real de mensagem ou alteração financeira. Checkpoint final repetiu a suíte
-  93/93, lint e build com sucesso e revisou o diff. Publicação permanece pendente.
+  93/93, lint e build com sucesso e revisou o diff. Publicação técnica confirmada acima.
 - Publicação da mensagem em 07/10: `a7becd8` em `origin/main`, CI aprovada e Vercel READY em
   production (deploy `dpl_3AEyeHSqVHpCxfXjYRNfVTkRUsqy`). `fincontrole.online` respondeu HTTP 200
   com `/assets/index-BpAnfL02.js`; `/assets/Cobrancas-VUhjf-bg.js` contém "Total vence" e o
   service worker inclui o novo bundle. A mensagem retornada pelo usuário confirma os subtotais,
-  mas revela a falha de emojis do caminho desktop; o contorno ainda não está publicado.
+  e revelou a falha de emojis do caminho desktop que motivou o contorno D-015 já publicado.
 - Mensagem de cobrança em 07/10: dois testes de componente cobrem WhatsApp/cópia, ordem das datas,
   agrupamento de cartões com o mesmo vencimento, participante normalizado, dívida PIX e exclusão
   de recebidos/outros meses. Cenário de João: R$ 124,22 em 10/10 + R$ 1.041,50 em 16/10 =
@@ -345,7 +351,7 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Publicar o contorno dos emojis, atualizar a PWA e conferir autenticado o link direto do PC;
+- Atualizar a PWA e conferir autenticado os emojis pelo link direto do PC;
   no celular, confirmar que o fluxo permanece igual. Conferir emojis também na cópia da mensagem.
 - Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
   empréstimos/PIX e somente valores ainda não recebidos.
