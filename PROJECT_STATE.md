@@ -4,14 +4,15 @@
 
 ## Objetivo atual
 
-Prévia futura do Dashboard ajustada localmente em 07/10: cada meta representa pelo menos o
+Prévia futura do Dashboard publicada em 07/10 (`00a7969`, Vercel READY, CI aprovada): cada meta representa pelo menos o
 orçamento da competência, reservando somente `max(0, orçamento - lançado pessoal no mês)`.
 Não importa progresso de outro mês nem duplica gastos/faturas. No cenário sintético de novembro,
 reserva R$ 976,50 e resultado R$ 61,38. Textos, detalhamento e D-012 revisados.
 Suíte Web 105/105 em 20 arquivos; lint sem erros (12 avisos preexistentes); build/PWA aprovado
 com 39 entradas de cache e o aviso conhecido de chunk principal acima de 500 kB. Diff revisado.
 Checkpoint final repetiu testes completos, lint e build com sucesso antes do commit.
-Publicação e conferência autenticada em desktop/celular ainda pendentes; banco/API intactos.
+Bundle e cache da PWA confirmados no domínio público. Conferência autenticada em desktop/celular
+ainda pendente; banco/API intactos. Logs de runtime, drains e monitoramento não auditados neste checkpoint.
 
 Contorno dos emojis publicado em 07/10 (`932a9a0`, Vercel READY, CI aprovada): a cobrança abre
 o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. A reprodução
@@ -164,8 +165,7 @@ passou sem erro em 05/10.
   aguardam deploy e validação visual.
 - Antecipação de parcelas com data informada concluída localmente; aguarda deploy conjunto e
   validação autenticada.
-- Nova regra de orçamento da prévia futura do Dashboard concluída localmente; aguarda deploy
-  e validação autenticada
+- Nova regra de orçamento da prévia futura do Dashboard publicada (`00a7969`); falta validação autenticada
   com contas e compras de cartão em competências distintas, compras compartilhadas e metas que
   estejam sem lançamento, abaixo, no limite ou acima dele na competência futura.
 - Fluxo de Caixa Projetado usa cartões acessíveis, compactos e com moeda; o detalhamento agora
@@ -196,6 +196,12 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Publicação da regra de orçamento em 07/10: `00a7969` em `origin/main`, CI aprovada e Vercel
+  READY em production (deploy `dpl_9gqj4tdwfEZe28S7csAyV3mskxw8`, build 12,505 s).
+  `fincontrole.online` e `/dashboard` responderam HTTP 200; `/assets/index-BEv3O8qn.js`
+  e `/assets/Dashboard-pb_0XvLd.js` contêm a regra e os textos novos, sem a referência antiga
+  ao progresso de outro mês. Service worker inclui ambos. 105 testes/20 arquivos, lint sem erros
+  (12 avisos conhecidos) e build/PWA aprovados no checkpoint; validação autenticada permanece pendente.
 - Publicação dos emojis em 07/10: `932a9a0` em `origin/main`, CI aprovada e Vercel READY em
   production (deploy `dpl_2ehLDGBNspZCL3oVLnwoX4fapkES`). `fincontrole.online` respondeu HTTP 200,
   servindo `/assets/index-DA_OtGFr.js` e `/assets/Cobrancas-CCa9zlen.js`. O chunk contém o destino
@@ -391,7 +397,7 @@ passou sem erro em 05/10.
     intervalo que atravesse fim de semana ou feriado de Aracaju/SE.
 11. Após o deploy web, conferir a exportação de uma fatura cuja compra tenha data em mês anterior,
     garantindo que a competência e os filtros ativos do Extrato coincidam com o CSV.
-12. Após o deploy web, abrir uma competência futura no Dashboard e conferir rendas, contas, dívida,
+12. Atualizar a PWA publicada e abrir uma competência futura no Dashboard; conferir rendas, contas, dívida,
     compra de cartão antes/depois do melhor dia e reserva de metas, confirmando que a prévia não
     mostra saldo inicial nem duplica valores na fatura. Conferir metas zeradas, parciais e acima do
     limite, inclusive investimento e orçamento canônico de combustível, e os detalhes em desktop/celular.
