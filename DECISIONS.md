@@ -136,7 +136,7 @@
 
 ## D-012 — Prévia futura do Dashboard é orçamentária e independente do caixa
 
-- **Data:** 22/09/2026
+- **Data:** 22/09/2026; revisada em 07/10/2026
 - **Status:** aceita
 - **Contexto:** uma competência futura precisa responder se as rendas conhecidas cobrem os
   compromissos dela, sem transformar o Dashboard em uma projeção de saldo bancário.
@@ -146,16 +146,22 @@
   incluídas exclusivamente em faturas, usando a mesma resolução de competência, melhor dia e
   fechamento já adotada para cartões. O detalhamento mantém o total da fatura e as partes de
   terceiros por cartão, mas o resultado usa somente a fração pessoal do titular. Saldo Líquido,
-  saldo anterior, saldo acumulado e pagamentos já realizados não compõem o resultado. Para metas,
-  progresso já lançado na competência futura prevalece; quando estiver zerado, a prévia usa apenas
-  como referência o progresso real do mês atual, sem criar dados nem carregá-los quando a
-  competência se tornar atual. Essa estimativa usa o valor realizado, nunca o saldo restante até a
-  meta; valores já lançados no mês futuro permanecem somente em Gastos/Faturas para não duplicar o
-  resultado.
+  saldo anterior, saldo acumulado e pagamentos já realizados não compõem o resultado. Cada meta
+  prevê pelo menos seu orçamento mensal: total previsto da categoria = `max(orçamento, lançado)`;
+  reserva adicional = `max(0, orçamento - lançado)`, em centavos. O lançado é o valor líquido pessoal
+  da própria competência (despesas e investimentos menos reembolsos), sem parcelas de terceiros.
+  Gastos/Faturas já incluem os compromissos pendentes; somente o restante é deduzido como reserva
+  adicional. Pagamentos realizados reduzem o restante da meta, mas continuam fora do resultado
+  pendente. Sem lançamentos, reserva-se o orçamento inteiro; acima dele, não há reserva extra.
+  O orçamento de combustível usa o planejado canônico do mês quando disponível, inclusive zero;
+  o mês atual mantém sua reserva por abastecimentos ainda não atendidos (D-007). A revisão elimina
+  a referência ao progresso do mês atual: não se importam valores de outra competência nem se
+  criam lançamentos.
 - **Motivo:** separar a decisão orçamentária futura do caixa conciliado e impedir duplicidade entre
   compra no cartão e fatura.
 - **Consequência:** a prévia não é um fluxo de caixa nem altera lançamentos; seus detalhes devem
-  identificar rendas, contas, parcelas, lançamentos, faturas e a reserva de metas considerada.
+  identificar rendas, contas, parcelas, lançamentos, faturas e, por meta, orçamento, já lançado,
+  total previsto e reserva adicional. Ao virar mês atual, mantém o acompanhamento real da competência.
 
 ## D-013 — Fluxo de Caixa Projetado inclui faturas conhecidas pela competência
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import assert from 'node:assert/strict'
 import { vi } from 'vitest'
 import { Dashboard } from './Dashboard'
@@ -74,4 +74,32 @@ test('mostra somente os cards da prévia quando a competência é futura', () =>
   assert.equal(screen.queryByText('Fluxo de Caixa Projetado'), null)
   fireEvent.click(screen.getByText('Resultado previsto'))
   assert.deepEqual(abrirResumoCard.mock.calls, [['previa_resultado', []]])
+})
+
+test('metas futuras distinguem lançado, orçamento, total previsto e reserva adicional', () => {
+  const abrirDetalhesCategoria = vi.fn()
+  render(
+    <Dashboard
+      dataVis={{ mes: 11, ano: 2026 }} mesAnterior={vi.fn()} mesProximo={vi.fn()}
+      categorias={[
+        { id: 'gas', nome: 'Gasolina', meta: 253, tipo: 'despesa' },
+        { id: 'moto', nome: 'Manutenção da moto', meta: 100, tipo: 'despesa' }
+      ]}
+      gCat={{ Gasolina: 26.50, 'Manutenção da moto': 354.12 }}
+      abrirDetalhesCategoria={abrirDetalhesCategoria} pendenciasPassadas={[]}
+      abrirResumoCard={vi.fn()} isMesFuturo
+      previaCompetenciaFutura={{ rendas: 2518.74, gastos: 680.69, faturas: 800.17, reservaMetas: 976.50, resultado: 61.38 }}
+    />
+  )
+  const gas = within(screen.getByText('Gasolina').closest('[class*="cursor-pointer"]'))
+  assert.ok(gas.getByText('Já lançado (sua parte)'))
+  assert.ok(gas.getByText('Orçamento'))
+  assert.match(gas.getByText(/Total previsto:/).textContent, /253,00/)
+  assert.match(gas.getByText(/Reserva adicional:/).textContent, /226,50/)
+  const moto = within(screen.getByText('Manutenção da moto').closest('[class*="cursor-pointer"]'))
+  assert.match(moto.getByText(/Total previsto:/).textContent, /354,12/)
+  assert.match(moto.getByText(/Reserva adicional:/).textContent, /0,00/)
+  assert.equal(screen.queryByText(/progresso do mês atual/), null)
+  fireEvent.click(gas.getByText('Gasolina'))
+  assert.deepEqual(abrirDetalhesCategoria.mock.calls, [['Gasolina', 26.50, 253, 'despesa']])
 })

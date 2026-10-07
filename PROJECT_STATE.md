@@ -4,6 +4,15 @@
 
 ## Objetivo atual
 
+Prévia futura do Dashboard ajustada localmente em 07/10: cada meta representa pelo menos o
+orçamento da competência, reservando somente `max(0, orçamento - lançado pessoal no mês)`.
+Não importa progresso de outro mês nem duplica gastos/faturas. No cenário sintético de novembro,
+reserva R$ 976,50 e resultado R$ 61,38. Textos, detalhamento e D-012 revisados.
+Suíte Web 105/105 em 20 arquivos; lint sem erros (12 avisos preexistentes); build/PWA aprovado
+com 39 entradas de cache e o aviso conhecido de chunk principal acima de 500 kB. Diff revisado.
+Checkpoint final repetiu testes completos, lint e build com sucesso antes do commit.
+Publicação e conferência autenticada em desktop/celular ainda pendentes; banco/API intactos.
+
 Contorno dos emojis publicado em 07/10 (`932a9a0`, Vercel READY, CI aprovada): a cobrança abre
 o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. A reprodução
 sintética isolou a corrupção na página intermediária de `wa.me`, e o novo bundle/cache da PWA
@@ -76,12 +85,15 @@ passou sem erro em 05/10.
 - A PWA recupera falhas conhecidas de chunk sob demanda após deploy com uma única recarga
   controlada por rota/sessão; erros não relacionados continuam no ErrorBoundary.
 - Ao consultar uma competência futura, o Dashboard apresenta uma prévia independente: rendas
-  previstas menos gastos, faturas abertas e a estimativa de metas baseada no progresso já realizado.
+  previstas menos gastos, faturas abertas e a reserva adicional para completar o orçamento das metas.
   Ela não incorpora Saldo Líquido, saldo inicial, saldo acumulado ou pagamentos já realizados.
   Faturas mostram o total por cartão e os valores de terceiros, enquanto o resultado usa somente a
-  parte pessoal do titular. Metas sem progresso na competência futura usam somente como referência
-  o progresso real do mês atual, nunca o valor restante até o teto; ao virar mês atual, voltam a
-  mostrar exclusivamente os lançamentos da própria competência.
+  parte pessoal do titular. Cada meta mostra orçamento, lançado pessoal da competência, total
+  previsto (`max(orçamento, lançado)`) e reserva adicional (`max(0, orçamento - lançado)`).
+  Sem lançamento, reserva o orçamento inteiro; acima do limite, não reserva nada extra.
+  Pagamentos já realizados reduzem a reserva, mas não entram no resultado pendente. Não importa
+  progresso do mês atual. Combustível usa o orçamento canônico do mês, inclusive zero; o cálculo
+  por abastecimentos ainda não atendidos permanece intacto no mês atual (D-007).
 - O detalhamento do Extrato permite antecipar parcelas futuras pendentes de uma compra parcelada no
   crédito. Antes da prévia, o usuário informa a data da antecipação; a confirmação mostra essa data,
   quantidade, total e fatura canônica de destino. Antecipar não quita nem modifica os dados
@@ -152,9 +164,10 @@ passou sem erro em 05/10.
   aguardam deploy e validação visual.
 - Antecipação de parcelas com data informada concluída localmente; aguarda deploy conjunto e
   validação autenticada.
-- Prévia da competência futura do Dashboard concluída; aguarda deploy web e validação autenticada
+- Nova regra de orçamento da prévia futura do Dashboard concluída localmente; aguarda deploy
+  e validação autenticada
   com contas e compras de cartão em competências distintas, compras compartilhadas e metas que
-  tenham ou não progresso no mês atual.
+  estejam sem lançamento, abaixo, no limite ou acima dele na competência futura.
 - Fluxo de Caixa Projetado usa cartões acessíveis, compactos e com moeda; o detalhamento agora
   inclui faturas de cartão já lançadas por competência, o total da fatura, somente a fração
   pessoal e os gastos que a compõem. Valores de terceiros continuam visíveis, mas não afetam o
@@ -267,13 +280,12 @@ passou sem erro em 05/10.
   permanecem visíveis no detalhamento, mas o card e o Resultado previsto consideram apenas a parte
   pessoal. O teste do hook cobre uma compra compartilhada com dois participantes e conta fixa no
   mesmo cartão.
-- Referência de metas na prévia em 22/09: quando não há progresso na competência futura, o painel
-  e a estimativa usam o avanço real do mês atual. Lançamento já existente no mês futuro aparece
-  somente em Gastos/Faturas. A referência não é gravada nem continua quando a competência se torna
-  atual.
-- Correção da estimativa de metas em 22/09: a prévia usa o gasto/progresso realizado como valor
-  estimado, e não a diferença até a meta. Lançamentos existentes no mês futuro continuam somente
-  em Gastos/Faturas, evitando duplicidade.
+- Regra de metas da prévia revisada em 07/10 (D-012): substitui a antiga referência ao progresso
+  de outro mês pelo orçamento mensal e sua reserva residual. Cenário sintético de novembro confirma
+  gasolina R$ 253,00 (R$ 26,50 lançados + R$ 226,50 reservados), manutenção R$ 354,12 sem reserva
+  extra e investimento Sonho R$ 600,00. Reserva total R$ 976,50 e resultado R$ 61,38, sem alterar
+  rendas R$ 2.518,74, gastos R$ 680,69 ou faturas pessoais R$ 800,17. Não é validação dos dados
+  autenticados em produção.
 - Recuperação de PWA validada em 12/09: 43 testes cobrem também reconhecimento de erro de chunk,
   recarga única e o evento `vite:preloadError`; build de produção concluído com o aviso conhecido
   de chunk principal acima de 500 kB.
@@ -381,5 +393,6 @@ passou sem erro em 05/10.
     garantindo que a competência e os filtros ativos do Extrato coincidam com o CSV.
 12. Após o deploy web, abrir uma competência futura no Dashboard e conferir rendas, contas, dívida,
     compra de cartão antes/depois do melhor dia e reserva de metas, confirmando que a prévia não
-    mostra saldo inicial nem duplica valores na fatura.
+    mostra saldo inicial nem duplica valores na fatura. Conferir metas zeradas, parciais e acima do
+    limite, inclusive investimento e orçamento canônico de combustível, e os detalhes em desktop/celular.
 13. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.

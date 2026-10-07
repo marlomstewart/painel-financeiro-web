@@ -166,8 +166,8 @@ test('prévia futura usa somente compromissos e rendas da competência, sem sald
     rendas: 1500,
     gastos: 550,
     faturas: 500,
-    reservaMetas: 0,
-    resultado: 450,
+    reservaMetas: 80,
+    resultado: 370,
     detalhes: {
       rendas: [
         { id: 'renda-manual', descricao: 'Freela de outubro', origem: 'Lançamento', valor: 1000 },
@@ -182,7 +182,10 @@ test('prévia futura usa somente compromissos e rendas da competência, sem sald
         { id: 'cartao', descricao: 'Compra no cartão', origem: 'Lançamento no cartão', valor: 100, valorFatura: 200, cartao: 'Nubank', terceiros: [{ nome: 'Ana', valor: 80 }, { nome: 'Bia', valor: 20 }] },
         { id: 'fixa_internet_10_2026', descricao: 'Internet', origem: 'Conta fixa', valor: 400, valorFatura: 400, cartao: 'Nubank', terceiros: [] }
       ],
-      metas: []
+      metas: [
+        { id: 'meta_alimentacao', descricao: 'Alimentação', origem: 'Reserva adicional até o orçamento', orcamento: 1100, jaLancado: 1100, previsto: 1100, valor: 0 },
+        { id: 'meta_viagem', descricao: 'Viagem', origem: 'Reserva adicional até o orçamento', orcamento: 80, jaLancado: 0, previsto: 80, valor: 80 }
+      ]
     },
     faturasPorCartao: [{
       id: 'card', nome: 'Nubank', total: 600, pessoal: 500,
@@ -243,51 +246,113 @@ test('detalhamento do fluxo mostra a fatura e apenas os gastos pessoais do cart�
   vi.useRealTimers()
 })
 
-test('prévia futura usa o progresso do mês atual sem carregá-lo quando a competência vira atual', () => {
+test('prévia de novembro reserva o orçamento restante sem importar outubro nem duplicar lançamentos', () => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-09-22T12:00:00'))
+  vi.setSystemTime(new Date('2026-10-07T12:00:00'))
   const modal = { alert: vi.fn() }
   const lista = [
-    { id: 'gasolina-setembro', descricao: 'Abastecimento', tipo: 'despesa', categoria: 'Gasolina', valorParcela: 167, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
-    { id: 'sonho-setembro', descricao: 'Reserva do sonho', tipo: 'investimento', categoria: 'Sonho', valorParcela: 600, status: 'pago', mesReferencia: 9, anoReferencia: 2026 },
-    { id: 'fixa-moto-setembro', descricao: 'Manutenção fixa', tipo: 'despesa', categoria: 'Manutenção Fixa da Moto', valorParcela: 65, status: 'pendente', mesReferencia: 9, anoReferencia: 2026 },
-    { id: 'moto-outubro', descricao: 'Reparo da moto', tipo: 'despesa', categoria: 'Manutenção da moto', valorParcela: 334, status: 'pendente', mesReferencia: 10, anoReferencia: 2026 }
+    { id: 'corte-outubro', descricao: 'Corte', tipo: 'despesa', categoria: 'Corte de Cabelo', valorParcela: 35, status: 'pago', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'fixa-outubro', descricao: 'Manutenção fixa', tipo: 'despesa', categoria: 'Manutenção Fixa da Moto', valorParcela: 73.78, status: 'pendente', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'sonho-outubro', descricao: 'Sonho', tipo: 'investimento', categoria: 'Sonho', valorParcela: 600, status: 'pago', mesReferencia: 10, anoReferencia: 2026 },
+    { id: 'gasolina-novembro', descricao: 'Abastecimento', tipo: 'despesa', categoria: 'Gasolina', valorParcela: 26.50, status: 'pendente', formaPagamento: 'pix', mesReferencia: 11, anoReferencia: 2026 },
+    { id: 'moto-novembro', descricao: 'Reparo da moto', tipo: 'despesa', categoria: 'Manutenção da moto', valorParcela: 354.12, status: 'pendente', formaPagamento: 'credito_card', mesReferencia: 11, anoReferencia: 2026 },
+    { id: 'outros-gastos', descricao: 'Outros gastos', tipo: 'despesa', categoria: 'Contas Fixas', valorParcela: 654.19, status: 'pendente', formaPagamento: 'pix', mesReferencia: 11, anoReferencia: 2026 },
+    { id: 'outras-faturas', descricao: 'Outras faturas', tipo: 'despesa', categoria: 'Contas Fixas', valorParcela: 446.05, status: 'pendente', formaPagamento: 'credito_card', mesReferencia: 11, anoReferencia: 2026 },
+    { id: 'renda', descricao: 'Renda', tipo: 'renda', valorParcela: 2518.74, status: 'pendente', mesReferencia: 11, anoReferencia: 2026 }
   ]
   const categorias = [
     { id: 'corte', nome: 'Corte de Cabelo', meta: 70, tipo: 'despesa' },
-    { id: 'gasolina', nome: 'Gasolina', meta: 299, tipo: 'despesa' },
+    { id: 'gasolina', nome: 'Gasolina', meta: 253, tipo: 'despesa' },
     { id: 'sonho', nome: 'Sonho', meta: 600, tipo: 'investimento' },
     { id: 'fixa-moto', nome: 'Manutenção Fixa da Moto', meta: 80, tipo: 'despesa' },
     { id: 'moto', nome: 'Manutenção da moto', meta: 100, tipo: 'despesa' }
   ]
   const { result, rerender } = renderHook(({ dataVis }) => useDashboard({ ...criarProps(dataVis, lista), categorias, modal }), {
-    initialProps: { dataVis: { mes: 10, ano: 2026 } }
+    initialProps: { dataVis: { mes: 11, ano: 2026 } }
   })
 
-  assert.equal(result.current.gCat.Gasolina, 167)
-  assert.equal(result.current.gCat.Sonho, 600)
-  assert.equal(result.current.gCat['Manutenção Fixa da Moto'], 65)
-  assert.equal(result.current.gCat['Manutenção da moto'], 334)
-  assert.equal(result.current.previaCompetenciaFutura.reservaMetas, 832)
-  assert.deepEqual(result.current.previaCompetenciaFutura.detalhes.metas.map(item => [item.descricao, item.valor]), [
-    ['Gasolina', 167],
-    ['Sonho', 600],
-    ['Manutenção Fixa da Moto', 65]
-  ])
-  result.current.abrirResumoCard('previa_metas')
-  render(modal.alert.mock.calls[0][0])
-  assert.ok(screen.getByText(/Estimativa baseada no progresso já realizado/))
-  fireEvent.click(screen.getByTitle('Clique para ver os lançamentos'))
-  assert.ok(screen.getByText('Progresso realizado em Setembro/2026: Gasolina'))
-  assert.ok(screen.getByText('Progresso realizado em Setembro/2026: Manutenção Fixa da Moto'))
-
-  vi.setSystemTime(new Date('2026-10-01T12:00:00'))
-  rerender({ dataVis: { mes: 10, ano: 2026 } })
-  assert.equal(result.current.isMesFuturo, false)
-  assert.equal(result.current.gCat.Gasolina, 0)
+  assert.equal(result.current.gCat.Gasolina, 26.50)
   assert.equal(result.current.gCat.Sonho, 0)
   assert.equal(result.current.gCat['Manutenção Fixa da Moto'], 0)
-  assert.equal(result.current.gCat['Manutenção da moto'], 334)
+  assert.equal(result.current.gCat['Manutenção da moto'], 354.12)
+  assert.equal(result.current.previaCompetenciaFutura.gastos, 680.69)
+  assert.equal(result.current.previaCompetenciaFutura.faturas, 800.17)
+  assert.equal(result.current.previaCompetenciaFutura.reservaMetas, 976.50)
+  assert.equal(result.current.previaCompetenciaFutura.resultado, 61.38)
+  assert.deepEqual(result.current.previaCompetenciaFutura.detalhes.metas.map(item => [item.descricao, item.jaLancado, item.previsto, item.valor]), [
+    ['Corte de Cabelo', 0, 70, 70],
+    ['Gasolina', 26.50, 253, 226.50],
+    ['Sonho', 0, 600, 600],
+    ['Manutenção Fixa da Moto', 0, 80, 80],
+    ['Manutenção da moto', 354.12, 354.12, 0]
+  ])
+  result.current.abrirResumoCard('previa_metas')
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText(/Reserva adicional = orçamento do mês/))
+  fireEvent.click(screen.getByTitle('Clique para ver os lançamentos'))
+  assert.ok(screen.getByText('Reserva adicional até o orçamento: Gasolina'))
+  assert.ok(screen.getByText(/Orçamento: R\$\s*253,00.*Já lançado.*26,50.*Total previsto.*253,00/))
+  assert.ok(screen.getByText(/Orçamento: R\$\s*100,00.*Já lançado.*354,12.*Total previsto.*354,12/))
+  unmount()
+  result.current.abrirDetalhesCategoria('Gasolina', 26.50, 253, 'despesa')
+  const raioX = render(modal.alert.mock.calls[1][0])
+  assert.ok(screen.getByText(/Reserva adicional: R\$\s*226,50.*Total previsto da categoria: R\$\s*253,00/))
+  raioX.unmount()
+
+  vi.setSystemTime(new Date('2026-11-01T12:00:00'))
+  rerender({ dataVis: { mes: 11, ano: 2026 } })
+  assert.equal(result.current.isMesFuturo, false)
+  assert.equal(result.current.previaCompetenciaFutura, null)
+  assert.equal(result.current.gCat.Gasolina, 26.50)
+  assert.equal(result.current.gCat.Sonho, 0)
+  assert.equal(result.current.gCat['Manutenção Fixa da Moto'], 0)
+  assert.equal(result.current.gCat['Manutenção da moto'], 354.12)
+  vi.useRealTimers()
+})
+
+test.each([
+  ['abaixo', [{ tipo: 'despesa', valorParcela: 26.50 }], 26.50, 73.50, 26.50],
+  ['igual', [{ tipo: 'despesa', valorParcela: 100 }], 100, 0, 100],
+  ['acima', [{ tipo: 'despesa', valorParcela: 354.12 }], 354.12, 0, 354.12],
+  ['dividido', [{ tipo: 'despesa', valorParcela: 120, participantes: [{ nome: 'Ana', valorParcela: 80 }] }], 40, 60, 40],
+  ['só terceiro', [{ tipo: 'despesa', valorParcela: 120, isThirdParty: true }], 0, 100, 0],
+  ['reembolso', [{ tipo: 'despesa', valorParcela: 80 }, { tipo: 'reembolso', valorParcela: 30 }], 50, 50, 50],
+  ['crédito líquido', [{ tipo: 'reembolso', valorParcela: 20 }], -20, 120, -20],
+  ['investimento', [{ tipo: 'investimento', valorParcela: 30 }], 30, 70, 30],
+  ['já pago', [{ tipo: 'despesa', valorParcela: 30, status: 'pago' }], 30, 70, 0]
+])('reserva futura considera somente a fração pessoal: %s', (_, movimentos, jaLancado, reserva, compromisso) => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-12-07T12:00:00'))
+  const lista = movimentos.map((item, id) => ({
+    id, descricao: `Movimento ${id}`, categoria: 'Meta', formaPagamento: 'credito_card', status: 'pendente',
+    mesReferencia: 1, anoReferencia: 2027, ...item
+  }))
+  const { result } = renderHook(() => useDashboard({
+    ...criarProps({ mes: 1, ano: 2027 }, lista),
+    categorias: [{ id: 'meta', nome: 'Meta', meta: 100, tipo: 'despesa' }]
+  }))
+  const previa = result.current.previaCompetenciaFutura
+  assert.equal(previa.detalhes.metas[0].jaLancado, jaLancado)
+  assert.equal(previa.reservaMetas, reserva)
+  assert.equal(previa.gastos + previa.faturas, compromisso)
+  assert.equal(previa.resultado, -(compromisso + reserva))
+  vi.useRealTimers()
+})
+
+test.each([0, 25300])('prévia futura respeita o orçamento canônico de combustível: %i centavos', (planejado) => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-10-07T12:00:00'))
+  const plano = criarPlano('2026-11')
+  plano.resumo = { planejadoCentavos: planejado, registradoCentavos: 2650, restanteCentavos: 0, previstoCentavos: 2650 }
+  const lista = [{ id: 'gasolina', descricao: 'Abastecimento', categoria: 'Gasolina', tipo: 'despesa',
+    valorParcela: 26.50, status: 'pendente', formaPagamento: 'pix', mesReferencia: 11, anoReferencia: 2026 }]
+  const { result } = renderHook(() => useDashboard({
+    ...criarProps({ mes: 11, ano: 2026 }, lista), temGaragem: true,
+    categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 299 }], garagem: { planoMes: plano }
+  }))
+  assert.equal(result.current.categoriasDinamicas[0].meta, planejado / 100)
+  assert.equal(result.current.previaCompetenciaFutura.reservaMetas, planejado ? 226.50 : 0)
+  assert.equal(result.current.previaCompetenciaFutura.resultado, planejado ? -253 : -26.50)
   vi.useRealTimers()
 })
 

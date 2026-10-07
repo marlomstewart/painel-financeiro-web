@@ -119,7 +119,7 @@ export function Dashboard({
                         <div onClick={() => abrirResumoCard('previa_metas', cartoes)} className="bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md hover:-translate-y-0.5 transition-all group active:scale-[0.98]">
                             <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1 group-hover:text-orange-500 transition-colors tracking-wider">Reserva de metas</p>
                             <h3 className="text-xl font-extrabold text-orange-600 dark:text-orange-400 tracking-tight">{formatarMoeda(previaCompetenciaFutura.reservaMetas)}</h3>
-                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1">Progresso já realizado</p>
+                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1">Restante até o orçamento do mês</p>
                         </div>
                         <div onClick={() => abrirResumoCard('previa_resultado', cartoes)} className={`p-4 md:p-5 rounded-2xl shadow-sm border cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group active:scale-[0.98] ${previaCompetenciaFutura.resultado >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 hover:border-red-400'}`}>
                             <p className={`text-[10px] uppercase font-bold mb-1 transition-colors tracking-wider ${previaCompetenciaFutura.resultado >= 0 ? 'text-emerald-700 dark:text-emerald-500' : 'text-red-700 dark:text-red-500'}`}>Resultado previsto</p>
@@ -171,7 +171,7 @@ export function Dashboard({
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Progresso Estratégico</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{isMesFuturo ? 'Na prévia, metas sem movimento usam o progresso do mês atual como referência.' : 'Acompanhamento das categorias com Teto de Gastos ou Alvo Mensal definidos.'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{isMesFuturo ? 'Cada meta prevê pelo menos o orçamento do mês. Só o restante ainda não lançado é reservado, sem duplicar gastos/faturas.' : 'Acompanhamento das categorias com Teto de Gastos ou Alvo Mensal definidos.'}</p>
                         </div>
                     </div>
                 </div>
@@ -210,9 +210,15 @@ export function Dashboard({
                                         <div className={`${corBarra} h-2 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}></div>
                                     </div>
                                     <div className="flex justify-between text-xs">
-                                        <span className="font-semibold text-slate-800 dark:text-slate-200">{formatarMoeda(gasto)}</span>
-                                        <span className="text-slate-400">{formatarMoeda(c.meta)}</span>
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200">{isMesFuturo && <span className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">Já lançado (sua parte)</span>}{formatarMoeda(gasto)}</span>
+                                        <span className="text-slate-400 text-right">{isMesFuturo && <span className="block text-[10px]">Orçamento</span>}{formatarMoeda(c.meta)}</span>
                                     </div>
+                                    {isMesFuturo && (
+                                        <div className="mt-3 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                            <p>Total previsto: <strong className="text-slate-800 dark:text-slate-200">{formatarMoeda(Math.max(Number(c.meta), gasto))}</strong></p>
+                                            <p>Reserva adicional: <strong className="text-orange-600 dark:text-orange-400">{formatarMoeda(Math.max(0, Number(c.meta) - gasto))}</strong></p>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

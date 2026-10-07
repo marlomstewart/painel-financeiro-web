@@ -342,30 +342,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
     const competenciaPlano = `${dataVis.ano}-${String(dataVis.mes).padStart(2, '0')}`;
     const planoCombustivel = temGaragem && garagem?.planoMes?.competencia === competenciaPlano ? garagem.planoMes : null;
-    const progressoCategoriasMesAtual = useMemo(() => {
-        const progresso = {};
-        transacoes.forEach(t => {
-            if (isDividaTerceiro(t) || t.mesReferencia !== mesReal || t.anoReferencia !== anoReal) return;
-            if (!['despesa', 'investimento', 'reembolso'].includes(t.tipo)) return;
-            if (t.categoria === 'Contas Fixas' || t.categoria === 'Sem Categoria') return;
-            const valor = t.tipo === 'reembolso' ? -getMeuValor(t) : getMeuValor(t);
-            progresso[t.categoria] = (progresso[t.categoria] || 0) + valor;
-        });
-        return progresso;
-    }, [transacoes, mesReal, anoReal]);
     const categoriasDinamicas = useMemo(() => {
         return categorias.map(c => c.id === planoCombustivel?.config.categoriaId
             ? { ...c, meta: planoCombustivel.resumo.planejadoCentavos / 100, planejamentoCombustivel: true } : c);
     }, [categorias, planoCombustivel]);
-    const gCatParaExibicao = isMesFuturo
-        ? categoriasDinamicas.reduce((progresso, categoria) => {
-            const gastoDaCompetencia = gCat[categoria.nome] || 0;
-            progresso[categoria.nome] = gastoDaCompetencia !== 0
-                ? gastoDaCompetencia
-                : (progressoCategoriasMesAtual[categoria.nome] || 0);
-            return progresso;
-        }, { ...gCat })
-        : gCat;
 
     let metaNaoComprometida = 0;
     categoriasDinamicas.forEach(c => {
@@ -479,23 +459,26 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         });
 
         categoriasDinamicas.forEach(categoria => {
-            const progressoDaCompetencia = gastosPorCategoria[categoria.nome] || 0;
-            // Um lançamento já existente na competência entra em gastos/faturas e não pode ser
-            // repetido aqui. Para uma meta ainda zerada, a prévia estima o gasto pelo progresso
-            // efetivamente realizado no mês atual — nunca pelo valor que faltaria até o teto.
-            if (progressoDaCompetencia !== 0) return;
-            const progressoMesAtual = progressoCategoriasMesAtual[categoria.nome] || 0;
-            if (progressoMesAtual > 0) adicionar('reservaMetas', {
+            const orcamento = arredondarCentavos(Math.max(0, Number(categoria.meta) || 0));
+            if (orcamento === 0) return;
+            const jaLancado = arredondarCentavos(gastosPorCategoria[categoria.nome] || 0);
+            // Reservar só o restante até o orçamento: gastos/faturas já contêm os lançamentos
+            // pessoais da competência. Não repetir compras nem importar progresso de outro mês.
+            adicionar('reservaMetas', {
                 id: `meta_${categoria.id}`,
                 descricao: categoria.nome,
-                origem: `Progresso realizado em ${nomesMeses[mesReal - 1]}/${anoReal}`,
-                valor: progressoMesAtual
+                origem: 'Reserva adicional até o orçamento',
+                orcamento,
+                jaLancado,
+                previsto: Math.max(orcamento, jaLancado),
+                valor: arredondarCentavos(Math.max(0, orcamento - jaLancado))
             });
         });
 
+        Object.keys(totais).forEach(chave => { totais[chave] = arredondarCentavos(totais[chave]); });
         return {
             ...totais,
-            resultado: totais.rendas - totais.gastos - totais.faturas - totais.reservaMetas,
+            resultado: arredondarCentavos(totais.rendas - totais.gastos - totais.faturas - totais.reservaMetas),
             detalhes,
             faturasPorCartao: Object.values(faturasPorCartao).map(fatura => ({
                 ...fatura,
@@ -504,7 +487,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                     .map(([nome, valor]) => ({ nome, valor }))
             }))
         };
-    }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas, progressoCategoriasMesAtual, mesReal, anoReal]);
+    }, [isMesFuturo, dataVis, transacoes, transacoesMes, rendasFixas, contasFixas, dividas, cartoes, categoriasDinamicas]);
 
     const transacoesDoCaixaNoMes = marcoAplicaNoMes
         ? transacoes.filter(t => {
@@ -683,7 +666,10 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
 
         const usaPlanoCombustivel = planoCombustivel?.categoriaNome === nCat;
         const hoje = new Date();
-        if (usaPlanoCombustivel) {
+        if (isMesFuturo) {
+            const reserva = arredondarCentavos(Math.max(0, vMeta - vGasto));
+            analiseIA = `Orçamento da competência: ${formatarMoeda(vMeta)}. Já lançado (sua parte): ${formatarMoeda(vGasto)}. Reserva adicional: ${formatarMoeda(reserva)}. Total previsto da categoria: ${formatarMoeda(Math.max(vMeta, vGasto))}. Os lançamentos já considerados em gastos/faturas não são somados novamente.`;
+        } else if (usaPlanoCombustivel) {
             const previsaoFimMesCat = planoCombustivel.resumo.previstoCentavos / 100;
             const planejado = planoCombustivel.resumo.planejadoCentavos / 100;
             const registrado = planoCombustivel.resumo.registradoCentavos / 100;
@@ -725,11 +711,6 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
                         <p className="text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">em {qtd} {qtd === 1 ? 'transação' : 'transações'}</p>
                     </div>
                 </div>
-                {isMesFuturo && qtd === 0 && vGasto > 0 && (
-                    <div className="bg-violet-50 dark:bg-violet-900/20 p-3 rounded-lg border border-violet-200 dark:border-violet-800/50 text-sm text-violet-800 dark:text-violet-200">
-                        Esta prévia usa o progresso de {nomesMeses[mesReal - 1]}/{anoReal} como referência. Ao chegar nesta competência, somente os lançamentos dela serão exibidos.
-                    </div>
-                )}
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
                     <p className="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase mb-2 flex items-center gap-1">🤖 Previsão Inteligente</p>
                     <p className="text-sm text-blue-900 dark:text-blue-200 font-medium">{analiseIA}</p>
@@ -779,7 +760,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             </div>
         );
         modal.alert(conteudo, `Raio-X: ${nCat}`);
-    }, [transacoes, dataVis, modal, temGaragem, garagem, planoCombustivel, isMesFuturo, mesReal, anoReal]);
+    }, [transacoes, dataVis, modal, temGaragem, garagem, planoCombustivel, isMesFuturo]);
 
     // 🔥 CORREÇÃO: A função agora exige que os cartões sejam passados direto do Dashboard (cartoesExternos)
     const abrirResumoCard = useCallback((tipo, cartoesExternos = []) => {
@@ -902,13 +883,15 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             const itens = previaCompetenciaFutura.detalhes[configuracaoPrevia.chave].map(item => ({
                 id: item.id,
                 descricao: `${item.origem}: ${item.descricao}`,
-                data: `Competência ${String(dataVis.mes).padStart(2, '0')}/${dataVis.ano}`,
+                data: configuracaoPrevia.chave === 'metas'
+                    ? `Orçamento: ${formatarMoeda(item.orcamento)} · Já lançado (sua parte): ${formatarMoeda(item.jaLancado)} · Total previsto: ${formatarMoeda(item.previsto)}`
+                    : `Competência ${String(dataVis.mes).padStart(2, '0')}/${dataVis.ano}`,
                 valorStr: formatarMoeda(Math.abs(item.valor)),
                 isDestaque: item.valor < 0
             }));
             conteudo = (
                 <div className="space-y-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{configuracaoPrevia.chave === 'metas' ? 'Estimativa baseada no progresso já realizado no mês atual, sem usar o valor restante até a meta.' : 'Prévia independente, sem saldo inicial nem pagamentos já realizados.'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{configuracaoPrevia.chave === 'metas' ? 'Reserva adicional = orçamento do mês menos o já lançado na competência (sua parte), nunca abaixo de zero. Valores em gastos/faturas não são somados novamente; pagamentos já realizados reduzem a reserva, mas não entram no resultado.' : 'Prévia independente, sem saldo inicial nem pagamentos já realizados.'}</p>
                     <CardAcordeao titulo={configuracaoPrevia.titulo} valorStr={formatarMoeda(Math.abs(valor))} textColor={configuracaoPrevia.cor} bgColor={configuracaoPrevia.bg} borderColor={configuracaoPrevia.borda} itens={itens} />
                 </div>
             );
@@ -1050,7 +1033,7 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
         mesAnterior, mesProximo, mudarOrdenacao, dadosTabela, 
         totRendaPaga, totGastoReal, totInvestido, totFaturaCreditoAberto,
         saldoMesAnterior, saldoAtual, saldoMesAtual, mesAntRef, previstoFimMes, fluxoProjetado, isMesFuturo, previaCompetenciaFutura,
-        categoriasDinamicas, gCat: gCatParaExibicao, pendenciasPassadas,
+        categoriasDinamicas, gCat, pendenciasPassadas,
         abrirModalPendencias, abrirDetalhesCategoria, abrirResumoCard, abrirDetalheMesProjetado
     };
 }
