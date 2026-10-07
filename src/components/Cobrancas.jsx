@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Handshake, Eye, CheckCircle2, MessageCircle, X, Landmark, CreditCard, Undo2 } from 'lucide-react';
 import { ehPagamentoCredito, resolverCartao } from '../utils/cartaoUtils';
+import { montarLinkWhatsApp } from '../utils/whatsappUtils';
 
 /**
  * @file src/components/Cobrancas.jsx
@@ -222,7 +223,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
         const telefoneFormatado = formatarTelefoneWhatsApp(pessoa.telefone);
 
         if (telefoneFormatado) {
-            window.open(`https://wa.me/${telefoneFormatado}?text=${encodeURIComponent(texto)}`, '_blank');
+            window.open(montarLinkWhatsApp(telefoneFormatado, texto), '_blank');
             return;
         }
 

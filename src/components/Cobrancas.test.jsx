@@ -7,11 +7,13 @@ const baseProps = {
   marcarRecebidoTerceiro: vi.fn(), modal: { confirm: vi.fn() }, showToast: vi.fn(), chavePix: '',
 }
 
-test.each(['WhatsApp', 'cópia'])('mensagem de %s resume só as pendências da pessoa por vencimento, em ordem', async (canal) => {
+test.each(['WhatsApp no PC', 'WhatsApp no celular', 'cópia'])('mensagem de %s resume só as pendências da pessoa por vencimento, em ordem', async (canal) => {
+  const usaWhatsApp = canal !== 'cópia'
+  const celular = canal === 'WhatsApp no celular'
   const copiar = vi.fn().mockResolvedValue(undefined)
-  vi.stubGlobal('navigator', { clipboard: { writeText: copiar } })
+  vi.stubGlobal('navigator', { clipboard: { writeText: copiar }, userAgent: celular ? 'Mozilla/5.0 (Linux; Android 14) Mobile' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' })
   const abrir = vi.spyOn(window, 'open').mockImplementation(() => null)
-  const telefone = canal === 'WhatsApp' ? '85999990000' : null
+  const telefone = usaWhatsApp ? '85999990000' : null
   const compra = (campos) => ({
     isThirdParty: true, thirdPartyName: 'João', thirdPartyPhone: telefone,
     mesReferencia: 10, anoReferencia: 2026, dataCompra: '2026-09-01',
@@ -39,13 +41,18 @@ test.each(['WhatsApp', 'cópia'])('mensagem de %s resume só as pendências da p
       ]} />)
     unmount = tela.unmount
     const card = screen.getByRole('heading', { name: 'João' }).closest('.rounded-3xl')
-    fireEvent.click(within(card).getByRole('button', { name: canal === 'WhatsApp' ? /Abrir WhatsApp/ : /Copiar Cobrança Mensal/ }))
-    await waitFor(() => expect(canal === 'WhatsApp' ? abrir : copiar).toHaveBeenCalledTimes(1))
-    const texto = (canal === 'WhatsApp'
+    fireEvent.click(within(card).getByRole('button', { name: usaWhatsApp ? /Abrir WhatsApp/ : /Copiar Cobrança Mensal/ }))
+    await waitFor(() => expect(usaWhatsApp ? abrir : copiar).toHaveBeenCalledTimes(1))
+    const texto = (usaWhatsApp
       ? new URL(abrir.mock.calls[0][0]).searchParams.get('text')
       : copiar.mock.calls[0][0]).replace(/\u00a0/g, ' ')
     const resumo = '*Total vence 10/10: R$ 124,22*\n🗓 *Total vence 16/10: R$ 1.041,50*\n\n💰 *Total do Mês: R$ 1.165,72*'
     expect(texto).toContain(resumo)
+    expect(texto).toContain('Oi João, tudo bem? ✌️')
+    expect(texto).toContain('🛍 *Revisão (3/3)*')
+    expect(texto).toContain('💵 Valor: R$ 28,60')
+    expect(texto).toContain('Chave PIX: chave-de-teste 🚀')
+    expect(texto).not.toContain('\uFFFD')
     expect(texto).toContain('Valor: R$ 28,60')
     expect(texto).toContain('Vencimento: 10/10 (Nubank)')
     expect(texto).toContain('Vencimento: 16/10 (pix)')
@@ -53,8 +60,10 @@ test.each(['WhatsApp', 'cópia'])('mensagem de %s resume só as pendências da p
     expect(texto).not.toContain('Compra já recebida')
     expect(texto).not.toContain('Compra de outro mês')
     expect(texto.match(/Total vence 10\/10/g)).toHaveLength(1)
-    if (canal === 'WhatsApp') {
-      expect(abrir.mock.calls[0][0]).toContain('https://wa.me/5585999990000?text=')
+    if (usaWhatsApp) {
+      expect(abrir.mock.calls[0][0]).toContain(celular
+        ? 'https://wa.me/5585999990000?text='
+        : 'https://web.whatsapp.com/send/?phone=5585999990000&text=')
       expect(copiar).not.toHaveBeenCalled()
     } else {
       expect(abrir).not.toHaveBeenCalled()

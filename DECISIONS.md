@@ -189,3 +189,18 @@
 - **Motivo:** impedir mistura de dados financeiros entre contas sem perder dados locais antigos.
 - **Consequência:** um lançamento antigo pendente pode exigir suporte antes de aparecer na conta;
   a API exige identidade declarada no envio, então PWAs antigas precisam atualizar.
+
+## D-015 — Cobrança abre diretamente no WhatsApp Web no desktop
+
+- **Data:** 07/10/2026
+- **Status:** aceita
+- **Contexto:** emojis corretos na fonte e no bundle chegavam como `�` ao WhatsApp no PC,
+  enquanto o celular funcionava. Requisição sintética reproduziu a troca por `%EF%BF%BD` no
+  link gerado pela página intermediária de `wa.me` para o WhatsApp Web.
+- **Decisão:** centralizar a construção do link em `utils/whatsappUtils.js`; desktop abre
+  diretamente `web.whatsapp.com/send/`, e dispositivos móveis mantêm `wa.me`. A mensagem é
+  codificada uma única vez com `encodeURIComponent`. Client hints e user agent são usados
+  somente para escolher o destino de interface; agente desconhecido usa o Web.
+- **Motivo:** evitar o intermediário defeituoso sem remover emojis nem mudar o texto financeiro.
+- **Consequência:** no PC o botão abre o WhatsApp Web, não o aplicativo nativo automaticamente;
+  é necessária uma sessão no Web. Copiar a mensagem permanece independente do link.

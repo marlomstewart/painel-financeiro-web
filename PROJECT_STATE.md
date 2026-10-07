@@ -4,10 +4,11 @@
 
 ## Objetivo atual
 
-Mensagem mensal de cobrança com subtotais por vencimento publicada em 07/10 (`a7becd8`,
-Vercel READY, CI aprovada). Mantém os itens pendentes e acrescenta os totais de cada data,
-em ordem cronológica, antes do total do mês. Bundle e cache publicado da PWA confirmados;
-falta conferir autenticado a mensagem após atualizar o app. Sem mudanças na API ou nos recebimentos.
+Contornar a corrupção de emojis ao abrir a cobrança no WhatsApp do PC. Com texto fictício,
+`wa.me` recebeu Unicode correto, mas sua página intermediária gerou um link para o Web com
+`%EF%BF%BD` no lugar dos emojis. Ajuste local na branch `codex/whatsapp-emojis-desktop` abre
+o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. Falta publicar e
+conferir o compositor autenticado; o navegador de teste não iniciou. Valores e recebimentos intactos.
 
 Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
@@ -39,6 +40,10 @@ passou sem erro em 05/10.
   por vencimento. Soma em centavos a fração de cada participante e agrupa também cartões
   diferentes com a mesma data; mantém a lista detalhada, o total mensal e a chave PIX.
   Publicada em `origin/main` (`a7becd8`) e confirmada tecnicamente no domínio público.
+- A abertura da cobrança usa `utils/whatsappUtils.js`: desktop segue direto para o WhatsApp Web,
+  sem a página intermediária; celular mantém o link `wa.me`. Texto é codificado uma única vez,
+  preservando emojis, acentos, quebras de linha e formatação. O novo caminho do PC não aciona
+  automaticamente o aplicativo nativo. Ajuste ainda local, sem envio real de mensagens.
 - Modal de faturas soma todos os participantes normalizados por parcela, com valores em centavos
   e abate de estornos; dados legados continuam compatíveis. Recebimento não muda a participação
   na fatura. A explicação distingue gastos neste cartão de pendências de A Receber, que também
@@ -119,8 +124,9 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
-- Resumo por vencimento publicado: após atualizar a PWA, conferir autenticado WhatsApp/cópia
-  no produto. Não houve envio de mensagens reais durante a validação.
+- Publicar o contorno dos emojis e conferir autenticado a cobrança no WhatsApp Web do PC,
+  preservando também o celular e a cópia. O usuário confirmou subtotais corretos na mensagem,
+  mas relatou emojis corrompidos no app/Web do PC e normais no celular.
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
@@ -176,10 +182,20 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Emojis em 07/10: reprodução HTTP sintética isolou a corrupção na página intermediária de
+  `wa.me`; fonte e bundle produtivo não continham caracteres de substituição. Nove testes do
+  utilitário cobrem Windows/macOS/Linux, Android/iPhone/iPad, client hints e agente desconhecido;
+  componente cobre PC/celular/cópia com emojis e subtotais. 23 testes focados e suíte 93/93 em
+  20 arquivos aprovados; lint zero erros/12 avisos preexistentes e build/PWA aprovado, com o aviso
+  conhecido do chunk >500 kB. D-015 registra o roteamento por plataforma. A requisição HTTP ao
+  Web direto retornou página de erro e o navegador de teste falhou ao iniciar; não houve smoke
+  autenticado, envio real de mensagem ou alteração financeira. Checkpoint final repetiu a suíte
+  93/93, lint e build com sucesso e revisou o diff. Publicação permanece pendente.
 - Publicação da mensagem em 07/10: `a7becd8` em `origin/main`, CI aprovada e Vercel READY em
   production (deploy `dpl_3AEyeHSqVHpCxfXjYRNfVTkRUsqy`). `fincontrole.online` respondeu HTTP 200
   com `/assets/index-BpAnfL02.js`; `/assets/Cobrancas-VUhjf-bg.js` contém "Total vence" e o
-  service worker inclui o novo bundle. Falta apenas a conferência autenticada da mensagem/PWA.
+  service worker inclui o novo bundle. A mensagem retornada pelo usuário confirma os subtotais,
+  mas revela a falha de emojis do caminho desktop; o contorno ainda não está publicado.
 - Mensagem de cobrança em 07/10: dois testes de componente cobrem WhatsApp/cópia, ordem das datas,
   agrupamento de cartões com o mesmo vencimento, participante normalizado, dívida PIX e exclusão
   de recebidos/outros meses. Cenário de João: R$ 124,22 em 10/10 + R$ 1.041,50 em 16/10 =
@@ -329,7 +345,8 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Atualizar a PWA e conferir autenticado o resumo por vencimento na cobrança via WhatsApp/cópia.
+- Publicar o contorno dos emojis, atualizar a PWA e conferir autenticado o link direto do PC;
+  no celular, confirmar que o fluxo permanece igual. Conferir emojis também na cópia da mensagem.
 - Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
   empréstimos/PIX e somente valores ainda não recebidos.
 - Validar no produto o desfazer nos três tipos de recebimento.
