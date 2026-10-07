@@ -4,10 +4,10 @@
 
 ## Objetivo atual
 
-Ajustar somente a mensagem mensal de cobrança: manter os itens pendentes e acrescentar, antes
-do total do mês, os subtotais por data de vencimento em ordem cronológica. Implementado e
-validado localmente na branch `codex/cobrancas-resumo-vencimentos`; publicação e conferência
-da mensagem no produto permanecem pendentes. Sem mudanças na API ou nos recebimentos.
+Mensagem mensal de cobrança com subtotais por vencimento publicada em 07/10 (`a7becd8`,
+Vercel READY, CI aprovada). Mantém os itens pendentes e acrescenta os totais de cada data,
+em ordem cronológica, antes do total do mês. Bundle e cache publicado da PWA confirmados;
+falta conferir autenticado a mensagem após atualizar o app. Sem mudanças na API ou nos recebimentos.
 
 Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
 itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
@@ -38,6 +38,7 @@ passou sem erro em 05/10.
 - Mensagem de cobrança, aberta no WhatsApp ou copiada, resume os valores pendentes da pessoa
   por vencimento. Soma em centavos a fração de cada participante e agrupa também cartões
   diferentes com a mesma data; mantém a lista detalhada, o total mensal e a chave PIX.
+  Publicada em `origin/main` (`a7becd8`) e confirmada tecnicamente no domínio público.
 - Modal de faturas soma todos os participantes normalizados por parcela, com valores em centavos
   e abate de estornos; dados legados continuam compatíveis. Recebimento não muda a participação
   na fatura. A explicação distingue gastos neste cartão de pendências de A Receber, que também
@@ -118,7 +119,8 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
-- Publicar o resumo por vencimento da mensagem de cobrança e conferir WhatsApp/cópia no produto.
+- Resumo por vencimento publicado: após atualizar a PWA, conferir autenticado WhatsApp/cópia
+  no produto. Não houve envio de mensagens reais durante a validação.
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
@@ -174,6 +176,10 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Publicação da mensagem em 07/10: `a7becd8` em `origin/main`, CI aprovada e Vercel READY em
+  production (deploy `dpl_3AEyeHSqVHpCxfXjYRNfVTkRUsqy`). `fincontrole.online` respondeu HTTP 200
+  com `/assets/index-BpAnfL02.js`; `/assets/Cobrancas-VUhjf-bg.js` contém "Total vence" e o
+  service worker inclui o novo bundle. Falta apenas a conferência autenticada da mensagem/PWA.
 - Mensagem de cobrança em 07/10: dois testes de componente cobrem WhatsApp/cópia, ordem das datas,
   agrupamento de cartões com o mesmo vencimento, participante normalizado, dívida PIX e exclusão
   de recebidos/outros meses. Cenário de João: R$ 124,22 em 10/10 + R$ 1.041,50 em 16/10 =
@@ -323,7 +329,7 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Após publicar, atualizar a PWA e conferir o resumo por vencimento na cobrança via WhatsApp/cópia.
+- Atualizar a PWA e conferir autenticado o resumo por vencimento na cobrança via WhatsApp/cópia.
 - Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
   empréstimos/PIX e somente valores ainda não recebidos.
 - Validar no produto o desfazer nos três tipos de recebimento.
