@@ -4,14 +4,22 @@
 
 ## Objetivo atual
 
-Reconciliação em andamento sobre `origin/main` (`bbefd4e`): integrar AUD-007 e depois BCB,
-preservando hotfix legado, desfazer recebimento, rateio de faturas, cobrança por vencimento,
-emojis e reserva residual das metas já publicados. D-015 continua sendo WhatsApp;
-a decisão de caixa datado foi renumerada D-016 para preservar ambas.
-Etapa AUD-007 validada: 114/114 testes, lint zero erros/12 avisos e build/PWA com 39 entradas.
-Preservadas as melhorias publicadas e a previsão R$ 61,38; cancelamento pede confirmação única.
-Promoção coordenada API/Web/PWA pendente. `main` e branches originais preservadas.
+Reconciliação final preparada sobre `origin/main` (`bbefd4e`), na ordem AUD-007 → BCB.
+A Web desta etapa é compatível com a API final AUD-008/009. Hotfix legado, desfazer, rateio,
+resumos de cobrança, emojis e orçamento de metas publicados foram preservados por ancestralidade.
+Recebidos datados e históricos desconhecidos permanecem explícitos; cancelamento tem confirmação
+única e o item do mês não se repete na seção histórica. D-015 continua WhatsApp; caixa datado é D-016.
 
+Validação após `npm ci`: 130/130 testes em 25 arquivos, lint zero erros/11 avisos, build/PWA
+aprovado com 39 entradas. Cobranças, Dashboard, Configurações, Investimentos, Calculadora e aviso
+BCB constam no precache da mesma revisão. Permanece o aviso conhecido de chunk >500 kB.
+`package-lock.json` igual a main: npm audit reporta quatro vulnerabilidades altas preexistentes.
+
+Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e branches originais
+preservadas. Promoção/deploy não executados. Smoke autenticado desktop/mobile/PWA, CI remota e
+janela de API/Web permanecem gates. Procedimento canônico:
+`../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. Não abrir preview contra API produtiva
+para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 
 ## Estado geral
 
@@ -51,6 +59,12 @@ Promoção coordenada API/Web/PWA pendente. `main` e branches originais preserva
   incluem empréstimos e PIX. Hotfix publicado em 06/10 (`67e1fae`, Vercel READY e CI aprovada),
   isolado sobre `91223fa` sem promover BCB/AUD-007. O print de 07/10 confirma a UI atualizada e
   João em R$ 124,22; não confirma todos os lançamentos individuais, inclusive os de Ninho.
+
+- BCB: Investimentos e Calculadora mostram origem/referência/consulta e avisam taxa antiga;
+  erro não fica carregando indefinidamente nem preserva números antigos como atuais. Carteira
+  CDB vazia/prefixada permanece acessível; CDI null pausa simuladores, não vira zero. Hook de
+  leitura compartilhado aborta requisições substituídas/desmontadas e recusa refresh de contexto
+  antigo. Resposta 503 genérica de proxy não é atribuída automaticamente ao BCB.
 - A fila IndexedDB nova grava o ID da conta em cada lote, lista/sincroniza apenas itens do usuário
   autenticado e valida a sessão novamente após operações assíncronas. IDs locais incluem a conta
   para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
@@ -136,6 +150,11 @@ Promoção coordenada API/Web/PWA pendente. `main` e branches originais preserva
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
 
+- BCB com checkpoint final aprovado e implementação publicada em `codex/bcb-resiliencia`
+  (Web `716fe21`, API `5a67539`), sem promoção/deploy. CI só dispara em main/master/develop
+  ou PR; publicação desta branch não comprova CI remota. Abrir revisão/CI como próximo passo.
+  Considerar dependência AUD-007 na revisão/promoção; preparar smoke visual HML e rollout
+  compatível da API/Web/PWA. Falha DNS e recuperação no ambiente hospedado não confirmadas.
 - AUD-007: publicada em branch de revisão (`4c811e1`) junto à API (`c829165`), sem promoção para
   `main`. CI atual só dispara por push em main/master/develop ou PR; abrir revisão/CI remota.
   Smoke visual HML e rollout coordenado seguem pendentes. Exigir
@@ -175,13 +194,16 @@ Promoção coordenada API/Web/PWA pendente. `main` e branches originais preserva
 - Confirmar no produto o retorno de uma compra legada, uma
   normalizada e uma parcela de dívida às pendências, sem alterar `status` do lançamento.
 
+- BCB: cache da API se perde no restart; sem taxa válida, posições dependentes recebem 503.
+  Web antiga não identifica metadados nem aceita CDI null; atualização compatível necessária.
+  Rentabilidade continua estimativa simplificada, não cotação oficial/rendimento histórico.
 - AUD-007: pendente smoke visual integrado em HML, CI e deploy conjunto. Datas antigas desconhecidas
   não foram estimadas; um novo fechamento cobre somente os cortes posteriores. PWA antiga não
   envia data e pode tratar NULL como zero: atualizar durante janela controlada. A API antiga ignora
   datas, portanto não manter versões mistas. Devolução real/recebimento parcial e AUD-009 separados.
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
-- `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
+- `npm run lint` não possui erros. Restam 11 avisos de hooks sobre carregamentos iniciados em efeitos
   e dependências que exigem refatoração gradual com cancelamento/testes de ciclo de vida.
 - Há arquivos de alta complexidade registrados no backlog da API: `Investimentos.jsx`, `Modal.jsx`,
   `Lancamentos.jsx` e `useDashboard.jsx`.
@@ -242,6 +264,19 @@ Promoção coordenada API/Web/PWA pendente. `main` e branches originais preserva
   nenhuma nova decisão técnica. Suíte completa 81/81 em 19 arquivos; lint zero erros/12 avisos
   preexistentes e build/PWA aprovado, com aviso conhecido do chunk >500 kB.
 
+- Checkpoint final BCB em 03/10: `npm test` repetido, 91/91 em 23 arquivos;
+  16 regressões novas cobrem 503 tipado/genérico,
+  recuperação, descarte de dado anterior, taxa antiga, requisição atrasada, troca/desmontagem,
+  refresh antigo ignorado, CDI null sem veredito, carteira vazia e erro de Tesouro sem total falso.
+  Lint zero erros/11 avisos: dois efeitos anteriores foram centralizados em um hook com cancelamento,
+  preservando um aviso desse padrão; outros avisos fora do escopo. Build/PWA aprovado, aviso conhecido
+  do chunk >500 kB. Diff/whitespace/padrões de segredo revisados e catálogo atualizado;
+  API 185/185 e unitários 98/98.
+  BCB/Sentry simulados nos novos testes, SQL real só na suíte existente de `fincontrole-hml`.
+  Nenhuma nova decisão Web independente: política/contrato registrados na API D-026.
+  Smoke visual hospedado, CI remota e deploy não executados.
+  Publicação da implementação conferida por `git ls-remote` nos dois repositórios;
+  `origin/main` permaneceu Web `19381a8` / API `1da24c6`. Nenhum PR ou deploy criado nesta etapa.
 - Checkpoint final AUD-007 em 03/10: 75/75 testes em 19 arquivos, cobrindo setembro/outubro, recebimento posterior ao
   marco, legado desconhecido, estado NULL, prompts cancelados, falha HTTP e ações de Cobranças.
   Lint: zero erros/12 avisos preexistentes. Build/PWA aprovado, com aviso conhecido do chunk >500 kB.
@@ -382,41 +417,11 @@ Promoção coordenada API/Web/PWA pendente. `main` e branches originais preserva
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Atualizar a PWA e conferir autenticado os emojis pelo link direto do PC;
-  no celular, confirmar que o fluxo permanece igual. Conferir emojis também na cópia da mensagem.
-- Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
-  empréstimos/PIX e somente valores ainda não recebidos.
-- Validar no produto o desfazer nos três tipos de recebimento.
-
-1. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
-   compatíveis para smoke visual desktop/celular antes da promoção para `main` e rollout produtivo.
-2. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
-   datas antigas conhecidas ou estabelecer fechamento bancário, sem inferir histórico.
-1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
-   login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
-2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
-   data antes/no/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
-3. Após o deploy conjunto, validar visualmente o vínculo existente preenchendo somente litros e,
-   em nova tentativa, somente preço por litro; ambos devem calcular o outro campo sem criar uma
-   nova despesa.
-4. Após o deploy conjunto, validar os avisos de exclusão e confirmar que cada módulo preserva o
-   registro do outro.
-5. Após o deploy conjunto, validar o card de consumo com dois tanques cheios e um parcial,
-   confirmando médias, distância e estado de dados insuficientes.
-6. Após o deploy web, validar peças vencidas em % e km, além da rolagem dos três painéis em
-   desktop e mobile.
-7. Após o deploy web, validar a navegação mensal de Custos Associados e a ausência de despesas
-   fora da competência selecionada.
-8. Após o deploy conjunto, validar o seletor de vínculo com descrição, data e valor, a máscara do
-   preço por litro e o custo médio diário para dois tanques cheios em dias diferentes.
-9. Após o deploy web, validar no formulário de abastecimento a quilometragem com ponto de milhar e
-   vírgula decimal, confirmando o valor no histórico e no Extrato vinculado.
-10. Após o deploy conjunto, validar os filtros de histórico e o custo por dia útil, incluindo um
-    intervalo que atravesse fim de semana ou feriado de Aracaju/SE.
-11. Após o deploy web, conferir a exportação de uma fatura cuja compra tenha data em mês anterior,
-    garantindo que a competência e os filtros ativos do Extrato coincidam com o CSV.
-12. Atualizar a PWA publicada e abrir uma competência futura no Dashboard; conferir rendas, contas, dívida,
-    compra de cartão antes/depois do melhor dia e reserva de metas, confirmando que a prévia não
-    mostra saldo inicial nem duplica valores na fatura. Conferir metas zeradas, parciais e acima do
-    limite, inclusive investimento e orçamento canônico de combustível, e os detalhes em desktop/celular.
-13. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+1. Confirmar CI e SHAs dos PRs reconciliados e executar smoke autenticado HML conjunto,
+   incluindo legado, participante normalizado, dívida, datas, cancelamento e caixa NULL.
+2. Conferir taxa válida, 503/Retry-After, cache desatualizado e CDI null com a API BCB compatível.
+3. Seguir `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md` para a janela de produção:
+   main dispara deploy automático; controlar escritores antigos e atualizar abas/PWA antes de reabrir.
+4. Confirmar no desktop/mobile os resumos/emojis, rateio de faturas e orçamento de metas preservados.
+5. Tratar vulnerabilidades do lockfile em escopo próprio antes da liberação; nenhuma dependência
+   foi atualizada nesta reconciliação. Demais pendências seguem no backlog canônico da API.

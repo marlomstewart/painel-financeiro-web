@@ -150,6 +150,11 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 
 ## Deploy
 
+A sequência coordenada AUD-007 → BCB → AUD-008/009 e os gates de API/Web/PWA estão em
+`../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. As branches reconciliadas preservam
+o hotfix e as melhorias posteriores de main; atualizar somente o bundle não comprova atualização
+das abas/PWAs abertas.
+
 Hospedado na **Vercel** (plano Hobby/free), branch `main` = produção. A variável de ambiente
 `VITE_API_URL` (Vercel → Settings → Environment Variables) precisa ser atualizada e o projeto
 **redeployado** manualmente sempre que ela mudar — a Vite embute esse valor no bundle no momento

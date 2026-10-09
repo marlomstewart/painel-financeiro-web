@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useInvestmentDashboard } from './useInvestmentDashboard';
 
 /**
  * @file src/hooks/useTesouro.jsx
@@ -7,29 +7,7 @@ import { useState, useCallback, useEffect } from 'react';
  * permite registrar/excluir títulos.
  */
 export function useTesouro({ API, getHeaders, modal, showToast }) {
-    const [dashboardData, setDashboardData] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    const fetchDashboard = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`${API}/investimentos/tesouro`, { headers: getHeaders() });
-            if (res.ok) {
-                const data = await res.json();
-                setDashboardData(data);
-            } else {
-                console.error('Erro ao buscar dashboard de Tesouro Direto. Status:', res.status);
-            }
-        } catch (error) {
-            console.error('Falha de conexão ao buscar Tesouro Direto:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [API, getHeaders]);
-
-    useEffect(() => {
-        fetchDashboard();
-    }, [fetchDashboard]);
+    const { dashboardData, loading, error, fetchDashboard } = useInvestmentDashboard({ endpoint: `${API}/investimentos/tesouro`, getHeaders });
 
     /**
      * @function criarTitulo
@@ -76,5 +54,5 @@ export function useTesouro({ API, getHeaders, modal, showToast }) {
         return false;
     };
 
-    return { dashboardData, loading, fetchDashboard, criarTitulo, excluirTitulo };
+    return { dashboardData, loading, error, fetchDashboard, criarTitulo, excluirTitulo };
 }
