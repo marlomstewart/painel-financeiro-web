@@ -75,6 +75,30 @@ test.each(['WhatsApp no PC', 'WhatsApp no celular', 'cópia'])('mensagem de %s r
   }
 })
 
+test('AUD-007: recebimento antigo quitado fora da competência permite informar data sem desmarcar', () => {
+  const marcarRecebidoTerceiro = vi.fn()
+  render(<Cobrancas {...baseProps} marcarRecebidoTerceiro={marcarRecebidoTerceiro} transacoes={[
+    { id: 'antiga', descricao: 'Compra antiga', mesReferencia: 8, anoReferencia: 2026, dataCompra: '2026-08-01',
+      isThirdParty: true, terceiro_recebido: true, formaPagamento: 'pix',
+      participantes: [{ id: 'legado', legado: true, nome: 'Ana', valorParcela: 70, recebido: true, recebimento: null }] },
+  ]} />)
+  expect(screen.getByText(/Recebido sem data histórica/)).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Informar data conhecida' }))
+  expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('antiga', true, null, true)
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar marcação incorreta' }))
+  expect(marcarRecebidoTerceiro).toHaveBeenLastCalledWith('antiga', true, null)
+})
+
+test('AUD-007: mostra a data recebida sem permitir redatação silenciosa', () => {
+  render(<Cobrancas {...baseProps} transacoes={[
+    { id: 'datada', descricao: 'Compra', mesReferencia: 9, anoReferencia: 2026, dataCompra: '2026-09-01', formaPagamento: 'pix',
+      participantes: [{ id: 'ana', nome: 'Ana', valorParcela: 70, recebido: true,
+        recebimento: { data_recebimento: '2026-10-01' } }] },
+  ]} />)
+  expect(screen.getByText(/Recebido em 01\/10\/2026/)).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Informar data conhecida' }).disabled).toBe(true)
+})
+
 test('mostra apenas pessoas com cobrança pendente na competência selecionada', () => {
   render(<Cobrancas {...baseProps} transacoes={[
     { id: 'anterior', isThirdParty: true, thirdPartyName: 'Ana', thirdPartyValue: 30, valorParcela: 30, descricao: 'Compra anterior', mesReferencia: 8, anoReferencia: 2026, dataCompra: '2026-08-10', formaPagamento: 'pix' },
@@ -184,7 +208,7 @@ test('desfaz recebimento legado mesmo quando não há mais cobranças pendentes'
   expect(screen.getByRole('heading', { name: 'Nenhuma cobrança pendente neste mês' })).toBeTruthy()
   expect(screen.getByRole('heading', { name: 'Recebidos nesta competência' })).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: /Desfazer recebimento de Compra antiga para Mayara/ }))
-  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compra-legada', true, null))
+  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compra-legada', true, null, false, true))
 })
 
 test('desfaz somente a pessoa recebida de uma compra compartilhada', async () => {
@@ -201,7 +225,7 @@ test('desfaz somente a pessoa recebida de uma compra compartilhada', async () =>
 
   expect(screen.getByRole('heading', { name: 'Bia' })).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: /Desfazer recebimento de Compra compartilhada para Ana/ }))
-  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compartilhada-1', true, 'ana'))
+  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('compartilhada-1', true, 'ana', false, true))
 })
 
 test('desfaz a parcela recebida de dívida da competência selecionada', async () => {
@@ -217,7 +241,7 @@ test('desfaz a parcela recebida de dívida da competência selecionada', async (
 
   expect(screen.getAllByRole('button', { name: /Desfazer recebimento/ })).toHaveLength(1)
   fireEvent.click(screen.getByRole('button', { name: /Desfazer recebimento/ }))
-  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('parcela-setembro', true, undefined))
+  await waitFor(() => expect(marcarRecebidoTerceiro).toHaveBeenCalledWith('parcela-setembro', true, undefined, false, true))
 })
 
 test('cancelar o desfazer não altera o recebimento', async () => {

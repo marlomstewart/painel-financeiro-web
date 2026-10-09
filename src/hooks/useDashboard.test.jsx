@@ -17,7 +17,7 @@ test('reserva somente os abastecimentos não atendidos e usa previsão canônica
   const plano = criarPlano()
   plano.resumo = { planejadoCentavos: 29900, registradoCentavos: 2163, restanteCentavos: 27600, previstoCentavos: 29763 }
   const lista = [{ id: 't1', descricao: 'Combustível', categoria: 'Gasolina', tipo: 'despesa', valorParcela: 21.63,
-    mesReferencia: 9, anoReferencia: 2026, status: 'pago' }]
+    mesReferencia: 9, anoReferencia: 2026, status: 'pago', data_pagamento: '2026-09-02' }]
   const modal = { alert: vi.fn() }
   const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, lista), modal,
     temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 299 }], garagem: { planoMes: plano } }))
@@ -55,12 +55,13 @@ test('Raio-X de combustível confirma quando todos os abastecimentos planejados 
 const transacoes = [
   {
     id: 'renda-julho', descricao: 'Renda julho', tipo: 'renda', categoria: 'Renda', valorParcela: 1000,
-    status: 'pago', mesReferencia: 7, anoReferencia: 2026,
+    status: 'pago', mesReferencia: 7, anoReferencia: 2026, data_pagamento: '2026-07-01',
   },
   {
     id: 'split-agosto', descricao: 'Split agosto', tipo: 'despesa', categoria: 'Alimentação', valorParcela: 500,
-    status: 'pago', mesReferencia: 8, anoReferencia: 2026,
+    status: 'pago', mesReferencia: 8, anoReferencia: 2026, data_pagamento: '2026-08-01',
     isThirdParty: true, thirdPartyValue: 416.45, terceiro_recebido: true,
+    recebimentos: [{ id: 'r1', participante_chave: 'legado', valor: 416.45, data_recebimento: '2026-08-20' }],
   },
 ]
 
@@ -111,6 +112,34 @@ test('ignora saldo canônico de agosto ao renderizar setembro e mantém a despes
   const { result } = renderHook(() => useDashboard(criarProps({ mes: 9, ano: 2026 }, lista, marco, respostaAntiga)))
 
   assert.equal(result.current.saldoAtual, 22.27)
+})
+
+test('AUD-007: setembro -100 e outubro +70, inclusive pagamento anterior ao marco', () => {
+  const tx = { id: 'split', descricao: 'Compra', tipo: 'despesa', categoria: 'Teste', status: 'pago',
+    valorParcela: 100, data_pagamento: '2026-09-10', mesReferencia: 9, anoReferencia: 2026,
+    participantes: [{ id: 'ana', nome: 'Ana', valorParcela: 70, recebido: true }],
+    recebimentos: [{ id: 'r', participante_chave: 'participante:ana', valor: 70, data_recebimento: '2026-10-01' }] }
+  const { result, rerender } = renderHook(({ dataVis, marco }) => useDashboard(criarProps(dataVis, [tx], marco)), {
+    initialProps: { dataVis: { mes: 9, ano: 2026 }, marco: null },
+  })
+  assert.equal(result.current.saldoAtual, -100)
+  rerender({ dataVis: { mes: 10, ano: 2026 }, marco: null })
+  assert.equal(result.current.saldoMesAnterior, -100)
+  assert.equal(result.current.saldoMesAtual, 70)
+  assert.equal(result.current.saldoAtual, -30)
+  rerender({ dataVis: { mes: 10, ano: 2026 }, marco: { valor: 1000, data: '2026-09-30' } })
+  assert.equal(result.current.saldoAtual, 1070)
+})
+
+test('AUD-007: resposta canônica não reconciliada não vira zero nem fallback numérico', () => {
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, [], null,
+    { ate: '2026-09-30', valor: null, reconciliado: false, pendencias: [{}] }), modal }))
+  assert.equal(result.current.saldoAtual, null)
+  assert.equal(result.current.previstoFimMes, null)
+  assert.deepEqual(result.current.fluxoProjetado, [])
+  result.current.abrirResumoCard('saldo')
+  assert.match(modal.alert.mock.calls[0][0], /Caixa não reconciliado/)
 })
 
 test('saldo conciliado inicia setembro pelo fechamento real de agosto e usa a data do pagamento', () => {

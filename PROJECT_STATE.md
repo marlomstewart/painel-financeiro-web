@@ -1,34 +1,24 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 07/10/2026
+**Atualizado em:** 09/10/2026
 
 ## Objetivo atual
 
-Prévia futura do Dashboard publicada em 07/10 (`00a7969`, Vercel READY, CI aprovada): cada meta representa pelo menos o
-orçamento da competência, reservando somente `max(0, orçamento - lançado pessoal no mês)`.
-Não importa progresso de outro mês nem duplica gastos/faturas. No cenário sintético de novembro,
-reserva R$ 976,50 e resultado R$ 61,38. Textos, detalhamento e D-012 revisados.
-Suíte Web 105/105 em 20 arquivos; lint sem erros (12 avisos preexistentes); build/PWA aprovado
-com 39 entradas de cache e o aviso conhecido de chunk principal acima de 500 kB. Diff revisado.
-Checkpoint final repetiu testes completos, lint e build com sucesso antes do commit.
-Bundle e cache da PWA confirmados no domínio público. Conferência autenticada em desktop/celular
-ainda pendente; banco/API intactos. Logs de runtime, drains e monitoramento não auditados neste checkpoint.
+Reconciliação em andamento sobre `origin/main` (`bbefd4e`): integrar AUD-007 e depois BCB,
+preservando hotfix legado, desfazer recebimento, rateio de faturas, cobrança por vencimento,
+emojis e reserva residual das metas já publicados. D-015 continua sendo WhatsApp;
+a decisão de caixa datado foi renumerada D-016 para preservar ambas.
+Etapa AUD-007 validada: 114/114 testes, lint zero erros/12 avisos e build/PWA com 39 entradas.
+Preservadas as melhorias publicadas e a previsão R$ 61,38; cancelamento pede confirmação única.
+Promoção coordenada API/Web/PWA pendente. `main` e branches originais preservadas.
 
-Contorno dos emojis publicado em 07/10 (`932a9a0`, Vercel READY, CI aprovada): a cobrança abre
-o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. A reprodução
-sintética isolou a corrupção na página intermediária de `wa.me`, e o novo bundle/cache da PWA
-foi confirmado no domínio público. Falta conferir os emojis no compositor autenticado;
-o navegador de teste não iniciou. Valores e recebimentos intactos.
-
-Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
-itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
-não há pendências, com confirmação e retorno à lista pendente. Abrange terceiro único legado,
-participantes normalizados e parcelas de dívida; usa as rotas atuais da API com `recebido: false`.
-Testes Web 76/76, build/PWA e lint aprovados (12 avisos preexistentes, zero erros).
-Smoke autenticado do desfazer pendente. O usuário confirmou que marcar como recebido
-passou sem erro em 05/10.
 
 ## Estado geral
+
+- AUD-007 validada em checkpoint: Cobranças pede data efetiva, mostra recebidos quitados sem data histórica e
+  permite informar data conhecida/cancelar declaração incorreta. Dashboard usa API para cortes,
+  não converte NULL em zero e suspende projeção dependente de caixa não reconciliado. Nenhuma
+  data antiga foi presumida; prévia orçamentária permanece independente. API D-025 é canônica.
 
 - Checkpoint documental concluído em 12/09; README e catálogo funcional foram alinhados à
   navegação por caminhos, planejamento, abastecimentos técnicos e consumo de combustível.
@@ -115,16 +105,18 @@ passou sem erro em 05/10.
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
   do mais recente ao mais antigo, em área rolável.
-- Dashboard preserva compras divididas no saldo histórico.
+- Dashboard separa saída integral por pagamento e entradas datadas dos terceiros no saldo
+  histórico. Não reduz setembro por um recebimento feito em outubro (AUD-007).
 - Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
   recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
   conta/fatura.
 - Configurações permite saldo conciliado; depois do marco, o Saldo Líquido usa datas efetivas de
-  pagamento para representar caixa real entre meses.
+  pagamento e recebimento para representar caixa real entre meses. Novo marco confirmado pode
+  cobrir legado observado antes dele, mas não reconciliar retroativamente períodos anteriores.
 - A busca de transações agora preserva também movimentos pagos após o marco de caixa, mesmo se a
   data de compra estiver fora da janela padrão de 24 meses. O pagamento/reversão de fatura usa
   uma operação atômica da API, em vez de uma requisição por parcela.
-- O Dashboard consulta o saldo conciliado canônico da API para o mês visível; Configurações mostra
+- O Dashboard consulta o caixa canônico da API com ou sem marco para o mês visível; Configurações mostra
   uma prévia confirmável antes de substituir o marco.
 - Extrato evidencia quando uma parcela de terceiro foi recebida sem confundir esse fato com o
   pagamento da conta; Dívidas calcula parcelas geradas como `despesa` e usa
@@ -143,6 +135,11 @@ passou sem erro em 05/10.
   a exibição de emojis no compositor após o contorno continua sem confirmação.
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
+
+- AUD-007: publicada em branch de revisão (`4c811e1`) junto à API (`c829165`), sem promoção para
+  `main`. CI atual só dispara por push em main/master/develop ou PR; abrir revisão/CI remota.
+  Smoke visual HML e rollout coordenado seguem pendentes. Exigir
+  recarregamento da PWA e não misturar instâncias antigas escrevendo recebimentos.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
 - Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
@@ -177,6 +174,11 @@ passou sem erro em 05/10.
 
 - Confirmar no produto o retorno de uma compra legada, uma
   normalizada e uma parcela de dívida às pendências, sem alterar `status` do lançamento.
+
+- AUD-007: pendente smoke visual integrado em HML, CI e deploy conjunto. Datas antigas desconhecidas
+  não foram estimadas; um novo fechamento cobre somente os cortes posteriores. PWA antiga não
+  envia data e pode tratar NULL como zero: atualizar durante janela controlada. A API antiga ignora
+  datas, portanto não manter versões mistas. Devolução real/recebimento parcial e AUD-009 separados.
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
 - `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
@@ -239,6 +241,15 @@ passou sem erro em 05/10.
   autenticadas nem alterações nos registros financeiros reais. D-010 já cobre o rateio canônico;
   nenhuma nova decisão técnica. Suíte completa 81/81 em 19 arquivos; lint zero erros/12 avisos
   preexistentes e build/PWA aprovado, com aviso conhecido do chunk >500 kB.
+
+- Checkpoint final AUD-007 em 03/10: 75/75 testes em 19 arquivos, cobrindo setembro/outubro, recebimento posterior ao
+  marco, legado desconhecido, estado NULL, prompts cancelados, falha HTTP e ações de Cobranças.
+  Lint: zero erros/12 avisos preexistentes. Build/PWA aprovado, com aviso conhecido do chunk >500 kB.
+  Diff completo, arquivos novos, whitespace e padrões de credenciais revisados/aprovados.
+  README e catálogo funcional deixaram de descrever a compensação pela flag atual. D-016
+  revisada e D-005 alinhada à autoridade canônica, sem nova decisão de arquitetura no checkpoint.
+  API: suíte completa 160/160, unitários 73/73 e sintaxe de 27 arquivos aprovados.
+  API validada somente com dados sintéticos HML; nenhum smoke visual hospedado/produtivo executado.
 - AUD-001 em 29/09: `npm test` aprovou 67 testes em 18 arquivos, incluindo A→B, troca de sessão
   durante resposta pendente, quarentena de fila legada e isolamento de operações IndexedDB.
   `npm run build` passou; `npm run lint` concluiu com zero erros e 12 avisos conhecidos. O chunk
@@ -306,7 +317,9 @@ passou sem erro em 05/10.
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
   troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run
   build` foi concluído em 07/09, com apenas o aviso conhecido de chunk principal acima de 500 kB.
-- Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
+- Fluxo de terceiros: o lançamento integral no Extrato e o pagamento da fatura permanecem
+  independentes do recebimento. AUD-007 substitui a compensação pela flag atual: saída integral
+  no pagamento, entrada própria datada no recebimento, sem renda duplicada no Extrato.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
   `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
@@ -374,6 +387,11 @@ passou sem erro em 05/10.
 - Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
   empréstimos/PIX e somente valores ainda não recebidos.
 - Validar no produto o desfazer nos três tipos de recebimento.
+
+1. Abrir revisão/CI das branches AUD-007 publicadas e preparar ambiente HML com API/Web
+   compatíveis para smoke visual desktop/celular antes da promoção para `main` e rollout produtivo.
+2. Seguir `painel-financeiro-api/docs/RECEBIMENTOS_TERCEIROS.md` para atualizar a PWA, confirmar
+   datas antigas conhecidas ou estabelecer fechamento bancário, sem inferir histórico.
 1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
    login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
 2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
