@@ -56,11 +56,11 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   parceladas são guardadas e enviadas juntas, sem registrar só parte delas. Um indicador no menu
   lateral mostra os lotes pendentes; se o servidor rejeitar o lote por uma regra definitiva, ele
   aparece como "Falha de sincronização" e não fica tentando sozinho indefinidamente.
-- **Saldo Líquido**: mostra somente dinheiro efetivamente recebido ou pago. Ao virar o mês, ele
-  mantém a mesma regra para compras divididas: depois que a parte do terceiro foi recebida, apenas
-  a sua fração permanece descontada no caixa. Para lançamentos pagos, a data de pagamento é a que
-  determina em que mês o dinheiro saiu da conta; o mês da compra continua organizando orçamento e
-  fatura do cartão.
+- **Saldo Líquido**: separa a saída integral na data do pagamento e a entrada do terceiro na data
+  efetiva do recebimento. Uma despesa paga em setembro não muda porque o terceiro devolveu em
+  outubro. Recebimentos antigos sem data não viram zero nem uma estimativa confirmada: é preciso
+  informar uma data conhecida ou um novo fechamento bancário que cubra o legado dali em diante.
+  O mês da compra continua organizando orçamento e fatura do cartão.
 
 ## Cartões de Crédito
 
@@ -103,11 +103,11 @@ no repositório da API. Para a documentação técnica, veja o [`README.md`](../
   dívida), o botão de cobrança **abre o WhatsApp direto**, já com a mensagem pronta (itens do mês,
   valor total e sua chave PIX, se você tiver cadastrado uma em Configurações). Sem telefone
   cadastrado, ele copia o texto pra área de transferência pra você colar onde preferir.
-- **"Marcar como Recebido" é sempre manual, e é o que ajusta seu saldo.** Pagar a fatura do cartão
-  não marca nada como recebido — é normal: nesse momento o valor cheio saiu mesmo da sua conta,
-  incluindo a parte da outra pessoa. Quando ela te devolver, marque aqui: o Saldo Líquido no
-  Dashboard passa a considerar só a sua parte daquela compra. Funciona nas duas ordens (marcar
-  antes ou depois de pagar a fatura).
+- **"Marcar como Recebido" é manual e pede a data em que o dinheiro entrou na conta.** Pagar a
+  fatura não marca recebimento. A devolução gera uma entrada própria nessa data, antes ou depois
+  do pagamento, sem duplicar uma renda no Extrato. Recebidos antigos sem data permitem informar
+  data conhecida sem desmarcar; cancelar uma marcação incorreta corrige o histórico, mas não
+  registra uma devolução real de dinheiro ao terceiro.
 
 ## Metas & Categorias
 
@@ -131,8 +131,8 @@ vinculá-lo a um investimento automaticamente.
   para Ações/FIIs; caixinha, % do CDI, aplicado e rendimento para Renda Fixa; título, tipo, taxa e
   vencimento para Tesouro Direto). É também de onde parte o botão **"Novo Lançamento"**.
 - **Renda Fixa**: aportes organizados por "caixinha" (cada uma representa uma instituição/fundo,
-  com seu próprio percentual do CDI). Rendimento calculado automaticamente em tempo real (usando o
-  CDI atual, buscado do Banco Central), descontando IOF (se resgatado em menos de 30 dias) e
+  com seu próprio percentual do CDI). Rendimento estimado pelo CDI aproximado via meta Selic
+  do Banco Central, com cache validado/datado, descontando IOF (se resgatado em menos de 30 dias) e
   Imposto de Renda regressivo (conforme o tempo de aplicação).
 - **Ações** e **FIIs**: registre suas compras e vendas (ticker, quantidade, preço); a cotação atual
   é buscada automaticamente, mostrando preço médio, valor de mercado e lucro/prejuízo. Suporta
@@ -148,12 +148,18 @@ vinculá-lo a um investimento automaticamente.
   FIIs, caixinha/valor pra Renda Fixa, tipo/taxa/vencimento pro Tesouro), com o valor total
   calculado na hora.
 
+Indicadores mostram origem, referência e data de consulta. Taxa antiga tem aviso explícito e não
+atualiza snapshot automático. Sem taxa útil, o erro encerra o carregamento e permite tentar
+novamente. Carteira vazia/prefixada continua acessível; CDI ausente pausa os simuladores, sem
+inventar juros. Esses cálculos não representam rendimento histórico garantido.
+
 ## Simulador "À Vista ou Parcelado"
 
 - Calculadora avulsa (menu lateral) que ajuda a decidir entre pagar à vista ou parcelar uma compra:
   você informa o preço à vista e as condições do parcelado (valor da parcela e quantidade), e o
   sistema compara com o rendimento que esse dinheiro teria se ficasse investido (usando a taxa de
-  CDI real da sua Renda Fixa) durante o prazo do parcelamento.
+  CDI aproximado disponível na API) durante o prazo do parcelamento. Taxa desatualizada é
+  identificada; sem CDI válido, não há veredito financeiro e é possível tentar novamente.
 - Mostra um veredito direto — "Compre à Vista" ou "Pode Parcelar" — com o valor da diferença, além
   do detalhamento (total parcelado vs. valor rendendo).
 

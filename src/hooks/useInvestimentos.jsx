@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useInvestmentDashboard } from './useInvestmentDashboard';
 
 /**
  * @file src/hooks/useInvestimentos.jsx
@@ -6,38 +6,7 @@ import { useState, useCallback, useEffect } from 'react';
  * Gerencia o estado global do dashboard, realiza as requisições para a API e controla as interações do usuário.
  */
 export function useInvestimentos({ API, getHeaders, modal, showToast }) {
-    // Estado principal que guarda o resumo financeiro calculado pelo back-end
-    const [dashboardData, setDashboardData] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    /**
-     * @function fetchDashboard
-     * @description Busca as taxas atualizadas do BCB, as caixinhas e o resumo financeiro do patrimônio.
-     */
-    const fetchDashboard = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`${API}/investimentos`, {
-                headers: getHeaders()
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setDashboardData(data);
-            } else {
-                console.error('Erro ao buscar dashboard de investimentos. Status:', res.status);
-            }
-        } catch (error) {
-            console.error('Falha de conexão ao buscar investimentos:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [API, getHeaders]);
-
-    // Carrega os dados automaticamente ao montar o módulo
-    useEffect(() => {
-        fetchDashboard();
-    }, [fetchDashboard]);
+    const { dashboardData, loading, error, fetchDashboard } = useInvestmentDashboard({ endpoint: `${API}/investimentos`, getHeaders });
 
     /**
      * @function criarCaixinha
@@ -142,6 +111,7 @@ export function useInvestimentos({ API, getHeaders, modal, showToast }) {
     return {
         dashboardData,
         loading,
+        error,
         fetchDashboard,
         criarCaixinha,
         criarAporte,

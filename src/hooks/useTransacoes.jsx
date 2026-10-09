@@ -261,23 +261,36 @@ export function useTransacoes({ API, getHeaders, modal, token, temGaragem, trans
     // devolveu a parte dele" são coisas diferentes — antes, Cobranças reaproveitava o campo de
     // status da fatura pra marcar "recebido", então pagar a fatura no cartão também marcava a
     // parte do terceiro como recebida sem ele ter devolvido nada de verdade.
-    const marcarRecebidoTerceiro = async (id, recebidoAtual, participanteId = null) => {
-        const novoValor = !recebidoAtual;
+    const marcarRecebidoTerceiro = async (id, recebidoAtual, participanteId = null, informarData = false, cancelamentoConfirmado = false) => {
+        const novoValor = informarData || !recebidoAtual;
+        let dataRecebimento;
+        if (novoValor) {
+            dataRecebimento = await modal.prompt('Informe o dia em que o dinheiro entrou na sua conta. Não use uma data estimada para recebimentos antigos.',
+                informarData ? '' : dataHojeEmFortaleza(), 'Data do recebimento',
+                { inputType: 'date', inputLabel: 'Data em que você recebeu', confirmLabel: 'Confirmar recebimento' });
+            if (!dataRecebimento) return;
+        } else if (!cancelamentoConfirmado && !await modal.confirm('Cancelar esta marcação incorreta? O histórico de caixa será corrigido. Esta ação não registra devolução de dinheiro.', 'Corrigir recebimento')) return;
         try {
             const rota = participanteId ? `${API}/transacoes/${id}/participantes/${encodeURIComponent(participanteId)}/recebido` : `${API}/transacoes/${id}/terceiro-recebido`;
             const res = await fetch(rota, {
-                method: 'PUT', headers: getHeaders(), body: JSON.stringify({ recebido: novoValor })
+                method: 'PUT', headers: getHeaders(), body: JSON.stringify({ recebido: novoValor, ...(novoValor ? { dataRecebimento } : {}) })
             });
             const data = await res.json();
             if (res.ok) {
-                setTransacoes(prev => prev.map(t => t.id !== id ? t : participanteId
-                    ? { ...t, participantes: t.participantes.map(p => p.id === participanteId ? { ...p, recebido: novoValor } : p) }
-                    : { ...t, terceiro_recebido: novoValor,
-                        participantes: t.participantes?.map(p => p.legado ? { ...p, recebido: novoValor } : p) }));
+                const chave = participanteId ? `participante:${participanteId}` : 'legado';
+                setTransacoes(prev => prev.map(t => {
+                    if (t.id !== id) return t;
+                    const recebimentos = (t.recebimentos || []).filter(r => r.participante_chave !== chave);
+                    if (data.recebimento) recebimentos.push(data.recebimento);
+                    return { ...t, recebimentos,
+                        ...(participanteId ? {} : { terceiro_recebido: novoValor }),
+                        participantes: (t.participantes || []).map(p => (participanteId ? p.id === participanteId : p.legado)
+                            ? { ...p, recebido: novoValor, recebimento: data.recebimento || null } : p) };
+                }));
             } else {
                 showToast(data.message || 'Falha ao atualizar recebimento.', 'error');
             }
-        } catch (err) { console.error("Erro ao marcar recebido:", err); }
+        } catch (err) { console.error("Erro ao marcar recebido:", err); showToast('Não foi possível atualizar o recebimento.', 'error'); }
     };
 
     const getTransacoesRelacionadas = (tTarget) => {
