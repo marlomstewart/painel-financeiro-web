@@ -1,8 +1,20 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 07/10/2026
+**Atualizado em:** 15/10/2026
 
 ## Objetivo atual
+
+Alerta de projeção do combustível corrigido localmente, isolado sobre `origin/main` (`bbefd4e`)
+na branch `codex/alerta-projecao-combustivel`. O Raio-X agora alerta também quando o total previsto
+pelo calendário excede o orçamento, antes de classificar o planejamento como em dia/concluído.
+Mantém prioridade para o alerta de gasto já acima do limite; não altera somas, calendário,
+prévia futura, dados reais nem API. Reconciliações AUD-007/BCB permanecem nas branches próprias.
+O cenário sintético R$ 179,70 registrados + R$ 184,00 previstos = R$ 363,70 exibe excesso
+de R$ 64,70 sobre R$ 299,00. Falta publicar e validar visualmente no produto; a composição
+individual dos R$ 184,00 reais continua sem auditoria. D-007 preservada, sem nova decisão durável.
+Validação local: 108/108 testes em 20 arquivos; lint zero erros/12 avisos preexistentes;
+build/PWA aprovado (39 entradas), com o aviso conhecido do chunk principal acima de 500 kB.
+Checkpoint final repetiu a suíte completa, lint e build/PWA com sucesso; diff revisado.
 
 Prévia futura do Dashboard publicada em 07/10 (`00a7969`, Vercel READY, CI aprovada): cada meta representa pelo menos o
 orçamento da competência, reservando somente `max(0, orçamento - lançado pessoal no mês)`.
@@ -115,6 +127,9 @@ passou sem erro em 05/10.
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
   do mais recente ao mais antigo, em área rolável.
+- Raio-X de combustível distingue gasto já acima do orçamento de estouro apenas projetado pelo
+  calendário. Projeção acima da meta não recebe a mensagem positiva de planejamento em dia;
+  valor exatamente no limite não gera alerta de excesso. Correção ainda local.
 - Dashboard preserva compras divididas no saldo histórico.
 - Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
   recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
@@ -138,6 +153,9 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
+- Publicar o alerta de estouro projetado do combustível e conferir o modal autenticado em
+  desktop/celular. Validar separadamente os abastecimentos que formam a previsão do calendário;
+  os testes deste ajuste usam somente resumo sintético, não auditam lançamentos reais.
 - Contorno dos emojis publicado: atualizar a PWA e conferir autenticado a cobrança no WhatsApp
   Web do PC, preservando também o celular e a cópia. Subtotais foram confirmados pelo usuário;
   a exibição de emojis no compositor após o contorno continua sem confirmação.
@@ -196,6 +214,14 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
+- Alerta de combustível em 15/10: regressão reproduziu a mensagem positiva indevida antes da
+  correção e passou depois. Dashboard e planejamento: 37/37 testes em quatro arquivos, cobrindo
+  o exemplo de R$ 363,70/R$ 64,70, projeção no limite e um centavo acima; o resumo canônico não
+  é modificado. Preservados os testes de gasto já excedido, planejamento concluído/em dia,
+  orçamento futuro e reserva por abastecimentos. Suíte completa: 108/108 em 20 arquivos;
+  lint zero erros/12 avisos conhecidos e build/PWA aprovado. Diff revisado e sem erro de whitespace.
+  Verificado o caminho resumo canônico → mensagem renderizada com dados sintéticos; sem smoke
+  autenticado, consulta de dados reais ou alteração no contrato da API. Publicação ainda pendente.
 - Publicação da regra de orçamento em 07/10: `00a7969` em `origin/main`, CI aprovada e Vercel
   READY em production (deploy `dpl_9gqj4tdwfEZe28S7csAyV3mskxw8`, build 12,505 s).
   `fincontrole.online` e `/dashboard` responderam HTTP 200; `/assets/index-BEv3O8qn.js`
@@ -369,6 +395,8 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
+- Após publicar este ajuste, atualizar a PWA e conferir o alerta do Raio-X de gasolina no PC e
+  celular. Conferir no planejamento a composição dos R$ 184,00 antes de concluir sobre os dados reais.
 - Atualizar a PWA e conferir autenticado os emojis pelo link direto do PC;
   no celular, confirmar que o fluxo permanece igual. Conferir emojis também na cópia da mensagem.
 - Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui

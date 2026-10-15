@@ -676,6 +676,8 @@ export function useDashboard({ transacoes, setTransacoes, transacoesMes, categor
             const restante = planoCombustivel.resumo.restanteCentavos / 100;
             if (registrado > planejado) {
                 analiseIA = `⚠️ Atenção: você já gastou ${formatarMoeda(registrado)}, ${formatarMoeda(registrado - planejado)} acima dos ${formatarMoeda(planejado)} planejados para combustível neste mês.`;
+            } else if (previsaoFimMesCat > planejado) {
+                analiseIA = `⚠️ Pelo planejamento atual, o mês deve fechar em ${formatarMoeda(previsaoFimMesCat)} — ${formatarMoeda(previsaoFimMesCat - planejado)} acima da meta de ${formatarMoeda(planejado)}. Já foram ${formatarMoeda(registrado)}; ainda estão previstos ${formatarMoeda(restante)} em abastecimentos.`;
             } else if (restante <= 0) {
                 analiseIA = '✅ Planejamento concluído: os abastecimentos previstos para este mês já foram registrados.';
             } else {
