@@ -28,6 +28,48 @@ test('reserva somente os abastecimentos não atendidos e usa previsão canônica
   unmount()
 })
 
+test('Raio-X de combustível alerta sobre o estouro projetado mesmo com gasto registrado abaixo da meta', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-10-15T12:00:00-03:00'))
+  const plano = criarPlano('2026-10')
+  plano.resumo = { planejadoCentavos: 29900, registradoCentavos: 17970, restanteCentavos: 18400, previstoCentavos: 36370 }
+  const resumoOriginal = { ...plano.resumo }
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 10, ano: 2026 }, []), modal,
+    temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 299 }], garagem: { planoMes: plano } }))
+
+  result.current.abrirDetalhesCategoria('Gasolina', 179.70, 299, 'despesa')
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+  assert.ok(screen.getByText(/⚠️ Pelo planejamento atual, o mês deve fechar em R\$\s*363,70.*R\$\s*64,70 acima da meta de R\$\s*299,00/))
+  assert.ok(screen.getByText(/Já foram R\$\s*179,70.*R\$\s*184,00/))
+  assert.equal(screen.queryByText(/Planejamento em dia/), null)
+  assert.equal(screen.queryByText(/você já gastou.*acima/), null)
+  assert.deepEqual(plano.resumo, resumoOriginal)
+  unmount()
+  vi.useRealTimers()
+})
+
+test.each([
+  [29900, 11930, false],
+  [29901, 11931, true]
+])('Raio-X compara a projeção de %i centavos com o limite sem antecipar estouro', (previsto, restante, deveAlertar) => {
+  const plano = criarPlano()
+  plano.resumo = { planejadoCentavos: 29900, registradoCentavos: 17970, restanteCentavos: restante, previstoCentavos: previsto }
+  const modal = { alert: vi.fn() }
+  const { result } = renderHook(() => useDashboard({ ...criarProps({ mes: 9, ano: 2026 }, []), modal,
+    temGaragem: true, categorias: [{ id: 'gas', nome: 'Gasolina', tipo: 'despesa', meta: 299 }], garagem: { planoMes: plano } }))
+  result.current.abrirDetalhesCategoria('Gasolina', 179.70, 299, 'despesa')
+  const { unmount } = render(modal.alert.mock.calls[0][0])
+  if (deveAlertar) {
+    assert.ok(screen.getByText(/R\$\s*0,01 acima da meta/))
+    assert.equal(screen.queryByText(/Planejamento em dia/), null)
+  } else {
+    assert.ok(screen.getByText(/Planejamento em dia/))
+    assert.equal(screen.queryByText(/acima da meta/), null)
+  }
+  unmount()
+})
+
 test('Raio-X de combustível alerta quando o gasto registrado ultrapassa o planejado', () => {
   const plano = criarPlano()
   plano.resumo = { planejadoCentavos: 2300, registradoCentavos: 2500, restanteCentavos: 0, previstoCentavos: 2500 }

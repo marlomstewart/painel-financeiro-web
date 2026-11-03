@@ -1,23 +1,27 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 09/10/2026
+**Atualizado em:** 03/11/2026
 
 ## Objetivo atual
 
-Reconciliação final preparada sobre `origin/main` (`bbefd4e`), na ordem AUD-007 → BCB.
+Reconciliação da branch `codex/reconciliacao-bcb` com `origin/main` (`d6bccdb`), na ordem AUD-007 → BCB.
+A mescla incorpora o hotfix de combustível `10f2b61`: o Raio-X alerta para estouro projetado,
+preserva a prioridade do gasto já acima da meta e não altera o calendário nem os valores.
 A Web desta etapa é compatível com a API final AUD-008/009. Hotfix legado, desfazer, rateio,
 resumos de cobrança, emojis e orçamento de metas publicados foram preservados por ancestralidade.
 Recebidos datados e históricos desconhecidos permanecem explícitos; cancelamento tem confirmação
 única e o item do mês não se repete na seção histórica. D-015 continua WhatsApp; caixa datado é D-016.
 
-Validação após `npm ci`: 130/130 testes em 25 arquivos, lint zero erros/11 avisos, build/PWA
-aprovado com 39 entradas. Cobranças, Dashboard, Configurações, Investimentos, Calculadora e aviso
-BCB constam no precache da mesma revisão. Permanece o aviso conhecido de chunk >500 kB.
-`package-lock.json` igual a main: npm audit reporta quatro vulnerabilidades altas preexistentes.
+Validação local da mescla: 133/133 testes em 25 arquivos, lint zero erros/11 avisos e build/PWA
+aprovado com 39 entradas, usando as dependências já instaladas e lockfile igual a main.
+Permanece o aviso conhecido de chunk >500 kB; a auditoria anterior reportou quatro
+vulnerabilidades altas preexistentes. Nenhuma dependência foi atualizada nesta etapa.
 
 Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e branches originais
-preservadas. Promoção/deploy não executados. Smoke autenticado desktop/mobile/PWA, CI remota e
-janela de API/Web permanecem gates. Procedimento canônico:
+preservadas. A mescla está pronta para revisão local e publicação na branch do PR; a CI da
+Web deverá executar para o novo SHA. A CI API 37936395498 passou 209/209 no merge de PR
+`f032f108` do head `c77287f`, sem comprovar execução isolada do head. Promoção/deploy não
+executados. Smoke autenticado desktop/mobile/PWA e janela de API/Web permanecem gates. Procedimento canônico:
 `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. Não abrir preview contra API produtiva
 para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 
@@ -121,6 +125,8 @@ para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
   do mais recente ao mais antigo, em área rolável.
 - Dashboard separa saída integral por pagamento e entradas datadas dos terceiros no saldo
   histórico. Não reduz setembro por um recebimento feito em outubro (AUD-007).
+- Raio-X de combustível alerta quando a projeção ultrapassa o orçamento, sem sinalizar excesso
+  no valor exatamente igual ao limite; o alerta de gasto já realizado mantém prioridade.
 - Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
   recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
   conta/fatura.
@@ -419,6 +425,7 @@ para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 
 1. Confirmar CI e SHAs dos PRs reconciliados e executar smoke autenticado HML conjunto,
    incluindo legado, participante normalizado, dívida, datas, cancelamento e caixa NULL.
+   Conferir também o alerta de combustível no desktop e celular e a composição real do planejamento.
 2. Conferir taxa válida, 503/Retry-After, cache desatualizado e CDI null com a API BCB compatível.
 3. Seguir `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md` para a janela de produção:
    main dispara deploy automático; controlar escritores antigos e atualizar abas/PWA antes de reabrir.
