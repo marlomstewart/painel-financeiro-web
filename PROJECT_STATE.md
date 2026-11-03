@@ -18,8 +18,14 @@ Permanece o aviso conhecido de chunk >500 kB; a auditoria anterior reportou quat
 vulnerabilidades altas preexistentes. Nenhuma dependência foi atualizada nesta etapa.
 
 Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e branches originais
-preservadas. A mescla está pronta para revisão local e publicação na branch do PR; a CI da
-Web deverá executar para o novo SHA. A CI API 37936395498 passou 209/209 no merge de PR
+preservadas. O head Web `00085cfe3fb5678feea3b81c84186666d11986ad` foi publicado no PR #1;
+a CI 41640781572 passou 133/133 e build/PWA no merge de PR
+`fe2874d9408ac754bc4f307dc15d56f71968b68f`, formado com a base `d6bccdb`.
+O GitHub informou PR mesclável e em rascunho. Um checkpoint documental posterior a `00085cf`
+não está incluído nessa CI e, se publicado no PR, requer nova execução para seu próprio SHA.
+Evidências: https://github.com/marlomstewart/painel-financeiro-web/actions/runs/41640781572
+e https://github.com/marlomstewart/painel-financeiro-web/pull/1.
+A CI API 37936395498 passou 209/209 no merge de PR
 `f032f108` do head `c77287f`, sem comprovar execução isolada do head. Promoção/deploy não
 executados. Smoke autenticado desktop/mobile/PWA e janela de API/Web permanecem gates. Procedimento canônico:
 `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. Não abrir preview contra API produtiva
