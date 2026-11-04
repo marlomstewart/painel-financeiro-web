@@ -1,8 +1,21 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 03/11/2026
+**Atualizado em:** 04/11/2026
 
 ## Objetivo atual
+
+PR Web #1: `App` repassa `caixaNaoReconciliado` ao Dashboard. O aviso geral aparece quando
+a API retorna caixa desconhecido; cartão e detalhe preservam o estado sem convertê-lo em zero.
+Regressões de integração cobrem aviso presente/ausente usando App e Dashboard reais e API simulada.
+Suíte Web: 135/135 em 26 arquivos; lint sem erros (11 avisos preexistentes); build/PWA com
+39 entradas, com o aviso conhecido de chunk >500 kB. Sem mudança de contrato ou dependências.
+
+Smoke HML do código `8b6d16ff5d015bc0c5c5ef8372e60c5d8d8bf202` com API
+`c77287f0d454cd5d2156b26233c51473949b4893`: HTTP 200 para caixa, desktop 1366 px e
+móvel emulado 390 px. Com `valor: null, reconciliado: false`, aviso geral, marcador
+“Não reconciliado” e detalhe sem data confirmados. Com `valor: -125.50, reconciliado: true`,
+saldo exibido e aviso ausente nos dois tamanhos. Duas contas sintéticas removidas, zero resíduos
+nas 24 tabelas conferidas; quatro perfis e processos temporários encerrados. Sem deploy em produção.
 
 Reconciliação da branch `codex/reconciliacao-bcb` com `origin/main` (`d6bccdb`), na ordem AUD-007 → BCB.
 A mescla incorpora o hotfix de combustível `10f2b61`: o Raio-X alerta para estouro projetado,
@@ -21,13 +34,13 @@ Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e b
 preservadas. O head Web `00085cfe3fb5678feea3b81c84186666d11986ad` foi publicado no PR #1;
 a CI 41640781572 passou 133/133 e build/PWA no merge de PR
 `fe2874d9408ac754bc4f307dc15d56f71968b68f`, formado com a base `d6bccdb`.
-O GitHub informou PR mesclável e em rascunho. Um checkpoint documental posterior a `00085cf`
-não está incluído nessa CI e, se publicado no PR, requer nova execução para seu próprio SHA.
+Essa é a CI anterior à correção do aviso e não certifica a revisão de 04/11.
 Evidências: https://github.com/marlomstewart/painel-financeiro-web/actions/runs/41640781572
 e https://github.com/marlomstewart/painel-financeiro-web/pull/1.
 A CI API 37936395498 passou 209/209 no merge de PR
 `f032f108` do head `c77287f`, sem comprovar execução isolada do head. Promoção/deploy não
-executados. Smoke autenticado desktop/mobile/PWA e janela de API/Web permanecem gates. Procedimento canônico:
+executados. O smoke específico do aviso está concluído; os demais gates de smoke e de rollout
+conjunto API/Web permanecem aplicáveis. Procedimento canônico:
 `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. Não abrir preview contra API produtiva
 para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 
