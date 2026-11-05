@@ -104,12 +104,14 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
 - **"Minha fração" vs "Total da conta"**: em compras divididas com terceiros, o sistema mantém
   duas contas paralelas — o valor **integral** (o que realmente saiu/entrou da conta bancária) e a
   **fração que é sua** (`getMeuValor()` em `useDashboard.jsx`, abate `thirdPartyValue`). O
-  Dashboard usa as duas, em cards diferentes. Qual delas entra no Saldo Líquido depende de
-  `terceiro_recebido` (ver regra 1.5/1.6 em `REGRAS_DE_NEGOCIO.md`): valor integral enquanto a
-  pessoa não devolveu, só a sua fração depois que devolveu.
+  Dashboard usa as duas, em cards diferentes. O Saldo Líquido considera a saída integral na data
+  do pagamento e uma entrada separada na data efetiva do recebimento do terceiro (AUD-007),
+  sem mudar retroativamente o mês da despesa pela flag `terceiro_recebido`.
 - **Saldo conciliado e data de caixa**: o usuário pode informar em Configurações um saldo bancário
   confirmado e sua data. A partir desse marco, o Saldo Líquido usa `data_pagamento` (com fallback
-  para `dataCompra` em registros antigos) para decidir quando uma entrada ou saída afetou o banco.
+  para `dataCompra` em pagamentos antigos) e `data_recebimento` para decidir quando cada movimento
+  afetou o banco. Recebimentos antigos sem data ficam não reconciliados até data conhecida ou novo
+  fechamento confirmado que cubra a observação; o período anterior continua incerto.
   `mesReferencia` continua sendo a competência de orçamento e de fatura; não é usado como data de
   saída de caixa após a conciliação.
 - **Agrupamento de parcelamento** (`getTransacoesRelacionadas` em `useTransacoes.jsx`): decide
@@ -147,6 +149,11 @@ e é instanciado uma vez em `App.jsx`, que repassa os dados e funções como pro
   individualmente por cada hook (`try/catch` + `modal.alert(...)`), não passam pelo Sentry.
 
 ## Deploy
+
+A sequência coordenada AUD-007 → BCB → AUD-008/009 e os gates de API/Web/PWA estão em
+`../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. As branches reconciliadas preservam
+o hotfix e as melhorias posteriores de main; atualizar somente o bundle não comprova atualização
+das abas/PWAs abertas.
 
 Hospedado na **Vercel** (plano Hobby/free), branch `main` = produção. A variável de ambiente
 `VITE_API_URL` (Vercel → Settings → Environment Variables) precisa ser atualizada e o projeto

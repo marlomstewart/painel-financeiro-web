@@ -72,6 +72,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                 const valorCobrado = Number(participante.valorParcela || 0);
                 const itemFormatado = { ...t, participanteId: participante.legado ? null : participante.id, thirdPartyName: participante.nome,
                     thirdPartyPhone: participante.telefone, terceiro_recebido: Boolean(participante.recebido),
+                    recebimento: participante.recebimento || null,
                     valorCobradoCalculado: valorCobrado, dataVencimento, nomeForma, isTransacaoSimples: true };
                 p.todasTransacoes.push(itemFormatado);
                 if (!participante.recebido) {
@@ -155,6 +156,7 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                         dataVencimento: new Date(parcelaDoMes.dataCompra),
                         nomeForma: d.forma_pagamento || d.formaPagamento || 'Empréstimo',
                         terceiro_recebido: parcelaDoMes.terceiro_recebido,
+                        recebimento: parcelaDoMes.recebimentos?.find(r => r.participante_chave === 'legado') || null,
                         _pendingSync: parcelaDoMes._pendingSync
                     };
                     if (parcelaDoMes.terceiro_recebido) {
@@ -177,6 +179,11 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
     const cobrancasDoMes = cobrancasPorPessoa.filter(pessoa => pessoa.itensMesAtual.length > 0 && pessoa.totalMesAtual > 0);
     const recebidosDoMes = cobrancasPorPessoa.flatMap(pessoa =>
         pessoa.itensRecebidosMesAtual.map(item => ({ ...item, nomePessoa: pessoa.nomeExibicao })));
+    const recebimentosForaDoMes = cobrancasPorPessoa.flatMap(p => p.todasTransacoes).filter(t =>
+        t.terceiro_recebido && !(t.mesReferencia === mesAtual && t.anoReferencia === anoAtual));
+    const textoDataRecebimento = item => item.recebimento?.data_recebimento
+        ? `Recebido em ${String(item.recebimento.data_recebimento).slice(0, 10).split('-').reverse().join('/')}`
+        : 'Recebido sem data histórica';
 
     // Mantém só dígitos e prefixa 55 (Brasil) se a pessoa não tiver informado o código do país.
     // Decide pela quantidade de dígitos (DDD+número = 10 ou 11) em vez do prefixo, já que o
@@ -311,15 +318,24 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
 
     const handleDesfazerRecebimento = async (item) => {
         const confirmado = await modal.confirm(
-            `Desfazer o recebimento de ${formatarMoeda(item.valorCobradoCalculado)} referente a "${item.descricao}"? A cobrança voltará às pendências.`,
+            `Desfazer o recebimento de ${formatarMoeda(item.valorCobradoCalculado)} referente a "${item.descricao}"? A cobrança voltará às pendências e o histórico de caixa será corrigido. Esta ação não registra devolução de dinheiro.`,
             'Desfazer Recebimento',
             { confirmLabel: 'Sim, Desfazer', confirmColor: 'bg-amber-600 hover:bg-amber-700' }
         );
-        if (confirmado) await marcarRecebidoTerceiro(item.id, true, item.participanteId);
+        if (confirmado) await marcarRecebidoTerceiro(item.id, true, item.participanteId, false, true);
     };
 
     return (
         <div className="p-4 md:p-6 space-y-6 w-full max-w-7xl mx-auto pb-24 animate-fade-in relative">
+            <section aria-label="Recebimentos registrados" className="space-y-2">
+                {recebimentosForaDoMes.map(t => (
+                    <div key={`${t.id}_${t.participanteId || 'legado'}`} className="p-3 rounded-xl border border-slate-300 dark:border-slate-700 text-sm">
+                        <p>{t.thirdPartyName} — {t.descricao}: {textoDataRecebimento(t)}</p>
+                        <button className="underline mr-4" onClick={() => marcarRecebidoTerceiro(t.id, true, t.participanteId, true)} disabled={Boolean(t.recebimento?.data_recebimento)}>Informar data conhecida</button>
+                        <button className="underline" onClick={() => marcarRecebidoTerceiro(t.id, true, t.participanteId)}>Cancelar marcação incorreta</button>
+                    </div>
+                ))}
+            </section>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-colors">
                 <div className="flex items-center gap-3">
@@ -432,6 +448,8 @@ export function Cobrancas({ transacoes = [], dividas = [], cartoes = [], dataVis
                                         <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{item.nomePessoa}</p>
                                         <p className="text-sm font-black text-slate-800 dark:text-slate-200 line-clamp-2" title={item.descricao}>{item.descricao}</p>
                                         {item.isEmprestimo && <p className="text-xs text-slate-500">Empréstimo</p>}
+                                        <p className="text-xs text-slate-500">{textoDataRecebimento(item)}</p>
+                                        <button type="button" className="text-xs underline disabled:opacity-50" disabled={Boolean(item._pendingSync || item.recebimento?.data_recebimento)} onClick={() => marcarRecebidoTerceiro(item.id, true, item.participanteId, true)}>Informar data conhecida</button>
                                     </div>
                                     <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 shrink-0">{formatarMoeda(item.valorCobradoCalculado)}</span>
                                 </div>

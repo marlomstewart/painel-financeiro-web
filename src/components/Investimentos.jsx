@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useInvestimentos } from '../hooks/useInvestimentos';
 import { useBolsa } from '../hooks/useBolsa';
 import { useTesouro } from '../hooks/useTesouro';
+import { AvisoTaxasBcb, ErroInvestimentos } from './AvisoTaxasBcb';
 import { LineChart, Timer, Hourglass, Rocket, Landmark, Plus, Trash2, ArrowDownToLine, AlertTriangle, Building2, ShieldCheck, ChevronDown, TrendingUp } from 'lucide-react';
 
 /**
@@ -21,7 +22,7 @@ const TABELA_IOF = [100, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66, 63, 60, 56, 53,
  * @description Módulo de gestão de Renda Fixa (CDBs), simuladores de curto/longo prazo e cálculos tributários (IR/IOF).
  */
 export function Investimentos({ API, getHeaders, modal, showToast }) {
-    const { dashboardData, loading, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal, showToast });
+    const { dashboardData, loading, error, fetchDashboard, criarCaixinha, criarAporte, excluirCaixinha, excluirAporte } = useInvestimentos({ API, getHeaders, modal, showToast });
     const bolsa = useBolsa({ API, getHeaders, modal, showToast });
     const tesouro = useTesouro({ API, getHeaders, modal, showToast });
 
@@ -43,7 +44,7 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
     const [simCurtoData, setSimCurtoData] = useState(dataPadraoFuturo.toISOString().split('T')[0]);
 
     const simulacao = useMemo(() => {
-        if (!dashboardData || !dashboardData.taxas) return { anos: 0, meses: 0, investido: 0, juros: 0, taxaUsada: 100 };
+        if (!Number.isFinite(dashboardData?.taxas?.cdiAnual)) return { anos: 0, meses: 0, investido: 0, juros: 0, taxaUsada: 100 };
 
         const cdiAnual = dashboardData.taxas.cdiAnual;
         let percentualCdiSimulador = 100;
@@ -75,7 +76,7 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
     }, [metaSimulador, aporteSimulador, caixinhaSimuladorId, dashboardData]);
 
     const simulacaoCurto = useMemo(() => {
-        if (!dashboardData || !dashboardData.taxas || !simCurtoData || simCurtoValor <= 0) {
+        if (!Number.isFinite(dashboardData?.taxas?.cdiAnual) || !simCurtoData || simCurtoValor <= 0) {
             return { valorBruto: 0, lucroBruto: 0, iof: 0, ir: 0, valorLiquido: 0, lucroLiquido: 0, diasCorridos: 0, erro: false };
         }
 
@@ -177,6 +178,7 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
         }
     };
 
+    if (error) return <ErroInvestimentos mensagem={error} tentarNovamente={fetchDashboard} />;
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
@@ -188,6 +190,7 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
     }
 
     const { resumo, taxas, caixinhas } = dashboardData;
+    const taxaDisponivel = Number.isFinite(taxas.cdiAnual);
     const taxaDiariaReal = Math.pow(1 + (taxas.cdiAnual / 100), 1 / 252) - 1;
     const rendimentoDiarioBruto = resumo.aplicadoTotal * taxaDiariaReal;
 
@@ -209,11 +212,13 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
                             Renda Fixa e Investimentos
                         </h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                            Acompanhe a rentabilidade real diária, simule metas e faça aportes.
+                            Acompanhe a rentabilidade estimada, simule metas e faça aportes.
                         </p>
                     </div>
                 </div>
             </div>
+
+            <AvisoTaxasBcb taxas={abaAtiva === 'resumo' ? [taxas, tesouro.dashboardData?.taxas] : abaAtiva === 'tesouro' ? [tesouro.dashboardData?.taxas] : abaAtiva === 'renda_fixa' ? [taxas] : []} />
 
             {/* ALTERNADOR DE ABAS: RESUMO / RENDA FIXA / AÇÕES / FIIS / TESOURO */}
             <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl w-full sm:w-fit overflow-x-auto">
@@ -271,13 +276,13 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-3.5 md:p-3 rounded-xl flex items-center justify-between md:justify-center gap-4 w-full md:w-auto">
                         <div className="text-center flex-1 md:flex-none">
-                            <p className="text-[10px] text-blue-300 uppercase tracking-wider font-bold mb-0.5">Taxa CDI Hoje</p>
-                            <p className="text-lg font-black text-emerald-400">{taxas.cdiAnual.toFixed(2)}% <span className="text-[10px] font-normal text-emerald-300">a.a</span></p>
+                            <p className="text-[10px] text-blue-300 uppercase tracking-wider font-bold mb-0.5">CDI estimado</p>
+                            <p className="text-lg font-black text-emerald-400">{taxaDisponivel ? `${taxas.cdiAnual.toFixed(2)}%` : 'Indisponível'} <span className="text-[10px] font-normal text-emerald-300">a.a</span></p>
                         </div>
                         <div className="w-px h-10 bg-white/20"></div>
                         <div className="text-center flex-1 md:flex-none">
                             <p className="text-[10px] text-blue-300 uppercase tracking-wider font-bold mb-0.5">Selic Oficial</p>
-                            <p className="text-lg font-black text-white">{(taxas.cdiAnual + 0.10).toFixed(2)}% <span className="text-[10px] font-normal text-blue-200">a.a</span></p>
+                            <p className="text-lg font-black text-white">{taxaDisponivel ? `${(taxas.cdiAnual + 0.10).toFixed(2)}%` : 'Indisponível'} <span className="text-[10px] font-normal text-blue-200">a.a</span></p>
                         </div>
                     </div>
                 </div>
@@ -288,7 +293,7 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
                         <p className="text-xl md:text-lg font-bold">{formatarMoeda(resumo.aplicadoTotal)}</p>
                     </div>
                     <div className="bg-emerald-900/40 p-4 rounded-2xl border border-emerald-500/30">
-                        <p className="text-[10px] uppercase font-bold text-emerald-400 mb-1">Lucro Líquido Real</p>
+                        <p className="text-[10px] uppercase font-bold text-emerald-400 mb-1">Lucro Líquido Estimado</p>
                         <p className="text-xl md:text-lg font-bold text-emerald-400">+{formatarMoeda(resumo.lucroLiquidoTotal)}</p>
                     </div>
                     <div className="bg-rose-900/40 p-4 rounded-2xl border border-rose-500/30">
@@ -297,11 +302,12 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
                     </div>
                     <div className="bg-blue-800/40 p-4 rounded-2xl border border-blue-400/30">
                         <p className="text-[10px] uppercase font-bold text-blue-300 mb-1">Rendimento Diário Base</p>
-                        <p className="text-xl md:text-lg font-bold text-blue-200">+{formatarMoeda(rendimentoDiarioBruto)}<span className="text-[10px] ml-1">/dia útil</span></p>
+                        <p className="text-xl md:text-lg font-bold text-blue-200">{taxaDisponivel ? `+${formatarMoeda(rendimentoDiarioBruto)}` : 'Indisponível'}<span className="text-[10px] ml-1">/dia útil</span></p>
                     </div>
                 </div>
             </div>
 
+            {!taxaDisponivel ? <ErroInvestimentos mensagem="Simuladores indisponíveis sem uma taxa CDI válida. Nenhuma rentabilidade foi inventada." tentarNovamente={fetchDashboard} /> : <>
             {/* ⏱️ CALCULADORA DE CURTO PRAZO */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-8 rounded-3xl shadow-sm transition-colors">
                 <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -475,6 +481,7 @@ export function Investimentos({ API, getHeaders, modal, showToast }) {
                 </div>
             </div>
 
+            </>}
             {/* 🏦 GESTOR DE CAIXINHAS E APORTES */}
             <div>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -763,6 +770,7 @@ function SecaoBolsa({ bolsa, tipoFiltro, onRegistrarOperacao, onRegistrarProvent
 function SecaoTesouro({ tesouro, onRegistrarTitulo, excluirTitulo, formatarMoeda }) {
     const { dashboardData, loading } = tesouro;
 
+    if (tesouro.error) return <ErroInvestimentos mensagem={tesouro.error} tentarNovamente={tesouro.fetchDashboard} />;
     if (loading || !dashboardData) {
         return (
             <div className="p-6 md:p-10 flex flex-col items-center justify-center min-h-[40vh] animate-pulse">
@@ -867,6 +875,7 @@ function SecaoResumo({ dashboardCdb, bolsa, tesouro, setAbaAtiva, formatarMoeda,
     const [gruposAbertos, setGruposAbertos] = useState({});
     const toggleGrupo = (chave) => setGruposAbertos(prev => ({ ...prev, [chave]: !prev[chave] }));
 
+    if (tesouro.error) return <ErroInvestimentos mensagem={tesouro.error} tentarNovamente={tesouro.fetchDashboard} />;
     const carregando = !dashboardCdb || bolsa.loading || !bolsa.dashboardData || tesouro.loading || !tesouro.dashboardData;
 
     if (carregando) {
