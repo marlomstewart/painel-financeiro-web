@@ -1,8 +1,24 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 04/11/2026
+**Atualizado em:** 05/11/2026
 
 ## Objetivo atual
+
+PR Web #1: correção dirigida da cadeia de desenvolvimento/build sobre `c812a3b`.
+Vite 8.3.6 e Vitest 4.1.12 (mesmas majors); transitivos afetados atualizados no lockfile dentro
+das faixas dos pais, sem force, downgrades ou overrides. Instalação isolada deste worktree.
+Auditoria completa: 18 → 9 pacotes afetados, altos 6 → 0, moderados 9 → 7, baixos 3 → 2.
+Auditoria sem dev: zero. Restam minimatch/glob/deepmerge e seus pais, sem solução compatível
+publicada nas cadeias atuais. **Risco residual não aceito**: correção upstream ou decisão
+explícita do responsável continua sendo gate antes da liberação; CI verde não o substitui.
+Inventário, advisories, caminhos, alternativas e evidências antes/depois:
+`docs/SEGURANCA_BUILD_PR1.md` e `docs/security/web-pr1-audit-{before,after}.json`.
+
+Validação: npm ci, 135/135 testes em 26 arquivos, lint zero erros/11 avisos e build/PWA
+com 39 entradas. Smoke de atualização real do SW anterior → novo no Chrome desktop/móvel
+emulado preservou snapshots integrais da fila, isolamento A/B, parcelas, tentativas e
+legado sem dono; recarga offline passou. Massa local removida e perfis encerrados.
+Sem diff em src/configuração PWA, sem mudança financeira, API, schema, merge ou deploy.
 
 PR Web #1: `App` repassa `caixaNaoReconciliado` ao Dashboard. O aviso geral aparece quando
 a API retorna caixa desconhecido; cartão e detalhe preservam o estado sem convertê-lo em zero.
@@ -25,10 +41,10 @@ resumos de cobrança, emojis e orçamento de metas publicados foram preservados 
 Recebidos datados e históricos desconhecidos permanecem explícitos; cancelamento tem confirmação
 única e o item do mês não se repete na seção histórica. D-015 continua WhatsApp; caixa datado é D-016.
 
-Validação local da mescla: 133/133 testes em 25 arquivos, lint zero erros/11 avisos e build/PWA
-aprovado com 39 entradas, usando as dependências já instaladas e lockfile igual a main.
-Permanece o aviso conhecido de chunk >500 kB; a auditoria anterior reportou quatro
-vulnerabilidades altas preexistentes. Nenhuma dependência foi atualizada nesta etapa.
+Validação histórica da mescla: 133/133 testes em 25 arquivos. O lockfile que era igual a main
+foi atualizado de forma dirigida em 05/11, conforme o inventário de segurança acima.
+Permanece o aviso conhecido de chunk >500 kB. A contagem antiga de quatro vulnerabilidades
+altas não representa a auditoria atual; consultar o relatório datado antes/depois.
 
 Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e branches originais
 preservadas. O head Web `00085cfe3fb5678feea3b81c84186666d11986ad` foi publicado no PR #1;
@@ -449,5 +465,6 @@ para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 3. Seguir `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md` para a janela de produção:
    main dispara deploy automático; controlar escritores antigos e atualizar abas/PWA antes de reabrir.
 4. Confirmar no desktop/mobile os resumos/emojis, rateio de faturas e orçamento de metas preservados.
-5. Tratar vulnerabilidades do lockfile em escopo próprio antes da liberação; nenhuma dependência
-   foi atualizada nesta reconciliação. Demais pendências seguem no backlog canônico da API.
+5. Resolver ou obter decisão explícita sobre cada risco residual de minimatch/glob/deepmerge
+   documentado em `docs/SEGURANCA_BUILD_PR1.md` antes da liberação. Não há aceite presumido.
+   Confirmar a nova CI e seu checkout de merge; demais pendências seguem no backlog canônico da API.
