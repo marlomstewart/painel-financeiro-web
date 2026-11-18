@@ -182,6 +182,7 @@ na próxima revisão regular; investigação adicional só se surgir evidência/
   **39 entradas / 1932,65 KiB**. Aviso existente de chunk >500 kB.
 - A cadeia PWA e seus artefatos não mudaram nesta revisão: SW antes/depois SHA-256
   `60652b26540ab1205e188f7b695af5b448b1ec6870833aa2c355dbb41c4078d8`.
+  Comparados os 37 arquivos de saída: todos byte a byte idênticos ao baseline 4fc7a54.
   Build anterior de 18/11 preservado no laboratório; bundle principal segue
   `assets/index-KYo5uW32.js`. Nenhum marcador artificial foi inserido no SW.
 - Reexecutado smoke de atualização **real entre builds distintos**: baseline c812a3b gerado
@@ -210,8 +211,17 @@ na próxima revisão regular; investigação adicional só se surgir evidência/
   **success**, reconferida em 18/11. Checkout efetivamente testado nos logs:
   `2ad48ca3051d705f60003b5569c678aae0537217`, merge sintético desse head com a base.
   135 testes e build/PWA aprovados. Não foi execução isolada do head.
-- A nova correção será publicada na mesma branch sem force-push, com conferência do
-  checkout do merge nos logs. O certificado da nova CI será acrescentado após conclusão.
+- Correção publicada sem force-push no head
+  `f18649c0bc0da5c14770b4dbb82c0eb8453f66b9`:
+  [CI 44301401844](https://github.com/marlomstewart/painel-financeiro-web/actions/runs/44301401844)
+  **success** em 18/11; job `134791752280`. Checkout confirmado nos logs e pelos pais Git:
+  `322aacb944f6f0157235363609418f832fa8a8ed` (base `d6bccdb` + head `f18649c`).
+  Instalação limpa, **135/135 testes em 26 arquivos** e build/PWA **39 entradas / 1932,61 KiB**.
+  A medida remota Linux difere da local Windows; não se presume igualdade dos hashes entre SOs.
+- O checkpoint posterior destes certificados altera somente documentação; preserva o lockfile
+  e as fontes certificados acima. A CI do último head documental também deve ser conferida no
+  [PR](https://github.com/marlomstewart/painel-financeiro-web/pull/1), distinguindo seu checkout
+  de merge do head da branch. Não é teste isolado do head.
 - CI atual executa testes/build; lint e smoke PWA acima são validações locais.
   CI verde não é aceite dos riscos residuais, autorização de merge ou deploy.
 

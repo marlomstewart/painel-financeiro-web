@@ -23,9 +23,13 @@ com 39 entradas. SW idêntico ao do head anterior. Repetido smoke real c812a3b �
 desktop 1366 px/móvel emulado 390 px: fila integral, isolamento A/B, parcelas, tentativas,
 legado em quarentena e recarga offline preservados. Registros sintéticos removidos, perfis/processos
 temporários e servidor encerrados; API externa bloqueada. Não é prova em dispositivo físico/hospedado.
-CI anterior reconferida: run 42044602309 passou para head `4fc7a54`, checkout efetivamente testado
-`2ad48ca3051d705f60003b5569c678aae0537217` (merge sintético com base `d6bccdb`).
-Nova publicação/CI serão certificadas após o checkpoint na mesma branch do PR, sem force-push.
+Correção publicada sem force-push no head `f18649c0bc0da5c14770b4dbb82c0eb8453f66b9`.
+CI 44301401844 aprovada em 18/11: checkout efetivamente testado
+`322aacb944f6f0157235363609418f832fa8a8ed`, merge sintético desse head com a base
+`d6bccdbd7ba4998f2e0739ef12d25b8e560ca0b8`; 135/135 e build/PWA com 39 entradas.
+CI anterior 42044602309 também reconferida (head `4fc7a54`, merge `2ad48ca`). Certificados e
+links em `docs/SEGURANCA_BUILD_PR1.md`. Checkpoint posterior só registra documentação;
+conferir também a CI do último head documental no PR, sem confundi-lo com o merge testado.
 Sem diff em src/configuração PWA, mudança financeira, API, schema, merge em main ou deploy.
 
 PR Web #1: `App` repassa `caixaNaoReconciliado` ao Dashboard. O aviso geral aparece quando
@@ -56,12 +60,9 @@ Permanece o aviso conhecido de chunk >500 kB. A contagem antiga de quatro vulner
 altas não representa a auditoria atual; consultar o relatório datado antes/depois.
 
 Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e branches originais
-preservadas. O head Web `00085cfe3fb5678feea3b81c84186666d11986ad` foi publicado no PR #1;
-a CI 41640781572 passou 133/133 e build/PWA no merge de PR
-`fe2874d9408ac754bc4f307dc15d56f71968b68f`, formado com a base `d6bccdb`.
-Essa é a CI anterior à correção do aviso e não certifica a revisão de 04/11.
-Evidências: https://github.com/marlomstewart/painel-financeiro-web/actions/runs/41640781572
-e https://github.com/marlomstewart/painel-financeiro-web/pull/1.
+preservadas. O PR Web #1 continua draft, com CI do aviso e da cadeia de ferramentas confirmada
+nos certificados acima. A CI histórica 41640781572 (head `00085cf`, merge `fe2874d`) cobria
+133 testes antes do aviso e não é o certificado atual.
 A CI API 37936395498 passou 209/209 no merge de PR
 `f032f108` do head `c77287f`, sem comprovar execução isolada do head. Promoção/deploy não
 executados. O smoke específico do aviso está concluído; os demais gates de smoke e de rollout
@@ -473,4 +474,5 @@ para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 5. Resolver ou obter decisão explícita sobre minimatch/Workbox, glob/Workbox e picomatch,
    conforme as propostas individuais de `docs/SEGURANCA_BUILD_PR1.md`. Picomatch é bloqueio
    de segurança recomendado para liberação; deepmerge teve advisory retirado, não risco aceito.
-   Certificar a nova CI e seu checkout de merge; demais pendências seguem no backlog canônico da API.
+   A CI da correção está certificada acima; conferir também o head documental final e seu merge.
+   Demais pendências seguem no backlog canônico da API.
