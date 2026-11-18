@@ -88,6 +88,7 @@ test('marca somente o participante informado como recebido', async () => {
   vi.stubGlobal('fetch', fetchMock)
   const props = propsBase()
   const setTransacoes = vi.fn()
+  props.modal.prompt.mockResolvedValue('2026-09-20')
   props.setTransacoes = setTransacoes
   const { result } = renderHook(() => useTransacoes(props))
 
@@ -96,16 +97,18 @@ test('marca somente o participante informado como recebido', async () => {
   })
 
   assert.equal(fetchMock.mock.calls[0][0], 'https://api.test/transacoes/tx-1/participantes/ana/recebido')
-  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true })
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true, dataRecebimento: '2026-09-20' })
   const atualizar = setTransacoes.mock.calls[0][0]
   const atualizadas = atualizar([{ id: 'tx-1', participantes: [{ id: 'ana', recebido: false }, { id: 'bia', recebido: false }] }])
-  assert.deepEqual(atualizadas[0].participantes, [{ id: 'ana', recebido: true }, { id: 'bia', recebido: false }])
+  assert.deepEqual(atualizadas[0].participantes, [{ id: 'ana', recebido: true, recebimento: null }, { id: 'bia', recebido: false }])
 })
 
 test('recebimento legado usa a rota da transação e atualiza a prévia imediatamente', async () => {
-  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ terceiro_recebido: true }) })
+  const recebimento = { id: 'r-legado', participante_chave: 'legado', valor: 15, data_recebimento: '2026-09-20' }
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ terceiro_recebido: true, recebimento }) })
   vi.stubGlobal('fetch', fetchMock)
   const props = propsBase()
+  props.modal.prompt.mockResolvedValue('2026-09-20')
   const { result } = renderHook(() => useTransacoes(props))
 
   await act(async () => {
@@ -113,13 +116,15 @@ test('recebimento legado usa a rota da transação e atualiza a prévia imediata
   })
 
   assert.equal(fetchMock.mock.calls[0][0], 'https://api.test/transacoes/tx-legada/terceiro-recebido')
-  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true })
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true, dataRecebimento: '2026-09-20' })
   const atualizadas = props.setTransacoes.mock.calls[0][0]([
     { id: 'tx-legada', terceiro_recebido: false, participantes: [{ id: 'legado', legado: true, recebido: false }] },
     { id: 'tx-normalizada', participantes: [{ id: 'ana', recebido: false }] },
   ])
   assert.equal(atualizadas[0].terceiro_recebido, true)
   assert.equal(atualizadas[0].participantes[0].recebido, true)
+  assert.deepEqual(atualizadas[0].recebimentos, [recebimento])
+  assert.deepEqual(atualizadas[0].participantes[0].recebimento, recebimento)
   assert.equal(atualizadas[1].participantes[0].recebido, false)
 })
 
@@ -127,6 +132,7 @@ test('desfazer recebimento envia false e atualiza somente o estado correspondent
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ recebido: false }) })
   vi.stubGlobal('fetch', fetchMock)
   const props = propsBase()
+  props.modal.confirm.mockResolvedValue(true)
   const { result } = renderHook(() => useTransacoes(props))
 
   await act(async () => {
@@ -140,12 +146,22 @@ test('desfazer recebimento envia false e atualiza somente o estado correspondent
   const normalizada = props.setTransacoes.mock.calls[0][0]([
     { id: 'tx-compartilhada', participantes: [{ id: 'ana', recebido: true }, { id: 'bia', recebido: true }] },
   ])[0]
-  assert.deepEqual(normalizada.participantes, [{ id: 'ana', recebido: false }, { id: 'bia', recebido: true }])
+  assert.deepEqual(normalizada.participantes, [{ id: 'ana', recebido: false, recebimento: null }, { id: 'bia', recebido: true }])
   const legada = props.setTransacoes.mock.calls[1][0]([
     { id: 'tx-legada', terceiro_recebido: true, participantes: [{ id: 'legado', legado: true, recebido: true }] },
   ])[0]
   assert.equal(legada.terceiro_recebido, false)
   assert.equal(legada.participantes[0].recebido, false)
+})
+
+test('desfazer confirmado em Cobranças não pede confirmação duas vezes', async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ recebido: false, recebimento: null }) })
+  vi.stubGlobal('fetch', fetchMock)
+  const props = propsBase()
+  const { result } = renderHook(() => useTransacoes(props))
+  await act(async () => result.current.marcarRecebidoTerceiro('tx-legada', true, null, false, true))
+  assert.equal(props.modal.confirm.mock.calls.length, 0)
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: false })
 })
 
 test('Marcar Pago usa a data escolhida e preserva os recebimentos de terceiros na tela', async () => {
@@ -168,6 +184,37 @@ test('Marcar Pago usa a data escolhida e preserva os recebimentos de terceiros n
   assert.equal(atualizada.data_pagamento, '2026-09-03')
   assert.equal(atualizada.terceiro_recebido, true)
   assert.deepEqual(atualizada.participantes, [{ id: 'joao', recebido: true }])
+})
+
+test('cancelar a escolha de data não envia nada; reconciliar legado preserva recebido=true', async () => {
+  const props = propsBase()
+  const r = { id: 'r', participante_chave: 'legado', valor: 70, data_recebimento: '2026-09-20' }
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ recebido: true, recebimento: r }) })
+  vi.stubGlobal('fetch', fetchMock)
+  const { result } = renderHook(() => useTransacoes(props))
+  props.modal.prompt.mockResolvedValueOnce(null).mockResolvedValueOnce('2026-09-20')
+  await act(async () => result.current.marcarRecebidoTerceiro('tx-1', false))
+  assert.equal(fetchMock.mock.calls.length, 0)
+  await act(async () => result.current.marcarRecebidoTerceiro('tx-1', true, null, true))
+  assert.equal(props.modal.prompt.mock.calls[1][1], '') // não estima data antiga
+  assert.deepEqual(JSON.parse(fetchMock.mock.calls[0][1].body), { recebido: true, dataRecebimento: '2026-09-20' })
+  const tx = props.setTransacoes.mock.calls[0][0]([{ id: 'tx-1', terceiro_recebido: true, recebimentos: [{ participante_chave: 'legado', data_recebimento: null }] }])[0]
+  assert.equal(tx.terceiro_recebido, true)
+  assert.deepEqual(tx.recebimentos, [r])
+})
+
+test('falha HTTP preserva o estado local e exibe erro; cancelamento requer confirmação', async () => {
+  const props = propsBase()
+  props.modal.prompt.mockResolvedValue('2026-09-20')
+  props.modal.confirm.mockResolvedValue(false)
+  const fetchMock = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ message: 'Conflito' }) })
+  vi.stubGlobal('fetch', fetchMock)
+  const { result } = renderHook(() => useTransacoes(props))
+  await act(async () => result.current.marcarRecebidoTerceiro('tx-1', true))
+  assert.equal(fetchMock.mock.calls.length, 0)
+  await act(async () => result.current.marcarRecebidoTerceiro('tx-1', false))
+  assert.equal(props.setTransacoes.mock.calls.length, 0)
+  assert.deepEqual(props.showToast.mock.calls[0], ['Conflito', 'error'])
 })
 
 test('cancelar a data não marca pago nem chama a API', async () => {

@@ -1,48 +1,81 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 15/10/2026
+**Atualizado em:** 18/11/2026
 
 ## Objetivo atual
 
-Alerta de projeção do combustível publicado em 15/10 (`10f2b61`, Vercel READY, CI aprovada),
-isolado sobre `bbefd4e`. O Raio-X agora alerta também quando o total previsto
-pelo calendário excede o orçamento, antes de classificar o planejamento como em dia/concluído.
-Mantém prioridade para o alerta de gasto já acima do limite; não altera somas, calendário,
-prévia futura, dados reais nem API. Reconciliações AUD-007/BCB permanecem nas branches próprias.
-O cenário sintético R$ 179,70 registrados + R$ 184,00 previstos = R$ 363,70 exibe excesso
-de R$ 64,70 sobre R$ 299,00. Falta validar visualmente no produto; a composição
-individual dos R$ 184,00 reais continua sem auditoria. D-007 preservada, sem nova decisão durável.
-Validação local: 108/108 testes em 20 arquivos; lint zero erros/12 avisos preexistentes;
-build/PWA aprovado (39 entradas), com o aviso conhecido do chunk principal acima de 500 kB.
-Checkpoint final repetiu a suíte completa, lint e build/PWA com sucesso; diff revisado.
-Bundle e cache PWA confirmados no domínio público; logs de runtime, drains e monitoramento
-não auditados neste checkpoint. Nenhuma consulta ou escrita em dados financeiros reais.
+PR Web #1: revisão de segurança sobre o head confirmado `4fc7a54f7b64ca5b619b80fe23283bed3fb8f263`.
+ESLint 10.3.0 → 10.15.0 e config-array 0.23.5 → 0.23.6 agora usam minimatch 11.0.9,
+por faixas declaradas pelos pais. Runtime e cadeia PWA preservados; sem force, downgrade ou override.
+Auditoria completa de 18/11: 16 → 14 pacotes afetados (12 altos mantidos, moderados 4 → 2);
+auditoria sem dev: zero antes/depois. A contagem antiga de 05/11 foi substituída pela consulta atual.
+Restam minimatch/glob sob Workbox e picomatch; o advisory deste último, atualizado em 17/11,
+agora alcança 4.0.7 e não tem correção publicada. Prova local limitada reproduziu ReDoS do componente.
+O advisory de deepmerge foi retirado em 16/11 por não descrever vulnerabilidade: não é risco ativo,
+nem correção de versão ou aceite. Snapshots históricos preservados.
+**Riscos residuais sem aceite:** relatório individual com exposição, mitigação, alternativas,
+esforço e prazos propostos em `docs/SEGURANCA_BUILD_PR1.md`; auditorias completas em
+`docs/security/web-pr1-20261118-{before,after}.json`. Recomenda-se bloquear liberação por picomatch;
+nenhum prazo ou aceite foi assumido pelo responsável.
 
-Prévia futura do Dashboard publicada em 07/10 (`00a7969`, Vercel READY, CI aprovada): cada meta representa pelo menos o
-orçamento da competência, reservando somente `max(0, orçamento - lançado pessoal no mês)`.
-Não importa progresso de outro mês nem duplica gastos/faturas. No cenário sintético de novembro,
-reserva R$ 976,50 e resultado R$ 61,38. Textos, detalhamento e D-012 revisados.
-Suíte Web 105/105 em 20 arquivos; lint sem erros (12 avisos preexistentes); build/PWA aprovado
-com 39 entradas de cache e o aviso conhecido de chunk principal acima de 500 kB. Diff revisado.
-Checkpoint final repetiu testes completos, lint e build com sucesso antes do commit.
-Bundle e cache da PWA confirmados no domínio público. Conferência autenticada em desktop/celular
-ainda pendente; banco/API intactos. Logs de runtime, drains e monitoramento não auditados neste checkpoint.
+Validação em 18/11: npm ci, 135/135 testes em 26 arquivos, lint zero erros/11 avisos e build/PWA
+com 39 entradas. SW idêntico ao do head anterior. Repetido smoke real c812a3b → build atual,
+desktop 1366 px/móvel emulado 390 px: fila integral, isolamento A/B, parcelas, tentativas,
+legado em quarentena e recarga offline preservados. Registros sintéticos removidos, perfis/processos
+temporários e servidor encerrados; API externa bloqueada. Não é prova em dispositivo físico/hospedado.
+Correção publicada sem force-push no head `f18649c0bc0da5c14770b4dbb82c0eb8453f66b9`.
+CI 44301401844 aprovada em 18/11: checkout efetivamente testado
+`322aacb944f6f0157235363609418f832fa8a8ed`, merge sintético desse head com a base
+`d6bccdbd7ba4998f2e0739ef12d25b8e560ca0b8`; 135/135 e build/PWA com 39 entradas.
+CI anterior 42044602309 também reconferida (head `4fc7a54`, merge `2ad48ca`). Certificados e
+links em `docs/SEGURANCA_BUILD_PR1.md`. Checkpoint posterior só registra documentação;
+conferir também a CI do último head documental no PR, sem confundi-lo com o merge testado.
+Sem diff em src/configuração PWA, mudança financeira, API, schema, merge em main ou deploy.
 
-Contorno dos emojis publicado em 07/10 (`932a9a0`, Vercel READY, CI aprovada): a cobrança abre
-o WhatsApp Web diretamente no PC e mantém `wa.me` no celular, conforme D-015. A reprodução
-sintética isolou a corrupção na página intermediária de `wa.me`, e o novo bundle/cache da PWA
-foi confirmado no domínio público. Falta conferir os emojis no compositor autenticado;
-o navegador de teste não iniciou. Valores e recebimentos intactos.
+PR Web #1: `App` repassa `caixaNaoReconciliado` ao Dashboard. O aviso geral aparece quando
+a API retorna caixa desconhecido; cartão e detalhe preservam o estado sem convertê-lo em zero.
+Regressões de integração cobrem aviso presente/ausente usando App e Dashboard reais e API simulada.
+Suíte Web: 135/135 em 26 arquivos; lint sem erros (11 avisos preexistentes); build/PWA com
+39 entradas, com o aviso conhecido de chunk >500 kB. A correção do aviso não mudou o contrato;
+as atualizações de ferramentas estão documentadas separadamente acima.
 
-Opção de desfazer recebimento em A Receber publicada na Web (`1f0c651`, Vercel READY):
-itens já recebidos da competência selecionada aparecem em seção própria, inclusive quando
-não há pendências, com confirmação e retorno à lista pendente. Abrange terceiro único legado,
-participantes normalizados e parcelas de dívida; usa as rotas atuais da API com `recebido: false`.
-Testes Web 76/76, build/PWA e lint aprovados (12 avisos preexistentes, zero erros).
-Smoke autenticado do desfazer pendente. O usuário confirmou que marcar como recebido
-passou sem erro em 05/10.
+Smoke HML do código `8b6d16ff5d015bc0c5c5ef8372e60c5d8d8bf202` com API
+`c77287f0d454cd5d2156b26233c51473949b4893`: HTTP 200 para caixa, desktop 1366 px e
+móvel emulado 390 px. Com `valor: null, reconciliado: false`, aviso geral, marcador
+“Não reconciliado” e detalhe sem data confirmados. Com `valor: -125.50, reconciliado: true`,
+saldo exibido e aviso ausente nos dois tamanhos. Duas contas sintéticas removidas, zero resíduos
+nas 24 tabelas conferidas; quatro perfis e processos temporários encerrados. Sem deploy em produção.
+
+Reconciliação da branch `codex/reconciliacao-bcb` com `origin/main` (`d6bccdb`), na ordem AUD-007 → BCB.
+A mescla incorpora o hotfix de combustível `10f2b61`: o Raio-X alerta para estouro projetado,
+preserva a prioridade do gasto já acima da meta e não altera o calendário nem os valores.
+A Web desta etapa é compatível com a API final AUD-008/009. Hotfix legado, desfazer, rateio,
+resumos de cobrança, emojis e orçamento de metas publicados foram preservados por ancestralidade.
+Recebidos datados e históricos desconhecidos permanecem explícitos; cancelamento tem confirmação
+única e o item do mês não se repete na seção histórica. D-015 continua WhatsApp; caixa datado é D-016.
+
+Validação histórica da mescla: 133/133 testes em 25 arquivos. O lockfile que era igual a main
+foi atualizado de forma dirigida em 05/11, conforme o inventário de segurança acima.
+Permanece o aviso conhecido de chunk >500 kB. A contagem antiga de quatro vulnerabilidades
+altas não representa a auditoria atual; consultar o relatório datado antes/depois.
+
+Checkpoints `codex/reconciliacao-aud007` e `codex/reconciliacao-bcb`; `main` e branches originais
+preservadas. O PR Web #1 continua draft, com CI do aviso e da cadeia de ferramentas confirmada
+nos certificados acima. A CI histórica 41640781572 (head `00085cf`, merge `fe2874d`) cobria
+133 testes antes do aviso e não é o certificado atual.
+A CI API 37936395498 passou 209/209 no merge de PR
+`f032f108` do head `c77287f`, sem comprovar execução isolada do head. Promoção/deploy não
+executados. O smoke específico do aviso está concluído; os demais gates de smoke e de rollout
+conjunto API/Web permanecem aplicáveis. Procedimento canônico:
+`../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`. Não abrir preview contra API produtiva
+para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 
 ## Estado geral
+
+- AUD-007 validada em checkpoint: Cobranças pede data efetiva, mostra recebidos quitados sem data histórica e
+  permite informar data conhecida/cancelar declaração incorreta. Dashboard usa API para cortes,
+  não converte NULL em zero e suspende projeção dependente de caixa não reconciliado. Nenhuma
+  data antiga foi presumida; prévia orçamentária permanece independente. API D-025 é canônica.
 
 - Checkpoint documental concluído em 12/09; README e catálogo funcional foram alinhados à
   navegação por caminhos, planejamento, abastecimentos técnicos e consumo de combustível.
@@ -75,6 +108,12 @@ passou sem erro em 05/10.
   incluem empréstimos e PIX. Hotfix publicado em 06/10 (`67e1fae`, Vercel READY e CI aprovada),
   isolado sobre `91223fa` sem promover BCB/AUD-007. O print de 07/10 confirma a UI atualizada e
   João em R$ 124,22; não confirma todos os lançamentos individuais, inclusive os de Ninho.
+
+- BCB: Investimentos e Calculadora mostram origem/referência/consulta e avisam taxa antiga;
+  erro não fica carregando indefinidamente nem preserva números antigos como atuais. Carteira
+  CDB vazia/prefixada permanece acessível; CDI null pausa simuladores, não vira zero. Hook de
+  leitura compartilhado aborta requisições substituídas/desmontadas e recusa refresh de contexto
+  antigo. Resposta 503 genérica de proxy não é atribuída automaticamente ao BCB.
 - A fila IndexedDB nova grava o ID da conta em cada lote, lista/sincroniza apenas itens do usuário
   autenticado e valida a sessão novamente após operações assíncronas. IDs locais incluem a conta
   para evitar colisões. Entradas antigas sem proprietário permanecem no aparelho, bloqueadas para
@@ -129,19 +168,20 @@ passou sem erro em 05/10.
   média e previsão com valores seguros, e apresenta estado vazio para maior/menor gasto. Quando
   houver movimento, o modal lista os lançamentos pessoais da categoria na competência visível,
   do mais recente ao mais antigo, em área rolável.
-- Raio-X de combustível distingue gasto já acima do orçamento de estouro apenas projetado pelo
-  calendário. Projeção acima da meta não recebe a mensagem positiva de planejamento em dia;
-  valor exatamente no limite não gera alerta de excesso. Publicado em `origin/main` (`10f2b61`).
-- Dashboard preserva compras divididas no saldo histórico.
+- Dashboard separa saída integral por pagamento e entradas datadas dos terceiros no saldo
+  histórico. Não reduz setembro por um recebimento feito em outubro (AUD-007).
+- Raio-X de combustível alerta quando a projeção ultrapassa o orçamento, sem sinalizar excesso
+  no valor exatamente igual ao limite; o alerta de gasto já realizado mantém prioridade.
 - Dívidas e financiamentos para terceiros agora são excluídos também do Fluxo de Caixa Projetado;
   recebimentos registrados no Extrato reduzem o total geral de A Receber sem alterar o status da
   conta/fatura.
 - Configurações permite saldo conciliado; depois do marco, o Saldo Líquido usa datas efetivas de
-  pagamento para representar caixa real entre meses.
+  pagamento e recebimento para representar caixa real entre meses. Novo marco confirmado pode
+  cobrir legado observado antes dele, mas não reconciliar retroativamente períodos anteriores.
 - A busca de transações agora preserva também movimentos pagos após o marco de caixa, mesmo se a
   data de compra estiver fora da janela padrão de 24 meses. O pagamento/reversão de fatura usa
   uma operação atômica da API, em vez de uma requisição por parcela.
-- O Dashboard consulta o saldo conciliado canônico da API para o mês visível; Configurações mostra
+- O Dashboard consulta o caixa canônico da API com ou sem marco para o mês visível; Configurações mostra
   uma prévia confirmável antes de substituir o marco.
 - Extrato evidencia quando uma parcela de terceiro foi recebida sem confundir esse fato com o
   pagamento da conta; Dívidas calcula parcelas geradas como `despesa` e usa
@@ -155,14 +195,17 @@ passou sem erro em 05/10.
 
 ## Trabalho em andamento
 
-- Alerta de estouro projetado do combustível publicado: conferir o modal autenticado em
-  desktop/celular. Validar separadamente os abastecimentos que formam a previsão do calendário;
-  os testes deste ajuste usam somente resumo sintético, não auditam lançamentos reais.
 - Contorno dos emojis publicado: atualizar a PWA e conferir autenticado a cobrança no WhatsApp
   Web do PC, preservando também o celular e a cópia. Subtotais foram confirmados pelo usuário;
   a exibição de emojis no compositor após o contorno continua sem confirmação.
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
+
+- BCB e AUD-007 integram o candidato reconciliado do PR Web #1, com CI Web confirmada acima;
+  as branches originais continuam checkpoints históricos, sem promoção/deploy. Manter os gates
+  de smoke integrado/recuperação DNS hospedada e rollout compatível da API/Web/PWA.
+  A CI Web não certifica a API ou o ambiente hospedado. Exigir
+  recarregamento da PWA e não misturar instâncias antigas escrevendo recebimentos.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
 - Após o deploy conjunto, fazer teste manual A→B no mesmo navegador, inclusive com uma fila
@@ -197,9 +240,17 @@ passou sem erro em 05/10.
 
 - Confirmar no produto o retorno de uma compra legada, uma
   normalizada e uma parcela de dívida às pendências, sem alterar `status` do lançamento.
+
+- BCB: cache da API se perde no restart; sem taxa válida, posições dependentes recebem 503.
+  Web antiga não identifica metadados nem aceita CDI null; atualização compatível necessária.
+  Rentabilidade continua estimativa simplificada, não cotação oficial/rendimento histórico.
+- AUD-007: pendente smoke visual integrado em HML, CI e deploy conjunto. Datas antigas desconhecidas
+  não foram estimadas; um novo fechamento cobre somente os cortes posteriores. PWA antiga não
+  envia data e pode tratar NULL como zero: atualizar durante janela controlada. A API antiga ignora
+  datas, portanto não manter versões mistas. Devolução real/recebimento parcial e AUD-009 separados.
 - Confirmar no produto se o saldo conciliado de R$ 43,90 em 31/08/2026 foi salvo pelo usuário;
   essa informação não é confirmável pelo repositório.
-- `npm run lint` não possui erros. Restam 12 avisos de hooks sobre carregamentos iniciados em efeitos
+- `npm run lint` não possui erros. Restam 11 avisos de hooks sobre carregamentos iniciados em efeitos
   e dependências que exigem refatoração gradual com cancelamento/testes de ciclo de vida.
 - Há arquivos de alta complexidade registrados no backlog da API: `Investimentos.jsx`, `Modal.jsx`,
   `Lancamentos.jsx` e `useDashboard.jsx`.
@@ -216,20 +267,6 @@ passou sem erro em 05/10.
 
 ## Validações recentes
 
-- Publicação do alerta em 15/10: `10f2b61` em `origin/main`, CI aprovada e Vercel READY
-  em production (deploy `dpl_8qJkrfb3nYipFQU8RmxRaXn4tQ7U`, build 7,932 s).
-  `fincontrole.online` e `/dashboard` responderam HTTP 200; `/assets/index-BoCmGEIh.js`
-  contém o novo alerta, o excesso sobre a meta e os valores registrados/ainda previstos.
-  Service worker inclui esse bundle e `/assets/Dashboard-DVDfS3Ch.js`. Publicação técnica
-  confirmada; smoke autenticado e auditoria da composição real do calendário permanecem pendentes.
-- Alerta de combustível em 15/10: regressão reproduziu a mensagem positiva indevida antes da
-  correção e passou depois. Dashboard e planejamento: 37/37 testes em quatro arquivos, cobrindo
-  o exemplo de R$ 363,70/R$ 64,70, projeção no limite e um centavo acima; o resumo canônico não
-  é modificado. Preservados os testes de gasto já excedido, planejamento concluído/em dia,
-  orçamento futuro e reserva por abastecimentos. Suíte completa: 108/108 em 20 arquivos;
-  lint zero erros/12 avisos conhecidos e build/PWA aprovado. Diff revisado e sem erro de whitespace.
-  Verificado o caminho resumo canônico → mensagem renderizada com dados sintéticos; sem smoke
-  autenticado, consulta de dados reais ou alteração no contrato da API. Publicação confirmada acima.
 - Publicação da regra de orçamento em 07/10: `00a7969` em `origin/main`, CI aprovada e Vercel
   READY em production (deploy `dpl_9gqj4tdwfEZe28S7csAyV3mskxw8`, build 12,505 s).
   `fincontrole.online` e `/dashboard` responderam HTTP 200; `/assets/index-BEv3O8qn.js`
@@ -273,6 +310,28 @@ passou sem erro em 05/10.
   autenticadas nem alterações nos registros financeiros reais. D-010 já cobre o rateio canônico;
   nenhuma nova decisão técnica. Suíte completa 81/81 em 19 arquivos; lint zero erros/12 avisos
   preexistentes e build/PWA aprovado, com aviso conhecido do chunk >500 kB.
+
+- Checkpoint final BCB em 03/10: `npm test` repetido, 91/91 em 23 arquivos;
+  16 regressões novas cobrem 503 tipado/genérico,
+  recuperação, descarte de dado anterior, taxa antiga, requisição atrasada, troca/desmontagem,
+  refresh antigo ignorado, CDI null sem veredito, carteira vazia e erro de Tesouro sem total falso.
+  Lint zero erros/11 avisos: dois efeitos anteriores foram centralizados em um hook com cancelamento,
+  preservando um aviso desse padrão; outros avisos fora do escopo. Build/PWA aprovado, aviso conhecido
+  do chunk >500 kB. Diff/whitespace/padrões de segredo revisados e catálogo atualizado;
+  API 185/185 e unitários 98/98.
+  BCB/Sentry simulados nos novos testes, SQL real só na suíte existente de `fincontrole-hml`.
+  Nenhuma nova decisão Web independente: política/contrato registrados na API D-026.
+  Smoke visual hospedado, CI remota e deploy não executados.
+  Publicação da implementação conferida por `git ls-remote` nos dois repositórios;
+  `origin/main` permaneceu Web `19381a8` / API `1da24c6`. Nenhum PR ou deploy criado nesta etapa.
+- Checkpoint final AUD-007 em 03/10: 75/75 testes em 19 arquivos, cobrindo setembro/outubro, recebimento posterior ao
+  marco, legado desconhecido, estado NULL, prompts cancelados, falha HTTP e ações de Cobranças.
+  Lint: zero erros/12 avisos preexistentes. Build/PWA aprovado, com aviso conhecido do chunk >500 kB.
+  Diff completo, arquivos novos, whitespace e padrões de credenciais revisados/aprovados.
+  README e catálogo funcional deixaram de descrever a compensação pela flag atual. D-016
+  revisada e D-005 alinhada à autoridade canônica, sem nova decisão de arquitetura no checkpoint.
+  API: suíte completa 160/160, unitários 73/73 e sintaxe de 27 arquivos aprovados.
+  API validada somente com dados sintéticos HML; nenhum smoke visual hospedado/produtivo executado.
 - AUD-001 em 29/09: `npm test` aprovou 67 testes em 18 arquivos, incluindo A→B, troca de sessão
   durante resposta pendente, quarentena de fila legada e isolamento de operações IndexedDB.
   `npm run build` passou; `npm run lint` concluiu com zero erros e 12 avisos conhecidos. O chunk
@@ -340,7 +399,9 @@ passou sem erro em 05/10.
   ações; cobranças filtram a competência e o detalhamento usa grades empilháveis; o planejamento
   troca competência por navegação e seletores próprios. `npm test` aprovou 32 testes e `npm run
   build` foi concluído em 07/09, com apenas o aviso conhecido de chunk principal acima de 500 kB.
-- Checkpoint do fluxo de terceiros em 04/09: uma compra parcial de R$ 33,88, com R$ 21,30 atribuídos ao terceiro, preserva o lançamento integral no Extrato; `terceiro_recebido` apenas identifica o reembolso e permanece independente do pagamento da fatura. Ao pagar o cartão, o caixa considera R$ 12,58 se o terceiro já devolveu sua parte e R$ 33,88 caso contrário, sem criar renda artificial.
+- Fluxo de terceiros: o lançamento integral no Extrato e o pagamento da fatura permanecem
+  independentes do recebimento. AUD-007 substitui a compensação pela flag atual: saída integral
+  no pagamento, entrada própria datada no recebimento, sem renda duplicada no Extrato.
 - Progresso de dívidas validado para parcela `despesa`: dívida de terceiro avança apenas com
   `terceiro_recebido`; dívida própria continua avançando apenas com `status = pago`.
 - Regressão do saldo conciliado validada: uma resposta canônica de agosto não substitui o cálculo
@@ -403,38 +464,15 @@ passou sem erro em 05/10.
   sucesso, preservando o aviso conhecido de chunk principal acima de 500 kB.
 ## Próximos passos recomendados
 
-- Atualizar a PWA publicada e conferir o alerta do Raio-X de gasolina no PC e
-  celular. Conferir no planejamento a composição dos R$ 184,00 antes de concluir sobre os dados reais.
-- Atualizar a PWA e conferir autenticado os emojis pelo link direto do PC;
-  no celular, confirmar que o fluxo permanece igual. Conferir emojis também na cópia da mensagem.
-- Conferir a composição de Ninho no cartão sem comparar diretamente com A Receber: este inclui
-  empréstimos/PIX e somente valores ainda não recebidos.
-- Validar no produto o desfazer nos três tipos de recebimento.
-1. Após o deploy web, validar abertura direta sem sessão em `/extrato`, o retorno à rota após
-   login e uma recarga autenticada em `/dashboard`, `/novo-lancamento` e `/extrato`.
-2. Após o deploy conjunto, validar autenticado a antecipação de uma compra parcelada em crédito:
-   data antes/no/depois do melhor dia, fatura quitada pulada e quitação posterior normal.
-3. Após o deploy conjunto, validar visualmente o vínculo existente preenchendo somente litros e,
-   em nova tentativa, somente preço por litro; ambos devem calcular o outro campo sem criar uma
-   nova despesa.
-4. Após o deploy conjunto, validar os avisos de exclusão e confirmar que cada módulo preserva o
-   registro do outro.
-5. Após o deploy conjunto, validar o card de consumo com dois tanques cheios e um parcial,
-   confirmando médias, distância e estado de dados insuficientes.
-6. Após o deploy web, validar peças vencidas em % e km, além da rolagem dos três painéis em
-   desktop e mobile.
-7. Após o deploy web, validar a navegação mensal de Custos Associados e a ausência de despesas
-   fora da competência selecionada.
-8. Após o deploy conjunto, validar o seletor de vínculo com descrição, data e valor, a máscara do
-   preço por litro e o custo médio diário para dois tanques cheios em dias diferentes.
-9. Após o deploy web, validar no formulário de abastecimento a quilometragem com ponto de milhar e
-   vírgula decimal, confirmando o valor no histórico e no Extrato vinculado.
-10. Após o deploy conjunto, validar os filtros de histórico e o custo por dia útil, incluindo um
-    intervalo que atravesse fim de semana ou feriado de Aracaju/SE.
-11. Após o deploy web, conferir a exportação de uma fatura cuja compra tenha data em mês anterior,
-    garantindo que a competência e os filtros ativos do Extrato coincidam com o CSV.
-12. Atualizar a PWA publicada e abrir uma competência futura no Dashboard; conferir rendas, contas, dívida,
-    compra de cartão antes/depois do melhor dia e reserva de metas, confirmando que a prévia não
-    mostra saldo inicial nem duplica valores na fatura. Conferir metas zeradas, parciais e acima do
-    limite, inclusive investimento e orçamento canônico de combustível, e os detalhes em desktop/celular.
-13. Retomar backlog técnico apenas com objetivo confirmado e escopo isolado.
+1. Confirmar CI e SHAs dos PRs reconciliados e executar smoke autenticado HML conjunto,
+   incluindo legado, participante normalizado, dívida, datas, cancelamento e caixa NULL.
+   Conferir também o alerta de combustível no desktop e celular e a composição real do planejamento.
+2. Conferir taxa válida, 503/Retry-After, cache desatualizado e CDI null com a API BCB compatível.
+3. Seguir `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md` para a janela de produção:
+   main dispara deploy automático; controlar escritores antigos e atualizar abas/PWA antes de reabrir.
+4. Confirmar no desktop/mobile os resumos/emojis, rateio de faturas e orçamento de metas preservados.
+5. Resolver ou obter decisão explícita sobre minimatch/Workbox, glob/Workbox e picomatch,
+   conforme as propostas individuais de `docs/SEGURANCA_BUILD_PR1.md`. Picomatch é bloqueio
+   de segurança recomendado para liberação; deepmerge teve advisory retirado, não risco aceito.
+   A CI da correção está certificada acima; conferir também o head documental final e seu merge.
+   Demais pendências seguem no backlog canônico da API.

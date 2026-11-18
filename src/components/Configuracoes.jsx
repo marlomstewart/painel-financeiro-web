@@ -127,9 +127,9 @@ export function Configuracoes({ API, getHeaders, exportarCSV, gerarMesManual, ge
             const previa = res.ok ? await res.json() : null;
             const valorPrevisto = previa?.caixa?.valor;
             const confirmacao = await modal.confirm(
-                Number.isFinite(Number(valorPrevisto))
-                    ? `Com este marco, o caixa calculado até hoje será R$ ${Number(valorPrevisto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Confirmar?`
-                    : 'Confirmar este novo marco de saldo conciliado?',
+                valorPrevisto != null && Number.isFinite(Number(valorPrevisto))
+                    ? `Com este marco, o caixa calculado até hoje será R$ ${Number(valorPrevisto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Confirme o saldo bancário ao fim desse dia: recebimentos antigos sem data ficam cobertos somente a partir deste marco, não nos períodos anteriores. Confirmar?`
+                    : 'O caixa anterior não está reconciliado. Confirme apenas um saldo bancário conhecido ao fim do dia escolhido. Um marco anterior aos recebimentos sem data não resolve essa pendência. Confirmar?',
                 'Confirmar saldo conciliado'
             );
             if (!confirmacao) return;
