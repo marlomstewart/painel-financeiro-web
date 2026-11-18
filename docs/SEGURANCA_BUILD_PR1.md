@@ -1,109 +1,221 @@
 # Segurança da cadeia Web — PR #1
 
-Data: 05/11/2026. Base auditada: `c812a3bf85a283cbb7e0549e40fcad6eff57e57b`, branch `codex/reconciliacao-bcb`.
-Node 24.19.0 / npm 11.17.0 (CI usa Node 24). Escopo: desenvolvimento, testes e build; sem alterações de API, schema, fontes financeiras, merge ou deploy.
+Revisão: **18/11/2026**. Worktree `painel-financeiro-web-reconciliacao`, branch
+`codex/reconciliacao-bcb`. Head inicial confirmado:
+`4fc7a54f7b64ca5b619b80fe23283bed3fb8f263`.
+Node 24.19.0 / npm 11.17.0; CI usa Node 24. Escopo restrito à cadeia dev/build.
 
-## Auditoria antes/depois
+## Auditoria atual antes/depois
 
-| Auditoria completa | Antes | Depois |
+| Auditoria completa em 18/11 | Antes, head 4fc7a54 | Após atualização dirigida |
 |---|---:|---:|
-| Pacotes afetados (inclui pais propagados) | 18 | 9 |
-| Altos | 6 | 0 |
-| Moderados | 9 | 7 |
-| Baixos | 3 | 2 |
-| Críticos | 0 | 0 |
+| Pacotes afetados, incluindo pais | 16 | 14 |
+| Altos | 12 | 12 |
+| Moderados | 4 | 2 |
+| Baixos / críticos | 0 / 0 | 0 / 0 |
+| Auditoria sem dev | 0 | 0 |
 
-`npm audit --omit=dev --json` após a atualização: zero. Os achados completos estão marcados como dev no lockfile; isso não é garantia de ausência de outras falhas nem prova isolada de alcance no bundle.
-Os números contam pacotes afetados, não nove advisories independentes. A auditoria depende da base pública na data da consulta.
+- [Relatório completo antes](security/web-pr1-20261118-before.json) e
+  [depois](security/web-pr1-20261118-after.json): pacote, versão, caminho físico,
+  faixa, advisory e propagação pelos pais. Todos os caminhos afetados são dev no lockfile.
+- `npm audit --json` retorna 1 por haver achados; não é falha dos testes.
+  `npm audit --omit=dev --json` retorna 0. Isso não certifica ausência de falhas no produto.
+- São **três advisories ativos**, não 14 vulnerabilidades independentes.
+  Os 12 pacotes altos são a propagação de picomatch.
+- A contagem de 05/11 (18 → 9, sem altos após correções) é histórica:
+  [antes](security/web-pr1-audit-before.json) / [depois](security/web-pr1-audit-after.json).
+  A base pública mudou: o advisory de picomatch foi atualizado em 17/11 e agora alcança
+  4.0.7; o de deepmerge foi retirado em 16/11. Essa diferença não é regressão introduzida
+  pela atualização do ESLint nem uma correção de deepmerge pelo lockfile.
 
-Evidências completas (incluem pacote, versão do lockfile, caminho físico, cadeia `via`, faixas e URL de cada advisory):
+### Inventário desta revisão
 
-- [Antes](security/web-pr1-audit-before.json)
-- [Depois](security/web-pr1-audit-after.json)
+Caminhos relativos à raiz. M = [minimatch GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249);
+G = [glob GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4);
+P = [picomatch GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf).
 
-### Inventário por pacote e advisory
-
-Os caminhos abaixo são relativos à raiz; sufixos repetidos representam instalações distintas.
-
-| Pacote | Versão antes → depois | Caminho | Advisory direto ou origem transitiva |
+| Pacote | Versão antes → depois | Caminho | Advisory / origem |
 |---|---|---|---|
-| @eslint/config-array | 0.23.5 → 0.23.5 | `node_modules/@eslint/config-array` | minimatch |
-| @eslint/js | 10.0.1 → 10.0.1 | `node_modules/@eslint/js` | eslint |
-| @rollup/plugin-node-resolve | 16.0.3 → 16.0.3 | `node_modules/@rollup/plugin-node-resolve` | deepmerge |
-| @vitest/mocker | 4.1.11 → 4.1.12 | `node_modules/@vitest/mocker` | [GHSA-qxg6-89mg-rqv8](https://github.com/advisories/GHSA-qxg6-89mg-rqv8), [GHSA-xp26-3454-mjgp](https://github.com/advisories/GHSA-xp26-3454-mjgp) |
-| brace-expansion | 5.0.9 → 5.0.12<br>2.1.4 → 2.1.7 | `node_modules/brace-expansion`<br>`node_modules/filelist/node_modules/brace-expansion` | [GHSA-q2hr-2g5m-vwhr](https://github.com/advisories/GHSA-q2hr-2g5m-vwhr), [GHSA-qhr7-859c-m2p7](https://github.com/advisories/GHSA-qhr7-859c-m2p7), [GHSA-6j4f-fj2g-mc7p](https://github.com/advisories/GHSA-6j4f-fj2g-mc7p) |
-| deepmerge | 4.3.1 → 4.3.1 | `node_modules/deepmerge` | [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) |
-| eslint | 10.3.0 → 10.3.0 | `node_modules/eslint` | @eslint/config-array, minimatch |
-| fast-uri | 3.1.5 → 3.1.9 | `node_modules/fast-uri` | [GHSA-5jgf-p345-68v8](https://github.com/advisories/GHSA-5jgf-p345-68v8), [GHSA-f65p-4m7j-42xc](https://github.com/advisories/GHSA-f65p-4m7j-42xc), [GHSA-fph4-wmhf-6fwf](https://github.com/advisories/GHSA-fph4-wmhf-6fwf), [GHSA-jqff-g426-hqxp](https://github.com/advisories/GHSA-jqff-g426-hqxp), [GHSA-qw65-cvwx-89v3](https://github.com/advisories/GHSA-qw65-cvwx-89v3), [GHSA-hrr3-gc8f-f4qj](https://github.com/advisories/GHSA-hrr3-gc8f-f4qj), [GHSA-w74x-v6f9-j3xg](https://github.com/advisories/GHSA-w74x-v6f9-j3xg), [GHSA-xhq7-xmqj-769h](https://github.com/advisories/GHSA-xhq7-xmqj-769h), [GHSA-wjr9-j795-jxcr](https://github.com/advisories/GHSA-wjr9-j795-jxcr), [GHSA-333x-w4r6-6crp](https://github.com/advisories/GHSA-333x-w4r6-6crp) |
-| glob | 11.1.0 → 11.1.0 | `node_modules/glob` | [GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4), minimatch |
-| minimatch | 10.2.5 → 10.2.5 | `node_modules/minimatch` | [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) |
-| serialize-javascript | 7.1.0 → 7.1.4 | `node_modules/serialize-javascript` | [GHSA-m5mm-p8h7-m29v](https://github.com/advisories/GHSA-m5mm-p8h7-m29v) |
-| source-map-js | 1.2.1 → 1.2.2 | `node_modules/source-map-js` | [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) |
-| undici | 8.10.0 → 8.12.4 | `node_modules/undici` | [GHSA-3wwx-pv8p-q78v](https://github.com/advisories/GHSA-3wwx-pv8p-q78v), [GHSA-pmjh-fq2x-6v4x](https://github.com/advisories/GHSA-pmjh-fq2x-6v4x), [GHSA-r53p-7pc4-xj5r](https://github.com/advisories/GHSA-r53p-7pc4-xj5r), [GHSA-rfgv-xxqx-mfg5](https://github.com/advisories/GHSA-rfgv-xxqx-mfg5), [GHSA-3xpg-4rpp-hhhm](https://github.com/advisories/GHSA-3xpg-4rpp-hhhm), [GHSA-2jfj-6hjv-fm6j](https://github.com/advisories/GHSA-2jfj-6hjv-fm6j), [GHSA-2gqq-gqf2-x968](https://github.com/advisories/GHSA-2gqq-gqf2-x968), [GHSA-w293-vg96-wgc3](https://github.com/advisories/GHSA-w293-vg96-wgc3), [GHSA-8436-99hf-9mmv](https://github.com/advisories/GHSA-8436-99hf-9mmv), [GHSA-vp8m-p9jh-q5pm](https://github.com/advisories/GHSA-vp8m-p9jh-q5pm), [GHSA-rx4f-c7p8-82vq](https://github.com/advisories/GHSA-rx4f-c7p8-82vq), [GHSA-4qv8-2p9j-2685](https://github.com/advisories/GHSA-4qv8-2p9j-2685), [GHSA-f72v-6w45-q472](https://github.com/advisories/GHSA-f72v-6w45-q472), [GHSA-xjj6-f33q-929c](https://github.com/advisories/GHSA-xjj6-f33q-929c), [GHSA-4w7w-5xrc-9h26](https://github.com/advisories/GHSA-4w7w-5xrc-9h26), [GHSA-2m5v-pch6-74hx](https://github.com/advisories/GHSA-2m5v-pch6-74hx), [GHSA-qrxm-fqhp-jwvm](https://github.com/advisories/GHSA-qrxm-fqhp-jwvm), [GHSA-9fm3-97px-rjf6](https://github.com/advisories/GHSA-9fm3-97px-rjf6), [GHSA-55wc-3pg8-jfw6](https://github.com/advisories/GHSA-55wc-3pg8-jfw6) |
-| vite | 8.2.1 → 8.3.6 | `node_modules/vite` | [GHSA-698v-4r3x-3vcv](https://github.com/advisories/GHSA-698v-4r3x-3vcv), [GHSA-r825-w8mm-5pxw](https://github.com/advisories/GHSA-r825-w8mm-5pxw), [GHSA-587h-7wmj-h5pm](https://github.com/advisories/GHSA-587h-7wmj-h5pm), [GHSA-9jrq-w75r-8gcw](https://github.com/advisories/GHSA-9jrq-w75r-8gcw), [GHSA-rq7h-c2jc-7f22](https://github.com/advisories/GHSA-rq7h-c2jc-7f22), [GHSA-vfpm-58rq-9qcg](https://github.com/advisories/GHSA-vfpm-58rq-9qcg) |
-| vite-plugin-pwa | 1.3.0 → 1.3.0 | `node_modules/vite-plugin-pwa` | workbox-build |
-| vitest | 4.1.11 → 4.1.12 | `node_modules/vitest` | @vitest/mocker |
-| workbox-build | 7.4.1 → 7.4.1 | `node_modules/workbox-build` | @rollup/plugin-node-resolve, glob |
-| zod | 4.4.3 → 4.6.7 | `node_modules/zod` | [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) |
+| @eslint/config-array | 0.23.5 → 0.23.6 | `node_modules/@eslint/config-array` | M removido deste pai |
+| eslint | 10.3.0 → 10.15.0 | `node_modules/eslint` | M removido deste pai |
+| minimatch | 10.2.5 → 10.2.5 | `node_modules/minimatch`, usado por glob | M residual |
+| minimatch | novas instalações 11.0.9 | `node_modules/eslint/node_modules/minimatch` e `node_modules/@eslint/config-array/node_modules/minimatch` | fora da faixa M |
+| glob | 11.1.0 → 11.1.0 | `node_modules/glob` | G e M |
+| picomatch | 4.0.7 → 4.0.7 | `node_modules/picomatch` | P |
+| @rollup/pluginutils | 5.4.0 → 5.4.0 | `node_modules/@rollup/pluginutils` | P |
+| @rollup/plugin-babel | 6.1.0 → 6.1.0 | `node_modules/@rollup/plugin-babel` | P via pluginutils |
+| @rollup/plugin-node-resolve | 16.0.3 → 16.0.3 | `node_modules/@rollup/plugin-node-resolve` | P via pluginutils |
+| @rollup/plugin-replace | 6.0.3 → 6.0.3 | `node_modules/@rollup/plugin-replace` | P via pluginutils |
+| @vitejs/plugin-react | 6.0.1 → 6.0.1 | `node_modules/@vitejs/plugin-react` | P via pluginutils |
+| fdir | 6.5.0 → 6.5.0 | `node_modules/fdir` | P |
+| tinyglobby | 0.2.17 → 0.2.17 | `node_modules/tinyglobby` | P e fdir |
+| vite | 8.3.6 → 8.3.6 | `node_modules/vite` | P e tinyglobby |
+| vitest | 4.1.12 → 4.1.12 | `node_modules/vitest` | P e tinyglobby |
+| workbox-build | 7.4.1 → 7.4.1 | `node_modules/workbox-build` | G, M e plugins Rollup/P |
+| vite-plugin-pwa | 1.3.0 → 1.3.0 | `node_modules/vite-plugin-pwa` | workbox-build/P |
+| deepmerge | 4.3.1 → 4.3.1 | `node_modules/deepmerge` | advisory retirado; não é achado ativo |
 
-## Atualizações dirigidas e compatibilidade
+`node_modules/filelist/node_modules/minimatch@5.1.9` está fora da faixa M.
+O relatório JSON mantém separadas as instalações e as cadeias de propagação.
 
-- Vite 8.2.1 → 8.3.6: correções de dev server/launch-editor; piso declarado `^8.3.6`, mesma major. [Release do mantenedor](https://github.com/vitejs/vite/releases/tag/v8.3.6).
-- Vitest 4.1.11 → 4.1.12: os dois advisories de mocker, incluindo Windows. Piso `^4.1.12`; seus módulos internos seguem a versão exata do pai. [Release](https://github.com/vitest-dev/vitest/releases/tag/v4.1.12).
-- `vite-plugin-pwa@1.3.0` aceita Vite `^8.0.0`; Vitest 4.1.12 também. Nenhuma migração para Vitest 5 ou plugin PWA 2.
-- Transitivos atualizados **no lockfile, dentro das faixas dos pais existentes**: brace-expansion 5.0.9 → 5.0.12 e 2.1.4 → 2.1.7; fast-uri 3.1.5 → 3.1.9; serialize-javascript 7.1.0 → 7.1.4; source-map-js 1.2.1 → 1.2.2; undici 8.10.0 → 8.12.4; zod 4.4.3 → 4.6.7.
-- Caminhos: brace-expansion ← minimatch/ESLint e filelist/Workbox; fast-uri ← ajv/Workbox; serialize-javascript ← plugin-terser/Workbox; source-map-js ← PostCSS/Tailwind/jsdom; undici ← jsdom; zod ← eslint-plugin-react-hooks.
-- Vite atualiza seu grafo (Rolldown 1.2.3 → 1.2.16/bindings e OXC); PostCSS 8.5.26 → 8.5.32, picomatch, nanoid e a cadeia Vitest também avançaram como resultado da resolução dos pais. Todas as mudanças de versões são ascendentes e restritas ao grafo dev; dependências de runtime preservadas.
-- Comandos: `npm update --package-lock-only --ignore-scripts --no-audit --no-fund vite vitest brace-expansion fast-uri serialize-javascript source-map-js undici zod`, seguido de `npm ci --no-audit --no-fund`.
-- Sem `audit fix`, `--force`, overrides, faixas major incompatíveis ou downgrades automáticos. O lockfile e o piso dos dois pais diretos são versionados.
-- A junction de node_modules compartilhada foi guardada fora do worktree; a instalação de teste agora é própria deste candidato. O checkout principal não teve suas dependências alteradas.
+## Correção compatível aplicada
 
-## Investigação separada e risco residual — NÃO ACEITO
+- ESLint **10.3.0 → 10.15.0**, piso declarado `^10.15.0`, mesma major e Node compatível.
+  O pai agora declara minimatch `^11.0.5`; config-array **0.23.5 → 0.23.6** também.
+  Ambas as instalações resolvem **11.0.9**, acima da correção 11.0.1.
+- Atualizações internas exigidas pelo novo pai incluem config-helpers 0.7.0, plugin-kit 0.7.3,
+  file-entry-cache 11.1.5/flat-cache 6.1.23 e suas dependências. Todas dev; versões preexistentes
+  só avançaram. Dependências de runtime, Vite/Vitest/Workbox e configuração PWA não mudaram.
+- Comando dirigido: `npm update --package-lock-only --ignore-scripts --no-audit --no-fund eslint @eslint/config-array`;
+  seguido de `npm ci --no-audit --no-fund`. `npm ls` confirmou árvore válida.
+- Sem audit fix, force, downgrade ou override. A correção cobre a cadeia ESLint;
+  **não** encerra minimatch sob glob/Workbox.
+- Nenhuma alteração em fontes financeiras, hotfix de combustível, integração do aviso de
+  caixa, fila offline, API, schema ou produção. Nenhuma nova decisão técnica durável;
+  `DECISIONS.md` permanece inalterado.
 
-### minimatch (moderado)
+## Reavaliação dos pais e propostas individuais
 
-`eslint@10.3.0 → minimatch@10.2.5`; também `eslint → @eslint/config-array@0.23.5 → minimatch`
-e `vite-plugin-pwa → workbox-build → glob → minimatch`.
-[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249): amplificação/DoS, faixa >=7 <11.0.1, corrigido em 11.0.1.
-A versão 5.1.9 sob filelist é outra instalação e não pertence a essa faixa.
-Verificados registry/latest e metadados dos pais: ESLint 10.14.0 ainda exige `^10.2.6`; config-array 0.23.5 exige `^10.2.4`; glob 11 exige `^10.1.1`.
-A última publicação da major 10 é 10.2.6, também dentro da faixa do advisory: atualizar para ela ou para ESLint 10.14 não encerra o risco.
-Não se injeta minimatch 11 por override. Padrões de lint/precache deste projeto são definidos no repositório; PRs maliciosos, arquivos/árvores não confiáveis e execução de build não confiável continuam sendo superfícies relevantes.
+Versões consultadas no registry em 18/11 com `npm view <pacote> version dependencies engines --json`.
+Prazos abaixo são **propostas para decisão**, não compromissos assumidos nem aceite de risco.
 
-Alternativas pendentes: versão dos pais que suporte a major corrigida; backport oficial compatível; mudança de ferramenta revisada em escopo próprio.
-A sugestão de ESLint 9.39.5 do audit é downgrade e não foi aplicada; não resolveria, por si só, a cadeia PWA.
+### minimatch — moderado, residual somente na cadeia Workbox
 
-### glob (moderado)
+**Estado:** M afeta >=7 <11.0.1. glob 11.1.0 exige `^10.1.1`; a última 10.x é 10.2.6,
+também vulnerável. Workbox 7.4.1 exige glob `^11.0.1`. ESLint já foi corrigido nesta revisão.
+A migração para minimatch 11 sob glob 11 exigiria romper o contrato do pai.
 
-`vite-plugin-pwa@1.3.0 → workbox-build@7.4.1 → glob@11.1.0`.
-[GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4): cancelamento AbortSignal não interrompe caminhada assíncrona; versões >=9 <=14.0.1, corrigido em 14.0.2.
-Workbox aceita `^11.0.1`, e 11.1.0 é a última major 11 publicada. PWA 2.0.0 ainda depende de Workbox `^7.4.1`, então essa atualização major não elimina a causa.
-Em `workbox-build/build/lib/get-file-details.js`, o caminho inspecionado usa `globSync`, sem AbortSignal. Isso limita a pertinência do vetor descrito naquele caminho, mas não é isenção de segurança nem aceite.
-Alternativas: atualização/backport do Workbox para glob corrigido; troca do gerador de SW com testes de equivalência; fork revisado em tarefa própria. Não forçar glob 14 sob um pai que só declara 11.
+**Exposição demonstrada:** instalação 10.2.5 usada pelo glob do gerador de precache.
+Workbox chama globSync em `build/lib/get-file-details.js`; os padrões vêm da configuração
+versionada. Não foi demonstrada entrada de dados financeiros da API nesse matcher, nem exploração
+remota no bundle. Padrões/árvores alterados por PR ou dependência não confiável continuam superfície
+de DoS no processo de build; audit sem dev zerado não elimina essa superfície.
 
-### deepmerge (baixo)
+**Mitigação:** nesta revisão, padrões/configuração e cadeia PWA foram preservados e o build teve
+entrada controlada. Recomenda-se restringir builds não confiáveis a runners isolados, sem segredos,
+com limites de tempo/memória e revisão de padrões e lockfiles antes de executá-los.
+Esses controles adicionais de runner são proposta; não foram implantados neste PR.
 
-`vite-plugin-pwa → workbox-build → @rollup/plugin-node-resolve@16.0.3 → deepmerge@4.3.1`.
-[GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4): prototype poisoning nos objetos retornados; >=4.2.0 <=4.3.1, **sem versão corrigida publicada**.
-O registry ainda tem 4.3.1 como latest; plugin-node-resolve 16.0.3 exige `^4.2.2`.
-O uso é na mescla de opções de build do plugin, não em payload financeiro; configurações/objetos não confiáveis continuam sendo risco.
-Alternativas: correção upstream e nova versão compatível; remoção/substituição dessa dependência no pai com revisão; fork/backport analisado e testado separadamente.
-Não instalar versões antigas só por estarem fora da faixa citada. O downgrade PWA 1.1.0 sugerido pelo audit não foi aplicado.
+**Alternativas / esforço / prazo:** aguardar pai compatível ou backport upstream (integração estimada
+0,5–1 dia após publicação, sem prometer data do mantenedor); avaliar fork revisado de Workbox/glob
+ou migração do gerador (2–4 dias, com equivalência de precache/atualização/fila).
+Proposta: nova consulta até **20/11**, decidir alternativa até **25/11**.
 
-Os nove pacotes residuais são: minimatch, glob, deepmerge, @eslint/config-array, eslint, @eslint/js, @rollup/plugin-node-resolve, workbox-build e vite-plugin-pwa.
-**GATE de liberação pendente:** correção compatível ou decisão explícita do responsável sobre cada risco residual, com prazo/mitigações. Não há aceite implícito, nem autorização para merge/deploy.
+**Recomendação:** manter gate de segurança pendente; priorizar solução no pai compartilhado com glob,
+sem override nem downgrade. Nenhum aceite registrado.
 
-## Validação
+### glob — moderado, vetor do advisory não demonstrado no caminho inspecionado
 
-- Instalação limpa do lockfile, sem scripts de correção/override; verificação de versões sem downgrade e `npm ls` sem árvore inválida.
-- `npm test`: 135/135 em 26 arquivos, incluindo App → Dashboard para caixa null/reconciliado, hotfix de combustível, orçamento futuro e sincronização offline.
-- `npm run lint`: zero erros, 11 avisos preexistentes; nenhum novo aviso.
-- `npm run build`: Vite 8.3.6, generateSW, `sw.js`, `workbox-9c191d2f.js`, 39 entradas/1932,65 KiB. Permanece chunk >500 kB.
-- Precache: arquivos existem; Cobranças, Dashboard, Configurações, Investimentos, CalculadoraCompra e AvisoTaxasBcb presentes.
-- Smoke local Chrome desktop 1366 px e móvel emulado 390 px: **build real anterior → novo build**, sem marcador artificial no SW, `controllerchange` e novo chunk cacheado.
-- Novo chunk principal `assets/index-KYo5uW32.js`; SHA-256 do SW anterior `691c63db07cd4313a0ba0084edd9fc3a7363bf6dca12a57e357954add6e5edc9`; novo `60652b26540ab1205e188f7b695af5b448b1ec6870833aa2c355dbb41c4078d8`.
-- Fila sintética criada pelas funções reais de offlineQueue: dois lotes de contas A/B, duas parcelas no lote A, tentativas/estado/erro preenchidos e um item legado sem dono. Snapshot integral antes/depois idêntico; A/B só listam seus próprios lotes e legado continua em quarentena.
-- Recarregamento com rede desabilitada via emulação do Chrome: app shell disponível, IndexedDB idêntica. Após o teste, somente os três registros sintéticos foram removidos; perfis temporários encerrados/removidos, servidor local fechado.
-- API externa bloqueada por CSP; nenhuma chamada ou escrita em API/banco/prod. Fontes `src/`, configuração PWA e regras financeiras sem diff.
-- Roteiro local: `../fincontrole-hml-local/smoke-pwa-security-pr1.cjs`, helper Chrome dedicado; baseline gerado por npm ci/build do lockfile anterior, cópia `web-pr1-build-before-20261105`. Artefatos de laboratório fora do Git.
-- CI: publicar somente na branch existente do PR #1, sem force-push. Conferir o checkout do merge sintético nos logs; sucesso de testes/build não encerra o risco residual.
+**Estado:** G afeta >=9 <=14.0.1, corrigido em 14.0.2; latest 14.0.6.
+A última 11.x continua 11.1.0. Workbox latest 7.4.1 mantém `^11.0.1`.
+PWA latest 2.0.0 também usa Workbox `^7.4.1`; atualizar esse pai para 2 não resolve a causa.
+
+**Exposição demonstrada:** glob está no build PWA, mas o caminho de inventário inspecionado usa
+**globSync sem AbortSignal**. O advisory trata de travessia assíncrona após cancelamento;
+esse vetor específico não foi reproduzido no caminho usado pelo precache. Isso limita a exposição
+demonstrada, sem certificar todos os usos transitivos ou autorizar isenção.
+
+**Mitigação:** manter diretórios/padrões de build controlados e timeout externo do processo/runner;
+não depender de AbortSignal para encerrar trabalho não confiável. CI existente tem timeout de job;
+limites adicionais de recursos/isolamento permanecem proposta, não controle novo implantado.
+
+**Alternativas / esforço / prazo:** backport na major 11 ou suporte oficial de Workbox ao glob corrigido
+(0,5–1 dia de integração após release); fork revisado/gerador alternativo (2–4 dias, estimativa
+compartilhada com a investigação minimatch, não somar duas migrações).
+Reavaliar até **20/11**; proposta de decisão do responsável até **25/11**.
+
+**Recomendação:** preservar o gerador aprovado até existir migração revisada, mantendo o risco como
+pendência explícita. Não forçar glob 14 no pai que declara 11; nenhum aceite registrado.
+
+### picomatch — alto, sem versão corrigida publicada
+
+**Estado:** P, atualizado em 17/11, afeta <=4.0.7; latest 4.0.7, sem first_patched_version.
+Caminhos: Vite/Vitest → picomatch e tinyglobby → fdir/picomatch; PWA → Workbox → plugins Rollup
+→ pluginutils → picomatch. pluginutils latest 5.5.1 ainda exige `^4.0.2`; tinyglobby 0.2.17,
+`^4.0.4`; Vite latest 8.3.8 mantém `^4.0.7`. Nenhum desses avanços encerra o advisory;
+não foram misturadas atualizações sem correção demonstrada.
+
+**Exposição demonstrada:** prova local limitada no picomatch 4.0.7 instalado: compilar `+(*a)b`
+e testar `'a'.repeat(10) + '!'` terminou em menos de 1 ms; com 28 caracteres o processo filho
+atingiu **2 s** e foi encerrado por timeout externo, memória limitada a 128 MiB.
+Isso demonstra ReDoS do componente, **não** exploração do Dashboard/servidor.
+pluginutils/createFilter e tinyglobby compilam padrões; node-resolve cria filtros de `sideEffects`
+de pacotes. Configuração/metadata de dependências ou PR não confiável pode fornecer padrões;
+não foi demonstrado caminho de lançamento financeiro até essas APIs.
+
+**Mitigação:** prova executada só em filho descartável, sem serviço nem rede. Para a cadeia real,
+recomenda-se revisão de padrões/metadata/lockfiles, runners descartáveis sem segredos,
+limite externo de memória/tempo e não executar builds de origem não confiável em estação/runner
+privilegiado. O timeout de job existente não interrompe seletivamente uma regex síncrona;
+os controles adicionais são proposta, não uma correção aplicada.
+
+**Alternativas / esforço / prazo:** correção upstream compatível (0,5–1 dia de integração/regressões
+após release); backport/fork revisado do matcher e pais em tarefa isolada (2–3 dias);
+substituir os consumidores de globbing exigiria estimativa própria (3–5 dias).
+Proposta: triagem até **19/11**, nova consulta em **20/11**, decisão de caminho até **23/11**.
+
+**Recomendação:** tratar como **bloqueio de segurança para liberação** até correção revisada ou
+decisão explícita do responsável com mitigação/prazo. CI verde não resolve ReDoS.
+Não instalar versões antigas só para sair de uma faixa; nenhum aceite registrado.
+
+### deepmerge — advisory retirado, não é risco residual ativo desta auditoria
+
+deepmerge 4.3.1 continua latest, sob Workbox → node-resolve 16.0.3 (`^4.2.2`).
+[GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) foi retirado
+em **16/11/2026 18:55:38 UTC**: o mantenedor da base informa que não descreve vulnerabilidade.
+A API pública do advisory e a auditoria atual foram conferidas. A mescla de opções do plugin
+não mudou; nenhuma atualização de versão foi usada para alegar correção.
+
+Removido da lista de riscos ativos por **retirada do advisory**, sem aceite e sem downgrade.
+O snapshot de 05/11 preserva a classificação histórica. Recomendação: acompanhar upstream
+na próxima revisão regular; investigação adicional só se surgir evidência/advisory novo
+(triagem estimada 0,5 dia). Não há prazo de correção de vulnerabilidade ativa a assumir aqui.
+
+## Validações locais — 18/11
+
+- `npm ci`: instalação própria e limpa; `npm ls minimatch glob deepmerge picomatch --all` válido.
+  Revisão do lockfile confirmou mudanças somente dev, sem downgrade.
+- `npm test`: **135/135**, 26 arquivos. Inclui App → Dashboard com caixa null/reconciliado,
+  hotfix de combustível, orçamento futuro e isolamento/sincronização offline.
+- `npm run lint`: **zero erros / 11 avisos existentes**, sem aviso novo.
+- `npm run build`: Vite 8.3.6 / generateSW; `sw.js`, `workbox-9c191d2f.js`,
+  **39 entradas / 1932,65 KiB**. Aviso existente de chunk >500 kB.
+- A cadeia PWA e seus artefatos não mudaram nesta revisão: SW antes/depois SHA-256
+  `60652b26540ab1205e188f7b695af5b448b1ec6870833aa2c355dbb41c4078d8`.
+  Build anterior de 18/11 preservado no laboratório; bundle principal segue
+  `assets/index-KYo5uW32.js`. Nenhum marcador artificial foi inserido no SW.
+- Reexecutado smoke de atualização **real entre builds distintos**: baseline c812a3b gerado
+  em 05/11 (SW `691c63db07cd4313a0ba0084edd9fc3a7363bf6dca12a57e357954add6e5edc9`)
+  → build atual. Não é troca de controlador 4fc7a54 → ESLint atualizado, pois seus SW são idênticos.
+- Chrome desktop **1366 px** e móvel emulado **390 px**: controllerchange, novo chunk cacheado,
+  app shell recarregado offline e snapshot integral da fila idêntico. Dois lotes A/B, duas
+  parcelas no lote A, tentativas/estado/erro e legado sem dono preservados; A/B enxergam
+  somente seus lotes e o legado permanece em quarentena.
+- Precache contém os 39 arquivos existentes, incluindo Cobranças, Dashboard, Configurações,
+  Investimentos, CalculadoraCompra e AvisoTaxasBcb.
+- Removidos somente os três registros sintéticos por perfil; assert da fila vazia passou.
+  Perfis/processos temporários encerrados/removidos e servidor loopback fechado.
+  API externa bloqueada por CSP; sem chamadas/escritas em API, banco ou produção.
+- Roteiros no laboratório fora do Git:
+  `../fincontrole-hml-local/smoke-pwa-security-pr1.cjs` e
+  `../fincontrole-hml-local/probe-picomatch-pr1.cjs`.
+  Emulação não certifica dispositivo físico ou ambiente hospedado.
+
+## Certificação de CI e publicação
+
+- PR [Web #1](https://github.com/marlomstewart/painel-financeiro-web/pull/1), draft;
+  base confirmada `d6bccdbd7ba4998f2e0739ef12d25b8e560ca0b8`.
+- Candidato anterior `4fc7a54f7b64ca5b619b80fe23283bed3fb8f263`:
+  [CI 42044602309](https://github.com/marlomstewart/painel-financeiro-web/actions/runs/42044602309)
+  **success**, reconferida em 18/11. Checkout efetivamente testado nos logs:
+  `2ad48ca3051d705f60003b5569c678aae0537217`, merge sintético desse head com a base.
+  135 testes e build/PWA aprovados. Não foi execução isolada do head.
+- A nova correção será publicada na mesma branch sem force-push, com conferência do
+  checkout do merge nos logs. O certificado da nova CI será acrescentado após conclusão.
+- CI atual executa testes/build; lint e smoke PWA acima são validações locais.
+  CI verde não é aceite dos riscos residuais, autorização de merge ou deploy.
+
+**Pendências:** minimatch/Workbox, glob/Workbox e picomatch continuam sem aceite;
+as propostas acima aguardam decisão do responsável ou correção upstream compatível.
+Demais gates financeiros/HML, dispositivo físico e rollout conjunto seguem o plano
+`../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md`, que não foi alterado.

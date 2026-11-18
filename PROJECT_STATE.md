@@ -1,30 +1,39 @@
 # Estado atual — Web FinControle
 
-**Atualizado em:** 05/11/2026
+**Atualizado em:** 18/11/2026
 
 ## Objetivo atual
 
-PR Web #1: correção dirigida da cadeia de desenvolvimento/build sobre `c812a3b`.
-Vite 8.3.6 e Vitest 4.1.12 (mesmas majors); transitivos afetados atualizados no lockfile dentro
-das faixas dos pais, sem force, downgrades ou overrides. Instalação isolada deste worktree.
-Auditoria completa: 18 → 9 pacotes afetados, altos 6 → 0, moderados 9 → 7, baixos 3 → 2.
-Auditoria sem dev: zero. Restam minimatch/glob/deepmerge e seus pais, sem solução compatível
-publicada nas cadeias atuais. **Risco residual não aceito**: correção upstream ou decisão
-explícita do responsável continua sendo gate antes da liberação; CI verde não o substitui.
-Inventário, advisories, caminhos, alternativas e evidências antes/depois:
-`docs/SEGURANCA_BUILD_PR1.md` e `docs/security/web-pr1-audit-{before,after}.json`.
+PR Web #1: revisão de segurança sobre o head confirmado `4fc7a54f7b64ca5b619b80fe23283bed3fb8f263`.
+ESLint 10.3.0 → 10.15.0 e config-array 0.23.5 → 0.23.6 agora usam minimatch 11.0.9,
+por faixas declaradas pelos pais. Runtime e cadeia PWA preservados; sem force, downgrade ou override.
+Auditoria completa de 18/11: 16 → 14 pacotes afetados (12 altos mantidos, moderados 4 → 2);
+auditoria sem dev: zero antes/depois. A contagem antiga de 05/11 foi substituída pela consulta atual.
+Restam minimatch/glob sob Workbox e picomatch; o advisory deste último, atualizado em 17/11,
+agora alcança 4.0.7 e não tem correção publicada. Prova local limitada reproduziu ReDoS do componente.
+O advisory de deepmerge foi retirado em 16/11 por não descrever vulnerabilidade: não é risco ativo,
+nem correção de versão ou aceite. Snapshots históricos preservados.
+**Riscos residuais sem aceite:** relatório individual com exposição, mitigação, alternativas,
+esforço e prazos propostos em `docs/SEGURANCA_BUILD_PR1.md`; auditorias completas em
+`docs/security/web-pr1-20261118-{before,after}.json`. Recomenda-se bloquear liberação por picomatch;
+nenhum prazo ou aceite foi assumido pelo responsável.
 
-Validação: npm ci, 135/135 testes em 26 arquivos, lint zero erros/11 avisos e build/PWA
-com 39 entradas. Smoke de atualização real do SW anterior → novo no Chrome desktop/móvel
-emulado preservou snapshots integrais da fila, isolamento A/B, parcelas, tentativas e
-legado sem dono; recarga offline passou. Massa local removida e perfis encerrados.
-Sem diff em src/configuração PWA, sem mudança financeira, API, schema, merge ou deploy.
+Validação em 18/11: npm ci, 135/135 testes em 26 arquivos, lint zero erros/11 avisos e build/PWA
+com 39 entradas. SW idêntico ao do head anterior. Repetido smoke real c812a3b → build atual,
+desktop 1366 px/móvel emulado 390 px: fila integral, isolamento A/B, parcelas, tentativas,
+legado em quarentena e recarga offline preservados. Registros sintéticos removidos, perfis/processos
+temporários e servidor encerrados; API externa bloqueada. Não é prova em dispositivo físico/hospedado.
+CI anterior reconferida: run 42044602309 passou para head `4fc7a54`, checkout efetivamente testado
+`2ad48ca3051d705f60003b5569c678aae0537217` (merge sintético com base `d6bccdb`).
+Nova publicação/CI serão certificadas após o checkpoint na mesma branch do PR, sem force-push.
+Sem diff em src/configuração PWA, mudança financeira, API, schema, merge em main ou deploy.
 
 PR Web #1: `App` repassa `caixaNaoReconciliado` ao Dashboard. O aviso geral aparece quando
 a API retorna caixa desconhecido; cartão e detalhe preservam o estado sem convertê-lo em zero.
 Regressões de integração cobrem aviso presente/ausente usando App e Dashboard reais e API simulada.
 Suíte Web: 135/135 em 26 arquivos; lint sem erros (11 avisos preexistentes); build/PWA com
-39 entradas, com o aviso conhecido de chunk >500 kB. Sem mudança de contrato ou dependências.
+39 entradas, com o aviso conhecido de chunk >500 kB. A correção do aviso não mudou o contrato;
+as atualizações de ferramentas estão documentadas separadamente acima.
 
 Smoke HML do código `8b6d16ff5d015bc0c5c5ef8372e60c5d8d8bf202` com API
 `c77287f0d454cd5d2156b26233c51473949b4893`: HTTP 200 para caixa, desktop 1366 px e
@@ -191,14 +200,10 @@ para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 - Rateio do modal publicado e visível no print do usuário. Conferir a composição individual de
   Ninho com as compras atribuídas a ele, incluindo as já recebidas; o print isolado não basta.
 
-- BCB com checkpoint final aprovado e implementação publicada em `codex/bcb-resiliencia`
-  (Web `716fe21`, API `5a67539`), sem promoção/deploy. CI só dispara em main/master/develop
-  ou PR; publicação desta branch não comprova CI remota. Abrir revisão/CI como próximo passo.
-  Considerar dependência AUD-007 na revisão/promoção; preparar smoke visual HML e rollout
-  compatível da API/Web/PWA. Falha DNS e recuperação no ambiente hospedado não confirmadas.
-- AUD-007: publicada em branch de revisão (`4c811e1`) junto à API (`c829165`), sem promoção para
-  `main`. CI atual só dispara por push em main/master/develop ou PR; abrir revisão/CI remota.
-  Smoke visual HML e rollout coordenado seguem pendentes. Exigir
+- BCB e AUD-007 integram o candidato reconciliado do PR Web #1, com CI Web confirmada acima;
+  as branches originais continuam checkpoints históricos, sem promoção/deploy. Manter os gates
+  de smoke integrado/recuperação DNS hospedada e rollout compatível da API/Web/PWA.
+  A CI Web não certifica a API ou o ambiente hospedado. Exigir
   recarregamento da PWA e não misturar instâncias antigas escrevendo recebimentos.
 - Confirmar o SHA ativo no Render após a publicação da API `7349f07` e validar criação online
   pela Web. Uma PWA antiga sem o cabeçalho receberá 403 e precisará atualizar.
@@ -465,6 +470,7 @@ para testar o contrato datado; confirmar `VITE_API_URL` de HML antes do smoke.
 3. Seguir `../painel-financeiro-api/docs/RECONCILIACAO_MAIN_HML.md` para a janela de produção:
    main dispara deploy automático; controlar escritores antigos e atualizar abas/PWA antes de reabrir.
 4. Confirmar no desktop/mobile os resumos/emojis, rateio de faturas e orçamento de metas preservados.
-5. Resolver ou obter decisão explícita sobre cada risco residual de minimatch/glob/deepmerge
-   documentado em `docs/SEGURANCA_BUILD_PR1.md` antes da liberação. Não há aceite presumido.
-   Confirmar a nova CI e seu checkout de merge; demais pendências seguem no backlog canônico da API.
+5. Resolver ou obter decisão explícita sobre minimatch/Workbox, glob/Workbox e picomatch,
+   conforme as propostas individuais de `docs/SEGURANCA_BUILD_PR1.md`. Picomatch é bloqueio
+   de segurança recomendado para liberação; deepmerge teve advisory retirado, não risco aceito.
+   Certificar a nova CI e seu checkout de merge; demais pendências seguem no backlog canônico da API.
